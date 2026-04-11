@@ -173,15 +173,20 @@ document.addEventListener('DOMContentLoaded', function() {
         product  = results[1].data;
         var reviews = results[2].data || [];
 
-        if (!product) { window.location.href = 'shop.html'; return; }
+        if (!product) {
+            // Product not found or error — go back to shop
+            document.getElementById('pageLoader').style.display = 'none';
+            window.location.href = 'shop.html';
+            return;
+        }
 
-        document.title = product.name + ' — ' + (settings.store_name || '');
+        document.title = product.name + ' — ' + (settings.store_name || CONFIG.STORE_NAME);
         document.getElementById('navBrand').textContent = settings.store_name || CONFIG.STORE_NAME;
-        document.getElementById('footerCopy').textContent = '© ' + new Date().getFullYear() + ' ' + (settings.store_name||'');
+        document.getElementById('footerCopy').textContent = '© ' + new Date().getFullYear() + ' ' + (settings.store_name || CONFIG.STORE_NAME);
 
-        renderProduct(product);
-        renderReviews(reviews);
-        setupStarInput();
+        try { renderProduct(product); } catch(e) { console.error('renderProduct error:', e); }
+        try { renderReviews(reviews); } catch(e) { console.error('renderReviews error:', e); }
+        try { setupStarInput(); } catch(e) {}
 
         if (settings.allow_whatsapp_order && settings.whatsapp_number) {
             document.getElementById('waBtn').style.display = 'flex';
@@ -189,6 +194,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('pageLoader').style.display = 'none';
         document.getElementById('productPage').style.display = 'grid';
+
+    }).catch(function(err) {
+        console.error('Product load error:', err);
+        document.getElementById('pageLoader').style.display = 'none';
     });
 });
 
