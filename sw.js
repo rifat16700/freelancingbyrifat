@@ -32,9 +32,18 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     // We only care about HTML requests for the offline fallback
     if (event.request.mode === 'navigate' || (event.request.method === 'GET' && event.request.headers.get('accept').includes('text/html'))) {
+        
+        // If explicitly asking for the offline page, deliver it immediately from cache
+        if (event.request.url.includes(OFFLINE_URL)) {
+            event.respondWith(
+                caches.match(OFFLINE_URL).then(res => res || fetch(event.request))
+            );
+            return;
+        }
+
         event.respondWith(
             fetch(event.request).catch((error) => {
-                // If network fails, return the cached offline page
+                // If network fails on any HTML page, return the cached offline page
                 return caches.match(OFFLINE_URL).then((response) => {
                     return response || new Response('Offline Page Missing', { status: 503, statusText: 'Service Unavailable' });
                 });
