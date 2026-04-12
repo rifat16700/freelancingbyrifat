@@ -343,57 +343,70 @@
         <!-- Login Form (removed <form> wrapper behavior to strictly prevent reloads) -->
         <div id="loginForm">
 
-            <!-- Email -->
-            <div class="form-group">
-                <label class="form-label" for="loginEmail">Email Address</label>
-                <div class="input-wrap">
-                    <span class="input-icon">
+            <!-- Email (Step 1) -->
+            <div id="stepEmail">
+                <div class="form-group">
+                    <label class="form-label" for="loginEmail">Email Address</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                            </svg>
+                        </span>
+                        <input type="email" id="loginEmail" class="form-input"
+                               placeholder="your.email@example.com" required autocomplete="email">
+                    </div>
+                </div>
+
+                <!-- Submit Button for OTP -->
+                <button type="button" class="login-btn" id="sendOtpBtn" onclick="sendOtp()">
+                    <span id="sendOtpBtnContent">
+                        Send OTP Code
                         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
-                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                             style="margin-left:4px;">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                         </svg>
                     </span>
-                    <input type="email" id="loginEmail" class="form-input"
-                           placeholder="admin@example.com" required autocomplete="email">
-                </div>
+                </button>
             </div>
 
-            <!-- Password / PIN -->
-            <div class="form-group">
-                <label class="form-label" for="loginPass">Security PIN</label>
-                <div class="input-wrap">
-                    <span class="input-icon">
+            <!-- OTP (Step 2) -->
+            <div id="stepOtp" style="display: none; margin-top: 20px;">
+                <div class="form-group">
+                    <label class="form-label" for="loginOtp">Security Code (OTP)</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </span>
+                        <input type="text" id="loginOtp" class="form-input"
+                               placeholder="Enter 6-digit code" required autocomplete="one-time-code" maxlength="6">
+                    </div>
+                </div>
+
+                <!-- Verify Button -->
+                <button type="button" class="login-btn" id="verifyOtpBtn" onclick="verifyOtp()">
+                    <span id="verifyOtpBtnContent">
+                        Verify & Login
                         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
-                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                             style="margin-left:4px;">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
                         </svg>
                     </span>
-                    <input type="password" id="loginPass" class="form-input"
-                           placeholder="Enter Admin PIN" required autocomplete="current-password">
-                    <button type="button" class="pass-toggle" id="passToggle" onclick="togglePass()" aria-label="Show/hide password">
-                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
-                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                    </button>
+                </button>
+                <div style="text-align: center; margin-top: 15px;">
+                    <a href="javascript:void(0)" onclick="resetStep()" style="color: var(--text-light); font-size: 13px; text-decoration: none; font-weight: 500;">&larr; Use a different email</a>
                 </div>
             </div>
-
-            <!-- Submit Button -->
-            <button type="button" class="login-btn" id="loginBtn" onclick="doLogin()">
-                <span id="loginBtnContent">
-                    Login to Dashboard
-                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
-                         fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                         style="margin-left:4px;">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                        <polyline points="12 5 19 12 12 19"></polyline>
-                    </svg>
-                </span>
-            </button>
         </div>
 
         <!-- Success redirect msg -->
@@ -410,18 +423,6 @@
 
     <script>
         // Use global `CONFIG` and `sb` from ../assets/js/ config files
-
-        var passVisible = false;
-
-        // ── Password visibility toggle ──────────────────────────
-        function togglePass() {
-            passVisible = !passVisible;
-            var input = document.getElementById('loginPass');
-            input.type = passVisible ? 'text' : 'password';
-            document.getElementById('eyeIcon').innerHTML = passVisible
-                ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><line x1="1" y1="1" x2="23" y2="23"></line>'
-                : '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle>';
-        }
 
         // ── Toast notification ──────────────────────────────────
         function showToast(message, type) {
@@ -444,76 +445,100 @@
             }, 3500);
         }
 
-        // ══ SECURITY PIN (CHANGE THIS TO YOUR PREFERRED PIN) ══
-        var MASTER_PIN = "2025"; 
-
         // ── Check session automatically ─────────────────────────
         function checkSession() {
-            var isAuth = localStorage.getItem('fbr_admin_auth');
-            if (isAuth === 'true') {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('redirectMsg').classList.add('show');
-                window.location.href = 'dashboard.html';
-            }
+            sb.auth.getSession().then(function(res) {
+                var session = res.data && res.data.session;
+                if (session) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('redirectMsg').classList.add('show');
+                    window.location.href = 'dashboard.html';
+                }
+            });
         }
         
         // Wait for DOM
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM Loaded - Local Auth UI ready");
+            console.log("DOM Loaded - OTP Auth UI ready");
             checkSession();
-
-            // Hide email field if already saved previously
-            var savedEmail = localStorage.getItem('fbr_admin_email');
-            if (savedEmail) {
-                var emailInput = document.getElementById('loginEmail');
-                if (emailInput) {
-                    emailInput.value = savedEmail;
-                    emailInput.closest('.form-group').style.display = 'none'; // hide the email section
-                    document.querySelector('.login-sub').textContent = "Welcome back, " + savedEmail;
-                }
-            }
         });
 
-        // ══ Login Click Handler ──────────────────────────────────
-        function doLogin() {
-            var email      = document.getElementById('loginEmail').value.trim();
-            var pass       = document.getElementById('loginPass').value.trim();
-            var btn        = document.getElementById('loginBtn');
-            var btnContent = document.getElementById('loginBtnContent');
+        function resetStep() {
+            document.getElementById('stepOtp').style.display = 'none';
+            document.getElementById('stepEmail').style.display = 'block';
+            document.getElementById('loginOtp').value = '';
+        }
+
+        // ══ Send OTP ──────────────────────────────────
+        function sendOtp() {
+            var email = document.getElementById('loginEmail').value.trim();
+            var btn = document.getElementById('sendOtpBtn');
+            var btnContent = document.getElementById('sendOtpBtnContent');
             var originalHTML = btnContent.innerHTML;
 
-            // Only email is required on first time
-            if (!localStorage.getItem('fbr_admin_email') && !email) {
-                showToast('Please enter your email.', 'error');
+            if (!email) {
+                showToast('Please enter your valid email.', 'error');
                 return;
             }
 
-            if (!pass) {
-                showToast('Please enter the Security PIN.', 'error');
+            btn.disabled = true;
+            btnContent.innerHTML = '<div class="spinner"></div><span>Sending OTP...</span>';
+
+            sb.auth.signInWithOtp({ email: email }).then(function(res) {
+                if (res.error) {
+                    showToast('❌ Error: ' + res.error.message, 'error');
+                    btn.disabled = false;
+                    btnContent.innerHTML = originalHTML;
+                } else {
+                    showToast('✅ OTP sent to your email!', 'success');
+                    document.getElementById('stepEmail').style.display = 'none';
+                    document.getElementById('stepOtp').style.display = 'block';
+                    btn.disabled = false;
+                    btnContent.innerHTML = originalHTML;
+                }
+            }).catch(function(err) {
+                showToast('❌ A network error occurred.', 'error');
+                btn.disabled = false;
+                btnContent.innerHTML = originalHTML;
+            });
+        }
+
+        // ══ Verify OTP ──────────────────────────────────
+        function verifyOtp() {
+            var email = document.getElementById('loginEmail').value.trim();
+            var otp   = document.getElementById('loginOtp').value.trim();
+            var btn   = document.getElementById('verifyOtpBtn');
+            var btnContent = document.getElementById('verifyOtpBtnContent');
+            var originalHTML = btnContent.innerHTML;
+
+            if (!otp || otp.length !== 6) {
+                showToast('Please enter the 6-digit OTP.', 'error');
                 return;
             }
 
             btn.disabled = true;
             btnContent.innerHTML = '<div class="spinner"></div><span>Verifying...</span>';
 
-            // Verify PIN instantly without Supabase
-            setTimeout(function() {
-                if (pass === MASTER_PIN) {
-                    // Success
-                    localStorage.setItem('fbr_admin_auth', 'true');
-                    if (email) localStorage.setItem('fbr_admin_email', email);
-                    
-                    showToast('✅ Login successful!', 'success');
+            sb.auth.verifyOtp({
+                email: email,
+                token: otp,
+                type: 'email'
+            }).then(function(res) {
+                if (res.error) {
+                    showToast('❌ Invalid or expired OTP.', 'error');
+                    btn.disabled = false;
+                    btnContent.innerHTML = originalHTML;
+                } else {
+                    showToast('✅ Verification successful!', 'success');
                     document.getElementById('loginForm').style.display = 'none';
                     document.getElementById('redirectMsg').classList.add('show');
                     setTimeout(function() { window.location.href = 'dashboard.html'; }, 600);
-                } else {
-                    // Fail
-                    showToast('❌ Incorrect Security PIN.', 'error');
-                    btn.disabled = false;
-                    btnContent.innerHTML = originalHTML;
                 }
-            }, 500); // small delay to simulate processing and feel secure
+            }).catch(function(err) {
+                showToast('❌ A network error occurred.', 'error');
+                btn.disabled = false;
+                btnContent.innerHTML = originalHTML;
+            });
         }
     </script>
 </body>
