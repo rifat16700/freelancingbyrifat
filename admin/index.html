@@ -395,20 +395,8 @@
         <!-- Success redirect msg -->
         <div class="redirect-msg" id="redirectMsg">
             <div class="spinner" style="border-top-color:#2e7d32;border-color:rgba(46,125,50,0.25);"></div>
-            <span>Redirecting to dashboard...</span>
-        </div>
-
-        <!-- Footer -->
-        <div class="login-footer">
-            Freelancing By Rifat &copy; 2025 &mdash; Admin Panel
-        </div>
-    </div>
-
-    <script>
+             <script>
         // ══ CONFIGURATION ══
-        var ADMIN_EMAIL    = 'rifatrabbi10@gmail.com';
-        var ADMIN_PASSWORD = 'rifat@admin2025';
-        var SESSION_KEY    = 'fbr_admin_auth';
         var SUPABASE_URL      = 'https://qdkppbwjgkkxzgzgsykv.supabase.co';
         var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk';
 
@@ -418,7 +406,7 @@
             return false;
         };
 
-        // ══ SAFE SUPABASE INIT ══
+        // ══ SUPABASE INIT ══
         var sb = null;
         try {
             if (typeof supabase !== 'undefined') {
@@ -426,16 +414,10 @@
             }
         } catch(e) {
             console.error("Supabase init failed", e);
+            showToast("Failed to connect to authentication server.", "error");
         }
 
         var passVisible = false;
-
-        // ── Check if already logged in ──────────────────────────
-        try {
-            if (localStorage.getItem(SESSION_KEY) === 'true') {
-                window.location.href = 'dashboard.html';
-            }
-        } catch(e) {}
 
         // ── Password visibility toggle ──────────────────────────
         function togglePass() {
@@ -468,11 +450,28 @@
             }, 3500);
         }
 
+        // ── Check session automatically ─────────────────────────
+        async function checkSession() {
+            if (!sb) return;
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('redirectMsg').classList.add('show');
+                window.location.href = 'dashboard.html';
+            }
+        }
+        checkSession();
+
         // ══ Login form submit ─────────────────────────────────────
         var form = document.getElementById('loginForm');
-        if(form) {
-            form.addEventListener('submit', function(e) {
+        if (form) {
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
+
+                if (!sb) {
+                    showToast('❌ Authentication system not ready.', 'error');
+                    return;
+                }
 
                 var email      = document.getElementById('loginEmail').value.trim();
                 var pass       = document.getElementById('loginPass').value;
@@ -483,50 +482,31 @@
                 btn.disabled = true;
                 btnContent.innerHTML = '<div class="spinner"></div><span>Logging in...</span>';
 
-                // ══ PRIMARY: Hardcoded check (instant, no network) ══
-                if (email === ADMIN_EMAIL && pass === ADMIN_PASSWORD) {
-                    localStorage.setItem(SESSION_KEY, 'true');
-                    localStorage.setItem(SESSION_KEY + '_email', email);
-                    showToast('Login successful! Redirecting...', 'success');
-                    document.getElementById('loginForm').style.display = 'none';
-                    document.getElementById('redirectMsg').classList.add('show');
-                    setTimeout(function() {
-                        window.location.href = 'dashboard.html';
-                    }, 800);
+                // Official Supabase Async/Await Login
+                const { data, error } = await sb.auth.signInWithPassword({
+                    email: email,
+                    password: pass,
+                });
+
+                if (error) {
+                    showToast('❌ ' + (error.message || 'Login failed. Check email & password.'), 'error');
+                    btn.disabled = false;
+                    btnContent.innerHTML = originalHTML;
                     return;
                 }
 
-                // ══ FALLBACK: Supabase Auth ══
-                if (sb) {
-                    sb.auth.signInWithPassword({ email: email, password: pass })
-                    .then(function(response) {
-                        if (response.error) {
-                            showToast('❌ ' + (response.error.message || 'Login failed. Check email & password.'), 'error');
-                            btn.disabled = false;
-                            btnContent.innerHTML = originalHTML;
-                            return;
-                        }
-                        if (response.data && response.data.session) {
-                            localStorage.setItem(SESSION_KEY, 'true');
-                            localStorage.setItem(SESSION_KEY + '_email', email);
-                            showToast('Login successful! Redirecting...', 'success');
-                            document.getElementById('loginForm').style.display = 'none';
-                            document.getElementById('redirectMsg').classList.add('show');
-                            setTimeout(function() { window.location.href = 'dashboard.html'; }, 800);
-                        }
-                    })
-                    .catch(function() {
-                        showToast('❌ Network error. Please try again.', 'error');
-                        btn.disabled = false;
-                        btnContent.innerHTML = originalHTML;
-                    });
-                } else {
-                    showToast('❌ Incorrect Email or Password.', 'error');
-                    btn.disabled = false;
-                    btnContent.innerHTML = originalHTML;
+                if (data && data.session) {
+                    showToast('✅ Login successful! Redirecting...', 'success');
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('redirectMsg').classList.add('show');
+                    
+                    // Small delay for UI smoothness before redirect
+                    setTimeout(function() { 
+                        window.location.href = 'dashboard.html'; 
+                    }, 800);
                 }
             });
-        });
+        }
     </script>
 </body>
-</html>
+
