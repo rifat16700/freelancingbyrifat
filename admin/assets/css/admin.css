@@ -1,39 +1,46 @@
 /* ============================================================
    admin.css — Admin Panel Global Styles
    Project: Freelancing By Rifat E-Commerce
-   Design: Apple iOS Glass Effect — Dark Mode
+   Design: Maroon & White Premium Light Theme
    ============================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 /* ── CSS Variables ─────────────────────────────────────────── */
 :root {
-    --bg-deep:       #080810;
-    --bg-primary:    #0D0D18;
-    --bg-secondary:  #13131F;
-    --bg-card:       rgba(255,255,255,0.04);
-    --bg-card-hover: rgba(255,255,255,0.07);
-    --bg-input:      rgba(255,255,255,0.05);
+    /* Background layers */
+    --bg-deep:       #F0E8E8;
+    --bg-primary:    #F5EDED;
+    --bg-secondary:  #FFFFFF;
+    --bg-card:       rgba(128,0,0,0.04);
+    --bg-card-hover: rgba(128,0,0,0.07);
+    --bg-input:      #FFFFFF;
 
-    --border:        rgba(255,255,255,0.08);
-    --border-focus:  rgba(0,122,255,0.5);
+    /* Borders */
+    --border:        rgba(128,0,0,0.12);
+    --border-focus:  rgba(128,0,0,0.45);
 
-    --text-primary:  #F5F5F7;
-    --text-secondary:#8E8E93;
-    --text-muted:    #48484A;
+    /* Text */
+    --text-primary:  #1A0A0A;
+    --text-secondary:#7A4A4A;
+    --text-muted:    #B08080;
 
-    --accent:        #007AFF;
-    --accent-hover:  #0066DD;
-    --accent-glow:   rgba(0,122,255,0.2);
-    --success:       #34C759;
-    --success-bg:    rgba(52,199,89,0.12);
-    --warning:       #FF9500;
-    --warning-bg:    rgba(255,149,0,0.12);
-    --danger:        #FF3B30;
-    --danger-bg:     rgba(255,59,48,0.12);
-    --purple:        #BF5AF2;
-    --purple-bg:     rgba(191,90,242,0.12);
+    /* Maroon accent (replaces blue) */
+    --accent:        #800000;
+    --accent-hover:  #5C0000;
+    --accent-glow:   rgba(128,0,0,0.18);
 
+    /* Status colours */
+    --success:       #2e7d32;
+    --success-bg:    rgba(46,125,50,0.10);
+    --warning:       #c17a00;
+    --warning-bg:    rgba(193,122,0,0.10);
+    --danger:        #c62828;
+    --danger-bg:     rgba(198,40,40,0.10);
+    --purple:        #6a1b9a;
+    --purple-bg:     rgba(106,27,154,0.10);
+
+    /* Layout */
     --sidebar-w:     265px;
     --header-h:      64px;
     --radius-sm:     10px;
@@ -41,8 +48,8 @@
     --radius-lg:     20px;
     --radius-xl:     28px;
 
-    --shadow-card:   0 4px 24px rgba(0,0,0,0.4);
-    --shadow-modal:  0 20px 60px rgba(0,0,0,0.7);
+    --shadow-card:   0 4px 20px rgba(128,0,0,0.10);
+    --shadow-modal:  0 20px 60px rgba(128,0,0,0.18);
     --transition:    0.2s ease;
 }
 
@@ -66,6 +73,7 @@ body {
     width: var(--sidebar-w);
     background: var(--bg-secondary);
     border-right: 1px solid var(--border);
+    border-top: 4px solid var(--accent);
     position: fixed;
     top: 0; left: 0; bottom: 0;
     display: flex;
@@ -73,6 +81,7 @@ body {
     z-index: 200;
     transition: transform var(--transition);
     overflow: hidden;
+    box-shadow: 4px 0 20px rgba(128,0,0,0.08);
 }
 
 .sidebar-header {
@@ -93,7 +102,7 @@ body {
 .logo-icon-box {
     width: 38px;
     height: 38px;
-    background: linear-gradient(135deg, var(--accent), #5856D6);
+    background: linear-gradient(135deg, #5C0000, #A52A2A);
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -225,7 +234,7 @@ body {
 
 .user-avatar {
     width: 34px; height: 34px;
-    background: linear-gradient(135deg, var(--accent), var(--purple));
+    background: linear-gradient(135deg, #5C0000, #A52A2A);
     border-radius: 50%;
     display: flex;
     align-items: center;
