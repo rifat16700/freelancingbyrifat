@@ -6,22 +6,6 @@
     <title>Admin Login — Freelancing By Rifat</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // ══ ADMIN CREDENTIALS ══ (এখানে আপনার email ও password দিন)
-        var ADMIN_EMAIL    = 'rifatrabbi10@gmail.com';   // ← আপনার admin email
-        var ADMIN_PASSWORD = 'rifat@admin2025';           // ← আপনার password (যেকোনো কিছু দিন)
-        var SESSION_KEY    = 'fbr_admin_auth';
-
-        // ══ Supabase (fallback) ══
-        var SUPABASE_URL      = 'https://qdkppbwjgkkxzgzgsykv.supabase.co';
-        var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk';
-        var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // ══ Already logged in check ══
-        if (localStorage.getItem(SESSION_KEY) === 'true') {
-            window.location.href = 'dashboard.html';
-        }
-    </script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -421,7 +405,37 @@
     </div>
 
     <script>
+        // ══ CONFIGURATION ══
+        var ADMIN_EMAIL    = 'rifatrabbi10@gmail.com';
+        var ADMIN_PASSWORD = 'rifat@admin2025';
+        var SESSION_KEY    = 'fbr_admin_auth';
+        var SUPABASE_URL      = 'https://qdkppbwjgkkxzgzgsykv.supabase.co';
+        var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk';
+
+        // ══ ERROR DISPLAY (For Debugging) ══
+        window.onerror = function(msg, url, line) {
+            showToast("JS Error: " + msg, "error");
+            return false;
+        };
+
+        // ══ SAFE SUPABASE INIT ══
+        var sb = null;
+        try {
+            if (typeof supabase !== 'undefined') {
+                sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch(e) {
+            console.error("Supabase init failed", e);
+        }
+
         var passVisible = false;
+
+        // ── Check if already logged in ──────────────────────────
+        try {
+            if (localStorage.getItem(SESSION_KEY) === 'true') {
+                window.location.href = 'dashboard.html';
+            }
+        } catch(e) {}
 
         // ── Password visibility toggle ──────────────────────────
         function togglePass() {
@@ -454,58 +468,63 @@
             }, 3500);
         }
 
-        // ── Check if already logged in ──────────────────────────
-        if (localStorage.getItem(SESSION_KEY)) {
-            window.location.href = 'dashboard.html';
-        }
-
         // ══ Login form submit ─────────────────────────────────────
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        var form = document.getElementById('loginForm');
+        if(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
 
-            var email      = document.getElementById('loginEmail').value.trim();
-            var pass       = document.getElementById('loginPass').value;
-            var btn        = document.getElementById('loginBtn');
-            var btnContent = document.getElementById('loginBtnContent');
-            var originalHTML = btnContent.innerHTML;
+                var email      = document.getElementById('loginEmail').value.trim();
+                var pass       = document.getElementById('loginPass').value;
+                var btn        = document.getElementById('loginBtn');
+                var btnContent = document.getElementById('loginBtnContent');
+                var originalHTML = btnContent.innerHTML;
 
-            btn.disabled = true;
-            btnContent.innerHTML = '<div class="spinner"></div><span>Logging in...</span>';
+                btn.disabled = true;
+                btnContent.innerHTML = '<div class="spinner"></div><span>Logging in...</span>';
 
-            // ══ PRIMARY: Hardcoded check (instant, no network) ══
-            if (email === ADMIN_EMAIL && pass === ADMIN_PASSWORD) {
-                localStorage.setItem(SESSION_KEY, 'true');
-                localStorage.setItem(SESSION_KEY + '_email', email);
-                showToast('Login successful! Redirecting...', 'success');
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('redirectMsg').classList.add('show');
-                setTimeout(function() {
-                    window.location.href = 'dashboard.html';
-                }, 800);
-                return;
-            }
-
-            // ══ FALLBACK: Supabase Auth ══
-            sb.auth.signInWithPassword({ email: email, password: pass })
-            .then(function(response) {
-                if (response.error) {
-                    showToast('❌ ' + (response.error.message || 'Login failed. Check email & password.'), 'error');
-                    btn.disabled = false;
-                    btnContent.innerHTML = originalHTML;
-                    return;
-                }
-                if (response.data && response.data.session) {
+                // ══ PRIMARY: Hardcoded check (instant, no network) ══
+                if (email === ADMIN_EMAIL && pass === ADMIN_PASSWORD) {
                     localStorage.setItem(SESSION_KEY, 'true');
                     localStorage.setItem(SESSION_KEY + '_email', email);
                     showToast('Login successful! Redirecting...', 'success');
                     document.getElementById('loginForm').style.display = 'none';
                     document.getElementById('redirectMsg').classList.add('show');
-                    setTimeout(function() { window.location.href = 'dashboard.html'; }, 800);
+                    setTimeout(function() {
+                        window.location.href = 'dashboard.html';
+                    }, 800);
+                    return;
                 }
-            })
-                showToast('Network error. Please try again.', 'error');
-                btn.disabled = false;
-                btnContent.innerHTML = originalHTML;
+
+                // ══ FALLBACK: Supabase Auth ══
+                if (sb) {
+                    sb.auth.signInWithPassword({ email: email, password: pass })
+                    .then(function(response) {
+                        if (response.error) {
+                            showToast('❌ ' + (response.error.message || 'Login failed. Check email & password.'), 'error');
+                            btn.disabled = false;
+                            btnContent.innerHTML = originalHTML;
+                            return;
+                        }
+                        if (response.data && response.data.session) {
+                            localStorage.setItem(SESSION_KEY, 'true');
+                            localStorage.setItem(SESSION_KEY + '_email', email);
+                            showToast('Login successful! Redirecting...', 'success');
+                            document.getElementById('loginForm').style.display = 'none';
+                            document.getElementById('redirectMsg').classList.add('show');
+                            setTimeout(function() { window.location.href = 'dashboard.html'; }, 800);
+                        }
+                    })
+                    .catch(function() {
+                        showToast('❌ Network error. Please try again.', 'error');
+                        btn.disabled = false;
+                        btnContent.innerHTML = originalHTML;
+                    });
+                } else {
+                    showToast('❌ Incorrect Email or Password.', 'error');
+                    btn.disabled = false;
+                    btnContent.innerHTML = originalHTML;
+                }
             });
         });
     </script>
