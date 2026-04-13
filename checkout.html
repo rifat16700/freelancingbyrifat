@@ -654,44 +654,75 @@ function verifyGatewayPayment(orderId, trxId) {
     var proxyUrl = (rawProxy || '').trim();
     var apiKey   = (rawKey || '').trim();
 
-    // Show verifying state
     document.getElementById('pageLoader').style.display = 'flex';
+    document.getElementById('pageLoader').innerHTML = '<div class="spinner"></div><div style="margin-top:15px;color:var(--primary);font-weight:700;">Verifying your payment securely...</div><div style="font-size:12px;color:#888;margin-top:10px;">Please wait, do not close this window.</div>';
 
-    fetch(proxyUrl + '?action=verify', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'API-KEY': apiKey },
-        body: JSON.stringify({ transaction_id: trxId })
-    }).then(function(r) { 
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json(); 
-    }).then(function(res) {
-        var vStatus = (res.status || '').toUpperCase();
-        var isSuccess = vStatus === 'COMPLETED' || vStatus === 'SUCCESS' || vStatus === 'VALID';
+    sb.from('orders').select('*').eq('id', orderId).single().then(function(oRes) {
+        if (oRes.error || !oRes.data) {
+            document.getElementById('pageLoader').style.display = 'none';
+            alert('Order not found!');
+            return;
+        }
+        
+        var oData = oRes.data;
+        var cleanUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
 
-        if (isSuccess) {
-            // Need to load order for Telegram notification
-            sb.from('orders').select('*').eq('id', orderId).single().then(function(oRes) {
-                var newPayStatus = (oRes.data && oRes.data.payment_method === 'Hybrid COD') ? 'Advance Paid' : 'Paid';
+        if (oData.payment_status === 'Paid' || oData.payment_status === 'Advance Paid') {
+            window.history.replaceState({}, document.title, cleanUrl);
+            document.getElementById('pageLoader').style.display = 'none';
+            window.location.href = 'success.html?id=' + orderId;
+            return;
+        }
 
-                sb.from('orders').update({
-                    payment_status:  newPayStatus,
-                    payment_trx_id:  trxId || 'AUTO',
-                    status:          'Confirmed'
-                }).eq('id', orderId).then(function(upRes) {
-                    if (oRes.data) sendOrderNotification(oRes.data);
-                    localStorage.removeItem(CONFIG.CART_KEY);
-                    // Clean URL then redirect
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    window.location.href = 'success.html?id=' + orderId;
+        if (trxId) {
+            var dupCheck = sb.from('orders').select('id,payment_trx_id').eq('payment_trx_id', trxId).neq('id', orderId).single();
+            dupCheck.then(function(dupRes) {
+                if (!dupRes.error && dupRes.data) {
+                    document.getElementById('pageLoader').style.display = 'none';
+                    alert('Warning: Transaction ID already exists in another order.');
+                    return;
+                }
+
+                fetch(proxyUrl + '?action=verify', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'API-KEY': apiKey },
+                    body: JSON.stringify({ transaction_id: trxId })
+                }).then(function(r) { 
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json(); 
+                }).then(function(res) {
+                    var vStatus = (res.status || '').toUpperCase();
+                    var isSuccess = vStatus === 'COMPLETED' || vStatus === 'SUCCESS' || vStatus === 'VALID';
+
+                    if (isSuccess) {
+                        var newPayStatus = (oData.payment_method === 'Hybrid COD') ? 'Advance Paid' : 'Paid';
+
+                        sb.from('orders').update({
+                            payment_status:  newPayStatus,
+                            payment_trx_id:  trxId || 'AUTO',
+                            status:          'Confirmed'
+                        }).eq('id', orderId).then(function(upRes) {
+                            sendOrderNotification(oData);
+                            localStorage.removeItem(CONFIG.CART_KEY);
+                            window.history.replaceState({}, document.title, window.location.pathname);
+                            window.location.href = 'success.html?id=' + orderId;
+                        });
+                    } else {
+                        document.getElementById('pageLoader').style.display = 'none';
+                        alert('Payment Verification Failed!\nStatus: ' + (res.status || 'Unknown') + '\nMessage: ' + (res.message || 'Invalid Transaction'));
+                    }
+                }).catch(function(err) {
+                    document.getElementById('pageLoader').style.display = 'none';
+                    alert('Verification Request Failed!\nError: ' + err.message);
                 });
             });
         } else {
             document.getElementById('pageLoader').style.display = 'none';
-            alert('⚠️ Payment Verification Rejected!\nProxy Status: ' + (res.status || 'Unknown') + '\nMessage: ' + (res.message || 'No msg') + '\nExtracted TrxID: ' + trxId);
+            alert('No Transaction ID found for verification.');
         }
     }).catch(function(err) {
         document.getElementById('pageLoader').style.display = 'none';
-        alert('Verification Request Failed (Network/Error)!\nError: ' + err.message + '\nExtracted TrxID: ' + trxId);
+        alert('Error loading order: ' + err.message);
     });
 }
 

@@ -66,6 +66,10 @@
                     <option value="oldest">Oldest First</option>
                     <option value="highest">Highest Amount</option>
                 </select>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-secondary); font-size:13px; font-weight:600; padding:0 10px; white-space:nowrap;">
+                    <input type="checkbox" id="failedFilter" onchange="filterOrders()" style="width:16px;height:16px;cursor:pointer;accent-color:#ff3b30;">
+                    <span>Show Failed/Unconfirmed (Auto Payment)</span>
+                </label>
             </div>
 
             <!-- Orders Table -->
@@ -123,7 +127,7 @@
             if (r.error) { showToast('Failed to load orders', 'error'); return; }
             allOrders = r.data || [];
             document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
-            renderOrders(allOrders);
+            filterOrders(); // Apply default filters (which hides failed ones now)
 
             if (urlId) {
                 var found = allOrders.find(function(o) { return o.id === urlId; });
@@ -137,6 +141,7 @@
         var status = document.getElementById('statusFilter').value;
         var pay    = document.getElementById('payFilter').value;
         var sort   = document.getElementById('sortFilter').value;
+        var showFailed = document.getElementById('failedFilter').checked;
 
         var filtered = allOrders.filter(function(o) {
             var matchQ = !q || (o.id || '').toLowerCase().includes(q) ||
@@ -144,11 +149,31 @@
                          (o.customer_phone || '').toLowerCase().includes(q);
             var matchS = !status || o.status === status;
             var matchP = !pay    || o.payment_status === pay;
-            return matchQ && matchS && matchP;
+            
+            // Logic to identify failed/unconfirmed auto-payments
+            var isManual = false;
+            if (o.payment_method) {
+                var pm = o.payment_method.toLowerCase();
+                if (pm.includes('bkash') || pm.includes('nagad') || pm.includes('rocket') || pm.includes('cod') || pm.includes('cash') || pm.includes('manual')) {
+                    isManual = true;
+                }
+            }
+            
+            // It's unconfirmed/failed auto payment if NOT manual, and status is Pending/Cancelled, and not Paid
+            var isFailedOrUnconfirmedAuto = !isManual && (o.status === 'Pending' || o.status === 'Cancelled' || o.status === 'Failed') && (o.payment_status === 'Unpaid' || o.payment_status === 'Failed');
+            
+            var matchFailedShow = showFailed ? true : !isFailedOrUnconfirmedAuto;
+
+            return matchQ && matchS && matchP && matchFailedShow;
         });
 
         if (sort === 'oldest')  filtered.sort(function(a,b) { return new Date(a.created_at) - new Date(b.created_at); });
         if (sort === 'highest') filtered.sort(function(a,b) { return (b.grand_total||0) - (a.grand_total||0); });
+
+        // Update count text
+        var countText = filtered.length + ' orders';
+        if (filtered.length !== allOrders.length) countText += ' (filtered from ' + allOrders.length + ')';
+        document.getElementById('orderCountSub').textContent = countText;
 
         renderOrders(filtered);
     }
