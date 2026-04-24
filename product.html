@@ -118,9 +118,11 @@
             <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
                 <button class="btn btn-primary btn-full btn-lg" id="addToCartBtn" onclick="addToCart()"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Add to Cart</button>
                 <button class="btn btn-outline btn-full" onclick="directOrder()">⚡ Buy Now</button>
-                <button class="btn btn-whatsapp btn-full" id="waBtn" style="display:none;" onclick="orderWhatsApp()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.917 1.049 5.59 2.773 7.664L1.92 23.07a1 1 0 001.258 1.258l3.406-.853C8.401 24.938 10.15 25.5 12 25.5 18.627 25.5 24 20.127 24 13.5S18.627 2 12 2z"/></svg>
-                    Order via WhatsApp
+                <button class="btn btn-full" id="msgOrderBtn" style="display:none;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;font-weight:700;border:none;" onclick="openMsgSheet()">
+                    💬 Order by Message
+                </button>
+                <button class="btn btn-full" id="pickupBtn" style="display:none;background:linear-gradient(135deg,#FF9500,#FF6B00);color:#fff;font-weight:700;border:none;" onclick="pickupOrder()">
+                    🚶 Pickup from Store
                 </button>
             </div>
 
@@ -163,6 +165,24 @@
     </div>
 </div>
 
+<!-- Messaging Bottom Sheet -->
+<div id="msgSheet" style="display:none;position:fixed;inset:0;z-index:9999;">
+    <div onclick="closeMsgSheet()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 32px;max-height:70vh;overflow-y:auto;animation:slideUp 0.3s ease;">
+        <div style="width:40px;height:4px;background:#ddd;border-radius:99px;margin:0 auto 16px;"></div>
+        <h3 style="font-size:16px;font-weight:800;margin-bottom:4px;text-align:center;">💬 Order by Message</h3>
+        <p style="font-size:13px;color:#888;text-align:center;margin-bottom:16px;">Choose your preferred app to place order</p>
+        <div id="msgAppsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;"></div>
+    </div>
+</div>
+<style>
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.msg-app-btn { display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid #eee;border-radius:12px;background:#fff;cursor:pointer;transition:all 0.2s;text-decoration:none;color:#333; }
+.msg-app-btn:hover { border-color:#25D366;background:rgba(37,211,102,0.04);transform:translateY(-1px); }
+.msg-app-btn img { width:24px;height:24px;border-radius:6px; }
+.msg-app-btn span { font-size:13px;font-weight:600; }
+</style>
+
 <footer class="footer"><div class="footer-bottom"><span id="footerCopy">© 2025 Freelancing By Rifat</span></div></footer>
 
 <script>
@@ -197,8 +217,12 @@ document.addEventListener('DOMContentLoaded', function() {
         try { renderReviews(reviews); } catch(e) { console.error('renderReviews error:', e); }
         try { setupStarInput(); } catch(e) {}
 
-        if (settings.allow_whatsapp_order && settings.whatsapp_number) {
-            document.getElementById('waBtn').style.display = 'flex';
+        if ((settings.allow_whatsapp_order || settings.allow_msg_order) && settings.messaging_apps) {
+            document.getElementById('msgOrderBtn').style.display = 'flex';
+        }
+
+        if (settings.allow_pickup) {
+            document.getElementById('pickupBtn').style.display = 'flex';
         }
 
         document.getElementById('pageLoader').style.display = 'none';
@@ -524,6 +548,12 @@ function directOrder() {
 
 function orderWhatsApp() {
     addToCart();
+    var msg = buildOrderMsg();
+    var wanum = settings.whatsapp_number || '';
+    window.open('https://wa.me/' + wanum + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function buildOrderMsg() {
     var color = selectedColor ? selectedColor.colorName : '';
     var size  = selectedSize ? selectedSize.size : '';
     var base = product.base_price;
@@ -531,16 +561,111 @@ function orderWhatsApp() {
     var flashDiscount = product.flash_sale_price || 0;
     var price = base - flashDiscount + extra;
 
-    var msg = 'Hello! I want to order:\n\n' +
-              '🛍️ Product: ' + product.name + '\n' +
-              (color ? '🎨 Color: ' + color + '\n' : '') +
-              (size  ? '📏 Size: '  + size  + '\n' : '') +
-              '🔢 Qty: ' + currentQty + '\n' +
-              '💰 Price: ৳' + price + '\n\n' +
-              '📦 Please confirm my order.';
+    return 'Hello! I want to order:\n\n' +
+        '🛍️ Product: ' + product.name + '\n' +
+        (color ? '🎨 Color: ' + color + '\n' : '') +
+        (size  ? '📏 Size: '  + size  + '\n' : '') +
+        '🔢 Qty: ' + currentQty + '\n' +
+        '💰 Price: ৳' + price + '\n\n' +
+        '📦 Please confirm my order.';
+}
 
-    var wanum = settings.whatsapp_number || '';
-    window.open('https://wa.me/' + wanum + '?text=' + encodeURIComponent(msg), '_blank');
+// Messaging Apps URL patterns
+var MSG_URL_PATTERNS = {
+    whatsapp: 'https://wa.me/{contact}?text={msg}',
+    telegram: 'https://t.me/{contact}?text={msg}',
+    messenger: 'https://m.me/{contact}',
+    viber: 'viber://chat?number=%2B{contact}',
+    signal: 'https://signal.me/#p/{contact}',
+    imo: 'https://imo.im/{contact}',
+    line: 'https://line.me/R/ti/p/{contact}',
+    wechat: 'weixin://dl/chat?{contact}',
+    skype: 'skype:{contact}?chat',
+    discord: 'https://discord.com/users/{contact}',
+    snapchat: 'https://snapchat.com/add/{contact}',
+    instagram: 'https://ig.me/m/{contact}',
+    twitter: 'https://twitter.com/messages/compose?recipient_id={contact}',
+    tiktok: 'https://tiktok.com/@{contact}',
+    kakaotalk: 'https://open.kakao.com/o/{contact}',
+    email: 'mailto:{contact}?subject=Order%20Request&body={msg}',
+    sms: 'sms:{contact}?body={msg}'
+};
+
+var MSG_APP_ICONS = {
+    whatsapp: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/whatsapp.svg',
+    telegram: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/telegram.svg',
+    messenger: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/messenger.svg',
+    viber: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/viber.svg',
+    signal: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/signal.svg',
+    imo: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/imo.svg',
+    line: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/line.svg',
+    wechat: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/wechat.svg',
+    skype: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/skype.svg',
+    discord: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/discord.svg',
+    snapchat: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/snapchat.svg',
+    instagram: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/instagram.svg',
+    twitter: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/x.svg',
+    tiktok: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/tiktok.svg',
+    kakaotalk: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/kakaotalk.svg',
+    email: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/gmail.svg',
+    sms: 'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/imessage.svg'
+};
+
+function openMsgSheet() {
+    var variants = product.variants || [];
+    if (variants.length && !selectedColor) { alert('Please select a color'); return; }
+    if (selectedColor && selectedColor.sizes && selectedColor.sizes.length && !selectedSize) { alert('Please select a size'); return; }
+
+    addToCart();
+    var msg = buildOrderMsg();
+    var apps = settings.messaging_apps || [];
+    var enabled = apps.filter(function(a) { return a.enabled && a.contact; });
+
+    var list = document.getElementById('msgAppsList');
+    list.innerHTML = '';
+
+    if (!enabled.length) {
+        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#999;">No messaging apps configured</div>';
+    }
+
+    enabled.forEach(function(app) {
+        var pattern = MSG_URL_PATTERNS[app.key] || 'https://wa.me/{contact}?text={msg}';
+        var url = pattern.replace('{contact}', encodeURIComponent(app.contact)).replace('{msg}', encodeURIComponent(msg)).replace('{subject}', encodeURIComponent('Order: ' + product.name));
+        var icon = MSG_APP_ICONS[app.key] || '';
+        var a = document.createElement('a');
+        a.className = 'msg-app-btn';
+        a.href = url;
+        a.target = '_blank';
+        a.innerHTML = '<img src="' + icon + '" onerror="this.style.display=\'none\'"><span>' + (app.name || app.key) + '</span>';
+        list.appendChild(a);
+    });
+
+    document.getElementById('msgSheet').style.display = 'block';
+}
+
+function closeMsgSheet() {
+    document.getElementById('msgSheet').style.display = 'none';
+}
+
+function pickupOrder() {
+    var variants = product.variants || [];
+    if (variants.length && !selectedColor) { alert('Please select a color'); return; }
+    if (selectedColor && selectedColor.sizes && selectedColor.sizes.length && !selectedSize) { alert('Please select a size'); return; }
+
+    var base = product.base_price;
+    var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
+    var flashDiscount = product.flash_sale_price || 0;
+    var finalPrice = base - flashDiscount + extra;
+    var allImgs = product.gallery_images || [];
+    var img = (selectedColor && selectedColor.imageUrl) ? selectedColor.imageUrl : (allImgs.length ? allImgs[0] : '');
+    var color = selectedColor ? selectedColor.colorName : '';
+    var size  = selectedSize ? selectedSize.size : '';
+    var key   = product.id + '-' + color + '-' + size;
+
+    var cart = [{ key: key, productId: product.id, productName: product.name, price: finalPrice, color: color, size: size, quantity: currentQty, image: img }];
+    saveCart(cart);
+    updateCartBadge();
+    window.location.href = 'cart.html?pickup=1';
 }
 
 // Reviews

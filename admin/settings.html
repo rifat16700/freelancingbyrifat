@@ -21,6 +21,12 @@
         }
         .chat-id-row { display: flex; gap: 8px; margin-bottom: 8px; }
         .chat-id-row .form-input { flex: 1; }
+        .msg-app-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 8px; transition: var(--transition); }
+        .msg-app-item.enabled { border-color: rgba(52,199,89,0.4); background: rgba(52,199,89,0.04); }
+        .msg-app-icon { width: 28px; height: 28px; border-radius: 6px; object-fit: contain; flex-shrink: 0; }
+        .msg-app-name { font-weight: 600; font-size: 13px; min-width: 90px; }
+        .msg-app-input { flex: 1; }
+        .msg-app-input .form-input { padding: 8px 10px; font-size: 12.5px; }
     </style>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -166,13 +172,13 @@
                     <button class="toggle-switch" id="codToggle" type="button"></button>
                 </div>
 
-                <!-- WhatsApp order toggle -->
-                <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleWhatsapp()">
+                <!-- Messaging Apps Order Toggle (replaces old WhatsApp toggle) -->
+                <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleMsgOrder()">
                     <div>
-                        <div class="toggle-label">WhatsApp Order Button</div>
-                        <div class="toggle-desc">Product page এ WhatsApp button দেখাবে।</div>
+                        <div class="toggle-label">📱 Message দিয়ে Order Button</div>
+                        <div class="toggle-desc">Product page এ messaging apps button দেখাবে।</div>
                     </div>
-                    <button class="toggle-switch" id="waToggle" type="button"></button>
+                    <button class="toggle-switch" id="msgOrderToggle" type="button"></button>
                 </div>
 
                 <hr class="section-divider">
@@ -196,6 +202,41 @@
                 </div>
             </div>
 
+            <!-- Messaging Apps Config -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title"><i data-lucide="message-circle" class="lucide-icon"></i> Messaging Apps (Order via Message)</div>
+                <div class="form-hint" style="margin-bottom:14px;">যেসব অ্যাপ ON করবে, Product page এ সেগুলো দেখাবে। Number/Username দিতে হবে।</div>
+                <div id="msgAppsWrap"></div>
+            </div>
+
+            <!-- Pickup Order Settings -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title"><i data-lucide="footprints" class="lucide-icon"></i> 🚶 Pickup Order Settings</div>
+                <div class="toggle-wrap" style="margin-bottom:14px;" onclick="togglePickup()">
+                    <div>
+                        <div class="toggle-label">Allow Pickup from Store</div>
+                        <div class="toggle-desc">ON করলে Product page এ "Pickup from Store" button দেখাবে।</div>
+                    </div>
+                    <button class="toggle-switch" id="pickupToggle" type="button"></button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Store Address</label>
+                    <input class="form-input" id="storeAddress" placeholder="Shop #5, Mirpur 10, Dhaka">
+                    <div class="form-hint">Pickup button এ এই address দেখাবে।</div>
+                </div>
+                <hr class="section-divider">
+                <div class="settings-section-title" style="font-size:11px;border:none;color:#34C759;padding:0;margin-bottom:10px;">Pickup Telegram Bot</div>
+                <div class="form-group">
+                    <label class="form-label">Pickup Bot Token</label>
+                    <input class="form-input" id="pickupBotToken" placeholder="123456789:ABCDEF...">
+                    <div class="form-hint">Pickup অর্ডারের notification এই bot এ যাবে।</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Pickup Chat ID</label>
+                    <input class="form-input" id="pickupChatId" placeholder="-1001234567890">
+                </div>
+            </div>
+
             <!-- Save Button -->
             <button class="btn btn-primary btn-full btn-lg" onclick="saveSettings()">
                 💾 Save All Settings
@@ -210,7 +251,30 @@
     var settingsData = {};
     var mainChatIds = [];
     var codEnabled = true;
-    var waEnabled  = false;
+    var msgOrderEnabled = false;
+    var pickupEnabled = false;
+    var messagingApps = [];
+
+    // Default messaging apps list
+    var DEFAULT_APPS = [
+        {key:'whatsapp',name:'WhatsApp',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/whatsapp.svg',placeholder:'8801XXXXXXXXX',urlPattern:'https://wa.me/{contact}?text={msg}'},
+        {key:'telegram',name:'Telegram',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/telegram.svg',placeholder:'username (no @)',urlPattern:'https://t.me/{contact}?text={msg}'},
+        {key:'messenger',name:'Messenger',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/messenger.svg',placeholder:'Page username',urlPattern:'https://m.me/{contact}'},
+        {key:'viber',name:'Viber',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/viber.svg',placeholder:'8801XXXXXXXXX',urlPattern:'viber://chat?number=%2B{contact}'},
+        {key:'signal',name:'Signal',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/signal.svg',placeholder:'+8801XXXXXXXXX',urlPattern:'https://signal.me/#p/{contact}'},
+        {key:'imo',name:'IMO',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/imo.svg',placeholder:'8801XXXXXXXXX',urlPattern:'https://imo.im/{contact}'},
+        {key:'line',name:'LINE',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/line.svg',placeholder:'LINE ID',urlPattern:'https://line.me/R/ti/p/{contact}'},
+        {key:'wechat',name:'WeChat',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/wechat.svg',placeholder:'WeChat ID',urlPattern:'weixin://dl/chat?{contact}'},
+        {key:'skype',name:'Skype',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/skype.svg',placeholder:'Skype username',urlPattern:'skype:{contact}?chat'},
+        {key:'discord',name:'Discord',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/discord.svg',placeholder:'User ID',urlPattern:'https://discord.com/users/{contact}'},
+        {key:'snapchat',name:'Snapchat',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/snapchat.svg',placeholder:'Username',urlPattern:'https://snapchat.com/add/{contact}'},
+        {key:'instagram',name:'Instagram',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/instagram.svg',placeholder:'Username',urlPattern:'https://ig.me/m/{contact}'},
+        {key:'twitter',name:'Twitter / X',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/x.svg',placeholder:'Username',urlPattern:'https://twitter.com/messages/compose?recipient_id={contact}'},
+        {key:'tiktok',name:'TikTok',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/tiktok.svg',placeholder:'@username',urlPattern:'https://tiktok.com/@{contact}'},
+        {key:'kakaotalk',name:'KakaoTalk',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/kakaotalk.svg',placeholder:'Open Chat ID',urlPattern:'https://open.kakao.com/o/{contact}'},
+        {key:'email',name:'Email',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/gmail.svg',placeholder:'you@email.com',urlPattern:'mailto:{contact}?subject={subject}&body={msg}'},
+        {key:'sms',name:'SMS',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/imessage.svg',placeholder:'8801XXXXXXXXX',urlPattern:'sms:{contact}?body={msg}'}
+    ];
 
     document.addEventListener('DOMContentLoaded', function() {
         adminInit('settings');
@@ -256,11 +320,22 @@
 
             document.getElementById('advanceMethod').value = s.advance_method || 'manual';
 
-            // Toggles — default: COD ON, WhatsApp OFF
+            // Toggles
             codEnabled = s.allow_cod !== undefined ? s.allow_cod !== false : true;
-            waEnabled  = s.allow_whatsapp_order === true;
+            msgOrderEnabled = s.allow_whatsapp_order === true || s.allow_msg_order === true;
+            pickupEnabled = s.allow_pickup === true;
             updateToggle('codToggle', codEnabled);
-            updateToggle('waToggle',  waEnabled);
+            updateToggle('msgOrderToggle', msgOrderEnabled);
+            updateToggle('pickupToggle', pickupEnabled);
+
+            // Messaging Apps
+            messagingApps = s.messaging_apps || [];
+            renderMsgApps();
+
+            // Pickup
+            setVal('storeAddress', s.store_address || '');
+            setVal('pickupBotToken', s.pickup_bot_token || '');
+            setVal('pickupChatId', s.pickup_chat_id || '');
         });
     }
 
@@ -274,9 +349,14 @@
         updateToggle('codToggle', codEnabled);
     }
 
-    function toggleWhatsapp() {
-        waEnabled = !waEnabled;
-        updateToggle('waToggle', waEnabled);
+    function toggleMsgOrder() {
+        msgOrderEnabled = !msgOrderEnabled;
+        updateToggle('msgOrderToggle', msgOrderEnabled);
+    }
+
+    function togglePickup() {
+        pickupEnabled = !pickupEnabled;
+        updateToggle('pickupToggle', pickupEnabled);
     }
 
     function updateToggle(id, state) {
@@ -335,13 +415,19 @@
             gateway_proxy_url:    document.getElementById('gatewayProxyUrl').value.trim(),
             gateway_api_key:      document.getElementById('gatewayApiKey').value.trim(),
             allow_cod:            codEnabled,
-            allow_whatsapp_order: waEnabled,
+            allow_whatsapp_order: msgOrderEnabled,
+            allow_msg_order:      msgOrderEnabled,
             advance_amount:       parseInt(document.getElementById('advanceAmount').value) || 0,
             advance_method:       document.getElementById('advanceMethod').value,
             telegram_main_bot:    document.getElementById('telegramMainBot').value.trim(),
             telegram_main_chats:  collectChatIds(),
             telegram_draft_bot:   document.getElementById('telegramDraftBot').value.trim(),
             telegram_draft_chat:  document.getElementById('telegramDraftChat').value.trim(),
+            messaging_apps:       collectMsgApps(),
+            allow_pickup:         pickupEnabled,
+            store_address:        document.getElementById('storeAddress').value.trim(),
+            pickup_bot_token:     document.getElementById('pickupBotToken').value.trim(),
+            pickup_chat_id:       document.getElementById('pickupChatId').value.trim(),
             id: 1
         };
 
@@ -350,8 +436,50 @@
                 showToast('<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Save failed: ' + r.error.message, 'error');
                 return;
             }
-            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Settings saved successfully!', 'success');
+            showToast('Settings saved successfully!', 'success');
         });
+    }
+
+    // ── Messaging Apps Renderer ──────────────────────────────
+    function renderMsgApps() {
+        var wrap = document.getElementById('msgAppsWrap');
+        wrap.innerHTML = '';
+        DEFAULT_APPS.forEach(function(app) {
+            var saved = messagingApps.find(function(a) { return a.key === app.key; });
+            var enabled = saved ? saved.enabled : false;
+            var contact = saved ? (saved.contact || '') : '';
+            var div = document.createElement('div');
+            div.className = 'msg-app-item' + (enabled ? ' enabled' : '');
+            div.innerHTML =
+                '<img src="' + app.icon + '" class="msg-app-icon" onerror="this.style.display=\'none\'">' +
+                '<span class="msg-app-name">' + app.name + '</span>' +
+                '<div class="msg-app-input"><input class="form-input" placeholder="' + app.placeholder + '" value="' + contact + '" data-msgkey="' + app.key + '"></div>' +
+                '<button class="toggle-switch' + (enabled ? ' on' : '') + '" type="button" data-msgtoggle="' + app.key + '" style="flex-shrink:0;"></button>';
+            div.querySelector('[data-msgtoggle]').addEventListener('click', function(e) {
+                e.stopPropagation();
+                var btn = e.currentTarget;
+                btn.classList.toggle('on');
+                div.classList.toggle('enabled', btn.classList.contains('on'));
+            });
+            wrap.appendChild(div);
+        });
+    }
+
+    function collectMsgApps() {
+        var result = [];
+        DEFAULT_APPS.forEach(function(app) {
+            var input = document.querySelector('[data-msgkey="' + app.key + '"]');
+            var toggle = document.querySelector('[data-msgtoggle="' + app.key + '"]');
+            if (input && toggle) {
+                result.push({
+                    key: app.key,
+                    name: app.name,
+                    enabled: toggle.classList.contains('on'),
+                    contact: input.value.trim()
+                });
+            }
+        });
+        return result;
     }
     </script>
 
