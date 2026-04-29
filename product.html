@@ -383,7 +383,7 @@ function renderProduct(p) {
         }
         
         var iconStr = m.type === 'video' ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(139,26,26,0.9);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.2);"><i data-lucide="play" style="width:14px;height:14px;margin-left:2px;"></i></div>' : '';
-        return '<div style="position:relative;" class="gallery-thumb-wrap"><img src="' + thumbSrc + '" class="gallery-thumb' + (i===0?' active':'') + '" onclick="setMedia(' + i + ')" onerror="this.src=\'https://via.placeholder.com/70?text=Media\'">' + iconStr + '</div>';
+        return '<div style="position:relative;" class="gallery-thumb-wrap"><img src="' + thumbSrc + '" class="gallery-thumb' + (i===0?' active':'') + '" onclick="setMedia(' + i + ')" onerror="this.onerror=null;this.src=\'https://via.placeholder.com/70?text=Media\'">' + iconStr + '</div>';
     }).join('');
     
     document.getElementById('thumbsRow').innerHTML = thumbsHtml;
