@@ -271,7 +271,7 @@
                     '</div>' +
                 '</div>' +
                 '<div class="product-card-footer">' +
-                    '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick=\'editProduct(' + JSON.stringify(p).replace(/'/g,"\\'") + ')\'><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i> Edit</button>' +
+                    '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick="editProduct(\'' + p.id + '\')"><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i> Edit</button>' +
                     '<button class="btn btn-danger btn-sm" onclick="deleteProduct(\'' + p.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
                     '<button class="btn btn-ghost btn-sm" onclick="toggleActive(\'' + p.id + '\',' + p.is_active + ')">' + (p.is_active ? '<i data-lucide="circle-dot" class="lucide-icon icon-danger"></i> Hide' : '<i data-lucide="check-circle" class="lucide-icon icon-success"></i> Show') + '</button>' +
                 '</div>';
@@ -300,7 +300,10 @@
         document.getElementById('productModal').classList.add('show');
     }
 
-    function editProduct(p) {
+    function editProduct(id) {
+        var p = allProducts.find(function(x) { return x.id === id; });
+        if (!p) return;
+
         editingProductId = p.id;
         galleryUrls = (p.gallery_images && p.gallery_images.length) ? p.gallery_images : [''];
         variants    = p.variants ? JSON.parse(JSON.stringify(p.variants)) : [];
