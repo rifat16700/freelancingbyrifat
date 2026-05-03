@@ -30,7 +30,7 @@
             gap: 6px;
         }
         .modal-box {
-            max-width: 650px;
+            max-width: 680px;
             max-height: 90vh;
             overflow-y: auto;
         }
@@ -44,6 +44,77 @@
             display: inline-block;
             margin: 2px;
         }
+        /* Multi-select chip UI */
+        .chip-select-wrap {
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: #fff;
+            padding: 6px;
+            min-height: 44px;
+        }
+        .chip-select-wrap:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139,26,26,0.08);
+        }
+        .chip-tags-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+        .chip-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            cursor: default;
+        }
+        .chip-tag .chip-remove {
+            font-size: 14px;
+            cursor: pointer;
+            opacity: 0.7;
+            font-weight: 400;
+            line-height: 1;
+        }
+        .chip-tag .chip-remove:hover { opacity: 1; }
+        .chip-dropdown {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease;
+        }
+        .chip-dropdown.open {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .chip-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        .chip-option:hover { background: rgba(139,26,26,0.05); }
+        .chip-option.selected { background: rgba(139,26,26,0.08); color: var(--primary); font-weight: 700; }
+        .chip-search {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 13px;
+            padding: 4px 6px;
+            background: transparent;
+            font-family: inherit;
+            color: var(--text-dark);
+        }
+        .chip-search::placeholder { color: #aaa; }
     </style>
 </head>
 <body>
@@ -164,16 +235,25 @@
                     <input class="form-input" id="pMinSpend" type="number" placeholder="e.g. 500 (Delivery not counted)">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Delivery Reward Options</label>
+                    <label class="form-label">Delivery Reward Type</label>
                     <select class="form-select" id="pDelReward" onchange="toggleDelDiscountField()">
                         <option value="none">No Delivery Discount</option>
                         <option value="free">Free Delivery (Full Discount)</option>
                         <option value="amount">Fixed Delivery Discount (৳)</option>
+                        <option value="percent">Percentage Delivery Discount (%)</option>
                     </select>
                 </div>
-                <div class="form-group" id="delDiscAmountWrap" style="display:none;">
-                    <label class="form-label">Delivery Discount (৳)</label>
-                    <input class="form-input" id="pDelDiscAmount" type="number" placeholder="e.g. 60">
+            </div>
+            <div id="delDiscAmountWrap" style="display:none;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" id="delDiscLabel">Delivery Discount Amount (৳)</label>
+                        <input class="form-input" id="pDelDiscAmount" type="number" placeholder="e.g. 60">
+                    </div>
+                    <div class="form-group" id="delDiscCapWrap" style="display:none;">
+                        <label class="form-label">Max Delivery Discount Cap (৳)</label>
+                        <input class="form-input" id="pDelDiscCap" type="number" placeholder="No cap">
+                    </div>
                 </div>
             </div>
         </div>
@@ -182,28 +262,40 @@
             <div class="advanced-title"><i data-lucide="sliders" class="lucide-icon"></i> Restrictions (Optional)</div>
             <div class="form-group">
                 <label class="form-label">Applicable for Specific Products</label>
-                <select class="form-select" id="pProducts" style="min-height: 80px;" multiple></select>
-                <div class="form-hint">Ctrl/Cmd + Click to choose specific products. Keep unselected for all.</div>
+                <div class="chip-select-wrap" id="pProductsWrap" onclick="toggleDropdown('pProductsDrop')">
+                    <div class="chip-tags-area" id="pProductsTags"></div>
+                    <input class="chip-search" id="pProductsSearch" placeholder="Search & select products..." oninput="filterChipOptions('pProductsDrop', this.value)" onclick="event.stopPropagation();openDropdown('pProductsDrop')">
+                    <div class="chip-dropdown" id="pProductsDrop"></div>
+                </div>
+                <div class="form-hint">Click to select specific products. Leave empty for all products.</div>
             </div>
             <div class="form-group" style="margin-top:10px;">
                 <label class="form-label">Applicable for Specific Categories</label>
-                <select class="form-select" id="pCategories" style="min-height: 80px;" multiple></select>
-                <div class="form-hint">Ctrl/Cmd + Click to choose specific categories. Keep unselected for all.</div>
+                <div class="chip-select-wrap" id="pCategoriesWrap" onclick="toggleDropdown('pCategoriesDrop')">
+                    <div class="chip-tags-area" id="pCategoriesTags"></div>
+                    <input class="chip-search" id="pCategoriesSearch" placeholder="Search & select categories..." oninput="filterChipOptions('pCategoriesDrop', this.value)" onclick="event.stopPropagation();openDropdown('pCategoriesDrop')">
+                    <div class="chip-dropdown" id="pCategoriesDrop"></div>
+                </div>
+                <div class="form-hint">Leave empty for all categories.</div>
             </div>
             <div class="form-row" style="margin-top:10px;">
                 <div class="form-group">
-                    <label class="form-label">Allowed Districts (Comma separated)</label>
-                    <input class="form-input" id="pDistricts" placeholder="Dhaka, Chittagong, Sylhet">
+                    <label class="form-label">Allowed Districts/Locations</label>
+                    <div class="chip-select-wrap" id="pDistrictsWrap" onclick="toggleDropdown('pDistrictsDrop')">
+                        <div class="chip-tags-area" id="pDistrictsTags"></div>
+                        <input class="chip-search" id="pDistrictsSearch" placeholder="Type district name & press Enter..." onkeydown="addDistrictChip(event)" onclick="event.stopPropagation();" oninput="filterChipOptions('pDistrictsDrop', this.value)">
+                        <div class="chip-dropdown" id="pDistrictsDrop"></div>
+                    </div>
+                    <div class="form-hint">Press Enter to add a location. Leave empty for all districts.</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Allowed Payment Methods</label>
-                    <select class="form-select" id="pPayments" style="min-height: 80px;" multiple>
-                        <option value="COD">Cash on Delivery (COD)</option>
-                        <option value="Hybrid COD">Hybrid COD</option>
-                        <option value="bKash">bKash</option>
-                        <option value="Nagad">Nagad</option>
-                    </select>
-                    <div class="form-hint">Enforces only these methods at checkout.</div>
+                    <div class="chip-select-wrap" id="pPaymentsWrap" onclick="toggleDropdown('pPaymentsDrop')">
+                        <div class="chip-tags-area" id="pPaymentsTags"></div>
+                        <input class="chip-search" id="pPaymentsSearch" placeholder="Select payment methods..." oninput="filterChipOptions('pPaymentsDrop', this.value)" onclick="event.stopPropagation();openDropdown('pPaymentsDrop')">
+                        <div class="chip-dropdown" id="pPaymentsDrop"></div>
+                    </div>
+                    <div class="form-hint">Enforces only these methods at checkout. Leave empty for all.</div>
                 </div>
             </div>
         </div>
@@ -303,23 +395,152 @@ function loadData() {
     });
 }
 
+// ── Chip Multi-Select System ─────────────────────────────────
+var chipState = {};
+// chipState[key] = [{id, label}]
+
+function initChipSelect(key, options, selectedIds) {
+    chipState[key] = [];
+    var drop = document.getElementById(key + 'Drop');
+    if (!drop) return;
+    drop.innerHTML = '';
+
+    options.forEach(function(opt) {
+        var div = document.createElement('div');
+        div.className = 'chip-option' + (selectedIds.includes(opt.id) ? ' selected' : '');
+        div.dataset.id = opt.id;
+        div.dataset.label = opt.label;
+        div.textContent = opt.label;
+        div.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleChip(key, opt.id, opt.label, div);
+        });
+        drop.appendChild(div);
+        if (selectedIds.includes(opt.id)) {
+            chipState[key].push({id: opt.id, label: opt.label});
+        }
+    });
+    renderChipTags(key);
+}
+
+function initFreeChipSelect(key, selectedValues) {
+    // For free-text entries like districts
+    chipState[key] = selectedValues.map(function(v){ return {id: v, label: v}; });
+    renderChipTags(key);
+
+    // Populate BD district options
+    var bdDistricts = ['Dhaka','Faridpur','Gazipur','Gopalganj','Jamalpur','Kishoreganj','Madaripur','Manikganj','Munshiganj','Mymensingh','Narayanganj','Narsingdi','Netrokona','Rajbari','Shariatpur','Sherpur','Tangail','Bogura','Joypurhat','Naogaon','Natore','Chapai Nawabganj','Pabna','Rajshahi','Sirajganj','Dinajpur','Gaibandha','Kurigram','Lalmonirhat','Nilphamari','Panchagarh','Rangpur','Thakurgaon','Barguna','Barishal','Bhola','Jhalokati','Patuakhali','Pirojpur','Bandarban','Brahmanbaria','Chandpur','Chattogram','Cumilla','Cox\'s Bazar','Feni','Khagrachhari','Lakshmipur','Noakhali','Rangamati','Habiganj','Moulvibazar','Sunamganj','Sylhet','Bagerhat','Chuadanga','Jashore','Jhenaidah','Khulna','Kushtia','Magura','Meherpur','Narail','Satkhira'];
+    var drop = document.getElementById(key + 'Drop');
+    if (!drop) return;
+    drop.innerHTML = '';
+    bdDistricts.forEach(function(d) {
+        var alreadySelected = selectedValues.indexOf(d) > -1;
+        var div = document.createElement('div');
+        div.className = 'chip-option' + (alreadySelected ? ' selected' : '');
+        div.dataset.id = d; div.dataset.label = d;
+        div.textContent = d;
+        div.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleChip(key, d, d, div);
+        });
+        drop.appendChild(div);
+    });
+}
+
+function toggleChip(key, id, label, el) {
+    if (!chipState[key]) chipState[key] = [];
+    var idx = chipState[key].findIndex(function(c){ return c.id === id; });
+    if (idx > -1) {
+        chipState[key].splice(idx, 1);
+        if (el) el.classList.remove('selected');
+    } else {
+        chipState[key].push({id: id, label: label});
+        if (el) el.classList.add('selected');
+    }
+    renderChipTags(key);
+}
+
+function addDistrictChip(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    var val = e.target.value.trim();
+    if (!val) return;
+    var key = 'pDistricts';
+    if (!chipState[key]) chipState[key] = [];
+    if (!chipState[key].find(function(c){ return c.id === val; })) {
+        chipState[key].push({id: val, label: val});
+        renderChipTags(key);
+    }
+    e.target.value = '';
+}
+
+function removeChip(key, id) {
+    if (!chipState[key]) return;
+    chipState[key] = chipState[key].filter(function(c){ return c.id !== id; });
+    // Also deselect in dropdown
+    var opt = document.querySelector('#' + key + 'Drop [data-id="' + id + '"]');
+    if (opt) opt.classList.remove('selected');
+    renderChipTags(key);
+}
+
+function renderChipTags(key) {
+    var area = document.getElementById(key + 'Tags');
+    if (!area) return;
+    area.innerHTML = '';
+    (chipState[key] || []).forEach(function(c) {
+        var span = document.createElement('span');
+        span.className = 'chip-tag';
+        span.innerHTML = c.label + '<span class="chip-remove" onclick="event.stopPropagation();removeChip(\'' + key + '\',\'' + c.id.replace(/'/g, '') + '\')">×</span>';
+        area.appendChild(span);
+    });
+}
+
+function getChipValues(key) {
+    return (chipState[key] || []).map(function(c){ return c.id; });
+}
+
+function openDropdown(id) {
+    document.getElementById(id).classList.add('open');
+}
+function closeDropdown(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+}
+function toggleDropdown(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('open');
+}
+function filterChipOptions(dropId, q) {
+    var drop = document.getElementById(dropId);
+    if (!drop) return;
+    drop.classList.add('open');
+    Array.from(drop.querySelectorAll('.chip-option')).forEach(function(opt) {
+        opt.style.display = opt.dataset.label.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+    });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function() {
+    ['pProductsDrop','pCategoriesDrop','pDistrictsDrop','pPaymentsDrop'].forEach(closeDropdown);
+});
+
 function populateMultiSelects() {
-    var prodSelect = document.getElementById('pProducts');
-    var catSelect = document.getElementById('pCategories');
-    prodSelect.innerHTML = '';
-    catSelect.innerHTML  = '';
-
-    allProducts.forEach(function(p) {
-        var opt = document.createElement('option');
-        opt.value = p.id; opt.textContent = p.name + ' (৳' + p.base_price + ')';
-        prodSelect.appendChild(opt);
-    });
-
-    allCategories.forEach(function(c) {
-        var opt = document.createElement('option');
-        opt.value = c.id; opt.textContent = c.name;
-        catSelect.appendChild(opt);
-    });
+    // Chip system replaces old multi-selects — populate dropdown options
+    // Products
+    var prodOpts = allProducts.map(function(p){ return {id: p.id, label: p.name + ' (৳' + p.base_price + ')'}; });
+    var catOpts  = allCategories.map(function(c){ return {id: c.id, label: c.name}; });
+    var payOpts  = [
+        {id:'COD', label:'Cash on Delivery (COD)'},
+        {id:'Hybrid COD', label:'Hybrid COD'},
+        {id:'bKash', label:'bKash'},
+        {id:'Nagad', label:'Nagad'},
+        {id:'Online', label:'Online Payment'}
+    ];
+    initChipSelect('pProducts', prodOpts, []);
+    initChipSelect('pCategories', catOpts, []);
+    initChipSelect('pPayments', payOpts, []);
+    initFreeChipSelect('pDistricts', []);
 }
 
 function checkRepeatCustPromo() {
@@ -398,17 +619,22 @@ function renderPromos() {
 function openModal() {
     editingId = null; pActive = true;
     document.getElementById('promoModalTitle').textContent = 'Add Promo Code';
-    ['pCode','pDiscount','pMaxCap','pLimit','pExpiry','pMinSpend','pDelDiscAmount','pDistricts'].forEach(function(id) { 
-        document.getElementById(id).value = ''; 
+    ['pCode','pDiscount','pMaxCap','pLimit','pExpiry','pMinSpend','pDelDiscAmount','pDelDiscCap'].forEach(function(id) { 
+        var el = document.getElementById(id); if (el) el.value = ''; 
     });
     document.getElementById('pType').value = 'public';
     document.getElementById('pDiscType').value = 'flat';
     document.getElementById('pDelReward').value = 'none';
-    
-    // reset multiple select inputs
-    ['pProducts','pCategories','pPayments'].forEach(function(id) {
-        Array.from(document.getElementById(id).options).forEach(function(opt) { opt.selected = false; });
-    });
+
+    // Reset chip selects
+    var prodOpts = allProducts.map(function(p){ return {id: p.id, label: p.name + ' (৳' + p.base_price + ')'}; });
+    var catOpts  = allCategories.map(function(c){ return {id: c.id, label: c.name}; });
+    var payOpts  = [{id:'COD',label:'Cash on Delivery (COD)'},{id:'Hybrid COD',label:'Hybrid COD'},{id:'bKash',label:'bKash'},{id:'Nagad',label:'Nagad'},{id:'Online',label:'Online Payment'}];
+    initChipSelect('pProducts', prodOpts, []);
+    initChipSelect('pCategories', catOpts, []);
+    initChipSelect('pPayments', payOpts, []);
+    initFreeChipSelect('pDistricts', []);
+    ['pProductsSearch','pCategoriesSearch','pDistrictsSearch','pPaymentsSearch'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
 
     toggleDiscTypeFields();
     toggleDelDiscountField();
@@ -435,16 +661,23 @@ function editPromo(p) {
     document.getElementById('pMinSpend').value  = meta.min_spend || '';
     document.getElementById('pDelReward').value = meta.del_reward || 'none';
     document.getElementById('pDelDiscAmount').value = meta.del_disc_amount || '';
-    document.getElementById('pDistricts').value = meta.applicable_districts ? meta.applicable_districts.join(', ') : '';
+    var delCapEl = document.getElementById('pDelDiscCap');
+    if (delCapEl) delCapEl.value = meta.del_disc_cap || '';
 
-    // Multiple Selects
-    ['pProducts','pCategories','pPayments'].forEach(function(id) {
-        var sel = document.getElementById(id);
-        var vals = meta['applicable_' + id.substring(1).toLowerCase()] || [];
-        Array.from(sel.options).forEach(function(opt) {
-            opt.selected = vals.includes(opt.value);
-        });
-    });
+    // Reinit chip selects with existing selection
+    var selProds = meta.applicable_products || [];
+    var selCats  = meta.applicable_categories || [];
+    var selPays  = meta.applicable_payments || [];
+    var selDists = meta.applicable_districts || [];
+
+    var prodOpts = allProducts.map(function(p){ return {id: p.id, label: p.name + ' (৳' + p.base_price + ')'}; });
+    var catOpts  = allCategories.map(function(c){ return {id: c.id, label: c.name}; });
+    var payOpts  = [{id:'COD',label:'Cash on Delivery (COD)'},{id:'Hybrid COD',label:'Hybrid COD'},{id:'bKash',label:'bKash'},{id:'Nagad',label:'Nagad'},{id:'Online',label:'Online Payment'}];
+    initChipSelect('pProducts',   prodOpts, selProds);
+    initChipSelect('pCategories', catOpts,  selCats);
+    initChipSelect('pPayments',   payOpts,  selPays);
+    initFreeChipSelect('pDistricts', selDists);
+    ['pProductsSearch','pCategoriesSearch','pDistrictsSearch','pPaymentsSearch'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
 
     toggleDiscTypeFields();
     toggleDelDiscountField();
@@ -468,7 +701,24 @@ function toggleDiscTypeFields() {
 
 function toggleDelDiscountField() {
     var rw = document.getElementById('pDelReward').value;
-    document.getElementById('delDiscAmountWrap').style.display = rw === 'amount' ? 'block' : 'none';
+    var wrap = document.getElementById('delDiscAmountWrap');
+    var capWrap = document.getElementById('delDiscCapWrap');
+    var label = document.getElementById('delDiscLabel');
+    var input = document.getElementById('pDelDiscAmount');
+    
+    if (rw === 'amount') {
+        wrap.style.display = 'block';
+        if (label) label.textContent = 'Delivery Discount Amount (৳)';
+        if (input) input.placeholder = 'e.g. 60';
+        if (capWrap) capWrap.style.display = 'none';
+    } else if (rw === 'percent') {
+        wrap.style.display = 'block';
+        if (label) label.textContent = 'Delivery Discount (%)';
+        if (input) input.placeholder = 'e.g. 50';
+        if (capWrap) capWrap.style.display = 'block';
+    } else {
+        wrap.style.display = 'none';
+    }
 }
 
 function savePromo() {
@@ -476,11 +726,10 @@ function savePromo() {
     var val = parseFloat(document.getElementById('pDiscount').value) || 0;
     if (!rawCode || val <= 0) { showToast('Valid code and value are required', 'error'); return; }
 
-    var pProducts = Array.from(document.getElementById('pProducts').selectedOptions).map(function(o){return o.value;});
-    var pCategories = Array.from(document.getElementById('pCategories').selectedOptions).map(function(o){return o.value;});
-    var pPayments = Array.from(document.getElementById('pPayments').selectedOptions).map(function(o){return o.value;});
-    var dStr = document.getElementById('pDistricts').value.trim();
-    var pDistricts = dStr ? dStr.split(',').map(function(s){return s.trim();}) : [];
+    var pProducts   = getChipValues('pProducts');
+    var pCategories = getChipValues('pCategories');
+    var pPayments   = getChipValues('pPayments');
+    var pDistricts  = getChipValues('pDistricts');
 
     // Bundle advanced metadata inside the code column using versioned |v1| delimiter
     var meta = {
@@ -491,6 +740,7 @@ function savePromo() {
         min_spend: parseFloat(document.getElementById('pMinSpend').value) || null,
         del_reward: document.getElementById('pDelReward').value,
         del_disc_amount: parseFloat(document.getElementById('pDelDiscAmount').value) || null,
+        del_disc_cap: parseFloat(document.getElementById('pDelDiscCap') ? document.getElementById('pDelDiscCap').value : '') || null,
         applicable_products: pProducts,
         applicable_categories: pCategories,
         applicable_districts: pDistricts,

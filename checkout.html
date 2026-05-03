@@ -629,6 +629,10 @@ function applyPromo(providedCode) {
         disc += deliveryCharge;
     } else if (meta.del_reward === 'amount' && meta.del_disc_amount) {
         disc += parseFloat(meta.del_disc_amount);
+    } else if (meta.del_reward === 'percent' && meta.del_disc_amount) {
+        var delDisc = (parseFloat(meta.del_disc_amount) / 100) * deliveryCharge;
+        if (meta.del_disc_cap && delDisc > parseFloat(meta.del_disc_cap)) delDisc = parseFloat(meta.del_disc_cap);
+        disc += delDisc;
     }
 
     promoDiscount = disc;
