@@ -44,26 +44,26 @@
             display: inline-block;
             margin: 2px;
         }
-        /* Multi-select chip UI */
+        /* ── Multi-select Checkbox UI ─────────────────────────── */
         .chip-select-wrap {
             border: 1.5px solid var(--border);
             border-radius: var(--radius-sm);
             background: #fff;
-            padding: 6px 8px;
-            min-height: 44px;
-            position: relative;
-            cursor: text;
+            overflow: hidden;
         }
         .chip-select-wrap:focus-within {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(139,26,26,0.08);
         }
+        /* Selected chips row */
         .chip-tags-area {
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
-            margin-bottom: 4px;
+            padding: 6px 8px 4px;
+            min-height: 10px;
         }
+        .chip-tags-area:empty { padding: 0; }
         .chip-tag {
             display: inline-flex;
             align-items: center;
@@ -88,55 +88,72 @@
             align-items: center;
         }
         .chip-tag .chip-remove:hover { opacity: 1; }
-        .chip-dropdown {
-            position: absolute;
-            top: 100%;
-            left: -1px;
-            right: -1px;
-            background: #fff;
-            border: 1.5px solid var(--primary);
-            border-top: none;
-            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            z-index: 9999;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.2s ease;
-        }
-        .chip-dropdown.open {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .chip-option {
+        /* Search row */
+        .chip-search-row {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-radius: 0;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: background 0.12s;
-            user-select: none;
-            -webkit-user-select: none;
+            gap: 6px;
+            padding: 6px 10px;
+            border-top: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--border-light);
+            background: #fafafa;
         }
-        .chip-option:hover { background: rgba(139,26,26,0.06); }
-        .chip-option.selected { background: rgba(139,26,26,0.10); color: var(--primary); font-weight: 700; }
-        .chip-option.selected::before { content: '✓ '; font-weight: 800; }
+        .chip-search-icon { font-size: 13px; color: #aaa; flex-shrink: 0; }
         .chip-search {
-            width: 100%;
+            flex: 1;
             border: none;
             outline: none;
-            font-size: 13px;
-            padding: 3px 4px;
+            font-size: 12.5px;
             background: transparent;
             font-family: inherit;
             color: var(--text-dark);
             user-select: text;
             -webkit-user-select: text;
         }
-        .chip-search::placeholder { color: #aaa; }
+        .chip-search::placeholder { color: #bbb; }
+        /* Checkbox list */
+        .chip-list {
+            max-height: 160px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+        .chip-list::-webkit-scrollbar { width: 4px; }
+        .chip-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .chip-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 10px;
+            cursor: pointer;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--text-body);
+            transition: background 0.1s;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .chip-checkbox-item:hover { background: rgba(139,26,26,0.05); }
+        .chip-checkbox-item.selected {
+            background: rgba(139,26,26,0.07);
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .chip-checkbox-item input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .chip-no-results {
+            padding: 10px 12px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+        }
     </style>
+
 
 </head>
 <body>
@@ -284,40 +301,52 @@
             <div class="advanced-title"><i data-lucide="sliders" class="lucide-icon"></i> Restrictions (Optional)</div>
             <div class="form-group">
                 <label class="form-label">Applicable for Specific Products</label>
-                <div class="chip-select-wrap" id="pProductsWrap" onclick="toggleDropdown('pProductsDrop')">
+                <div class="chip-select-wrap" id="pProductsWrap">
                     <div class="chip-tags-area" id="pProductsTags"></div>
-                    <input class="chip-search" id="pProductsSearch" placeholder="Search & select products..." oninput="filterChipOptions('pProductsDrop', this.value)" onclick="event.stopPropagation();openDropdown('pProductsDrop')">
-                    <div class="chip-dropdown" id="pProductsDrop"></div>
+                    <div class="chip-search-row">
+                        <span class="chip-search-icon">🔍</span>
+                        <input class="chip-search" id="pProductsSearch" placeholder="Search products..." oninput="filterChipOptions('pProductsList', this.value)">
+                    </div>
+                    <div class="chip-list" id="pProductsList"></div>
                 </div>
-                <div class="form-hint">Click to select specific products. Leave empty for all products.</div>
+                <div class="form-hint">Check products this coupon applies to. Leave empty for all.</div>
             </div>
             <div class="form-group" style="margin-top:10px;">
                 <label class="form-label">Applicable for Specific Categories</label>
-                <div class="chip-select-wrap" id="pCategoriesWrap" onclick="toggleDropdown('pCategoriesDrop')">
+                <div class="chip-select-wrap" id="pCategoriesWrap">
                     <div class="chip-tags-area" id="pCategoriesTags"></div>
-                    <input class="chip-search" id="pCategoriesSearch" placeholder="Search & select categories..." oninput="filterChipOptions('pCategoriesDrop', this.value)" onclick="event.stopPropagation();openDropdown('pCategoriesDrop')">
-                    <div class="chip-dropdown" id="pCategoriesDrop"></div>
+                    <div class="chip-search-row">
+                        <span class="chip-search-icon">🔍</span>
+                        <input class="chip-search" id="pCategoriesSearch" placeholder="Search categories..." oninput="filterChipOptions('pCategoriesList', this.value)">
+                    </div>
+                    <div class="chip-list" id="pCategoriesList"></div>
                 </div>
                 <div class="form-hint">Leave empty for all categories.</div>
             </div>
             <div class="form-row" style="margin-top:10px;">
                 <div class="form-group">
                     <label class="form-label">Allowed Districts/Locations</label>
-                    <div class="chip-select-wrap" id="pDistrictsWrap" onclick="toggleDropdown('pDistrictsDrop')">
+                    <div class="chip-select-wrap" id="pDistrictsWrap">
                         <div class="chip-tags-area" id="pDistrictsTags"></div>
-                        <input class="chip-search" id="pDistrictsSearch" placeholder="Type district name & press Enter..." onkeydown="addDistrictChip(event)" onclick="event.stopPropagation();" oninput="filterChipOptions('pDistrictsDrop', this.value)">
-                        <div class="chip-dropdown" id="pDistrictsDrop"></div>
+                        <div class="chip-search-row">
+                            <span class="chip-search-icon">🔍</span>
+                            <input class="chip-search" id="pDistrictsSearch" placeholder="Search or type district name..." oninput="filterChipOptions('pDistrictsList', this.value)" onkeydown="addDistrictChip(event)">
+                        </div>
+                        <div class="chip-list" id="pDistrictsList"></div>
                     </div>
-                    <div class="form-hint">Press Enter to add a location. Leave empty for all districts.</div>
+                    <div class="form-hint">Check or press Enter to add custom. Leave empty for all.</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Allowed Payment Methods</label>
-                    <div class="chip-select-wrap" id="pPaymentsWrap" onclick="toggleDropdown('pPaymentsDrop')">
+                    <div class="chip-select-wrap" id="pPaymentsWrap">
                         <div class="chip-tags-area" id="pPaymentsTags"></div>
-                        <input class="chip-search" id="pPaymentsSearch" placeholder="Select payment methods..." oninput="filterChipOptions('pPaymentsDrop', this.value)" onclick="event.stopPropagation();openDropdown('pPaymentsDrop')">
-                        <div class="chip-dropdown" id="pPaymentsDrop"></div>
+                        <div class="chip-search-row">
+                            <span class="chip-search-icon">🔍</span>
+                            <input class="chip-search" id="pPaymentsSearch" placeholder="Search methods..." oninput="filterChipOptions('pPaymentsList', this.value)">
+                        </div>
+                        <div class="chip-list" id="pPaymentsList"></div>
                     </div>
-                    <div class="form-hint">Enforces only these methods at checkout. Leave empty for all.</div>
+                    <div class="form-hint">Enforces only these at checkout. Leave empty for all.</div>
                 </div>
             </div>
         </div>
@@ -414,25 +443,40 @@ function loadData() {
     });
 }
 
-// ── Chip Multi-Select System ──────────────────────────────────
+// ── Checkbox Multi-Select System ──────────────────────────────
 function initChipSelect(key, options, selectedIds) {
     chipState[key] = [];
-    var drop = document.getElementById(key + 'Drop');
-    if (!drop) return;
-    drop.innerHTML = '';
+    var list = document.getElementById(key + 'List');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!options.length) {
+        list.innerHTML = '<div class="chip-no-results">No items available</div>';
+        return;
+    }
+
     options.forEach(function(opt) {
-        var isSelected = selectedIds.indexOf(opt.id) > -1;
-        var div = document.createElement('div');
-        div.className = 'chip-option' + (isSelected ? ' selected' : '');
-        div.dataset.id    = opt.id;
-        div.dataset.label = opt.label;
-        div.textContent   = opt.label;
-        div.addEventListener('mousedown', function(e) {
-            e.preventDefault(); e.stopPropagation();
-            toggleChip(key, opt.id, opt.label, div);
+        var isSel = selectedIds.indexOf(opt.id) > -1;
+        var label = document.createElement('label');
+        label.className = 'chip-checkbox-item' + (isSel ? ' selected' : '');
+        label.dataset.id    = opt.id;
+        label.dataset.label = opt.label;
+
+        var cb = document.createElement('input');
+        cb.type    = 'checkbox';
+        cb.checked = isSel;
+        cb.addEventListener('change', function() {
+            toggleChip(key, opt.id, opt.label, label, cb);
         });
-        drop.appendChild(div);
-        if (isSelected) chipState[key].push({id: opt.id, label: opt.label});
+
+        var txt = document.createElement('span');
+        txt.textContent = opt.label;
+
+        label.appendChild(cb);
+        label.appendChild(txt);
+        list.appendChild(label);
+
+        if (isSel) chipState[key].push({id: opt.id, label: opt.label});
     });
     renderChipTags(key);
 }
@@ -440,32 +484,45 @@ function initChipSelect(key, options, selectedIds) {
 function initFreeChipSelect(key, selectedValues) {
     chipState[key] = selectedValues.map(function(v){ return {id:v, label:v}; });
     var bdDistricts = ['Dhaka','Faridpur','Gazipur','Gopalganj','Jamalpur','Kishoreganj','Madaripur','Manikganj','Munshiganj','Mymensingh','Narayanganj','Narsingdi','Netrokona','Rajbari','Shariatpur','Sherpur','Tangail','Bogura','Joypurhat','Naogaon','Natore','Chapai Nawabganj','Pabna','Rajshahi','Sirajganj','Dinajpur','Gaibandha','Kurigram','Lalmonirhat','Nilphamari','Panchagarh','Rangpur','Thakurgaon','Barguna','Barishal','Bhola','Jhalokati','Patuakhali','Pirojpur','Bandarban','Brahmanbaria','Chandpur','Chattogram','Cumilla',"Cox's Bazar",'Feni','Khagrachhari','Lakshmipur','Noakhali','Rangamati','Habiganj','Moulvibazar','Sunamganj','Sylhet','Bagerhat','Chuadanga','Jashore','Jhenaidah','Khulna','Kushtia','Magura','Meherpur','Narail','Satkhira'];
-    var drop = document.getElementById(key + 'Drop');
-    if (!drop) return;
-    drop.innerHTML = '';
+    var list = document.getElementById(key + 'List');
+    if (!list) return;
+    list.innerHTML = '';
+
     bdDistricts.forEach(function(d) {
         var isSel = selectedValues.indexOf(d) > -1;
-        var div = document.createElement('div');
-        div.className = 'chip-option' + (isSel ? ' selected' : '');
-        div.dataset.id = d; div.dataset.label = d; div.textContent = d;
-        div.addEventListener('mousedown', function(e) {
-            e.preventDefault(); e.stopPropagation();
-            toggleChip(key, d, d, div);
+        var label = document.createElement('label');
+        label.className = 'chip-checkbox-item' + (isSel ? ' selected' : '');
+        label.dataset.id    = d;
+        label.dataset.label = d;
+
+        var cb = document.createElement('input');
+        cb.type    = 'checkbox';
+        cb.checked = isSel;
+        cb.addEventListener('change', function() {
+            toggleChip(key, d, d, label, cb);
         });
-        drop.appendChild(div);
+
+        var txt = document.createElement('span');
+        txt.textContent = d;
+
+        label.appendChild(cb);
+        label.appendChild(txt);
+        list.appendChild(label);
     });
     renderChipTags(key);
 }
 
-function toggleChip(key, id, label, el) {
+function toggleChip(key, id, label, el, cb) {
     if (!chipState[key]) chipState[key] = [];
     var idx = chipState[key].findIndex(function(c){ return c.id === id; });
     if (idx > -1) {
         chipState[key].splice(idx, 1);
         if (el) el.classList.remove('selected');
+        if (cb) cb.checked = false;
     } else {
         chipState[key].push({id: id, label: label});
         if (el) el.classList.add('selected');
+        if (cb) cb.checked = true;
     }
     renderChipTags(key);
 }
@@ -478,17 +535,39 @@ function addDistrictChip(e) {
     var key = 'pDistricts';
     if (!chipState[key]) chipState[key] = [];
     if (!chipState[key].find(function(c){ return c.id.toLowerCase() === val.toLowerCase(); })) {
+        // Add to list as a checkbox item dynamically
+        var list = document.getElementById(key + 'List');
+        if (list) {
+            var label = document.createElement('label');
+            label.className = 'chip-checkbox-item selected';
+            label.dataset.id = val; label.dataset.label = val;
+            var cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.checked = true;
+            cb.addEventListener('change', function() { toggleChip(key, val, val, label, cb); });
+            var txt = document.createElement('span'); txt.textContent = val;
+            label.appendChild(cb); label.appendChild(txt);
+            list.insertBefore(label, list.firstChild); // add to top
+        }
         chipState[key].push({id: val, label: val});
         renderChipTags(key);
     }
     e.target.value = '';
+    filterChipOptions(key + 'List', ''); // reset filter
 }
 
 function removeChip(key, id) {
     if (!chipState[key]) return;
     chipState[key] = chipState[key].filter(function(c){ return c.id !== id; });
-    var opt = document.querySelector('#' + key + 'Drop [data-id="' + CSS.escape(id) + '"]');
-    if (opt) opt.classList.remove('selected');
+    // Sync checkbox
+    var list = document.getElementById(key + 'List');
+    if (list) {
+        var item = list.querySelector('[data-id="' + CSS.escape(id) + '"]');
+        if (item) {
+            item.classList.remove('selected');
+            var cb = item.querySelector('input[type="checkbox"]');
+            if (cb) cb.checked = false;
+        }
+    }
     renderChipTags(key);
 }
 
@@ -499,16 +578,16 @@ function renderChipTags(key) {
     (chipState[key] || []).forEach(function(c) {
         var span = document.createElement('span');
         span.className = 'chip-tag';
-        var label = document.createElement('span');
-        label.textContent = c.label;
+        var lbl = document.createElement('span');
+        lbl.textContent = c.label;
         var rm = document.createElement('span');
         rm.className = 'chip-remove';
         rm.textContent = '×';
-        rm.addEventListener('mousedown', function(e) {
+        rm.addEventListener('click', function(e) {
             e.preventDefault(); e.stopPropagation();
             removeChip(key, c.id);
         });
-        span.appendChild(label);
+        span.appendChild(lbl);
         span.appendChild(rm);
         area.appendChild(span);
     });
@@ -518,24 +597,25 @@ function getChipValues(key) {
     return (chipState[key] || []).map(function(c){ return c.id; });
 }
 
-function openDropdown(id) {
-    document.getElementById(id) && document.getElementById(id).classList.add('open');
-}
-function closeAllDropdowns() {
-    ['pProductsDrop','pCategoriesDrop','pDistrictsDrop','pPaymentsDrop'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.classList.remove('open');
+function filterChipOptions(listId, q) {
+    var list = document.getElementById(listId);
+    if (!list) return;
+    var noRes = list.querySelector('.chip-no-results');
+    var items = Array.from(list.querySelectorAll('.chip-checkbox-item'));
+    var visible = 0;
+    items.forEach(function(item) {
+        var match = !q || item.dataset.label.toLowerCase().includes(q.toLowerCase());
+        item.style.display = match ? '' : 'none';
+        if (match) visible++;
     });
+    if (noRes) { noRes.style.display = visible ? 'none' : ''; }
+    else if (!visible && items.length) {
+        var nr = document.createElement('div');
+        nr.className = 'chip-no-results';
+        nr.textContent = 'No results for "' + q + '"';
+        list.appendChild(nr);
+    }
 }
-function filterChipOptions(dropId, q) {
-    var drop = document.getElementById(dropId);
-    if (!drop) return;
-    drop.classList.add('open');
-    Array.from(drop.querySelectorAll('.chip-option')).forEach(function(opt) {
-        opt.style.display = opt.dataset.label.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
-    });
-}
-document.addEventListener('click', closeAllDropdowns);
 
 function populateMultiSelects() {
     var prodOpts = allProducts.map(function(p){ return {id: p.id, label: p.name + ' (৳' + p.base_price + ')'}; });
@@ -546,6 +626,24 @@ function populateMultiSelects() {
     initChipSelect('pPayments', payOpts, []);
     initFreeChipSelect('pDistricts', []);
 }
+
+function resetChipSelects(selProds, selCats, selPays, selDists) {
+    selProds  = selProds  || [];
+    selCats   = selCats   || [];
+    selPays   = selPays   || [];
+    selDists  = selDists  || [];
+    var prodOpts = allProducts.map(function(p){ return {id: p.id, label: p.name + ' (৳' + p.base_price + ')'}; });
+    var catOpts  = allCategories.map(function(c){ return {id: c.id, label: c.name}; });
+    var payOpts  = [{id:'COD',label:'Cash on Delivery'},{id:'Hybrid COD',label:'Hybrid COD'},{id:'bKash',label:'bKash'},{id:'Nagad',label:'Nagad'},{id:'Online',label:'Online Gateway'}];
+    initChipSelect('pProducts', prodOpts, selProds);
+    initChipSelect('pCategories', catOpts, selCats);
+    initChipSelect('pPayments', payOpts, selPays);
+    initFreeChipSelect('pDistricts', selDists);
+    ['pProductsSearch','pCategoriesSearch','pDistrictsSearch','pPaymentsSearch'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.value = '';
+    });
+}
+
 
 function checkRepeatCustPromo() {
     var repRow = allPromos.find(function(p) { return p.is_repeated_config || (p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG')); });
