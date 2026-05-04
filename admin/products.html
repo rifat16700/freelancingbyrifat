@@ -211,10 +211,20 @@
     }
 
     function loadProducts() {
-        sb.from('products').select('*').order('created_at', { ascending: false }).then(function(r) {
+        Promise.all([
+            sb.from('products').select('*').order('created_at', { ascending: false }),
+            sb.from('product_categories').select('*')
+        ]).then(function(results) {
             document.getElementById('pageLoader').style.display = 'none';
             document.getElementById('adminMain').style.display  = 'flex';
-            allProducts = r.data || [];
+            allProducts = results[0].data || [];
+            var pc = results[1].data || [];
+            
+            allProducts.forEach(function(p) {
+                p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
+                if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+            });
+            
             document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
             renderProducts(allProducts);
         });
@@ -227,7 +237,7 @@
 
         var filtered = allProducts.filter(function(p) {
             return (!q   || (p.name || '').toLowerCase().includes(q)) &&
-                   (!cat || p.category_id === cat) &&
+                   (!cat || (p.category_ids && p.category_ids.includes(cat))) &&
                    (!act || (act === 'active' ? p.is_active : !p.is_active));
         });
         renderProducts(filtered);

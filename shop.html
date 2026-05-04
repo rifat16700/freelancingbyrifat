@@ -122,11 +122,18 @@ document.addEventListener('DOMContentLoaded', function() {
     var p1 = sb.from('settings').select('store_name').eq('id',1).single();
     var p2 = sb.from('categories').select('*').eq('is_active',true).order('sort_order');
     var p3 = sb.from('products').select('*').eq('is_active',true).order('created_at',{ascending:false});
+    var p4 = sb.from('product_categories').select('*');
 
-    Promise.all([p1, p2, p3]).then(function(results) {
+    Promise.all([p1, p2, p3, p4]).then(function(results) {
         var settings = results[0].data || {};
         allCategories = results[1].data || [];
         allProducts   = results[2].data || [];
+        var pc = results[3].data || [];
+
+        allProducts.forEach(function(p) {
+            p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
+            if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+        });
 
         var name = settings.store_name || CONFIG.STORE_NAME;
         document.getElementById('navBrand').textContent = name;
@@ -178,7 +185,7 @@ function applyFilters() {
     var filtered = allProducts.filter(function(p) {
         var price = p.flash_sale_price > 0 ? p.base_price - p.flash_sale_price : p.base_price;
         return (!q          || (p.name||'').toLowerCase().includes(q)) &&
-               (!activeCatId || p.category_id === activeCatId) &&
+               (!activeCatId || (p.category_ids && p.category_ids.includes(activeCatId))) &&
                (price >= min && price <= max) &&
                (!onSale     || p.flash_sale_price > 0);
     });

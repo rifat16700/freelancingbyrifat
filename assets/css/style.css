@@ -168,7 +168,7 @@ input, select, textarea { font-family: inherit; }
 .hamburger { display: none; }
 
 /* ── Container ──────────────────────────────────────────────── */
-.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
 /* ── Section ────────────────────────────────────────────────── */
 .section       { padding: 32px 0; }
