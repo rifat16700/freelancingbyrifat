@@ -180,6 +180,16 @@ document.addEventListener('DOMContentLoaded', function() {
         allProducts.forEach(function(p) {
             p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
             if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+
+            var match = (p.description || '').match(/<!--cats:(.+?)-->/);
+            if (match) {
+                try {
+                    var extraCats = JSON.parse(match[1]);
+                    extraCats.forEach(function(cid) {
+                        if (!p.category_ids.includes(cid)) p.category_ids.push(cid);
+                    });
+                } catch(e) {}
+            }
         });
 
         var name = settings.store_name || CONFIG.STORE_NAME;

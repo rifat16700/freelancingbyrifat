@@ -223,6 +223,16 @@
             allProducts.forEach(function(p) {
                 p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
                 if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+
+                var match = (p.description || '').match(/<!--cats:(.+?)-->/);
+                if (match) {
+                    try {
+                        var extraCats = JSON.parse(match[1]);
+                        extraCats.forEach(function(cid) {
+                            if (!p.category_ids.includes(cid)) p.category_ids.push(cid);
+                        });
+                    } catch(e) {}
+                }
             });
             
             document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
@@ -320,7 +330,9 @@
 
         document.getElementById('productModalTitle').textContent = 'Edit Product';
         document.getElementById('pName').value       = p.name || '';
-        document.getElementById('pDesc').value       = p.description || '';
+        var desc = p.description || '';
+        var cleanDesc = desc.replace(/<!--cats:(.+?)-->/, '').trim();
+        document.getElementById('pDesc').value       = cleanDesc;
         document.getElementById('pBasePrice').value  = p.base_price || '';
         document.getElementById('pFlashPrice').value = p.flash_sale_price || '';
         document.getElementById('pFlashEnd').value   = p.flash_sale_end ? p.flash_sale_end.substring(0,16) : '';
@@ -331,6 +343,17 @@
         sb.from('product_categories').select('category_id').eq('product_id', p.id).then(function(catRes) {
             var selectedIds = (catRes.data || []).map(function(c) { return c.category_id; });
             if (p.category_id && !selectedIds.includes(p.category_id)) selectedIds.push(p.category_id);
+
+            var match = (p.description || '').match(/<!--cats:(.+?)-->/);
+            if (match) {
+                try {
+                    var extraCats = JSON.parse(match[1]);
+                    extraCats.forEach(function(cid) {
+                        if (!selectedIds.includes(cid)) selectedIds.push(cid);
+                    });
+                } catch(e) {}
+            }
+
             document.querySelectorAll('input[name="pCat"]').forEach(function(cb) {
                 cb.checked = selectedIds.includes(cb.value);
             });
@@ -623,9 +646,14 @@
             selectedCats.push(cb.value);
         });
 
+        var rawDesc = document.getElementById('pDesc').value.trim();
+        if (selectedCats.length) {
+            rawDesc += '\n<!--cats:' + JSON.stringify(selectedCats) + '-->';
+        }
+
         var payload = {
             name:             name,
-            description:      document.getElementById('pDesc').value.trim(),
+            description:      rawDesc,
             base_price:       parseInt(document.getElementById('pBasePrice').value) || 0,
             flash_sale_price: parseInt(document.getElementById('pFlashPrice').value) || 0,
             flash_sale_end:   document.getElementById('pFlashEnd').value || null,
