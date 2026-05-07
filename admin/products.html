@@ -294,7 +294,8 @@
         var act = document.getElementById('activeFilter').value;
 
         var filtered = allProducts.filter(function(p) {
-            return (!q   || (p.name || '').toLowerCase().includes(q)) &&
+            var nameMatch = (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
+            return (!q   || nameMatch) &&
                    (!cat || (p.category_ids && p.category_ids.includes(cat))) &&
                    (!act || (act === 'active' ? p.is_active : !p.is_active));
         });

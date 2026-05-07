@@ -233,7 +233,8 @@ function applyFilters() {
 
     var filtered = allProducts.filter(function(p) {
         var price = p.flash_sale_price > 0 ? p.base_price - p.flash_sale_price : p.base_price;
-        return (!q          || (p.name||'').toLowerCase().includes(q)) &&
+        var nameMatch = (p.name||'').toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q);
+        return (!q          || nameMatch) &&
                (!activeCatId || (p.category_ids && p.category_ids.includes(activeCatId))) &&
                (price >= min && price <= max) &&
                (!onSale     || p.flash_sale_price > 0);

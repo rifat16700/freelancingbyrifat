@@ -400,7 +400,9 @@ function isNewProduct(created) {
 function liveSearch() {
     var q = document.getElementById('searchInput').value.trim().toLowerCase();
     if (!q) { renderProducts(allProducts); return; }
-    var results = allProducts.filter(function(p) { return (p.name||'').toLowerCase().includes(q); });
+    var results = allProducts.filter(function(p) { 
+        return (p.name||'').toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q); 
+    });
     renderProducts(results);
     document.getElementById('productsTitle').innerHTML = '<i data-lucide="search" class="lucide-icon"></i> Search: "' + document.getElementById('searchInput').value + '"';
     if (typeof lucide !== 'undefined') lucide.createIcons();
