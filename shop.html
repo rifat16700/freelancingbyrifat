@@ -82,10 +82,10 @@
                 <div style="font-size:14px;font-weight:600;color:#888;" id="resultCount">Loading products...</div>
                 <!-- Mobile filters -->
                 <div style="margin-left:auto;display:flex;gap:8px;">
-                    <select class="form-select" id="sortByMobile" onchange="document.getElementById('sortBy').value=this.value;applyFilters();" style="font-size:13px;display:none;">
                     <button class="btn btn-ghost" id="mobileFilterBtn" onclick="openMobileFilters()" style="display:none;padding:8px 12px;">
                         <i data-lucide="filter" class="lucide-icon"></i> Filter
                     </button>
+                    <select class="form-select" id="sortByMobile" onchange="document.getElementById('sortBy').value=this.value;applyFilters();" style="font-size:13px;display:none;">
                         <option value="newest">Newest</option>
                         <option value="price_low">Price ↑</option>
                         <option value="price_high">Price ↓</option>
