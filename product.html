@@ -220,7 +220,7 @@ var product = null, settings = {}, selectedColor = null, selectedSize = null, cu
 document.addEventListener('DOMContentLoaded', function() {
     updateCartBadge();
     var id = new URLSearchParams(window.location.search).get('id');
-    if (!id) { window.location.href = 'shop.html'; return; }
+    if (!id) { window.location.href = '404.html'; return; }
 
     var p1 = sb.from('settings').select('*').eq('id',1).single();
     var p2 = sb.from('products').select('*').eq('id', id).single();
@@ -232,9 +232,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var reviews = results[2].data || [];
 
         if (!product) {
-            // Product not found or error — go back to shop
+            // Product not found or error — go to 404
             document.getElementById('pageLoader').style.display = 'none';
-            window.location.href = 'shop.html';
+            window.location.href = '404.html';
             return;
         }
 

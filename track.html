@@ -80,8 +80,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-var STATUS_STEPS = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
-var STATUS_ICONS = { Pending: '<i data-lucide="hourglass" class="lucide-icon icon-spin icon-warning"></i>', Confirmed: '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i>', Processing: '🔄', Shipped: '<i data-lucide="truck" class="lucide-icon icon-bounce"></i>', Delivered: '🎉', Cancelled: '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i>' };
+var BASE_STEPS = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
+var PICKUP_STEPS = ['Pending', 'Confirmed', 'Processing', 'Ready to Pickup', 'Picked Up'];
+var STATUS_ICONS = { 
+    Pending: '<i data-lucide="hourglass" class="lucide-icon icon-spin icon-warning"></i>', 
+    Confirmed: '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i>', 
+    Processing: '🔄', 
+    Shipped: '<i data-lucide="truck" class="lucide-icon icon-bounce"></i>', 
+    Delivered: '🎉', 
+    'Ready to Pickup': '<i data-lucide="store" class="lucide-icon icon-bounce"></i>',
+    'Picked Up': '🎉',
+    Cancelled: '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i>' 
+};
 
 function trackOrder() {
     var orderId = document.getElementById('trackOrderId').value.trim().toUpperCase();
@@ -113,7 +123,9 @@ function renderTrackResult(order) {
     document.getElementById('trackForm').style.display   = 'none';
     document.getElementById('trackResult').style.display = 'block';
 
-    var currentStep = STATUS_STEPS.indexOf(order.status);
+    var isPickup = order.delivery_type === 'pickup';
+    var stepsArr = isPickup ? PICKUP_STEPS : BASE_STEPS;
+    var currentStep = BASE_STEPS.indexOf(order.status);
     var isCancelled = order.status === 'Cancelled';
 
     var timelineHtml = '';
@@ -123,17 +135,17 @@ function renderTrackResult(order) {
             '<div class="timeline-content"><div class="timeline-title" style="color:#EF4444;">Order Cancelled</div><div class="timeline-sub">This order was cancelled.</div></div>' +
         '</div>';
     } else {
-        timelineHtml = STATUS_STEPS.map(function(status, i) {
+        timelineHtml = stepsArr.map(function(displayStatus, i) {
             var cls = i < currentStep ? 'done' : i === currentStep ? 'current' : '';
-            var icon = i < currentStep ? '✓' : STATUS_ICONS[status] || '○';
+            var icon = i < currentStep ? '✓' : STATUS_ICONS[displayStatus] || '○';
             var subText = '';
-            if (status === 'Shipped' && order.courier_name) {
-                subText = 'Via ' + order.courier_name + (order.tracking_number ? ' | Tracking: ' + order.tracking_number : '');
+            if (i === 3 && order.courier_name) { // Shipped or Ready to Pickup
+                subText = (isPickup ? 'At ' : 'Via ') + order.courier_name + (order.tracking_number ? ' | Tracking: ' + order.tracking_number : '');
             }
             return '<div class="timeline-item ' + cls + '">' +
                 '<div class="timeline-dot">' + icon + '</div>' +
                 '<div class="timeline-content">' +
-                    '<div class="timeline-title">' + status + '</div>' +
+                    '<div class="timeline-title">' + displayStatus + '</div>' +
                     (subText ? '<div class="timeline-sub">' + subText + '</div>' : '') +
                     (i === currentStep ? '<div class="timeline-sub" style="color:var(--primary);">Current Status</div>' : '') +
                 '</div>' +
@@ -143,7 +155,11 @@ function renderTrackResult(order) {
 
     var trackUrlHtml = '';
     if (order.tracking_url) {
-        trackUrlHtml = '<a href="' + order.tracking_url + '" target="_blank" class="btn btn-primary btn-full" style="margin-top:14px;">🔗 Track on Courier Website</a>';
+        var tUrl = order.tracking_url.trim();
+        if (!tUrl.match(/^https?:\/\//i)) {
+            tUrl = 'https://' + tUrl;
+        }
+        trackUrlHtml = '<a href="' + tUrl + '" target="_blank" class="btn btn-primary btn-full" style="margin-top:14px;">🔗 Track on Courier Website</a>';
     }
 
     var payInfo = '';
