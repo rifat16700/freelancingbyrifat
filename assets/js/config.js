@@ -8,8 +8,8 @@ var CONFIG = {
 
     // ── Supabase ─────────────────────────────────────────────
     // Supabase Dashboard → Settings → API এ পাবে
-    SUPABASE_URL: 'https://qdkppbwjgkkxzgzgsykv.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk',
+    SUPABASE_URL: 'https://crpaivhkzvjxoftnkoxr.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNycGFpdmhrenZqeG9mdG5rb3hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzODgyMDcsImV4cCI6MjA5MDk2NDIwN30.HESyhIf9L-5HoKFHLmbmX_drTsgcllPmNu9EM8oJt5w',
 
     // ── Payment Gateway Proxy ────────────────────────────────
     // mypay.freelancingbyrifat.top — PHP cPanel proxy (active)
