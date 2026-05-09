@@ -8,6 +8,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/supabase-init.js"></script>
     <style>
@@ -249,6 +250,97 @@
         .login-btn:active:not(:disabled) { transform: translateY(0); }
         .login-btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
+        /* ── Divider ── */
+        .or-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            color: var(--text-light);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .or-divider::before,
+        .or-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(128,0,0,0.12);
+        }
+
+        /* ── Web3 Button ── */
+        .web3-btn {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-size: 200% 200%;
+            background-position: left center;
+            border: 1.5px solid rgba(255, 153, 0, 0.35);
+            border-radius: 50px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 6px 22px rgba(255,153,0,0.15), 0 2px 8px rgba(0,0,0,0.20);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .web3-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,153,0,0.08) 0%, transparent 60%);
+            border-radius: inherit;
+        }
+        .web3-btn:hover:not(:disabled) {
+            background-position: right center;
+            transform: translateY(-2px);
+            border-color: rgba(255,153,0,0.65);
+            box-shadow: 0 10px 30px rgba(255,153,0,0.25), 0 4px 12px rgba(0,0,0,0.25);
+        }
+        .web3-btn:active:not(:disabled) { transform: translateY(0); }
+        .web3-btn:disabled { opacity: 0.60; cursor: not-allowed; }
+
+        .metamask-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        /* Wallet address pill */
+        .wallet-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,153,0,0.10);
+            border: 1px solid rgba(255,153,0,0.30);
+            border-radius: 50px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #cc7700;
+            margin-top: 8px;
+        }
+        .wallet-dot {
+            width: 7px; height: 7px;
+            background: #FF9900;
+            border-radius: 50%;
+            animation: walletPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes walletPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
         /* spinning loader */
         .spinner {
             width: 20px; height: 20px;
@@ -355,7 +447,37 @@
                 </svg>
                 <span style="font-size: 15px; font-weight: 600; letter-spacing: 0.2px;">Sign in with Google</span>
             </button>
-            <p style="margin-top: 24px; font-size: 13px; color: var(--text-light); text-align: center;">Secure Admin Authentication</p>
+
+            <!-- Divider -->
+            <div class="or-divider">or</div>
+
+            <!-- Web3 / MetaMask Login Button -->
+            <button type="button" class="web3-btn" id="web3Btn" onclick="loginWithWeb3()">
+                <!-- MetaMask Fox SVG -->
+                <svg class="metamask-icon" viewBox="0 0 318.6 318.6" xmlns="http://www.w3.org/2000/svg">
+                    <polygon fill="#E2761B" stroke="#E2761B" points="274.1,35.5 174.6,109.4 193,65.8"/>
+                    <polygon fill="#E4761B" stroke="#E4761B" points="44.4,35.5 143.1,110.1 125.6,65.8"/>
+                    <polygon fill="#E4761B" stroke="#E4761B" points="238.3,206.8 211.8,247.4 268.5,263 284.8,207.7"/>
+                    <polygon fill="#E4761B" stroke="#E4761B" points="33.9,207.7 50.1,263 106.8,247.4 80.3,206.8"/>
+                    <polygon fill="#E4761B" stroke="#E4761B" points="103.6,138.2 87.8,162.1 144.1,164.6 142.1,104.1"/>
+                    <polygon fill="#E4761B" stroke="#E4761B" points="214.9,138.2 175.9,103.4 174.6,164.6 230.8,162.1"/>
+                    <polygon fill="#E4761B" stroke="#E4761B" points="106.8,247.4 140.6,230.9 111.4,208.1"/>
+                    <polygon fill="#E4761B" stroke="#E4761B" points="177.9,230.9 211.8,247.4 207.1,208.1"/>
+                </svg>
+                <span style="font-size: 15px; font-weight: 600; letter-spacing: 0.2px;">Connect Web3 Wallet</span>
+            </button>
+
+            <!-- Wallet address display -->
+            <div id="walletPill" style="display:none; justify-content:center; margin-top:10px;">
+                <div class="wallet-pill">
+                    <div class="wallet-dot"></div>
+                    <span id="walletAddrText">0x0000...0000</span>
+                </div>
+            </div>
+
+            <p style="margin-top: 20px; font-size: 12px; color: var(--text-light); text-align: center;">
+                🔒 Secure Admin Authentication
+            </p>
         </div>
 
         <!-- Success redirect msg -->
@@ -434,6 +556,95 @@
                 btn.innerHTML = originalHTML;
             }
             // If successful, Supabase redirects the browser to Google
+        }
+
+        // ══ Web3 / MetaMask Login ─────────────────────────────────
+        async function loginWithWeb3() {
+            var btn = document.getElementById('web3Btn');
+            var originalHTML = btn.innerHTML;
+
+            // Check if MetaMask / web3 wallet is available
+            if (typeof window.ethereum === 'undefined') {
+                showToast('⚠️ MetaMask not found! Please install MetaMask extension.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="border-top-color:#FF9900;border-color:rgba(255,153,0,0.2);"></div><span>Connecting Wallet...</span>';
+
+            try {
+                // Request wallet access
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send('eth_requestAccounts', []);
+                const signer = provider.getSigner();
+                const address = await signer.getAddress();
+
+                // Show wallet address pill
+                var shortAddr = address.substring(0, 6) + '...' + address.substring(address.length - 4);
+                document.getElementById('walletAddrText').textContent = shortAddr;
+                document.getElementById('walletPill').style.display = 'flex';
+
+                btn.innerHTML = '<div class="spinner" style="border-top-color:#FF9900;border-color:rgba(255,153,0,0.2);"></div><span>Verifying Wallet...</span>';
+
+                // Sign a message to prove ownership
+                const message = 'Admin Login to Freelancing By Rifat\nTimestamp: ' + Date.now();
+                const signature = await signer.signMessage(message);
+
+                // Verify: recovered address must match
+                const recovered = ethers.utils.verifyMessage(message, signature);
+                if (recovered.toLowerCase() !== address.toLowerCase()) {
+                    showToast('❌ Signature verification failed!', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    return;
+                }
+
+                // Check if wallet is whitelisted in Supabase `admin_wallets` table
+                const { data: walletData, error: walletErr } = await sb
+                    .from('admin_wallets')
+                    .select('wallet_address, is_active')
+                    .ilike('wallet_address', address)
+                    .single();
+
+                if (walletErr || !walletData) {
+                    showToast('🚫 Wallet not authorized! Contact the administrator.', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    document.getElementById('walletPill').style.display = 'none';
+                    return;
+                }
+
+                if (!walletData.is_active) {
+                    showToast('🚫 This wallet has been deactivated!', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    return;
+                }
+
+                // ✅ Wallet verified — store in sessionStorage and redirect
+                sessionStorage.setItem('web3_admin_wallet', address);
+                sessionStorage.setItem('web3_admin_verified', 'true');
+
+                btn.innerHTML = '<span>✅ Wallet Verified!</span>';
+                showToast('✅ Wallet verified! Redirecting...', 'success');
+
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('redirectMsg').classList.add('show');
+
+                setTimeout(function() {
+                    window.location.href = 'dashboard.html';
+                }, 1200);
+
+            } catch (err) {
+                if (err.code === 4001) {
+                    showToast('❌ Connection rejected by user.', 'error');
+                } else {
+                    showToast('❌ Error: ' + (err.message || 'Unknown error'), 'error');
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+                document.getElementById('walletPill').style.display = 'none';
+            }
         }
     </script>
 

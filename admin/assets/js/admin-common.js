@@ -91,7 +91,43 @@ function adminInit(activePage, onReady) {
     document.body.insertAdjacentHTML('afterbegin', SIDEBAR_HTML);
     document.body.insertAdjacentHTML('beforeend', TOAST_HTML);
 
-    // Auth guard
+    // ── Web3 session check (MetaMask login) ──
+    var web3Verified = sessionStorage.getItem('web3_admin_verified') === 'true';
+    var web3Wallet   = sessionStorage.getItem('web3_admin_wallet') || '';
+
+    if (web3Verified && web3Wallet) {
+        // Web3 admin is logged in — set sidebar info
+        var shortAddr = web3Wallet.substring(0, 6) + '...' + web3Wallet.substring(web3Wallet.length - 4);
+        var emailEl = document.getElementById('adminUserEmail');
+        var avatarEl = document.getElementById('userAvatar');
+        if (emailEl) emailEl.textContent = '🦊 ' + shortAddr;
+        if (avatarEl) avatarEl.textContent = '⬡';
+
+        // Set active nav item
+        if (activePage) {
+            var items = document.querySelectorAll('.nav-item[data-page="' + activePage + '"]');
+            for (var i = 0; i < items.length; i++) {
+                items[i].classList.add('active');
+            }
+        }
+
+        // Load store name for sidebar
+        sb.from('settings').select('store_name').eq('id', 1).single().then(function(r) {
+            if (r.data && r.data.store_name) {
+                var el = document.getElementById('sidebarStoreName');
+                if (el) el.textContent = r.data.store_name;
+            }
+        });
+
+        adminLoadBadges();
+
+        if (typeof onReady === 'function') {
+            onReady();
+        }
+        return; // skip Supabase session check
+    }
+
+    // ── Supabase Google OAuth session check ──
     sb.auth.getSession().then(function(res) {
         var session = res.data && res.data.session;
 
@@ -166,8 +202,12 @@ function adminLoadBadges() {
 // ── Logout ───────────────────────────────────────────────────
 function adminLogout() {
     if (!confirm('লগআউট করবেন?')) return;
-    
-    // Clear supabase
+
+    // Clear Web3 session (MetaMask login)
+    sessionStorage.removeItem('web3_admin_verified');
+    sessionStorage.removeItem('web3_admin_wallet');
+
+    // Clear Supabase session (Google login)
     sb.auth.signOut().then(function() {
         window.location.href = 'index.html';
     }).catch(function(){
