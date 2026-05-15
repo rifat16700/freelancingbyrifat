@@ -1454,27 +1454,28 @@ function setVerifyStatus(msg, type) {
     el.textContent = msg;
 }
 
-// ── Crypto Payment Verification ───────────────────────────────
-// Flow: 1) Supabase double-spend check → 2) PHP proxy (if available) → 3) Backup mode fallback
+// ── Crypto Payment Verification ───────────────────────────────────────────────────
+// PRIMARY:  PHP Proxy (cPanel) → Binance API direct → Supabase NOT needed for verify
+// BACKUP:   Supabase Edge Function → Supabase server → cPanel/PHP NOT needed
+// BOTH:     Supabase verified_payments UNIQUE lock → double-spend protection
 function verifyCryptoPayment() {
     if (intlVerified) { placeCryptoOrder(); return; }
 
     var txid = (document.getElementById('cryptoTxidInput').value || '').trim();
     if (!txid) { setVerifyStatus('❌ Please enter your Transaction ID / TxHash.', 'error'); return; }
-
     if (!intlPayMode) { setVerifyStatus('❌ Please select a payment method first.', 'error'); return; }
     if (intlPayMode === 'crypto' && !intlNetworkName) { setVerifyStatus('❌ Please select a network.', 'error'); return; }
 
     var btn = document.getElementById('verifyCryptoBtn');
     btn.disabled = true;
     btn.textContent = '🔍 Verifying...';
-    setVerifyStatus('🔍 Checking transaction on blockchain...', 'loading');
+    setVerifyStatus('🔍 Checking transaction...', 'loading');
 
-    var total  = updateSummaryTotals();
-    var rate   = parseFloat(settings.usd_to_bdt_rate || 110);
-    var usdt   = parseFloat((total / rate).toFixed(2));
+    var total = updateSummaryTotals();
+    var rate  = parseFloat(settings.usd_to_bdt_rate || 110);
+    var usdt  = parseFloat((total / rate).toFixed(2));
 
-    // Step 1: Double-spend check in Supabase
+    // ── Layer 1: Quick frontend double-spend pre-check ────────
     sb.from('verified_payments').select('id').eq('transaction_id', txid).maybeSingle()
     .then(function(dupRes) {
         if (!dupRes.error && dupRes.data) {
@@ -1483,11 +1484,12 @@ function verifyCryptoPayment() {
             return;
         }
 
-        // Step 2: Try PHP proxy
+        // ── Layer 2: PHP Proxy (PRIMARY — Binance API, no Supabase needed) ──
         var proxyUrl = (settings.binance_proxy_url || CONFIG.BINANCE_PROXY_URL || '').trim();
+
         if (!proxyUrl) {
-            // No proxy configured — go straight to backup mode
-            runBackupVerification(txid, usdt, btn);
+            // No PHP proxy configured → go to Supabase Edge backup
+            runSupabaseEdgeBackup(txid, usdt, btn);
             return;
         }
 
@@ -1495,7 +1497,7 @@ function verifyCryptoPayment() {
             ? { action: 'verify-pay',     order_ref: txid, expected_amount: usdt }
             : { action: 'verify-deposit', tx_hash: txid, coin: intlCoinSymbol, expected_amount: usdt };
 
-        var timeout = new Promise(function(_, reject) {
+        var phpTimeout = new Promise(function(_, reject) {
             setTimeout(function() { reject(new Error('timeout')); }, 12000);
         });
 
@@ -1505,34 +1507,28 @@ function verifyCryptoPayment() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             }).then(function(r) { return r.json(); }),
-            timeout
+            phpTimeout
         ])
         .then(function(data) {
             if (data.success) {
-                // PHP verified ✅
-                lockAndPlaceOrder(txid, usdt, btn, false);
+                // ✅ PHP verified via Binance API
+                // Now lock in Supabase from frontend (PHP doesn't touch Supabase)
+                saveTxidAndPlace(txid, usdt, btn, false);
             } else {
-                setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction not found or invalid.'), 'error');
+                setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
                 btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             }
         })
         .catch(function() {
-            // PHP proxy unavailable → backup mode
-            runBackupVerification(txid, usdt, btn);
+            // PHP proxy unreachable → Supabase Edge Function backup
+            setVerifyStatus('⚠️ Primary system unavailable. Switching to backup...', 'loading');
+            runSupabaseEdgeBackup(txid, usdt, btn);
         });
     });
 }
 
-// Backup mode: no Binance API check — only Supabase double-spend lock
-function runBackupVerification(txid, usdt, btn) {
-    setVerifyStatus('⚠️ Auto-verification unavailable. Recording for manual review...', 'loading');
-    setTimeout(function() {
-        lockAndPlaceOrder(txid, usdt, btn, true);
-    }, 800);
-}
-
-// Save to verified_payments and place order
-function lockAndPlaceOrder(txid, usdt, btn, isBackup) {
+// ── PRIMARY path: PHP verified → save TxID lock to Supabase → place order ────
+function saveTxidAndPlace(txid, usdt, btn, isBackup) {
     var coinVal = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
     var netVal  = intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName;
     var method  = intlPayMode === 'binance_pay' ? 'binance_pay' : 'crypto';
@@ -1547,18 +1543,59 @@ function lockAndPlaceOrder(txid, usdt, btn, isBackup) {
         network:        netVal
     }]).then(function(insRes) {
         if (insRes.error && insRes.error.code === '23505') {
-            // Unique constraint — already used
             setVerifyStatus('❌ Transaction ID already recorded. Double-spend blocked.', 'error');
             btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             return;
         }
         intlVerified = true;
-        var msg = isBackup
-            ? '✅ Recorded! Your payment will be manually reviewed by admin. Placing order...'
-            : '✅ Verified on Binance! Placing order...';
-        setVerifyStatus(msg, 'success');
+        setVerifyStatus('✅ Verified on Binance! Locking payment & placing order...', 'success');
         btn.textContent = '✅ Verified — Placing Order...';
-        setTimeout(function() { placeCryptoOrder(txid, usdt, isBackup); }, 700);
+        setTimeout(function() { placeCryptoOrder(txid, usdt, false); }, 700);
+    });
+}
+
+// ── BACKUP path: Supabase Edge Function (no cPanel/PHP needed) ───────────────
+function runSupabaseEdgeBackup(txid, usdt, btn) {
+    setVerifyStatus('🔄 Connecting to backup system (Supabase)...', 'loading');
+
+    var edgeUrl  = CONFIG.SUPABASE_URL + '/functions/v1/verify-payment';
+    var anonKey  = CONFIG.SUPABASE_ANON_KEY;
+    var coinVal  = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
+    var netVal   = intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName;
+    var method   = intlPayMode === 'binance_pay' ? 'binance_pay' : 'crypto';
+
+    fetch(edgeUrl, {
+        method:  'POST',
+        headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + anonKey,
+            'apikey':         anonKey
+        },
+        body: JSON.stringify({
+            transaction_id: txid,
+            method:   method,
+            amount:   usdt,
+            currency: 'USDT',
+            coin:     coinVal,
+            network:  netVal
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            intlVerified = true;
+            setVerifyStatus('✅ Recorded via Supabase backup. Admin will verify manually. Placing order...', 'success');
+            btn.textContent = '✅ Recorded — Placing Order...';
+            setTimeout(function() { placeCryptoOrder(txid, usdt, true); }, 700);
+        } else {
+            var errMsg = data.message || 'Backup verification failed.';
+            setVerifyStatus('❌ ' + errMsg, 'error');
+            btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+        }
+    })
+    .catch(function(err) {
+        setVerifyStatus('⚠️ Both systems unavailable. Please check your internet and try again.', 'error');
+        btn.disabled = false; btn.textContent = '✅ Verify & Pay';
     });
 }
 
