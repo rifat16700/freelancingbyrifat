@@ -1394,7 +1394,8 @@ function selectIntlCoin(symbol) {
     coin.networks.forEach(function(net) {
         var safeNet = (net.name || '').replace(/'/g, "\\'");
         var safeAddr = (net.address || '').replace(/'/g, "\\'");
-        netsHtml += '<div class="net-opt" id="netopt_' + safeNet + '" onclick="selectIntlNetwork(\'' + safeNet + '\',\'' + safeAddr + '\')">' +
+        var safeQr   = (net.qr_url || '').replace(/'/g, "\\'");
+        netsHtml += '<div class="net-opt" id="netopt_' + safeNet + '" onclick="selectIntlNetwork(\'' + safeNet + '\',\'' + safeAddr + '\',\'' + safeQr + '\')">' +
             '<span style="font-size:18px;">⛓️</span>' +
             '<div style="flex:1;">' +
                 '<div style="font-weight:700;font-size:13px;">' + (net.name || '—') + '</div>' +
@@ -1415,7 +1416,33 @@ function selectIntlCoin(symbol) {
     intlVerified = false;
 }
 
-function selectIntlNetwork(netName, addr) {
+window.expectedCryptoAmt = 0;
+
+function fetchLiveCryptoAmount(symbol, usdAmount, callback) {
+    if (symbol === 'USDT') {
+        callback(usdAmount);
+        return;
+    }
+    fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + symbol + 'USDT')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data && data.price) {
+                var price = parseFloat(data.price);
+                var coinAmt = usdAmount / price;
+                // Add a small 0.5% buffer for market volatility to ensure they send enough?
+                // The user's Edge Function has 2% tolerance, so we can just show 6 decimals.
+                callback(parseFloat(coinAmt.toFixed(6)));
+            } else {
+                callback(usdAmount); // fallback
+            }
+        })
+        .catch(function(err) {
+            console.error('Failed to fetch price:', err);
+            callback(usdAmount); // fallback
+        });
+}
+
+function selectIntlNetwork(netName, addr, qrUrl) {
     intlNetworkName = netName;
     intlNetworkAddr = addr;
 
@@ -1427,25 +1454,42 @@ function selectIntlNetwork(netName, addr) {
 
     var total = updateSummaryTotals();
     var rate  = parseFloat(settings.usd_to_bdt_rate || 110);
-    var usdt  = (total / rate).toFixed(2);
+    var usdAmount  = parseFloat((total / rate).toFixed(2));
     var sym   = intlCoinSymbol;
 
     document.getElementById('cryptoWalletBox').style.display = 'block';
-    document.getElementById('cryptoWalletBox').innerHTML =
-        '<div class="wallet-addr-box">' +
-            '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:6px;">🔷 ' + sym + ' — ' + netName + ' Wallet</div>' +
-            '<div style="font-size:13px;color:#555;margin-bottom:6px;">Send exactly <strong style="color:#1a1a2e;">' + usdt + ' USDT</strong> to:</div>' +
-            '<div class="wallet-addr-text">' +
-                '<span id="walletAddrSpan" style="font-family:monospace;font-size:12px;">' + (addr || 'Address not set') + '</span>' +
-                (addr ? '<button class="copy-btn" onclick="copyText(\'' + addr.replace(/'/g, "\\'") + '\',this)">📋 Copy</button>' : '') +
-            '</div>' +
-            '<div style="font-size:11px;color:#dc2626;font-weight:600;">⚠️ Only send ' + sym + ' via <strong>' + netName + '</strong>. Wrong network = lost funds!</div>' +
-        '</div>';
+    document.getElementById('cryptoWalletBox').innerHTML = '<div style="padding:16px;text-align:center;color:#666;"><div class="spinner" style="width:20px;height:20px;margin:0 auto 10px;"></div>Calculating live ' + sym + ' price...</div>';
+    
+    document.getElementById('cryptoTxidWrap').style.display = 'none';
+    document.getElementById('verifyCryptoBtn').style.display = 'none';
 
-    document.getElementById('cryptoTxidWrap').style.display = 'block';
-    document.getElementById('verifyCryptoBtn').style.display = 'flex';
-    setVerifyStatus('', '');
-    intlVerified = false;
+    fetchLiveCryptoAmount(sym, usdAmount, function(cryptoAmt) {
+        window.expectedCryptoAmt = cryptoAmt;
+        
+        var qrHtml = '';
+        if (qrUrl) {
+            qrHtml = '<div style="margin-top:12px;text-align:center;">' +
+                        '<img src="' + qrUrl + '" style="max-width:140px;border-radius:8px;border:1px solid var(--border);padding:4px;background:#fff;">' +
+                     '</div>';
+        }
+
+        document.getElementById('cryptoWalletBox').innerHTML =
+            '<div class="wallet-addr-box">' +
+                '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:6px;">🔷 ' + sym + ' — ' + netName + ' Wallet</div>' +
+                '<div style="font-size:13px;color:#555;margin-bottom:6px;">Send exactly <strong style="color:#1a1a2e;font-size:16px;">' + cryptoAmt + ' ' + sym + '</strong> to:</div>' +
+                '<div class="wallet-addr-text">' +
+                    '<span id="walletAddrSpan" style="font-family:monospace;font-size:12px;">' + (addr || 'Address not set') + '</span>' +
+                    (addr ? '<button class="copy-btn" onclick="copyText(\'' + addr.replace(/'/g, "\\'") + '\',this)">📋 Copy</button>' : '') +
+                '</div>' +
+                qrHtml +
+                '<div style="font-size:11px;color:#dc2626;font-weight:600;margin-top:10px;">⚠️ Only send ' + sym + ' via <strong>' + netName + '</strong>. Wrong network = lost funds!</div>' +
+            '</div>';
+
+        document.getElementById('cryptoTxidWrap').style.display = 'block';
+        document.getElementById('verifyCryptoBtn').style.display = 'flex';
+        setVerifyStatus('', '');
+        intlVerified = false;
+    });
 }
 
 function copyText(text, btn) {
@@ -1491,7 +1535,7 @@ function verifyCryptoPayment() {
 
     var total = updateSummaryTotals();
     var rate  = parseFloat(settings.usd_to_bdt_rate || 110);
-    var usdt  = parseFloat((total / rate).toFixed(2));
+    var targetAmt = intlPayMode === 'binance_pay' ? parseFloat((total / rate).toFixed(2)) : window.expectedCryptoAmt;
 
     // ── Layer 1: Quick frontend double-spend pre-check ────────
     sb.from('verified_payments').select('id').eq('transaction_id', txid).maybeSingle()
@@ -1507,13 +1551,13 @@ function verifyCryptoPayment() {
 
         // 'supabase_only' → skip PHP, go straight to Edge Function
         if (verifyMode === 'supabase_only' || !proxyUrl) {
-            runSupabaseEdgeBackup(txid, usdt, btn);
+            runSupabaseEdgeBackup(txid, targetAmt, btn);
             return;
         }
 
         var body = intlPayMode === 'binance_pay'
-            ? { action: 'verify-pay',     order_ref: txid, expected_amount: usdt }
-            : { action: 'verify-deposit', tx_hash: txid, coin: intlCoinSymbol, expected_amount: usdt };
+            ? { action: 'verify-pay',     order_ref: txid, expected_amount: targetAmt }
+            : { action: 'verify-deposit', tx_hash: txid, coin: intlCoinSymbol, expected_amount: targetAmt };
 
         var phpTimeout = new Promise(function(_, reject) {
             setTimeout(function() { reject(new Error('timeout')); }, 12000);
@@ -1531,7 +1575,7 @@ function verifyCryptoPayment() {
             if (data.success) {
                 // ✅ PHP verified via Binance API
                 // Now lock in Supabase from frontend (PHP doesn't touch Supabase)
-                saveTxidAndPlace(txid, usdt, btn, false);
+                saveTxidAndPlace(txid, targetAmt, btn, false);
             } else {
                 setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
                 btn.disabled = false; btn.textContent = '✅ Verify & Pay';
@@ -1544,7 +1588,7 @@ function verifyCryptoPayment() {
                 btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             } else {
                 setVerifyStatus('⚠️ Primary unavailable. Switching to Supabase backup...', 'loading');
-                runSupabaseEdgeBackup(txid, usdt, btn);
+                runSupabaseEdgeBackup(txid, targetAmt, btn);
             }
         });
     });

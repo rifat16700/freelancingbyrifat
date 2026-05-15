@@ -115,10 +115,12 @@ if ($action === 'verify-pay') {
         $tid  = isset($tx['transactionId'])   ? $tx['transactionId']   : '';
         $mtn  = isset($tx['merchantTradeNo']) ? $tx['merchantTradeNo'] : '';
         $poi  = isset($tx['payerOrderId'])    ? $tx['payerOrderId']    : '';
+        $oid  = isset($tx['orderId'])         ? $tx['orderId']         : '';
         if (
             strtolower($tid)  === strtolower($orderRef) ||
             strtolower($mtn)  === strtolower($orderRef) ||
-            strtolower($poi)  === strtolower($orderRef)
+            strtolower($poi)  === strtolower($orderRef) ||
+            strtolower($oid)  === strtolower($orderRef)
         ) {
             $matched = $tx;
             break;
@@ -144,7 +146,7 @@ if ($action === 'verify-pay') {
     }
 
     if (!$isUsdt) {
-        echo json_encode(['success' => false, 'error' => 'Transaction currency is not USDT. Only USDT payments accepted.']);
+        echo json_encode(['success' => false, 'error' => "Currency mismatch — Binance Pay-তে শুধু USDT accept করা হয়। পাওয়া গেছে: $currency। দয়া করে সাপোর্টে যোগাযোগ করুন।"]);
         exit();
     }
 

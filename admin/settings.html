@@ -702,10 +702,12 @@
             var networks = coin.networks || [];
             networks.forEach(function(net, nIdx) {
                 var netRow = document.createElement('div');
-                netRow.style.cssText = 'display:flex; gap:8px; margin-bottom:6px; padding-left:10px; border-left:2px solid var(--primary);';
+                netRow.style.cssText = 'display:flex; gap:8px; margin-bottom:6px; padding-left:10px; border-left:2px solid var(--primary); align-items:center;';
                 netRow.innerHTML = 
-                    '<input class="form-input net-name" placeholder="Network (e.g. TRC20)" value="' + (net.name||'') + '" style="flex:1;">' +
-                    '<input class="form-input net-addr" placeholder="Wallet Address" value="' + (net.address||'') + '" style="flex:2;">' +
+                    '<div style="flex:1;"><input class="form-input net-name" placeholder="Network (e.g. TRC20)" value="' + (net.name||'') + '"></div>' +
+                    '<div style="flex:2;"><input class="form-input net-addr" placeholder="Wallet Address" value="' + (net.address||'') + '"></div>' +
+                    '<div style="flex:2; display:flex; gap:4px;"><input class="form-input net-qr" placeholder="QR URL (Optional)" value="' + (net.qr_url||'') + '">' +
+                    '<button type="button" class="btn btn-ghost btn-sm" onclick="uploadNetworkQr(this)" title="Upload QR">📤</button></div>' +
                     '<button type="button" class="btn btn-outline btn-sm" onclick="removeCryptoNetwork(' + cIdx + ',' + nIdx + ')">✕</button>';
                 netsWrap.appendChild(netRow);
             });
@@ -763,11 +765,13 @@
             var nets = [];
             var netRows = div.querySelectorAll('.net-name');
             var addrRows = div.querySelectorAll('.net-addr');
+            var qrRows = div.querySelectorAll('.net-qr');
             for (var j = 0; j < netRows.length; j++) {
                 var nName = netRows[j].value.trim();
                 var nAddr = addrRows[j].value.trim();
+                var nQr   = qrRows[j].value.trim();
                 if (nName || nAddr) {
-                    nets.push({ name: nName, address: nAddr });
+                    nets.push({ name: nName, address: nAddr, qr_url: nQr });
                 }
             }
             if (symbol || name || nets.length > 0) {
@@ -775,6 +779,27 @@
             }
         }
         return result;
+    }
+
+    function uploadNetworkQr(btn) {
+        var apiKey = getImgbbKey();
+        if (!apiKey) { showToast('⚠️ ImgBB API Key সেট করো আগে!', 'warning'); return; }
+        var input = document.createElement('input');
+        input.type = 'file'; input.accept = 'image/*';
+        input.onchange = function() {
+            if (!input.files[0]) return;
+            btn.textContent = '⏳';
+            btn.disabled = true;
+            imgbbUpload(input.files[0], apiKey)
+                .then(function(r) {
+                    btn.previousElementSibling.value = r.url; // set input value
+                    btn.textContent = '✅';
+                    setTimeout(function(){ btn.textContent='📤'; btn.disabled=false; }, 1500);
+                    showToast('QR Code আপলোড সফল!', 'success');
+                })
+                .catch(function(e) { showToast('❌ ' + e.message, 'error'); btn.textContent='📤'; btn.disabled=false; });
+        };
+        input.click();
     }
     </script>
 
