@@ -255,6 +255,39 @@
                 </div>
             </div>
 
+            <!-- ══ Crypto & Binance Pay ══ -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title"><i data-lucide="bitcoin" class="lucide-icon icon-pulse"></i> Crypto & Binance Pay</div>
+
+                <!-- Binance Pay -->
+                <div class="settings-section-title" style="font-size:11px;border:none;color:#F0B90B;padding:0;margin-bottom:10px;">
+                    💛 Binance Pay
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Binance Pay UID</label>
+                    <input class="form-input" id="binancePayUid" placeholder="e.g. 123456789">
+                    <div class="form-hint">তোমার Binance App → Pay → Receive → UID। User এটা দিয়ে পাঠাবে।</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Binance Pay Proxy URL</label>
+                    <input class="form-input" id="binanceProxyUrl" placeholder="https://mypay.freelancingbyrifat.top/binance_proxy.php">
+                    <div class="form-hint">Server-এ deploy করা <code>binance_proxy.php</code> এর URL।</div>
+                </div>
+
+                <hr class="section-divider">
+
+                <!-- Direct Crypto -->
+                <div class="settings-section-title" style="font-size:11px;border:none;color:#627EEA;padding:0;margin-bottom:10px;">
+                    🔷 Direct Crypto Wallets
+                </div>
+                <div class="form-hint" style="margin-bottom:12px;">Coin যোগ করো। প্রতিটা Coin-এর নিচে networks ও address দাও।</div>
+
+                <div id="cryptoCoinsWrap"></div>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="addCryptoCoin()" style="margin-top:8px; border: 1px dashed #627EEA;">
+                    + Add Coin
+                </button>
+            </div>
+
             <!-- ImgBB API Key -->
             <div class="card" style="margin-bottom:20px;">
                 <div class="settings-section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ImgBB Image Upload</div>
@@ -448,6 +481,12 @@
             setVal('storeMapLink', s.store_map_link || '');
             setVal('pickupBotToken', s.pickup_bot_token || '');
             setVal('pickupChatId', s.pickup_chat_id || '');
+
+            // Crypto & Binance Pay
+            setVal('binancePayUid', s.binance_pay_uid || '');
+            setVal('binanceProxyUrl', s.binance_proxy_url || CONFIG.BINANCE_PROXY_URL || '');
+            cryptoCoins = s.crypto_coins || [];
+            renderCryptoCoins();
         });
     }
 
@@ -541,6 +580,9 @@
             store_map_link:       document.getElementById('storeMapLink').value.trim(),
             pickup_bot_token:     document.getElementById('pickupBotToken').value.trim(),
             pickup_chat_id:       document.getElementById('pickupChatId').value.trim(),
+            binance_pay_uid:      document.getElementById('binancePayUid').value.trim(),
+            binance_proxy_url:    document.getElementById('binanceProxyUrl').value.trim(),
+            crypto_coins:         collectCryptoCoins(),
             id: 1
         };
 
@@ -594,6 +636,102 @@
                 });
             }
         });
+        return result;
+    }
+
+    // ── Crypto Coins Renderer ────────────────────────────────
+    var cryptoCoins = [];
+
+    function renderCryptoCoins() {
+        var wrap = document.getElementById('cryptoCoinsWrap');
+        wrap.innerHTML = '';
+        cryptoCoins.forEach(function(coin, cIdx) {
+            var coinDiv = document.createElement('div');
+            coinDiv.style.cssText = 'border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; background:#fafafa;';
+            
+            var headerHtml = 
+                '<div style="display:flex; gap:10px; margin-bottom:10px; align-items:flex-end;">' +
+                    '<div style="flex:1;"><label class="form-label" style="font-size:11px;">Coin Symbol</label><input class="form-input crypto-symbol" placeholder="e.g. USDT" value="' + (coin.symbol||'') + '"></div>' +
+                    '<div style="flex:2;"><label class="form-label" style="font-size:11px;">Coin Name</label><input class="form-input crypto-name" placeholder="e.g. Tether" value="' + (coin.name||'') + '"></div>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeCryptoCoin(' + cIdx + ')">✕</button>' +
+                '</div>';
+            
+            var netsWrap = document.createElement('div');
+            var networks = coin.networks || [];
+            networks.forEach(function(net, nIdx) {
+                var netRow = document.createElement('div');
+                netRow.style.cssText = 'display:flex; gap:8px; margin-bottom:6px; padding-left:10px; border-left:2px solid var(--primary);';
+                netRow.innerHTML = 
+                    '<input class="form-input net-name" placeholder="Network (e.g. TRC20)" value="' + (net.name||'') + '" style="flex:1;">' +
+                    '<input class="form-input net-addr" placeholder="Wallet Address" value="' + (net.address||'') + '" style="flex:2;">' +
+                    '<button type="button" class="btn btn-outline btn-sm" onclick="removeCryptoNetwork(' + cIdx + ',' + nIdx + ')">✕</button>';
+                netsWrap.appendChild(netRow);
+            });
+
+            var addNetBtn = document.createElement('button');
+            addNetBtn.type = 'button';
+            addNetBtn.className = 'btn btn-ghost btn-sm';
+            addNetBtn.style.cssText = 'font-size:11px; margin-top:4px; margin-left:10px;';
+            addNetBtn.textContent = '+ Add Network';
+            addNetBtn.onclick = function() { addCryptoNetwork(cIdx); };
+
+            coinDiv.innerHTML = headerHtml;
+            coinDiv.appendChild(netsWrap);
+            coinDiv.appendChild(addNetBtn);
+            wrap.appendChild(coinDiv);
+        });
+    }
+
+    function addCryptoCoin() {
+        cryptoCoins.push({ symbol: '', name: '', networks: [{ name: '', address: '' }] });
+        renderCryptoCoins();
+    }
+
+    function removeCryptoCoin(cIdx) {
+        cryptoCoins.splice(cIdx, 1);
+        renderCryptoCoins();
+    }
+
+    function addCryptoNetwork(cIdx) {
+        if (!cryptoCoins[cIdx].networks) cryptoCoins[cIdx].networks = [];
+        cryptoCoins[cIdx].networks.push({ name: '', address: '' });
+        // Save current inputs before re-render
+        cryptoCoins = collectCryptoCoins();
+        renderCryptoCoins();
+    }
+
+    function removeCryptoNetwork(cIdx, nIdx) {
+        cryptoCoins = collectCryptoCoins(); // sync inputs
+        if (cryptoCoins[cIdx] && cryptoCoins[cIdx].networks) {
+            cryptoCoins[cIdx].networks.splice(nIdx, 1);
+        }
+        renderCryptoCoins();
+    }
+
+    function collectCryptoCoins() {
+        var wrap = document.getElementById('cryptoCoinsWrap');
+        if (!wrap) return [];
+        var result = [];
+        var coinDivs = wrap.children;
+        for (var i = 0; i < coinDivs.length; i++) {
+            var div = coinDivs[i];
+            var symbol = div.querySelector('.crypto-symbol').value.trim();
+            var name = div.querySelector('.crypto-name').value.trim();
+            
+            var nets = [];
+            var netRows = div.querySelectorAll('.net-name');
+            var addrRows = div.querySelectorAll('.net-addr');
+            for (var j = 0; j < netRows.length; j++) {
+                var nName = netRows[j].value.trim();
+                var nAddr = addrRows[j].value.trim();
+                if (nName || nAddr) {
+                    nets.push({ name: nName, address: nAddr });
+                }
+            }
+            if (symbol || name || nets.length > 0) {
+                result.push({ symbol: symbol, name: name, networks: nets });
+            }
+        }
         return result;
     }
     </script>

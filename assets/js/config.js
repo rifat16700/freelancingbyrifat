@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // config.js — Global Configuration
 // Project: Freelancing By Rifat E-Commerce
 // ⚠️ FILL IN YOUR SUPABASE CREDENTIALS BELOW
@@ -25,6 +25,11 @@ var CONFIG = {
 
     // ── Admin Panel ───────────────────────────────────────────
     ADMIN_PATH: '/admin',
+
+    // ── Binance Pay & Crypto Payment Proxy ───────────────────
+    // binance_proxy.php কে তোমার cPanel server-এ deploy করো
+    // API Key + Secret ওই PHP file-এ থাকবে — এখানে শুধু proxy URL
+    BINANCE_PROXY_URL: 'https://mypay.freelancingbyrifat.top/binance_proxy.php',
 
     // ── ImgBB Image Upload ────────────────────────────────────
     // imgbb.com/api → API Key নিয়ে এখানে দাও
