@@ -211,10 +211,10 @@
                 <!-- ── Transfer Type Tab Bar ── -->
                 <div class="transfer-tab-bar" id="transferTabBar">
                     <button class="transfer-tab-btn active" id="tabNational" onclick="switchTransferTab('national')">
-                        🇧🇩 National Transfer
+                        🇧🇩 BD Local Payment
                     </button>
                     <button class="transfer-tab-btn" id="tabInternational" onclick="switchTransferTab('international')">
-                        🌐 International Transfer
+                        🪙 Crypto Payment
                     </button>
                 </div>
 
@@ -227,10 +227,15 @@
 
                     <!-- Manual payment details -->
                     <div class="manual-pay-box" id="manualPayBox">
-                        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">
-                            Send <span id="manualPayAmt" style="color:var(--primary);font-size:16px;">৳0</span> to:
+                        <div style="font-size:13px;font-weight:700;margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                            Send <span id="manualPayAmt" style="color:var(--primary);font-size:16px;">৳0</span>
+                            <button type="button" onclick="copyElementText('manualPayAmt')" style="background:none;border:none;cursor:pointer;color:#888;padding:2px;" title="Copy Amount"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button>
+                            to:
                         </div>
-                        <div style="font-size:20px;font-weight:800;color:var(--text-dark);margin-bottom:4px;" id="manualPayNumber">01XXXXXXXXX</div>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+                            <div style="font-size:20px;font-weight:800;color:var(--text-dark);" id="manualPayNumber">01XXXXXXXXX</div>
+                            <button type="button" onclick="copyElementText('manualPayNumber')" style="background:rgba(0,0,0,0.05);border:none;border-radius:6px;padding:4px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#666;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='rgba(0,0,0,0.05)'"><i data-lucide="copy" class="lucide-icon" style="width:12px;height:12px;"></i> Copy</button>
+                        </div>
                         <div style="font-size:12px;color:#888;margin-bottom:14px;" id="manualPayMethodName">bKash / Nagad</div>
                         <div class="form-group" style="margin-bottom:12px;">
                             <label class="form-label">Sender Number *</label>
@@ -1866,6 +1871,20 @@ function placeCryptoOrder(txid, usdt, isBackup) {
         if (isDirectOrder) { localStorage.removeItem(DIRECT_KEY); }
         else               { localStorage.removeItem(CONFIG.CART_KEY); }
         window.location.href = 'success.html?id=' + orderId;
+    });
+}
+
+// ── Utils ─────────────────────────────────────────────────────
+function copyElementText(elId) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    var text = el.textContent.replace(/[৳]/g, '').trim();
+    navigator.clipboard.writeText(text).then(function() {
+        var og = el.style.color;
+        el.style.color = '#34C759'; // show success color
+        setTimeout(function() { el.style.color = og; }, 500);
+    }).catch(function() {
+        alert('Could not copy automatically. Please copy it manually.');
     });
 }
 </script>
