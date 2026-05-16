@@ -260,9 +260,12 @@
 
                 <!-- Promo Code -->
                 <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
-                    <input class="form-input" id="promoInput" placeholder="Promo code (optional)">
+                    <div style="position:relative; flex:1;">
+                        <input class="form-input" id="promoInput" placeholder="Promo code (optional)" style="width:100%; padding-right:32px;" oninput="document.getElementById('removePromoBtn').style.display=this.value.trim()?'block':'none'">
+                        <button id="removePromoBtn" onclick="removePromo()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#ff3b30; font-size:16px; font-weight:bold; cursor:pointer; display:none; padding:4px; line-height:1;" title="Remove Promo">✕</button>
+                    </div>
                     <button class="btn btn-ghost" onclick="applyPromo()" style="padding: 10px 14px;">Apply</button>
-                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;">🎟️ View All Coupons</button>
+                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;">🎟️ Coupons</button>
                 </div>
                 <div id="promoMsg" style="font-size:13px;margin-top:6px;"></div>
 
@@ -781,6 +784,12 @@ function selectPayment(value) {
 }
 
 // ── Promo ─────────────────────────────────────────────────────
+function removePromo() {
+    document.getElementById('promoInput').value = '';
+    document.getElementById('removePromoBtn').style.display = 'none';
+    applyPromo('');
+}
+
 function applyPromo(providedCode) {
     var code = (providedCode || document.getElementById('promoInput').value || '').trim().toUpperCase();
     var msg = document.getElementById('promoMsg');
@@ -849,6 +858,7 @@ function applyPromo(providedCode) {
     activePromoObj = promo;
     promoCode = promo.code ? promo.code.split('|v1|')[0] : code;
     document.getElementById('promoInput').value = promoCode;
+    document.getElementById('removePromoBtn').style.display = 'block';
     
     // Call updateSummaryTotals to calculate prodDisc and delDisc
     updateSummaryTotals();
