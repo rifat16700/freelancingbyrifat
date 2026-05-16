@@ -73,6 +73,15 @@
         .verify-status.error   { background:rgba(239,68,68,0.06); color:#b91c1c; border:1px solid rgba(239,68,68,0.2); display:block; }
         .verify-status.loading { background:rgba(98,126,234,0.08); color:#3730a3; border:1px solid rgba(98,126,234,0.2); display:block; }
         .backup-badge { font-size:10px; background:rgba(255,149,0,0.12); color:#c2610b; border:1px solid rgba(255,149,0,0.3); border-radius:20px; padding:2px 8px; font-weight:700; display:inline-block; vertical-align:middle; margin-left:6px; }
+        /* ── Add-Once Section ──────────────────────────────── */
+        .add-once-card { border: 1.5px solid rgba(98,126,234,0.25); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; background: #fff; margin-bottom: 8px; }
+        .add-once-card:hover { border-color: #627EEA; background: rgba(98,126,234,0.04); transform: translateY(-1px); }
+        .add-once-card.selected { border-color: #627EEA; background: rgba(98,126,234,0.08); }
+        .add-once-img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; background: #f5f5f5; flex-shrink: 0; }
+        .add-once-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9000; display: none; align-items: flex-end; }
+        .add-once-sheet-overlay.open { display: flex; }
+        .add-once-sheet { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-height: 80vh; overflow-y: auto; padding: 0 0 24px; animation: aoSlideUp 0.35s cubic-bezier(0.22,0.61,0.36,1); }
+        @keyframes aoSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
@@ -163,6 +172,17 @@
                 <div id="addonsSection">
                     <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:10px;"><i data-lucide="sparkles" class="lucide-icon icon-pulse"></i> Add-ons (Optional)</div>
                     <div id="addonsList"></div>
+                </div>
+
+                <!-- Add-Once Products -->
+                <div id="addOnceSection" style="display:none; margin-top:16px;">
+                    <div style="font-size:13px;font-weight:800;color:#627EEA;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                        🛍️ Add-Once Products <span style="font-size:11px;font-weight:500;color:#888;">(Optional)</span>
+                    </div>
+                    <div id="addOncePreviewList"></div>
+                    <button id="addOnceViewMoreBtn" onclick="openAddOnceSheet()" style="display:none; width:100%; margin-top:4px; padding:10px; border:1.5px dashed rgba(98,126,234,0.4); border-radius:10px; background:rgba(98,126,234,0.04); color:#627EEA; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;">
+                        🛍️ View More Add-Once Products
+                    </button>
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:4px;">
@@ -301,6 +321,7 @@
 <script>
 // ── State ────────────────────────────────────────────────────
 var cart = [], settings = {}, zones = [], addons = [];
+var addOnceProducts = []; // Add-Once products list
 var currentStep  = 1;
 var deliveryCharge = 0, addonTotal = 0, promoDiscount = 0;
 var promoCode = '', selectedAddons = [];
@@ -349,18 +370,21 @@ document.addEventListener('DOMContentLoaded', function() {
     var p2 = sb.from('delivery_zones').select('*');
     var p3 = sb.from('addons').select('*').eq('is_active',true).order('created_at');
     var p4 = sb.from('promos').select('*').eq('is_active',true);
+    var p5 = sb.from('products').select('id,name,base_price,flash_sale_price,gallery_images,variants').eq('is_add_once',true).eq('is_active',true);
 
-    Promise.all([p1, p2, p3, p4]).then(function(results) {
+    Promise.all([p1, p2, p3, p4, p5]).then(function(results) {
         settings = results[0].data || {};
         zones    = results[1].data || [];
         addons   = results[2].data || [];
         allPromos = results[3].data || [];
+        addOnceProducts = results[4].data || [];
 
         document.getElementById('navBrand').textContent = settings.store_name || CONFIG.STORE_NAME;
         document.getElementById('pageLoader').style.display = 'none';
 
         renderSummaryItems();
         renderAddons();
+        renderAddOnce();
         loadBdDivisions();
 
         var checkStatus = (pyStatus || '').toLowerCase();
@@ -466,6 +490,108 @@ function updateSummaryTotals() {
     document.getElementById('promoLine').style.display  = prodDisc > 0 ? 'flex' : 'none';
     
     return total;
+}
+
+// ── Add-Once Products ─────────────────────────────────────────
+var selectedAddOnce = []; // {id, name, price}
+
+function getAddOncePrice(p) {
+    if (p.flash_sale_price > 0) return p.base_price - p.flash_sale_price;
+    return p.base_price || 0;
+}
+
+function getAddOnceImg(p) {
+    if (p.variants && p.variants.length && p.variants[0].imageUrl) return p.variants[0].imageUrl;
+    if (p.gallery_images && p.gallery_images.length) return p.gallery_images[0];
+    return '';
+}
+
+function renderAddOnce() {
+    if (!addOnceProducts.length) { document.getElementById('addOnceSection').style.display = 'none'; return; }
+    document.getElementById('addOnceSection').style.display = 'block';
+
+    var preview = addOnceProducts.slice(0, 2);
+    var rest    = addOnceProducts.slice(2);
+
+    document.getElementById('addOncePreviewList').innerHTML = preview.map(function(p) {
+        return buildAddOnceCardHtml(p);
+    }).join('');
+
+    var btn = document.getElementById('addOnceViewMoreBtn');
+    if (rest.length > 0) {
+        btn.style.display = 'block';
+        btn.textContent   = '\uD83D\uDECD\uFE0F View More (' + rest.length + ' more Add-Once products)';
+    } else {
+        btn.style.display = 'none';
+    }
+}
+
+function buildAddOnceCardHtml(p) {
+    var price = getAddOncePrice(p);
+    var img   = getAddOnceImg(p);
+    var isSel = selectedAddOnce.some(function(x){ return x.id === p.id; });
+    return '<div class="add-once-card' + (isSel ? ' selected' : '') + '" onclick="toggleAddOnceProduct(\'' + p.id + '\', ' + price + ', \'' + (p.name||'').replace(/'/g,'') + '\', \'' + img + '\')" id="aoc_' + p.id + '">' +
+        (img ? '<img src="' + img + '" class="add-once-img" onerror="this.style.display=\'none\'">' : '') +
+        '<div style="flex:1;">' +
+            '<div style="font-weight:700;font-size:14px;color:var(--text-dark);">' + (p.name||'') + '</div>' +
+            (p.flash_sale_price > 0 ? '<div style="font-size:12px;color:#888;"><del>৳' + p.base_price + '</del></div>' : '') +
+            '<div style="font-size:15px;font-weight:800;color:#627EEA;">+৳' + price + '</div>' +
+        '</div>' +
+        '<div style="width:22px;height:22px;border-radius:50%;border:2px solid ' + (isSel ? '#627EEA' : '#ddd') + ';background:' + (isSel ? '#627EEA' : 'transparent') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;">' +
+            (isSel ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+        '</div>' +
+    '</div>';
+}
+
+function toggleAddOnceProduct(id, price, name, img) {
+    var idx = selectedAddOnce.findIndex(function(x){ return x.id === id; });
+    if (idx > -1) {
+        selectedAddOnce.splice(idx, 1);
+    } else {
+        selectedAddOnce.push({ id: id, price: price, name: name, image: img });
+    }
+    // Update addonTotal
+    addonTotal = selectedAddons.reduce(function(s,a){return s+a.price;},0) +
+                 selectedAddOnce.reduce(function(s,a){return s+a.price;},0);
+    updateSummaryTotals();
+    // Refresh all cards showing this product (preview + sheet)
+    var cards = document.querySelectorAll('#aoc_' + id);
+    var p = addOnceProducts.find(function(x){ return x.id === id; });
+    if (p) cards.forEach(function(c){ c.outerHTML = buildAddOnceCardHtml(p); });
+}
+
+function openAddOnceSheet() {
+    var overlay = document.getElementById('addOnceSheetOverlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'addOnceSheetOverlay';
+        overlay.className = 'add-once-sheet-overlay';
+        overlay.innerHTML =
+            '<div class="add-once-sheet" id="addOnceSheetInner">' +
+                '<div style="width:40px;height:4px;background:#ddd;border-radius:4px;margin:12px auto 4px;"></div>' +
+                '<div style="padding:14px 20px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;">' +
+                    '<div style="font-size:16px;font-weight:800;color:var(--text-dark);">\uD83D\uDECD\uFE0F All Add-Once Products</div>' +
+                    '<button onclick="closeAddOnceSheet()" style="border:none;background:rgba(0,0,0,0.06);border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">\u2715</button>' +
+                '</div>' +
+                '<div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;" id="addOnceSheetList"></div>' +
+            '</div>';
+        overlay.addEventListener('click', function(e){ if(e.target===overlay) closeAddOnceSheet(); });
+        document.body.appendChild(overlay);
+    }
+    // Populate sheet with all add-once products
+    document.getElementById('addOnceSheetList').innerHTML = addOnceProducts.map(function(p){
+        return buildAddOnceCardHtml(p);
+    }).join('');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAddOnceSheet() {
+    var overlay = document.getElementById('addOnceSheetOverlay');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    // Refresh preview list too
+    renderAddOnce();
 }
 
 // ── Addons ────────────────────────────────────────────────────
@@ -1033,7 +1159,10 @@ function placeOrder() {
         upazila:        upa,
         address:        addr,
         items:          cart,
-        addons:         selectedAddons.map(function(a){return a.name;}).join(', ') || 'None',
+        addons:         [].concat(
+                            selectedAddons.map(function(a){return a.name;}),
+                            selectedAddOnce.map(function(a){return a.name + ' (Add-Once)';})
+                        ).join(', ') || 'None',
         subtotal:       subtotal,
         addon_total:    addonTotal,
         delivery_charge:deliveryCharge,

@@ -465,7 +465,11 @@ function initChipSelect(key, options, selectedIds) {
         var cb = document.createElement('input');
         cb.type    = 'checkbox';
         cb.checked = isSel;
-        cb.addEventListener('change', function() {
+
+        // Prevent label's native click-from-propagating to checkbox change
+        // Use label click to drive toggleChip, checkbox just follows state
+        label.addEventListener('click', function(e) {
+            e.preventDefault();
             toggleChip(key, opt.id, opt.label, label, cb);
         });
 
@@ -498,7 +502,9 @@ function initFreeChipSelect(key, selectedValues) {
         var cb = document.createElement('input');
         cb.type    = 'checkbox';
         cb.checked = isSel;
-        cb.addEventListener('change', function() {
+
+        label.addEventListener('click', function(e) {
+            e.preventDefault();
             toggleChip(key, d, d, label, cb);
         });
 

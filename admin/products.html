@@ -209,6 +209,15 @@
                     <button class="toggle-switch" id="pFeatured" type="button"></button>
                 </div>
             </div>
+            <div class="form-row">
+                <div class="toggle-wrap" onclick="toggleProductField('pAddOnce')" style="border-color:rgba(98,126,234,0.4);background:rgba(98,126,234,0.04);">
+                    <div>
+                        <div class="toggle-label">🛍️ Add-Once Product</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">ON করলে checkout-এ Add-Once popup-এ দেখাবে</div>
+                    </div>
+                    <button class="toggle-switch" id="pAddOnce" type="button"></button>
+                </div>
+            </div>
 
             <hr class="section-divider">
 
@@ -402,6 +411,7 @@
                     '<div style="margin-top:6px;font-size:12px;color:#8E8E93;">' +
                         variants.length + ' color(s) | ' +
                         (p.is_active ? '<span style="color:#34C759;">●  Active</span>' : '<span style="color:#FF3B30;">● Inactive</span>') +
+                        (p.is_add_once ? ' | <span style="color:#627EEA;font-weight:700;">🛍️ Add-Once</span>' : '') +
                     '</div>' +
                 '</div>' +
                 '<div class="product-card-footer">' +
@@ -430,6 +440,7 @@
         document.querySelectorAll('input[name="pCat"]').forEach(function(cb) { cb.checked = false; });
         setToggle('pActive', true);
         setToggle('pFeatured', false);
+        setToggle('pAddOnce', false);
         renderGallery();
         renderVariants();
         document.getElementById('productModal').classList.add('show');
@@ -466,6 +477,7 @@
 
         setToggle('pActive',   p.is_active);
         setToggle('pFeatured', p.is_featured);
+        setToggle('pAddOnce',  p.is_add_once);
         renderGallery();
         renderVariants();
         document.getElementById('productModal').classList.add('show');
@@ -763,6 +775,7 @@
             video_type:       document.getElementById('pVideoType').value,
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),
+            is_add_once:      document.getElementById('pAddOnce').classList.contains('on'),
             category_id:      selectedCats.length > 0 ? selectedCats[0] : null,
             // parseImageInput দিয়ে clean URL সেভ করো
             gallery_images:   collectGallery()
