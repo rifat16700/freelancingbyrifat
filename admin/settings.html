@@ -185,6 +185,15 @@
                     <button class="toggle-switch" id="codToggle" type="button"></button>
                 </div>
 
+                <!-- Fun Promise Checkboxes toggle -->
+                <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleFunCheckbox()">
+                    <div>
+                        <div class="toggle-label">🤣 Fun Promise Checkboxes</div>
+                        <div class="toggle-desc">Checkout এ COD সিলেক্ট করলে মজাদার প্রমিস চেকবক্স দেখাবে।</div>
+                    </div>
+                    <button class="toggle-switch" id="funCheckToggle" type="button"></button>
+                </div>
+
                 <!-- Messaging Apps Order Toggle (replaces old WhatsApp toggle) -->
                 <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleMsgOrder()">
                     <div>
@@ -376,6 +385,7 @@
     var codEnabled = true;
     var msgOrderEnabled = false;
     var pickupEnabled = false;
+    var funCheckEnabled = false;
     var messagingApps = [];
 
     // Default messaging apps list
@@ -504,9 +514,11 @@
             codEnabled = s.allow_cod !== undefined ? s.allow_cod !== false : true;
             msgOrderEnabled = s.allow_whatsapp_order === true || s.allow_msg_order === true;
             pickupEnabled = s.allow_pickup === true;
+            funCheckEnabled = s.enable_fun_checkbox === true;
             updateToggle('codToggle', codEnabled);
             updateToggle('msgOrderToggle', msgOrderEnabled);
             updateToggle('pickupToggle', pickupEnabled);
+            updateToggle('funCheckToggle', funCheckEnabled);
 
             // Messaging Apps
             messagingApps = s.messaging_apps || [];
@@ -537,6 +549,11 @@
     function toggleCod() {
         codEnabled = !codEnabled;
         updateToggle('codToggle', codEnabled);
+    }
+
+    function toggleFunCheckbox() {
+        funCheckEnabled = !funCheckEnabled;
+        updateToggle('funCheckToggle', funCheckEnabled);
     }
 
     function toggleMsgOrder() {
@@ -605,6 +622,7 @@
             gateway_proxy_url:    document.getElementById('gatewayProxyUrl').value.trim(),
             gateway_api_key:      document.getElementById('gatewayApiKey').value.trim(),
             allow_cod:            codEnabled,
+            enable_fun_checkbox:  funCheckEnabled,
             allow_whatsapp_order: msgOrderEnabled,
             allow_msg_order:      msgOrderEnabled,
             advance_amount:       parseInt(document.getElementById('advanceAmount').value) || 0,

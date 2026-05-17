@@ -281,7 +281,7 @@
                     <div class="verify-status" id="cryptoVerifyStatus"></div>
 
                     <!-- Verify & Pay Button -->
-                    <button class="verify-btn" id="verifyCryptoBtn" onclick="verifyCryptoPayment()" style="display:none;">
+                    <button class="verify-btn" id="verifyCryptoBtn" onclick="verifyCryptoCheck(event)" style="display:none;">
                         ✅ Verify & Pay
                     </button>
                 </div>
@@ -297,9 +297,45 @@
                 </div>
                 <div id="promoMsg" style="font-size:13px;margin-top:6px;"></div>
 
+                <!-- Promise & Policies Checkboxes -->
+                <div id="checkoutCheckboxes" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px; margin-bottom: 15px;">
+                    <!-- Required Policy Checkbox -->
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="policyAgreeCheck" style="margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary);">
+                        <span style="font-size: 14.5px; color: #1C1C1E; line-height: 1.5; font-weight: 600;">
+                            By ordering this product you agree to our <a href="policies.html" target="_blank" style="color: var(--primary); text-decoration: underline;">Policies</a>.
+                        </span>
+                    </label>
+
+                    <!-- Fun Promise Box (Dynamic from Admin) -->
+                    <div id="funPromiseWrapper" style="position: relative; border: 1.5px dashed #FF3B30; border-radius: 12px; padding: 15px; background: #FFF5F5; box-shadow: 0 4px 12px rgba(255, 59, 48, 0.08); display: none; flex-direction: column; gap: 15px;">
+                        <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="funPromiseCheck1" style="margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: #FF3B30;">
+                            <span style="font-size: 14.5px; color: #1C1C1E; line-height: 1.5; text-align: left; font-weight: 600;">
+                                আমি নিশ্চিত, এই অর্ডার সত্যিই নিতে প্রতিশ্রুতিবদ্ধ। রিসিভ না করলে আল্লাহর গজব আমার উপর পড়বে এবং পরকালে কঠোর শাস্তি হবে।
+                            </span>
+                        </label>
+                        <div id="funTooltip1" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%) translateY(10px); opacity: 0; visibility: hidden; background: #34C759; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 6px 15px rgba(52, 199, 89, 0.25); z-index: 100;">
+                            মাশাআল্লাহ! আপনার নিয়ত পরিষ্কার 😇
+                            <div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #34C759 transparent transparent transparent;"></div>
+                        </div>
+
+                        <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0; padding-top: 10px; border-top: 1px solid rgba(255, 59, 48, 0.2);">
+                            <input type="checkbox" id="funPromiseCheck2" style="margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: #34C759;">
+                            <span style="font-size: 14.5px; color: #1C1C1E; line-height: 1.5; text-align: left; font-weight: 600;">
+                                পণ্য হাতে পেয়ে ডেলিভারি ম্যানের কাছে মূল্য পরিশোধ করুন
+                            </span>
+                        </label>
+                        <div id="funTooltip2" style="position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%) translateY(-10px); opacity: 0; visibility: hidden; background: #007AFF; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 6px 15px rgba(0, 122, 255, 0.25); z-index: 100;">
+                            ধন্যবাদ! <i data-lucide="truck" class="lucide-icon icon-bounce"></i>
+                            <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: transparent transparent #007AFF transparent;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="display:flex;gap:10px;margin-top:20px;" id="nationalPlaceOrderRow">
                     <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
-                    <button class="btn btn-primary btn-full btn-lg" id="placeOrderBtn" onclick="placeOrder()">
+                    <button class="btn btn-primary btn-full btn-lg" id="placeOrderBtn" onclick="placeOrderCheck(event)">
                         <i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order
                     </button>
                 </div>
@@ -906,15 +942,34 @@ function selectPayment(value) {
     }
 
     // COD + advance configured + manual bKash advance method
+    // COD + advance configured + manual bKash advance method
     if (isCod && advancePayable > 0 && settings.advance_method === 'manual') {
         document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
         document.getElementById('manualPayMethodName').textContent = 'bKash (Advance only — ৳' + advancePayable + ')';
         document.getElementById('manualPayAmt').textContent        = '৳' + advancePayable;
         manualBox.style.display = 'block';
-        return;
+    } else {
+        manualBox.style.display = 'none';
     }
 
-    manualBox.style.display = 'none';
+    // Toggle fun promise wrapper based on setting and if COD is selected
+    var funPromiseWrapper = document.getElementById('funPromiseWrapper');
+    if (funPromiseWrapper) {
+        if (settings.enable_fun_checkbox && isCod) {
+            funPromiseWrapper.style.display = 'flex';
+        } else {
+            funPromiseWrapper.style.display = 'none';
+            var cb1 = document.getElementById('funPromiseCheck1');
+            if (cb1) cb1.checked = false;
+            var tt1 = document.getElementById('funTooltip1');
+            if (tt1) { tt1.style.opacity = '0'; tt1.style.visibility = 'hidden'; }
+
+            var cb2 = document.getElementById('funPromiseCheck2');
+            if (cb2) cb2.checked = false;
+            var tt2 = document.getElementById('funTooltip2');
+            if (tt2) { tt2.style.opacity = '0'; tt2.style.visibility = 'hidden'; }
+        }
+    }
 }
 
 // ── Promo ─────────────────────────────────────────────────────
@@ -1642,6 +1697,93 @@ function selectIntlNetwork(netName, addr, qrUrl) {
     fetchLiveCryptoAmount(sym, usdAmount, function(cryptoAmt) {
         window.expectedCryptoAmt = cryptoAmt;
         
+        var addrBoxHtml = 
+            '<div style="background:rgba(98,126,234,0.06);border:1.5px dashed rgba(98,126,234,0.3);border-radius:12px;padding:16px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
+                    '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">💳 Send to ' + sym + ' (' + netName + ')</div>' +
+                    (qrUrl ? '<button type="button" onclick="document.getElementById(\'netQrWrap\').style.display=document.getElementById(\'netQrWrap\').style.display===\'none\'?\'block\':\'none\'" style="background:none;border:none;color:#627EEA;font-size:12px;font-weight:700;cursor:pointer;"><i data-lucide="qr-code" class="lucide-icon"></i> Show QR</button>' : '') +
+                '</div>' +
+                (qrUrl ? '<div id="netQrWrap" style="display:none;text-align:center;margin-bottom:16px;"><img src="' + qrUrl + '" style="max-width:150px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.1);"></div>' : '') +
+                '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Amount to send:</div>' +
+                '<div style="font-size:24px;font-weight:900;color:var(--text-dark);margin-bottom:12px;display:flex;align-items:center;gap:8px;">' +
+                    '<span id="finalSendAmt">' + window.expectedCryptoAmt + '</span> <span style="font-size:14px;color:#666;">' + sym + '</span>' +
+                    '<button type="button" onclick="copyElementText(\'finalSendAmt\')" style="background:rgba(98,126,234,0.1);color:#627EEA;border:none;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Copy</button>' +
+                '</div>' +
+                '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Wallet Address:</div>' +
+                '<div style="display:flex; gap:8px;">' +
+                    '<input type="text" class="form-input" id="finalWalletAddr" value="' + addr + '" readonly style="flex:1;background:rgba(255,255,255,0.5);font-family:monospace;font-size:12px;">' +
+                    '<button type="button" onclick="copyElementText(\'finalWalletAddr\')" style="background:rgba(98,126,234,0.1);color:#627EEA;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Copy</button>' +
+                '</div>' +
+                '<div style="font-size:11px;color:#ff3b30;margin-top:12px;font-weight:600;">⚠️ Please make sure to select the correct network (' + netName + '). Otherwise funds will be lost.</div>' +
+            '</div>';
+        
+        document.getElementById('cryptoWalletBox').innerHTML = addrBoxHtml;
+        if(typeof lucide !== 'undefined') lucide.createIcons();
+
+        document.getElementById('cryptoTxidWrap').style.display = 'block';
+        document.getElementById('verifyCryptoBtn').style.display = 'block';
+    });
+}
+
+function verifyCryptoCheck(event) {
+    if (event) event.preventDefault();
+    var policyCheck = document.getElementById('policyAgreeCheck');
+    if (policyCheck && !policyCheck.checked) {
+        alert("Please agree to our Policies to continue.");
+        return;
+    }
+    verifyCryptoPayment();
+}
+
+function placeOrderCheck(event) {
+    if (event) event.preventDefault();
+    var policyCheck = document.getElementById('policyAgreeCheck');
+    if (policyCheck && !policyCheck.checked) {
+        alert("Please agree to our Policies to continue.");
+        return;
+    }
+    
+    if (settings.enable_fun_checkbox && selectedPayMethod === 'cod') {
+        var funCheck1 = document.getElementById('funPromiseCheck1');
+        var funCheck2 = document.getElementById('funPromiseCheck2');
+        if (funCheck1 && !funCheck1.checked) {
+            alert('অর্ডার কনফার্ম করতে দয়া করে "আমি নিশ্চিত..." বক্সে টিক দিন!');
+            return;
+        }
+        if (funCheck2 && !funCheck2.checked) {
+            alert('অর্ডার কনফার্ম করতে দয়া করে "পণ্য হাতে পেয়ে..." বক্সে টিক দিন!');
+            return;
+        }
+    }
+    placeOrder();
+}
+
+// Ensure fun check tooltips logic runs on DOM load
+document.addEventListener('DOMContentLoaded', function() {
+    var checkBox1 = document.getElementById('funPromiseCheck1');
+    var tooltip1 = document.getElementById('funTooltip1');
+    if (checkBox1 && tooltip1) {
+        checkBox1.addEventListener('change', function () {
+            if (this.checked) {
+                tooltip1.style.opacity = '1'; tooltip1.style.visibility = 'visible'; tooltip1.style.transform = 'translateX(-50%) translateY(-10px)';
+            } else {
+                tooltip1.style.opacity = '0'; tooltip1.style.visibility = 'hidden'; tooltip1.style.transform = 'translateX(-50%) translateY(10px)';
+            }
+        });
+    }
+
+    var checkBox2 = document.getElementById('funPromiseCheck2');
+    var tooltip2 = document.getElementById('funTooltip2');
+    if (checkBox2 && tooltip2) {
+        checkBox2.addEventListener('change', function () {
+            if (this.checked) {
+                tooltip2.style.opacity = '1'; tooltip2.style.visibility = 'visible'; tooltip2.style.transform = 'translateX(-50%) translateY(10px)';
+            } else {
+                tooltip2.style.opacity = '0'; tooltip2.style.visibility = 'hidden'; tooltip2.style.transform = 'translateX(-50%) translateY(-10px)';
+            }
+        });
+    }
+});
         var qrHtml = '';
         if (qrUrl) {
             qrHtml = '<div style="margin-top:16px;text-align:center;">' +
