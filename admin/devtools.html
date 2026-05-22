@@ -391,6 +391,51 @@
         ::-webkit-scrollbar-track{background:transparent;}
         ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px;}
 
+        /* maintenance toggle */
+        .maint-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: rgba(255,77,77,0.04);
+            border: 1px solid rgba(255,77,77,0.15);
+            border-radius: 14px;
+            margin-bottom: 16px;
+        }
+        .maint-toggle-wrap.active {
+            background: rgba(255,77,77,0.08);
+            border-color: rgba(255,77,77,0.3);
+            box-shadow: 0 0 30px rgba(255,77,77,0.08);
+        }
+        .big-toggle {
+            width: 64px; height: 32px;
+            border-radius: 32px;
+            background: rgba(255,255,255,0.08);
+            border: none; cursor: pointer;
+            position: relative; transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        .big-toggle::after {
+            content: '';
+            position: absolute;
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            background: #555;
+            top: 4px; left: 4px;
+            transition: all 0.3s;
+        }
+        .big-toggle.on { background: rgba(255,77,77,0.3); }
+        .big-toggle.on::after { left: 36px; background: var(--primary); box-shadow: 0 0 12px rgba(255,77,77,0.5); }
+        .maint-status {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 14px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; font-family: var(--mono);
+        }
+        .maint-status.off { background: rgba(52,199,89,0.08); color: #34c759; border: 1px solid rgba(52,199,89,0.2); }
+        .maint-status.on  { background: rgba(255,77,77,0.12); color: var(--primary); border: 1px solid rgba(255,77,77,0.25); }
+        .blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
         /* Spinner */
         .spin{animation:spin 0.8s linear infinite;}
         @keyframes spin{to{transform:rotate(360deg);}}
@@ -478,11 +523,55 @@
     <!-- Tabs -->
     <div class="tabs-bar">
         <button class="tab-btn active" onclick="switchTab('overview')">📊 Overview</button>
+        <button class="tab-btn" onclick="switchTab('maintenance')">🔴 Maintenance</button>
         <button class="tab-btn" onclick="switchTab('database')">🗄️ Database</button>
         <button class="tab-btn" onclick="switchTab('sql')">⌨️ SQL Runner</button>
         <button class="tab-btn" onclick="switchTab('config')">⚙️ Config</button>
         <button class="tab-btn" onclick="switchTab('export')">📤 Export</button>
         <button class="tab-btn" onclick="switchTab('security')">🔑 Security</button>
+    </div>
+
+    <!-- ─── TAB: MAINTENANCE ─── -->
+    <div class="tab-content" id="tab-maintenance">
+        <!-- Live Status -->
+        <div class="dev-card" style="border-color:rgba(255,77,77,0.15);">
+            <div class="dev-card-title"><span>🔴</span> Site Maintenance Mode</div>
+
+            <div class="maint-toggle-wrap" id="maintToggleWrap">
+                <div>
+                    <div style="font-size:16px;font-weight:800;margin-bottom:6px;" id="maintStatusText">Loading...</div>
+                    <div style="font-size:12px;color:var(--text2);font-family:var(--mono);" id="maintStatusSub">Checking Supabase...</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="maint-status off" id="maintBadge">● LIVE</div>
+                    <button class="big-toggle" id="maintToggleBtn" onclick="toggleMaintenance()"></button>
+                </div>
+            </div>
+
+            <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:16px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;">
+                // Toggle ON করলে সাথে সাথে site বন্ধ হয়ে maintenance page দেখাবে।<br>
+                // শুধু এই panel থেকে control করা যাবে। কোনো Supabase auth লাগবে না।
+            </div>
+
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Maintenance Message (optional)</label>
+                <textarea class="dev-textarea" id="maintMessage" style="min-height:70px;" placeholder="আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে।"></textarea>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="dev-btn dev-btn-red" id="maintEnableBtn" onclick="enableMaintenance()">🔴 Enable Maintenance (Shutdown Site)</button>
+                <button class="dev-btn dev-btn-green" id="maintDisableBtn" onclick="disableMaintenance()">✅ Disable Maintenance (Go Live)</button>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="dev-card">
+            <div class="dev-card-title"><span>👁️</span> Maintenance Page Preview</div>
+            <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+                <iframe id="maintPreviewFrame" srcdoc="" style="width:100%;height:300px;border:none;background:#0a0a0f;"></iframe>
+            </div>
+            <button class="dev-btn dev-btn-blue" style="margin-top:10px;" onclick="refreshPreview()">🔄 Refresh Preview</button>
+        </div>
     </div>
 
     <!-- ─── TAB: OVERVIEW ─── -->
@@ -667,16 +756,28 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// SECURITY CONSTANTS — localStorage key (obfuscated)
+// SECURITY — Hardcoded SHA-256 Hash (never store plain password)
+// Password: [REDACTED] | Hash: split into segments, reassembled at runtime
 // ═══════════════════════════════════════════════════════════
-var _DK = '__cfg_sys_dk_v1'; // Developer hash key
-var _SK = '__cfg_sys_sk_v1'; // Session key
-var _AT = '__cfg_sys_at_v1'; // Auth time key
-var SESSION_TTL = 8 * 60 * 60 * 1000; // 8 hours in ms
+var _DK = '__cfg_sys_dk_v1';
+var _SK = '__cfg_sys_sk_v1';
+var _AT = '__cfg_sys_at_v1';
+var SESSION_TTL = 8 * 60 * 60 * 1000;
 var devLogs = [];
 
+// Hash split into 4 parts — harder to reconstruct by inspection
+var _H1 = 'ad924d24';
+var _H2 = '88ae630b';
+var _H3 = '2a9731fd';
+var _H4 = 'c8c937e5';
+var _H5 = 'dba0bed3';
+var _H6 = '7acc0cb7';
+var _H7 = '3650874d';
+var _H8 = '4f99122e';
+var MASTER_HASH = [_H1,_H2,_H3,_H4,_H5,_H6,_H7,_H8].join('');
+
 // ═══════════════════════════════════════════════════════════
-// CRYPTO — SHA-256 via Web Crypto API
+// CRYPTO
 // ═══════════════════════════════════════════════════════════
 async function sha256(str) {
     var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -684,39 +785,30 @@ async function sha256(str) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// INIT
+// INIT — No setup needed, password is pre-baked
 // ═══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function() {
-    checkInit();
+    // Hide setup mode — not needed, password is hardcoded
+    document.getElementById('setupMode').style.display = 'none';
+    document.getElementById('authMode').style.display = 'block';
+
+    // Check existing session
+    var sessionHash = sessionStorage.getItem(_SK);
+    var authTime    = sessionStorage.getItem(_AT);
+    if (sessionHash && sessionHash === MASTER_HASH && authTime && (Date.now() - parseInt(authTime)) < SESSION_TTL) {
+        unlockApp();
+    }
+
     updateClock();
     setInterval(updateClock, 1000);
     document.getElementById('accessUrl').textContent = window.location.href;
 
-    // Password strength listener
-    document.getElementById('setupPw').addEventListener('input', function() {
-        updatePwStrength(this.value, 'pwStrBar');
-    });
     document.getElementById('newPw1') && document.getElementById('newPw1').addEventListener('input', function() {
         updatePwStrength(this.value, 'newPwStrBar');
     });
 });
 
-function checkInit() {
-    var hash = localStorage.getItem(_DK);
-    if (!hash) {
-        // First time — show setup
-        document.getElementById('setupMode').style.display = 'block';
-        document.getElementById('authMode').style.display = 'none';
-    } else {
-        // Check existing session
-        var sessionHash = sessionStorage.getItem(_SK);
-        var authTime = sessionStorage.getItem(_AT);
-        if (sessionHash && sessionHash === hash && authTime && (Date.now() - parseInt(authTime)) < SESSION_TTL) {
-            // Valid session
-            unlockApp();
-        }
-    }
-}
+function checkInit() {} // legacy — not used
 
 // ═══════════════════════════════════════════════════════════
 // SETUP — First time password
@@ -779,18 +871,19 @@ async function verifyPassword() {
 // ═══════════════════════════════════════════════════════════
 function unlockApp() {
     document.getElementById('lockScreen').style.display = 'none';
-    document.getElementById('appScreen').style.display = 'block';
+    document.getElementById('appScreen').style.display  = 'block';
     loadOverview();
     loadKeysDisplay();
     loadSessionInfo();
+    loadMaintenanceStatus(); // load maintenance state on unlock
 }
 
 function lockSession() {
     sessionStorage.removeItem(_SK);
     sessionStorage.removeItem(_AT);
     document.getElementById('lockScreen').style.display = 'flex';
-    document.getElementById('appScreen').style.display = 'none';
-    document.getElementById('authPw').value = '';
+    document.getElementById('appScreen').style.display  = 'none';
+    document.getElementById('authPw').value  = '';
     document.getElementById('authErr').textContent = '';
 }
 
@@ -810,50 +903,120 @@ function toggleLockVis(id) {
 
 function updatePwStrength(pw, barId) {
     var score = 0;
-    if (pw.length >= 8) score++;
+    if (pw.length >= 8)  score++;
     if (pw.length >= 12) score++;
     if (/[A-Z]/.test(pw)) score++;
     if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
-    var bar = document.getElementById(barId);
+    var bar    = document.getElementById(barId);
     var colors = ['#ff4d4d','#ff9500','#ffd700','#34c759','#00ff88'];
-    bar.style.width = (score * 20) + '%';
+    bar.style.width      = (score * 20) + '%';
     bar.style.background = colors[score - 1] || 'rgba(255,255,255,0.1)';
 }
 
+// changePassword — not needed since password is fixed master hash
 async function changePassword() {
-    var oldPw = document.getElementById('oldPw').value;
-    var newPw1 = document.getElementById('newPw1').value;
-    var newPw2 = document.getElementById('newPw2').value;
-
-    if (!oldPw || !newPw1 || !newPw2) { devToast('⚠️ All fields required', '#ffd700'); return; }
-    if (newPw1 !== newPw2) { devToast('✗ New passwords do not match', '#ff4d4d'); return; }
-    if (newPw1.length < 8) { devToast('✗ Min 8 characters', '#ff4d4d'); return; }
-
-    var oldHash = await sha256(oldPw + '_devkey_2025');
-    var storedHash = localStorage.getItem(_DK);
-    if (oldHash !== storedHash) { devToast('✗ Current password incorrect', '#ff4d4d'); return; }
-
-    var newHash = await sha256(newPw1 + '_devkey_2025');
-    localStorage.setItem(_DK, newHash);
-    sessionStorage.setItem(_SK, newHash);
-    document.getElementById('oldPw').value = '';
-    document.getElementById('newPw1').value = '';
-    document.getElementById('newPw2').value = '';
-    devLog('Password changed', 'ok');
-    devToast('✅ Password changed!', '#00ff88');
+    devToast('⚠️ Master password is fixed. Edit devtools.html to change.', '#ffd700');
 }
 
 async function resetDevAccess() {
-    var pw = prompt('Enter current developer password to reset:');
-    if (!pw) return;
-    var hash = await sha256(pw + '_devkey_2025');
-    if (hash !== localStorage.getItem(_DK)) { devToast('✗ Wrong password', '#ff4d4d'); return; }
-    localStorage.removeItem(_DK);
-    sessionStorage.removeItem(_SK);
-    sessionStorage.removeItem(_AT);
-    devToast('Developer access reset. Reload to setup again.', '#ffd700');
-    setTimeout(function(){ window.location.reload(); }, 2000);
+    devToast('⚠️ Master password is fixed in code. Cannot reset here.', '#ffd700');
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAINTENANCE MODE
+// ═══════════════════════════════════════════════════════════
+var _maintActive = false;
+
+function loadMaintenanceStatus() {
+    sb.from('settings').select('maintenance_mode, maintenance_message').eq('id', 1).single().then(function(r) {
+        var s = r.data || {};
+        _maintActive = s.maintenance_mode === true;
+        updateMaintUI(_maintActive, s.maintenance_message || '');
+        refreshPreview();
+    });
+}
+
+function updateMaintUI(isOn, msg) {
+    var wrap   = document.getElementById('maintToggleWrap');
+    var badge  = document.getElementById('maintBadge');
+    var btn    = document.getElementById('maintToggleBtn');
+    var statusT = document.getElementById('maintStatusText');
+    var statusS = document.getElementById('maintStatusSub');
+    var msgEl  = document.getElementById('maintMessage');
+
+    if (isOn) {
+        wrap.classList.add('active');
+        badge.className  = 'maint-status on';
+        badge.innerHTML  = '<span class="blink">●</span> MAINTENANCE';
+        btn.classList.add('on');
+        statusT.textContent = '🔴 Site is DOWN — Maintenance Mode ON';
+        statusT.style.color = 'var(--primary)';
+        statusS.textContent = '// visitors see maintenance page';
+    } else {
+        wrap.classList.remove('active');
+        badge.className  = 'maint-status off';
+        badge.textContent = '● LIVE';
+        btn.classList.remove('on');
+        statusT.textContent = '✅ Site is LIVE — Running normally';
+        statusT.style.color = 'var(--green)';
+        statusS.textContent = '// all visitors can access the site';
+    }
+    if (msgEl && msg) msgEl.value = msg;
+}
+
+async function enableMaintenance() {
+    var msg = (document.getElementById('maintMessage').value.trim()) || 'আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে। 🔧';
+    if (!confirm('⚠️ এখনই site বন্ধ করবেন? সব visitor maintenance page দেখবে।')) return;
+
+    var r = await sb.from('settings').upsert([{ id: 1, maintenance_mode: true, maintenance_message: msg }]);
+    if (r.error) { devToast('✗ Error: ' + r.error.message, '#ff4d4d'); return; }
+    _maintActive = true;
+    updateMaintUI(true, msg);
+    refreshPreview();
+    devLog('MAINTENANCE MODE ENABLED', 'err');
+    devToast('🔴 Site is now in MAINTENANCE MODE!', '#ff4d4d');
+}
+
+async function disableMaintenance() {
+    if (!confirm('Site live করবেন? সব visitor access পাবে।')) return;
+
+    var r = await sb.from('settings').update({ maintenance_mode: false }).eq('id', 1);
+    if (r.error) { devToast('✗ Error: ' + r.error.message, '#ff4d4d'); return; }
+    _maintActive = false;
+    updateMaintUI(false, '');
+    refreshPreview();
+    devLog('Maintenance mode disabled — site LIVE', 'ok');
+    devToast('✅ Site is now LIVE!', '#00ff88');
+}
+
+function toggleMaintenance() {
+    if (_maintActive) disableMaintenance();
+    else enableMaintenance();
+}
+
+function refreshPreview() {
+    var msg = document.getElementById('maintMessage').value.trim() || 'আমরা শীঘ্রই ফিরে আসছি।';
+    var frame = document.getElementById('maintPreviewFrame');
+    var isOn  = _maintActive;
+    frame.srcdoc = getMaintPageHtml(isOn, msg);
+}
+
+function getMaintPageHtml(isOn, msg) {
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+        'body{margin:0;background:#0a0a0f;color:#f0f0f0;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;text-align:center;padding:20px;}' +
+        '.icon{font-size:52px;margin-bottom:16px;animation:float 3s ease-in-out infinite;}' +
+        '@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}' +
+        '.title{font-size:22px;font-weight:800;margin-bottom:10px;}' +
+        '.sub{font-size:14px;color:#888;max-width:400px;line-height:1.7;}' +
+        '.badge{margin-top:20px;padding:6px 16px;border-radius:20px;font-size:11px;font-weight:700;font-family:monospace;' +
+            (isOn ? 'background:rgba(255,77,77,0.1);color:#ff4d4d;border:1px solid rgba(255,77,77,0.2);' : 'background:rgba(52,199,89,0.1);color:#34c759;border:1px solid rgba(52,199,89,0.2);') + '}' +
+        '</style></head><body>' +
+        '<div class="icon">' + (isOn ? '🔧' : '✅') + '</div>' +
+        '<div class="title">' + (isOn ? 'Site Under Maintenance' : 'Site is Live!') + '</div>' +
+        '<div class="sub">' + msg + '</div>' +
+        '<div class="badge">' + (isOn ? '● MAINTENANCE MODE' : '● LIVE') + '</div>' +
+        '</body></html>';
 }
 
 // ═══════════════════════════════════════════════════════════

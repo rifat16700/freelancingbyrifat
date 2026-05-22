@@ -188,6 +188,13 @@ function loadSiteData() {
         });
 
         siteSettings = settings;
+
+        // ═ MAINTENANCE MODE CHECK ═
+        if (settings.maintenance_mode === true) {
+            showMaintenancePage(settings.maintenance_message || 'আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে।');
+            return;
+        }
+
         applySettings(settings);
         renderHero(banners);
         renderCategories(cats);
@@ -199,6 +206,28 @@ function loadSiteData() {
         console.error(err);
         document.getElementById('pageLoader').style.display = 'none';
     });
+}
+
+// ── Maintenance Page ───────────────────────────────────────────
+function showMaintenancePage(msg) {
+    document.getElementById('pageLoader').style.display = 'none';
+    document.body.innerHTML = '<style>' +
+        '@import url(\'https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap\');' +
+        '*{margin:0;padding:0;box-sizing:border-box;}' +
+        'body{background:#0a0a0f;color:#f0f0f0;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;text-align:center;padding:24px;}' +
+        'body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(139,26,26,0.08),transparent 70%);pointer-events:none;}' +
+        '.icon{font-size:72px;margin-bottom:24px;animation:float 3s ease-in-out infinite;}' +
+        '@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}' +
+        '.title{font-size:28px;font-weight:800;margin-bottom:12px;letter-spacing:-0.5px;}' +
+        '.msg{font-size:15px;color:#888;max-width:420px;line-height:1.8;margin-bottom:28px;}' +
+        '.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:30px;font-size:12px;font-weight:700;background:rgba(255,77,77,0.08);color:#ff6b6b;border:1px solid rgba(255,77,77,0.2);}' +
+        '.dot{width:8px;height:8px;border-radius:50%;background:#ff4d4d;animation:pulse 1.5s ease-in-out infinite;}' +
+        '@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.3;transform:scale(0.6);}}' +
+        '</style>' +
+        '<div class="icon">\ud83d\udd27</div>' +
+        '<div class="title">Site Under Maintenance</div>' +
+        '<div class="msg">' + (msg || '\u0986\u09ae\u09b0\u09be \u09b6\u09c0\u0998\u09cd\u09b0\u0987 \u09ab\u09bf\u09b0\u09c7 \u0986\u09b8\u099b\u09bf\u0964') + '</div>' +
+        '<div class="badge"><div class="dot"></div> Maintenance Mode Active</div>';
 }
 
 // ── Apply Settings ────────────────────────────────────────────
