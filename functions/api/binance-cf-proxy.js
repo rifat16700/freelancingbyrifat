@@ -19,7 +19,7 @@
 //   → "Verification System" dropdown → "Cloudflare Proxy"
 // ============================================================
 
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './_config.js';
+import { getConfig } from '../utils/config.js';
 
 // ── CORS headers helper ───────────────────────────────────────
 function corsHeaders(origin) {
@@ -33,6 +33,9 @@ function corsHeaders(origin) {
 
 // ── Main handler ──────────────────────────────────────────────
 export async function onRequest(context) {
+    const config = getConfig(context.env);
+    const SUPABASE_URL = config.SUPABASE_URL;
+    const SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
     const { request } = context;
     const origin = request.headers.get('Origin') || '*';
 
