@@ -21,6 +21,40 @@
 
 import { getConfig } from '../utils/config.js';
 
+// ── Helper: fetch settings from whichever DB is active ───────
+async function fetchSettings(config, fields) {
+    if (config.DB_PROVIDER === 'appwrite') {
+        const dbId   = config.APPWRITE_DATABASE_ID;
+        const collId = config.APPWRITE_COLLECTION_SETTINGS;
+        const url    = `${config.APPWRITE_ENDPOINT}/databases/${dbId}/collections/${collId}/documents`;
+        const params = new URLSearchParams();
+        params.append('queries[]', 'limit(1)');
+        const res  = await fetch(`${url}?${params}`, {
+            headers: {
+                'X-Appwrite-Project': config.APPWRITE_PROJECT,
+                'X-Appwrite-Key':     config.APPWRITE_API_KEY,
+            },
+        });
+        if (!res.ok) throw new Error(`Appwrite settings fetch failed: ${res.status}`);
+        const json = await res.json();
+        return json.documents?.[0] || {};
+    } else {
+        const fieldsParam = fields ? fields.join(',') : '*';
+        const res = await fetch(
+            `${config.SUPABASE_URL}/rest/v1/settings?id=eq.1&select=${fieldsParam}`,
+            {
+                headers: {
+                    'apikey':        config.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${config.SUPABASE_ANON_KEY}`,
+                },
+            }
+        );
+        if (!res.ok) throw new Error(`Supabase settings fetch failed: ${res.status}`);
+        const data = await res.json();
+        return Array.isArray(data) ? (data[0] || {}) : data;
+    }
+}
+
 // ── CORS headers helper ───────────────────────────────────────
 function corsHeaders(origin) {
     return {
@@ -34,8 +68,6 @@ function corsHeaders(origin) {
 // ── Main handler ──────────────────────────────────────────────
 export async function onRequest(context) {
     const config = getConfig(context.env);
-    const SUPABASE_URL = config.SUPABASE_URL;
-    const SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY;
     const { request } = context;
     const origin = request.headers.get('Origin') || '*';
 
@@ -69,25 +101,15 @@ export async function onRequest(context) {
         );
     }
 
-    // ── Step 1: Fetch Binance API Key + Secret from Supabase ──
+    // ── Step 1: Fetch Binance API Key + Secret (DB_PROVIDER aware) ──
     let binanceApiKey, binanceApiSecret;
     try {
-        const settingsRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/settings?id=eq.1&select=binance_api_key,binance_api_secret`,
-            {
-                headers: {
-                    'apikey':        SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                },
-            }
-        );
-        const settingsData = await settingsRes.json();
-        const row = Array.isArray(settingsData) ? settingsData[0] : settingsData;
+        const row    = await fetchSettings(config, ['binance_api_key', 'binance_api_secret']);
         binanceApiKey    = (row?.binance_api_key    || '').trim();
         binanceApiSecret = (row?.binance_api_secret || '').trim();
     } catch (err) {
         return new Response(
-            JSON.stringify({ success: false, error: 'Failed to fetch Binance credentials from Supabase', detail: String(err) }),
+            JSON.stringify({ success: false, error: 'Failed to fetch Binance credentials', detail: String(err) }),
             { status: 502, headers: corsHeaders(origin) }
         );
     }
