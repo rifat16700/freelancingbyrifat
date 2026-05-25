@@ -12,7 +12,8 @@ import { getConfig } from '../utils/config.js';
 const JSON_FIELDS = [
     'variants', 'gallery_images', 'items', 'addons',
     'messaging_apps', 'product_ids', 'category_ids',
-    'districts', 'delivery_zones',
+    'districts', 'delivery_zones', 'telegram_main_chats',
+    'crypto_coins'
 ];
 
 // ── Serialize JS object → JSON string for Appwrite inserts ───
