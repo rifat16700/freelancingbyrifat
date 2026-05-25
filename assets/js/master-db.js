@@ -122,27 +122,36 @@ var MasterDBAuth = {
         if (res.error || !res.ok) {
             return { data: null, error: { message: res.error || 'Login failed' } };
         }
-        // Persist token locally
-        localStorage.setItem(_SESSION_TOKEN,    res.token);
-        localStorage.setItem(_SESSION_ID,       res.sessionId || '');
+        // Persist token + session info locally
+        localStorage.setItem(_SESSION_TOKEN,         res.token);
+        localStorage.setItem(_SESSION_ID,            res.sessionId || '');
+        localStorage.setItem('fbr_admin_login_time', Date.now().toString());
         // Return Supabase-shaped response
         return { data: { session: { access_token: res.token }, user: res.user }, error: null };
     },
 
     // ── Get current session ────────────────────────────────────
+    // Uses local timestamp — avoids unnecessary API calls on every page load
+    // which caused the redirect loop.
     getSession: async function() {
         var token     = localStorage.getItem(_SESSION_TOKEN);
         var sessionId = localStorage.getItem(_SESSION_ID);
+        var loginTime = parseInt(localStorage.getItem('fbr_admin_login_time') || '0', 10);
+
         if (!token) return { data: { session: null }, error: null };
 
-        const res = await _authCall({ action: 'check', token, sessionId });
-        if (!res.ok) {
-            // Session expired — clear storage
+        // Session expires after 24 hours locally
+        var SESSION_TTL = 24 * 60 * 60 * 1000;
+        if (Date.now() - loginTime > SESSION_TTL) {
+            // Expired locally — clear and return null
             localStorage.removeItem(_SESSION_TOKEN);
             localStorage.removeItem(_SESSION_ID);
+            localStorage.removeItem('fbr_admin_login_time');
             return { data: { session: null }, error: null };
         }
-        return { data: { session: { access_token: token }, user: res.user }, error: null };
+
+        // Token exists and not expired locally — session is valid
+        return { data: { session: { access_token: token }, user: {} }, error: null };
     },
 
     // ── Sign out ───────────────────────────────────────────────
@@ -152,6 +161,7 @@ var MasterDBAuth = {
         await _authCall({ action: 'logout', token, sessionId });
         localStorage.removeItem(_SESSION_TOKEN);
         localStorage.removeItem(_SESSION_ID);
+        localStorage.removeItem('fbr_admin_login_time');
         return { error: null };
     },
 
