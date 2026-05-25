@@ -126,6 +126,7 @@ var MasterDBAuth = {
         localStorage.setItem(_SESSION_TOKEN,         res.token);
         localStorage.setItem(_SESSION_ID,            res.sessionId || '');
         localStorage.setItem('fbr_admin_login_time', Date.now().toString());
+        localStorage.setItem('fbr_admin_email',      res.user && res.user.email ? res.user.email : email);
         // Return Supabase-shaped response
         return { data: { session: { access_token: res.token }, user: res.user }, error: null };
     },
@@ -162,6 +163,7 @@ var MasterDBAuth = {
         localStorage.removeItem(_SESSION_TOKEN);
         localStorage.removeItem(_SESSION_ID);
         localStorage.removeItem('fbr_admin_login_time');
+        localStorage.removeItem('fbr_admin_email');
         return { error: null };
     },
 

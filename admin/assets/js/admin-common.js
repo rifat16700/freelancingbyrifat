@@ -131,7 +131,7 @@ function adminInit(activePage, onReady) {
         return; // skip Supabase session check
     }
 
-    // ── Supabase Google OAuth session check ──
+    // ── MasterDB session check (works with Supabase + Appwrite) ──
     MasterDB.auth.getSession().then(function(res) {
         var session = res.data && res.data.session;
 
@@ -140,13 +140,13 @@ function adminInit(activePage, onReady) {
             return;
         }
 
-        // Set user info in sidebar
-        var email = session.user.email || '';
+        // Get email from localStorage (stored at login time)
+        var email   = localStorage.getItem('fbr_admin_email') || '';
         var initial = email.charAt(0).toUpperCase() || 'A';
 
-        var emailEl = document.getElementById('adminUserEmail');
+        var emailEl  = document.getElementById('adminUserEmail');
         var avatarEl = document.getElementById('userAvatar');
-        if (emailEl) emailEl.textContent = email;
+        if (emailEl)  emailEl.textContent  = email || 'Admin';
         if (avatarEl) avatarEl.textContent = initial;
 
         // Set active nav item
