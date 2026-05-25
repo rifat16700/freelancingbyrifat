@@ -74,8 +74,11 @@ class MasterDBQueryBuilder {
             headFlag:    this.headFlag,
             countType:   this.countType,
             rangeArr:    this.rangeArr,
-            // ── Attach admin token if logged in ──────────────────
-            adminToken:  localStorage.getItem('fbr_admin_token') || '',
+            // ── Official platform tokens ─────────────────────
+            // Supabase: JWT token | Appwrite: session secret
+            adminToken:  localStorage.getItem('fbr_admin_token')      || '',
+            // Appwrite only: session $id (needed for session verify)
+            sessionId:   localStorage.getItem('fbr_admin_session_id') || '',
         };
 
         try {

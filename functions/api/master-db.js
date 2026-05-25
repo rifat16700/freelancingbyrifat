@@ -45,25 +45,36 @@ function deserializeJsonFields(row) {
 // ─────────────────────────────────────────────────────────────
 // MAIN ENTRY POINT
 // ─────────────────────────────────────────────────────────────
-// ── Verify HMAC admin token (same logic as admin-auth.js) ───
-async function isAdminToken(token, secret) {
-    if (!token || !secret) return false;
+
+// ── Supabase: verify JWT via official /auth/v1/user endpoint ──
+async function verifySupabaseToken(config, token) {
+    if (!token) return false;
     try {
-        const [b64, sig] = token.split('.');
-        if (!b64 || !sig) return false;
-        const payload = atob(b64);
-        const data    = JSON.parse(payload);
-        if (Date.now() > data.exp) return false;
-        // Recompute HMAC
-        const enc = new TextEncoder();
-        const key = await crypto.subtle.importKey(
-            'raw', enc.encode(secret),
-            { name: 'HMAC', hash: 'SHA-256' },
-            false, ['sign']
-        );
-        const raw      = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
-        const expected = btoa(String.fromCharCode(...new Uint8Array(raw)));
-        return sig === expected;
+        const res = await fetch(`${config.SUPABASE_URL}/auth/v1/user`, {
+            headers: {
+                'apikey':        config.SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+        return res.ok;
+    } catch { return false; }
+}
+
+// ── Appwrite: verify session via official /account/sessions endpoint ──
+async function verifyAppwriteSession(config, token, sessionId) {
+    if (!token) return false;
+    try {
+        const url = sessionId
+            ? `${config.APPWRITE_ENDPOINT}/account/sessions/${sessionId}`
+            : `${config.APPWRITE_ENDPOINT}/account/sessions/current`;
+
+        const res = await fetch(url, {
+            headers: {
+                'X-Appwrite-Project': config.APPWRITE_PROJECT,
+                'X-Appwrite-Session': token,
+            },
+        });
+        return res.ok;
     } catch { return false; }
 }
 
@@ -86,11 +97,20 @@ export async function onRequestPost(context) {
             );
         }
 
-        // ── Check if request comes from a verified admin ──────────
+        // ── Verify admin token using the OFFICIAL platform auth API ──
         const adminToken = req.adminToken || '';
-        const isAdmin    = await isAdminToken(adminToken, config.ADMIN_SECRET);
+        const sessionId  = req.sessionId  || '';
+        let   isAdmin    = false;
 
-        // Non-admin write attempts → reject
+        if (adminToken) {
+            if (config.DB_PROVIDER === 'appwrite') {
+                isAdmin = await verifyAppwriteSession(config, adminToken, sessionId);
+            } else {
+                isAdmin = await verifySupabaseToken(config, adminToken);
+            }
+        }
+
+        // Non-admin write attempts → block
         const WRITE_ACTIONS = ['insert', 'update', 'upsert', 'delete'];
         if (WRITE_ACTIONS.includes(action) && !isAdmin) {
             return new Response(
@@ -100,9 +120,11 @@ export async function onRequestPost(context) {
         }
 
         if (config.DB_PROVIDER === 'appwrite') {
+            // Appwrite: pass isAdmin flag — uses API key for DB ops
             return await handleAppwrite(config, req, corsHeaders, isAdmin);
         } else {
-            return await handleSupabase(config, req, corsHeaders, isAdmin);
+            // Supabase: pass the actual user JWT for proper RLS
+            return await handleSupabase(config, req, corsHeaders, isAdmin, adminToken);
         }
 
     } catch (error) {
@@ -116,18 +138,25 @@ export async function onRequestPost(context) {
 // ─────────────────────────────────────────────────────────────
 // SUPABASE HANDLER
 // ─────────────────────────────────────────────────────────────
-async function handleSupabase(config, req, corsHeaders, isAdmin = false) {
+async function handleSupabase(config, req, corsHeaders, isAdmin = false, userJwt = '') {
     const {
         table, action,
         selectCols, filters, orderObj, limitNum,
         isSingle, payloadData, headFlag, countType, rangeArr,
     } = req;
 
-    // Admin uses SERVICE_ROLE key (bypasses RLS)
-    // Public uses ANON key (respects RLS — read-only)
-    const authKey = (isAdmin && config.SUPABASE_SERVICE_ROLE_KEY)
-        ? config.SUPABASE_SERVICE_ROLE_KEY
-        : config.SUPABASE_ANON_KEY;
+    // ── Key selection logic ────────────────────────────────
+    // Admin + SERVICE_ROLE exists  → use service_role (full RLS bypass)
+    // Admin + no SERVICE_ROLE      → use user JWT (proper authenticated RLS)
+    // Public                       → use anon key (read-only public access)
+    let authKey;
+    if (isAdmin && config.SUPABASE_SERVICE_ROLE_KEY) {
+        authKey = config.SUPABASE_SERVICE_ROLE_KEY;
+    } else if (isAdmin && userJwt) {
+        authKey = userJwt;   // user JWT → RLS sees authenticated user
+    } else {
+        authKey = config.SUPABASE_ANON_KEY;
+    }
 
     let url = `${config.SUPABASE_URL}/rest/v1/${table}`;
     const params = new URLSearchParams();
