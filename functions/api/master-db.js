@@ -239,6 +239,16 @@ async function handleSupabase(config, req, corsHeaders, isAdmin = false, userJwt
     });
 }
 
+// ── Map Supabase field names → Appwrite attribute names ─────
+function mapFieldName(col) {
+    const MAP = {
+        'id':         '$id',
+        'created_at': '$createdAt',
+        'updated_at': '$updatedAt',
+    };
+    return MAP[col] || col;
+}
+
 // ── Appwrite query builder (JSON format for v1.9.5+) ────────
 const Q = {
     equal:              (attr, val)  => JSON.stringify({ method: 'equal',              attribute: attr, values: Array.isArray(val) ? val : [val] }),
@@ -289,7 +299,7 @@ async function handleAppwrite(config, req, corsHeaders) {
             // Filters
             if (filters && filters.length > 0) {
                 filters.forEach(f => {
-                    const col = f.args[0] === 'id' ? '$id' : f.args[0];
+                    const col = mapFieldName(f.args[0]);
                     const val = f.args[1];
 
                     switch (f.method) {
@@ -305,9 +315,10 @@ async function handleAppwrite(config, req, corsHeaders) {
                 });
             }
 
-            // Order
+            // Order — map field names to Appwrite system attrs
             if (orderObj) {
-                const q = orderObj.ascending ? Q.orderAsc(orderObj.col) : Q.orderDesc(orderObj.col);
+                const col = mapFieldName(orderObj.col);
+                const q   = orderObj.ascending ? Q.orderAsc(col) : Q.orderDesc(col);
                 params.append('queries[]', q);
             }
 
