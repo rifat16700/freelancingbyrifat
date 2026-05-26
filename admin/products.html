@@ -770,13 +770,12 @@
             base_price:       parseInt(document.getElementById('pBasePrice').value) || 0,
             flash_sale_price: parseInt(document.getElementById('pFlashPrice').value) || 0,
             flash_sale_end:   document.getElementById('pFlashEnd').value || null,
-            video_url:        document.getElementById('pVideoUrl').value.trim(),
+            video_url:        document.getElementById('pVideoUrl').value.trim() || null,
             video_type:       document.getElementById('pVideoType').value,
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),
             is_add_once:      document.getElementById('pAddOnce').classList.contains('on'),
-            category_id:      selectedCats.length > 0 ? selectedCats[0] : null,
-            // parseImageInput দিয়ে clean URL সেভ করো
+            // gallery_images ও variants JSON হিসেবে সেভ হবে
             gallery_images:   collectGallery()
                                 .map(function(s) { return parseImageInput(s).saveUrl || s.trim(); })
                                 .filter(Boolean),
