@@ -825,7 +825,7 @@ function toggleDelDiscountField() {
 
 function savePromo() {
     var rawCode = document.getElementById('pCode').value.trim().toUpperCase();
-    var val = parseFloat(document.getElementById('pDiscount').value) || 0;
+    var val = parseInt(document.getElementById('pDiscount').value) || 0;
     if (!rawCode || val <= 0) { showToast('Valid code and value required', 'error'); return; }
 
     var payload = {
@@ -837,11 +837,11 @@ function savePromo() {
         type:        document.getElementById('pType').value,
         disc_type:   document.getElementById('pDiscType').value,
         disc_val:    val,
-        max_cap:     parseFloat(document.getElementById('pMaxCap').value)    || null,
-        min_spend:   parseFloat(document.getElementById('pMinSpend').value)  || null,
+        max_cap:     parseInt(document.getElementById('pMaxCap').value)    || null,
+        min_spend:   parseInt(document.getElementById('pMinSpend').value)  || null,
         del_reward:  document.getElementById('pDelReward').value,
-        del_disc_amount: parseFloat(document.getElementById('pDelDiscAmount').value) || null,
-        del_disc_cap:    parseFloat((document.getElementById('pDelDiscCap')||{}).value) || null,
+        del_disc_amount: parseInt(document.getElementById('pDelDiscAmount').value) || null,
+        del_disc_cap:    parseInt((document.getElementById('pDelDiscCap')||{}).value) || null,
         applicable_products:   getChipValues('pProducts'),
         applicable_categories: getChipValues('pCategories'),
         applicable_districts:  getChipValues('pDistricts'),
@@ -883,7 +883,7 @@ function toggleRepDiscTypeFields() {
 }
 
 function saveRepeatCustConfig() {
-    var val = parseFloat(document.getElementById('repValue').value) || 0;
+    var val = parseInt(document.getElementById('repValue').value) || 0;
     if (val <= 0) { showToast('Valid value required', 'error'); return; }
     var repRow = allPromos.find(function(p) { return p.is_repeated_config || (p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG')); });
     var payload = {
@@ -894,9 +894,9 @@ function saveRepeatCustConfig() {
         type: 'private',
         rep_type:        document.getElementById('repType').value,
         rep_value:       val,
-        rep_cap:         parseFloat(document.getElementById('repCap').value) || null,
+        rep_cap:         parseInt(document.getElementById('repCap').value) || null,
         rep_expiry_days: parseInt(document.getElementById('repExpiryDays').value) || null,
-        rep_min_spend:   parseFloat(document.getElementById('repMinSpend').value) || null,
+        rep_min_spend:   parseInt(document.getElementById('repMinSpend').value) || null,
         rep_del_reward:  document.getElementById('repDelReward').value
     };
     var req = repRow ? MasterDB.from('promos').update(payload).eq('id', repRow.id) : MasterDB.from('promos').insert([payload]);
