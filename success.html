@@ -5,7 +5,9 @@
     <title>Order Confirmed — Freelancing By Rifat</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="assets/js/config.js"></script><script src="assets/js/master-db.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-init.js"></script>
     <style>
         body { background: linear-gradient(135deg, #f0fff4, #e8f5e9); min-height: 100vh; }
         .success-container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -117,8 +119,14 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('displayOrderId').textContent = orderId;
     document.getElementById('trackLink').href = 'track.html?id=' + orderId;
 
-    var p1 = MasterDB.from('settings').select('*').eq('id',1).single();
-    var p2 = MasterDB.from('orders').select('*').eq('id', orderId).single();
+    var p1, p2;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
+        p2 = supabaseClient.from('orders').select('*').eq('id', orderId).single();
+    } else {
+        p1 = Promise.resolve({ data: {} });
+        p2 = Promise.resolve({ data: null });
+    }
 
     Promise.all([p1, p2]).then(function(results) {
         document.getElementById('pageLoader').style.display = 'none';

@@ -4,7 +4,9 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cart — Freelancing By Rifat</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/config.js"></script><script src="assets/js/master-db.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-init.js"></script>
     <style>
         .cart-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; padding: 20px 0; }
         .order-summary { background: #fff; border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border); position: sticky; top: 80px; height: fit-content; }
@@ -155,7 +157,16 @@ var cartSettings = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     // Settings লোড করো (messaging apps + store name)
-    MasterDB.from('settings').select('*').eq('id', 1).single().then(function(r) {
+    var settingsPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        settingsPromise = supabaseClient.from('settings').select('*').eq('id', 1).single();
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        settingsPromise = Promise.resolve({ data: {} }); // [APPWRITE ALTERNATIVE]
+    } else {
+        settingsPromise = Promise.reject(new Error('Unknown DB_PROVIDER'));
+    }
+
+    settingsPromise.then(function(r) {
         if (r.data) {
             cartSettings = r.data;
             if (r.data.store_name) {

@@ -8,7 +8,8 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/premium-icons.css">
     <script src="assets/js/config.js"></script>
-    <script src="assets/js/master-db.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-init.js"></script>
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
     <style>
         .policy-container {
@@ -452,7 +453,12 @@ function switchLang(lang) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    var p1 = MasterDB.from('settings').select('*').eq('id', 1).single();
+    var p1;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        p1 = supabaseClient.from('settings').select('*').eq('id', 1).single();
+    } else {
+        p1 = Promise.resolve({ data: {} });
+    }
     p1.then(function(res) {
         if(res.data) {
             var name = res.data.store_name || CONFIG.STORE_NAME;

@@ -4,7 +4,9 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product — Freelancing By Rifat</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/config.js"></script><script src="assets/js/master-db.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-init.js"></script>
     <style>
         .product-page { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 24px 0; }
         .gallery-main { position: relative; aspect-ratio: 1; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-light); }
@@ -261,15 +263,21 @@ document.addEventListener('DOMContentLoaded', function() {
     var id = new URLSearchParams(window.location.search).get('id');
     if (!id) { window.location.href = '404.html'; return; }
 
-    var p1 = MasterDB.from('settings').select('*').eq('id',1).single();
-    // Fetch single product via Cloudflare proxy instead of direct Supabase call
+    var p1, p3, p5, p6;
     var p2 = fetch('/api/get-single-product?id=' + id).then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) && data.length ? data[0] : null }; });
-    // Fetch ratings only to calculate average/count efficiently
-    var p3 = MasterDB.from('reviews').select('rating').eq('product_id', id).eq('is_approved', true);
     var p4 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
-    var p5 = MasterDB.from('product_categories').select('*');
-    // Fetch first batch of approved reviews (limit to REVIEWS_PAGE_SIZE)
-    var p6 = MasterDB.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false }).range(0, REVIEWS_PAGE_SIZE - 1);
+
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
+        p3 = supabaseClient.from('reviews').select('rating').eq('product_id', id).eq('is_approved', true);
+        p5 = supabaseClient.from('product_categories').select('*');
+        p6 = supabaseClient.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false }).range(0, REVIEWS_PAGE_SIZE - 1);
+    } else {
+        p1 = Promise.resolve({ data: {} });
+        p3 = Promise.resolve({ data: [] });
+        p5 = Promise.resolve({ data: [] });
+        p6 = Promise.resolve({ data: [] });
+    }
 
     Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
         settings = results[0].data || {};
@@ -1011,13 +1019,18 @@ function showMoreReviews() {
     btn.textContent = '⏳ লোড হচ্ছে...';
     
     var id = new URLSearchParams(window.location.search).get('id');
-    MasterDB.from('reviews')
-      .select('*')
-      .eq('product_id', id)
-      .eq('is_approved', true)
-      .order('created_at', { ascending: false })
-      .range(reviewsShown, reviewsShown + REVIEWS_PAGE_SIZE - 1)
-      .then(function(res) {
+    var reviewsPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        reviewsPromise = supabaseClient.from('reviews')
+          .select('*')
+          .eq('product_id', id)
+          .eq('is_approved', true)
+          .order('created_at', { ascending: false })
+          .range(reviewsShown, reviewsShown + REVIEWS_PAGE_SIZE - 1);
+    } else {
+        reviewsPromise = Promise.resolve({ data: [] });
+    }
+    reviewsPromise.then(function(res) {
           btn.disabled = false;
           var data = res.data || [];
           if (data.length > 0) {
@@ -1064,10 +1077,17 @@ function submitReview() {
     if (!name) { alert('Please enter your name'); return; }
     if (!rating) { alert('Please select a rating'); return; }
 
-    MasterDB.from('reviews').insert([{
+    var insPromise;
+    var rvData = {
         product_id: product.id, customer_name: name, customer_phone: phone,
         rating: rating, review_text: text, review_image: img || null, is_approved: false
-    }]).then(function(r) {
+    };
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        insPromise = supabaseClient.from('reviews').insert([rvData]);
+    } else {
+        insPromise = Promise.resolve({ data: null, error: { message: 'Not implemented' } });
+    }
+    insPromise.then(function(r) {
         if (r.error) {
             console.error('Review submit error:', r.error);
             alert('Failed to submit review.\nError: ' + r.error.message + '\n\nFix: Supabase SQL Editor এ reviews table এ public insert policy যোগ করো।');

@@ -4,7 +4,9 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout — Freelancing By Rifat</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/config.js"></script><script src="assets/js/master-db.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-init.js"></script>
     <style>
         .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; padding: 20px 0 40px; }
         .section-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 16px; }
@@ -439,11 +441,21 @@ document.addEventListener('DOMContentLoaded', function() {
     var pyOrderId = getParam('order_id', 'orderId');
     var pyTrxId   = getParam('transaction_id', 'transactionId') || getParam('trx_id', 'tran_id');
 
-    var p1 = MasterDB.from('settings').select('*').eq('id',1).single();
-    var p2 = MasterDB.from('delivery_zones').select('*');
-    var p3 = MasterDB.from('addons').select('*').eq('is_active',true).order('created_at');
-    var p4 = MasterDB.from('promos').select('*').eq('is_active',true);
-    var p5 = MasterDB.from('products').select('id,name,base_price,flash_sale_price,gallery_images,variants').eq('is_add_once',true).eq('is_active',true);
+    var p1, p2, p3, p4, p5;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
+        p2 = supabaseClient.from('delivery_zones').select('*');
+        p3 = supabaseClient.from('addons').select('*').eq('is_active',true).order('created_at');
+        p4 = supabaseClient.from('promos').select('*').eq('is_active',true);
+        p5 = supabaseClient.from('products').select('id,name,base_price,flash_sale_price,gallery_images,variants').eq('is_add_once',true).eq('is_active',true);
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE]
+        p1 = Promise.resolve({data: {}});
+        p2 = Promise.resolve({data: []});
+        p3 = Promise.resolve({data: []});
+        p4 = Promise.resolve({data: []});
+        p5 = Promise.resolve({data: []});
+    }
 
     Promise.all([p1, p2, p3, p4, p5]).then(function(results) {
         settings = results[0].data || {};
@@ -1491,7 +1503,13 @@ function placeOrder() {
     btn.disabled = true;
     btn.textContent = 'Placing Order...';
 
-    MasterDB.from('orders').insert([orderData]).then(function(r) {
+    var insertPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        insertPromise = supabaseClient.from('orders').insert([orderData]);
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        insertPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not yet implemented' } });
+    }
+    insertPromise.then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
         sendOrderNotification(orderData);
         // Direct Order হলে শুধু direct key clear করো — main cart অক্ষত থাকবে
@@ -1524,7 +1542,13 @@ function initiateGatewayPayment(orderId, total, orderData) {
         cancel_url:  cUrl
     };
 
-    MasterDB.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]).then(function(r) {
+    var insertPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        insertPromise = supabaseClient.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]);
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        insertPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not yet implemented' } });
+    }
+    insertPromise.then(function(r) {
         if (r.error) { alert('Order save failed: ' + r.error.message); return; }
 
         fetch(proxyUrl + '?action=create', {
@@ -1553,7 +1577,13 @@ function verifyGatewayPayment(orderId, trxId) {
     document.getElementById('pageLoader').style.display = 'flex';
     document.getElementById('pageLoader').innerHTML = '<div class="spinner"></div><div style="margin-top:15px;color:var(--primary);font-weight:700;">Verifying your payment securely...</div><div style="font-size:12px;color:#888;margin-top:10px;">Please wait, do not close this window.</div>';
 
-    MasterDB.from('orders').select('*').eq('id', orderId).single().then(function(oRes) {
+    var selectPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        selectPromise = supabaseClient.from('orders').select('*').eq('id', orderId).single();
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        selectPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not yet implemented' } });
+    }
+    selectPromise.then(function(oRes) {
         if (oRes.error || !oRes.data) {
             document.getElementById('pageLoader').style.display = 'none';
             alert('Order not found!');
@@ -1571,7 +1601,12 @@ function verifyGatewayPayment(orderId, trxId) {
         }
 
         if (trxId) {
-            var dupCheck = MasterDB.from('orders').select('id,payment_trx_id').eq('payment_trx_id', trxId).neq('id', orderId).single();
+            var dupCheck;
+            if (CONFIG.DB_PROVIDER === 'supabase') {
+                dupCheck = supabaseClient.from('orders').select('id,payment_trx_id').eq('payment_trx_id', trxId).neq('id', orderId).single();
+            } else {
+                dupCheck = Promise.resolve({ data: null });
+            }
             dupCheck.then(function(dupRes) {
                 if (!dupRes.error && dupRes.data) {
                     document.getElementById('pageLoader').style.display = 'none';
@@ -1593,11 +1628,18 @@ function verifyGatewayPayment(orderId, trxId) {
                     if (isSuccess) {
                         var newPayStatus = (oData.payment_method === 'Hybrid COD') ? 'Advance Paid' : 'Paid';
 
-                        MasterDB.from('orders').update({
+                        var updatePromise;
+                        var upData = {
                             payment_status:  newPayStatus,
                             payment_trx_id:  trxId || 'AUTO',
                             status:          'Confirmed'
-                        }).eq('id', orderId).then(function(upRes) {
+                        };
+                        if (CONFIG.DB_PROVIDER === 'supabase') {
+                            updatePromise = supabaseClient.from('orders').update(upData).eq('id', orderId);
+                        } else {
+                            updatePromise = Promise.resolve({ data: null });
+                        }
+                        updatePromise.then(function(upRes) {
                             sendOrderNotification(oData);
                             if (isDirectOrder) { localStorage.removeItem(DIRECT_KEY); } else { localStorage.removeItem(CONFIG.CART_KEY); }
                             window.history.replaceState({}, document.title, window.location.pathname);
@@ -2069,7 +2111,13 @@ function verifyCryptoPayment() {
     var targetAmt = intlPayMode === 'binance_pay' ? parseFloat((total / rate).toFixed(2)) : window.expectedCryptoAmt;
 
     // ── Layer 1: Quick frontend double-spend pre-check ────────
-    MasterDB.from('verified_payments').select('id').eq('transaction_id', txid).maybeSingle()
+    var checkPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        checkPromise = supabaseClient.from('verified_payments').select('id').eq('transaction_id', txid).maybeSingle();
+    } else {
+        checkPromise = Promise.resolve({ data: null });
+    }
+    checkPromise
     .then(function(dupRes) {
         if (!dupRes.error && dupRes.data) {
             setVerifyStatus('❌ This Transaction ID has already been used! Double-spend rejected.', 'error');
@@ -2168,7 +2216,8 @@ function saveTxidAndPlace(txid, usdt, btn, isBackup) {
     var netVal  = intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName;
     var method  = intlPayMode === 'binance_pay' ? 'binance_pay' : 'crypto';
 
-    MasterDB.from('verified_payments').insert([{
+    var insPromise;
+    var insData = {
         transaction_id: txid,
         order_id:       'PENDING',
         amount:         usdt,
@@ -2176,7 +2225,13 @@ function saveTxidAndPlace(txid, usdt, btn, isBackup) {
         method:         method,
         coin:           coinVal,
         network:        netVal
-    }]).then(function(insRes) {
+    };
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        insPromise = supabaseClient.from('verified_payments').insert([insData]);
+    } else {
+        insPromise = Promise.resolve({ data: null, error: { code: 'not_implemented' } });
+    }
+    insPromise.then(function(insRes) {
         if (insRes.error && insRes.error.code === '23505') {
             setVerifyStatus('❌ Transaction ID already recorded. Double-spend blocked.', 'error');
             btn.disabled = false; btn.textContent = '✅ Verify & Pay';
@@ -2281,7 +2336,13 @@ function placeCryptoOrder(txid, usdt, isBackup) {
         order_type:      isPickup ? 'pickup' : 'delivery'
     };
 
-    MasterDB.from('orders').insert([orderData]).then(function(r) {
+    var insertOrderPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        insertOrderPromise = supabaseClient.from('orders').insert([orderData]);
+    } else {
+        insertOrderPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
+    }
+    insertOrderPromise.then(function(r) {
         if (r.error) {
             setVerifyStatus('❌ Order save error: ' + r.error.message, 'error');
             var btn = document.getElementById('verifyCryptoBtn');
@@ -2289,7 +2350,9 @@ function placeCryptoOrder(txid, usdt, isBackup) {
             return;
         }
         // Update verified_payments with real order_id
-        MasterDB.from('verified_payments').update({ order_id: orderId }).eq('transaction_id', txid);
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('verified_payments').update({ order_id: orderId }).eq('transaction_id', txid);
+        }
 
         sendOrderNotification(orderData);
         if (isDirectOrder) { localStorage.removeItem(DIRECT_KEY); }

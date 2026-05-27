@@ -7,7 +7,8 @@
     <meta name="description" content="Best quality products at the best prices. Shop now at Freelancing By Rifat.">
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/config.js"></script>
-    <script src="assets/js/master-db.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-init.js"></script>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
@@ -164,13 +165,25 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadSiteData() {
-    var p1 = MasterDB.from('settings').select('*').eq('id', 1).single();
-    var p2 = MasterDB.from('banners').select('*').eq('is_active', true).order('sort_order');
-    var p3 = MasterDB.from('categories').select('*').eq('is_active', true).order('sort_order');
-    // Fetch all products via Cloudflare proxy instead of direct Supabase call
-    var p4 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
-    var p5 = MasterDB.from('home_sections').select('*').eq('is_active', true).order('sort_order');
-    var p6 = MasterDB.from('product_categories').select('*');
+    var p1, p2, p3, p4, p5, p6;
+
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        p1 = supabaseClient.from('settings').select('*').eq('id', 1).single();
+        p2 = supabaseClient.from('banners').select('*').eq('is_active', true).order('sort_order');
+        p3 = supabaseClient.from('categories').select('*').eq('is_active', true).order('sort_order');
+        // Fetch all products via Cloudflare proxy instead of direct Supabase call
+        p4 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
+        p5 = supabaseClient.from('home_sections').select('*').eq('is_active', true).order('sort_order');
+        p6 = supabaseClient.from('product_categories').select('*');
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE]
+        p1 = Promise.resolve({data: {}});
+        p2 = Promise.resolve({data: []});
+        p3 = Promise.resolve({data: []});
+        p4 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
+        p5 = Promise.resolve({data: []});
+        p6 = Promise.resolve({data: []});
+    }
 
     Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
         var settings    = results[0].data || {};

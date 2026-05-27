@@ -5,7 +5,9 @@
     <title>Shop — Freelancing By Rifat</title>
     <meta name="description" content="Browse all products. Filter by category, price and more.">
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/config.js"></script><script src="assets/js/master-db.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-init.js"></script>
     <style>
         .shop-layout { display: grid; grid-template-columns: 240px 1fr; gap: 20px; padding: 20px 0; }
         .sidebar { background: #fff; border-radius: 14px; padding: 20px; border: 1px solid #eee; height: fit-content; position: sticky; top: 76px; }
@@ -214,11 +216,18 @@ document.addEventListener('DOMContentLoaded', function() {
     var urlCat = new URLSearchParams(window.location.search).get('cat');
     if (urlCat) activeCatId = urlCat;
 
-    var p1 = MasterDB.from('settings').select('*').eq('id',1).single();
-    var p2 = MasterDB.from('categories').select('*').eq('is_active',true).order('sort_order');
-    // Fetch all products via Cloudflare proxy instead of direct Supabase call
+    var p1, p2, p4;
     var p3 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
-    var p4 = MasterDB.from('product_categories').select('*');
+
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
+        p2 = supabaseClient.from('categories').select('*').eq('is_active',true).order('sort_order');
+        p4 = supabaseClient.from('product_categories').select('*');
+    } else {
+        p1 = Promise.resolve({ data: {} });
+        p2 = Promise.resolve({ data: [] });
+        p4 = Promise.resolve({ data: [] });
+    }
 
     Promise.all([p1, p2, p3, p4]).then(function(results) {
         var r = results[0];

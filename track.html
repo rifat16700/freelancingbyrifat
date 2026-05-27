@@ -5,7 +5,9 @@
     <title>Track Order — Freelancing By Rifat</title>
     <meta name="description" content="Track your order status using your Order ID and phone number.">
     <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/config.js"></script><script src="assets/js/master-db.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/supabase-init.js"></script>
     <style>
         body { background: linear-gradient(135deg, #f0f4ff, #e8ecf5); min-height: 100vh; }
         .track-wrap { max-width: 560px; margin: 0 auto; padding: 20px; }
@@ -68,7 +70,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    MasterDB.from('settings').select('store_name').eq('id',1).single().then(function(r) {
+    var settingsPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        settingsPromise = supabaseClient.from('settings').select('store_name').eq('id',1).single();
+    } else {
+        settingsPromise = Promise.resolve({ data: {} });
+    }
+    settingsPromise.then(function(r) {
         if (r.data) document.getElementById('navBrand').textContent = r.data.store_name || '';
     });
 
@@ -103,7 +111,13 @@ function trackOrder() {
 
     btn.disabled = true; btn.textContent = 'Tracking...';
 
-    MasterDB.from('orders').select('*').eq('id', orderId).eq('customer_phone', phone).single().then(function(r) {
+    var trackPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        trackPromise = supabaseClient.from('orders').select('*').eq('id', orderId).eq('customer_phone', phone).single();
+    } else {
+        trackPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
+    }
+    trackPromise.then(function(r) {
         btn.disabled = false; btn.innerHTML = '<i data-lucide="search" class="lucide-icon"></i> Track Order';
         if (typeof lucide !== 'undefined') lucide.createIcons();
 

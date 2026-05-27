@@ -25,9 +25,9 @@ var CONFIG = {
 
     // ── 🟡 [MULTI-DB PLACEHOLDER] ────────────────────────────
     // পরে Appwrite বা অন্য DB ব্যবহার করতে চাইলে:
-    //
-    // DB_PROVIDER: 'appwrite',   // 'supabase' | 'appwrite'
-    //
+    
+    DB_PROVIDER: 'supabase',   // 'supabase' | 'appwrite'
+    
     // APPWRITE_ENDPOINT:    'https://sgp.cloud.appwrite.io/v1',
     // APPWRITE_PROJECT:     '',
     // APPWRITE_DATABASE_ID: '',

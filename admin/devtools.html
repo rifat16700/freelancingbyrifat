@@ -8,7 +8,8 @@
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/master-db.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <style>
         *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
         :root {
@@ -754,6 +755,23 @@
 </div><!-- /appScreen -->
 
 <script>
+
+    const mockDB = {
+        from: () => ({
+            select: () => ({
+                eq: () => ({ single: () => Promise.resolve({data:null}), then: cb => cb({data:[]}) }),
+                limit: () => ({ then: cb => cb({data:[]}) })
+            }),
+            upsert: () => Promise.resolve({data:null}),
+            update: () => ({ eq: () => Promise.resolve({data:null}), then: cb => cb({data:null}) }),
+            delete: () => ({ eq: () => ({ lt: () => Promise.resolve({data:null}) }) })
+        })
+    };
+    function getDB() {
+        if (CONFIG.DB_PROVIDER === 'supabase') return supabaseClient;
+        return mockDB;
+    }
+
 // ═══════════════════════════════════════════════════════════
 // SECURITY CONSTANTS
 // ═══════════════════════════════════════════════════════════
@@ -939,7 +957,7 @@ async function resetDevAccess() {
 var _maintActive = false;
 
 function loadMaintenanceStatus() {
-    MasterDB.from('settings').select('maintenance_mode, maintenance_message').eq('id', 1).single().then(function(r) {
+    getDB().from('settings').select('maintenance_mode, maintenance_message').eq('id', 1).single().then(function(r) {
         var s = r.data || {};
         _maintActive = s.maintenance_mode === true;
         updateMaintUI(_maintActive, s.maintenance_message || '');
@@ -979,7 +997,7 @@ async function enableMaintenance() {
     var msg = (document.getElementById('maintMessage').value.trim()) || 'আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে। 🔧';
     if (!confirm('⚠️ এখনই site বন্ধ করবেন? সব visitor maintenance page দেখবে।')) return;
 
-    var r = await MasterDB.from('settings').upsert([{ id: 1, maintenance_mode: true, maintenance_message: msg }]);
+    var r = await getDB().from('settings').upsert([{ id: 1, maintenance_mode: true, maintenance_message: msg }]);
     if (r.error) { devToast('✗ Error: ' + r.error.message, '#ff4d4d'); return; }
     _maintActive = true;
     updateMaintUI(true, msg);
@@ -991,7 +1009,7 @@ async function enableMaintenance() {
 async function disableMaintenance() {
     if (!confirm('Site live করবেন? সব visitor access পাবে।')) return;
 
-    var r = await MasterDB.from('settings').update({ maintenance_mode: false }).eq('id', 1);
+    var r = await getDB().from('settings').update({ maintenance_mode: false }).eq('id', 1);
     if (r.error) { devToast('✗ Error: ' + r.error.message, '#ff4d4d'); return; }
     _maintActive = false;
     updateMaintUI(false, '');
@@ -1051,7 +1069,7 @@ function loadOverview() {
         {id:'ov-reviews',table:'reviews',col:'id'},
     ];
     tables.forEach(function(t) {
-        MasterDB.from(t.table).select(t.col, {count:'exact',head:true}).then(function(r){
+        getDB().from(t.table).select(t.col, {count:'exact',head:true}).then(function(r){
             document.getElementById(t.id).textContent = r.count || 0;
         });
     });
@@ -1068,7 +1086,7 @@ function loadOverview() {
     document.getElementById('configDump').textContent = JSON.stringify(cfg, null, 2);
 
     // Supabase connection test
-    MasterDB.from('settings').select('id').eq('id',1).single().then(function(r) {
+    getDB().from('settings').select('id').eq('id',1).single().then(function(r) {
         var el = document.getElementById('supabaseStatus');
         if (r.error && r.error.code !== 'PGRST116') {
             el.innerHTML = '<span class="dev-badge badge-red">✗ DISCONNECTED</span> <span style="font-family:var(--mono);font-size:11px;color:var(--text2);">' + r.error.message + '</span>';
@@ -1114,7 +1132,7 @@ function loadTable() {
     document.getElementById('tableInfo').textContent = 'Loading...';
     document.getElementById('tableView').innerHTML = '<tr><td style="padding:30px;text-align:center;color:var(--text3);">Loading...</td></tr>';
 
-    MasterDB.from(table).select('*').limit(limit).then(function(r) {
+    getDB().from(table).select('*').limit(limit).then(function(r) {
         if (r.error) {
             document.getElementById('tableInfo').textContent = 'Error: ' + r.error.message;
             return;
@@ -1184,7 +1202,7 @@ function runSql() {
             // Fallback: try direct query parsing
             var match = query.match(/^SELECT .+ FROM (\w+)/i);
             if (match) {
-                MasterDB.from(match[1]).select('*').limit(100).then(function(r2) {
+                getDB().from(match[1]).select('*').limit(100).then(function(r2) {
                     if (r2.error) {
                         document.getElementById('sqlResult').innerHTML = '<div class="code-block" style="color:var(--primary);">Error: ' + r2.error.message + '</div>';
                     } else {
@@ -1244,7 +1262,7 @@ function loadKeysDisplay() {
     }).join('');
 
     // Settings override
-    MasterDB.from('settings').select('store_name,logo_url,favicon_url,whatsapp_number,footer_text').eq('id',1).single().then(function(r) {
+    getDB().from('settings').select('store_name,logo_url,favicon_url,whatsapp_number,footer_text').eq('id',1).single().then(function(r) {
         var s = r.data || {};
         var fields = [
             {id:'ov_store_name',key:'store_name',label:'Store Name',val:s.store_name||''},
@@ -1259,7 +1277,7 @@ function loadKeysDisplay() {
     });
 
     // Custom CSS
-    MasterDB.from('settings').select('custom_css').eq('id',1).single().then(function(r) {
+    getDB().from('settings').select('custom_css').eq('id',1).single().then(function(r) {
         if (r.data && r.data.custom_css) {
             document.getElementById('customCssInput').value = r.data.custom_css;
         }
@@ -1279,7 +1297,7 @@ function saveSettingsOverride() {
         logo_url: document.getElementById('ov_logo').value.trim(),
         footer_text: document.getElementById('ov_footer').value.trim(),
     };
-    MasterDB.from('settings').upsert([payload]).then(function(r) {
+    getDB().from('settings').upsert([payload]).then(function(r) {
         if (r.error) { devToast('✗ Save failed: ' + r.error.message, '#ff4d4d'); return; }
         devLog('Settings overridden', 'warn');
         devToast('✅ Settings overridden!', '#00ff88');
@@ -1288,7 +1306,7 @@ function saveSettingsOverride() {
 
 function saveCustomCss() {
     var css = document.getElementById('customCssInput').value;
-    MasterDB.from('settings').update({custom_css: css}).eq('id', 1).then(function(r) {
+    getDB().from('settings').update({custom_css: css}).eq('id', 1).then(function(r) {
         if (r.error) { devToast('✗ Failed: ' + r.error.message, '#ff4d4d'); return; }
         devLog('Custom CSS injected (' + css.length + ' chars)', 'warn');
         devToast('💉 CSS injected to site!', '#00ff88');
@@ -1303,7 +1321,7 @@ async function exportAll() {
     var tables = ['settings','products','categories','orders','reviews','banners','home_sections','promo_codes','delivery_zones'];
     var result = {};
     for (var i = 0; i < tables.length; i++) {
-        var r = await MasterDB.from(tables[i]).select('*');
+        var r = await getDB().from(tables[i]).select('*');
         result[tables[i]] = r.data || [];
     }
     downloadFile(JSON.stringify(result, null, 2), 'full-backup-' + new Date().toISOString().split('T')[0] + '.json', 'application/json');
@@ -1312,7 +1330,7 @@ async function exportAll() {
 }
 
 async function exportTable2(table) {
-    var r = await MasterDB.from(table).select('*');
+    var r = await getDB().from(table).select('*');
     if (r.error) { devToast('✗ Error: ' + r.error.message, '#ff4d4d'); return; }
     downloadFile(JSON.stringify(r.data, null, 2), table + '-' + new Date().toISOString().split('T')[0] + '.json', 'application/json');
     devToast('✅ Exported ' + table, '#00ff88');
@@ -1321,7 +1339,7 @@ async function exportTable2(table) {
 async function clearCancelledOrders() {
     if (!confirm('30 দিনের বেশি পুরনো Cancelled orders delete করবেন?')) return;
     var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    var r = await MasterDB.from('orders').delete().eq('status','Cancelled').lt('created_at', cutoff.toISOString());
+    var r = await getDB().from('orders').delete().eq('status','Cancelled').lt('created_at', cutoff.toISOString());
     if (r.error) { devToast('✗ ' + r.error.message, '#ff4d4d'); return; }
     devLog('Cleared old cancelled orders', 'warn');
     devToast('🗑 Cancelled orders cleared', '#00ff88');
@@ -1329,7 +1347,7 @@ async function clearCancelledOrders() {
 
 async function clearRejectedReviews() {
     if (!confirm('Rejected reviews delete করবেন?')) return;
-    var r = await MasterDB.from('reviews').delete().eq('is_approved', false);
+    var r = await getDB().from('reviews').delete().eq('is_approved', false);
     if (r.error) { devToast('✗ ' + r.error.message, '#ff4d4d'); return; }
     devLog('Cleared rejected reviews', 'warn');
     devToast('🗑 Rejected reviews cleared', '#00ff88');

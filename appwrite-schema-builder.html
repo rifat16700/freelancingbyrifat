@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appwrite 1-Click DB Setup</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; max-width: 800px; margin: auto; background: #f9fafb; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #374151; }
+        input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
+        button { background: #f02e65; color: white; border: none; padding: 10px 20px; font-weight: 600; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        #logs { background: #1f2937; color: #10b981; padding: 15px; border-radius: 4px; font-family: monospace; height: 300px; overflow-y: auto; margin-top: 20px; }
+        .error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 style="margin-top:0;">Appwrite 1-Click Schema Builder</h2>
+        <p>এটি Supabase-এর SQL script-এর মতোই এক ক্লিকে আপনার Appwrite ডাটাবেসে সব Collection এবং Attribute তৈরি করে দেবে।</p>
+        
+        <div class="input-group">
+            <label>Appwrite Endpoint</label>
+            <input type="text" id="endpoint" value="https://cloud.appwrite.io/v1">
+        </div>
+        <div class="input-group">
+            <label>Project ID</label>
+            <input type="text" id="projectId" placeholder="Your Appwrite Project ID">
+        </div>
+        <div class="input-group">
+            <label>API Key (Must have scopes: databases.read, databases.write, collections.read, collections.write, attributes.read, attributes.write)</label>
+            <input type="password" id="apiKey" placeholder="Your Appwrite API Key">
+        </div>
+        <div class="input-group">
+            <label>Database ID</label>
+            <input type="text" id="dbId" placeholder="Database ID (e.g. ecommerce_db)">
+        </div>
+
+        <button id="startBtn" onclick="startSetup()">Create Database Schema</button>
+    </div>
+
+    <div id="logs">System Ready. Fill the details and click start.</div>
+
+<script>
+    const schema = {
+        settings: [
+            { id: 'store_name', type: 'string', size: 255 },
+            { id: 'logo_url', type: 'string', size: 1000 },
+            { id: 'favicon_url', type: 'string', size: 1000 },
+            { id: 'footer_text', type: 'string', size: 1000 },
+            { id: 'whatsapp_number', type: 'string', size: 20 },
+            { id: 'facebook_url', type: 'string', size: 1000 },
+            { id: 'instagram_url', type: 'string', size: 1000 },
+            { id: 'youtube_url', type: 'string', size: 1000 },
+            { id: 'bkash_number', type: 'string', size: 20 },
+            { id: 'nagad_number', type: 'string', size: 20 },
+            { id: 'binance_manual_uid', type: 'string', size: 255 },
+            { id: 'gateway_proxy_url', type: 'string', size: 1000 },
+            { id: 'gateway_api_key', type: 'string', size: 1000 },
+            { id: 'allow_cod', type: 'boolean', default: false },
+            { id: 'enable_fun_checkbox', type: 'boolean', default: false },
+            { id: 'allow_whatsapp_order', type: 'boolean', default: false },
+            { id: 'allow_msg_order', type: 'boolean', default: false },
+            { id: 'advance_amount', type: 'integer', default: 0 },
+            { id: 'advance_method', type: 'string', size: 50 },
+            { id: 'telegram_main_bot', type: 'string', size: 255 },
+            { id: 'telegram_draft_bot', type: 'string', size: 255 },
+            { id: 'telegram_draft_chat', type: 'string', size: 255 },
+            { id: 'allow_pickup', type: 'boolean', default: false },
+            { id: 'store_address', type: 'string', size: 1000 },
+            { id: 'store_map_link', type: 'string', size: 1000 },
+            { id: 'pickup_bot_token', type: 'string', size: 255 },
+            { id: 'pickup_chat_id', type: 'string', size: 255 },
+            { id: 'binance_pay_uid', type: 'string', size: 255 },
+            { id: 'binance_proxy_url', type: 'string', size: 1000 },
+            { id: 'binance_api_key', type: 'string', size: 1000 },
+            { id: 'binance_api_secret', type: 'string', size: 1000 },
+            { id: 'usd_to_bdt_rate', type: 'double', default: 120 },
+            { id: 'verify_mode', type: 'string', size: 50 },
+            { id: 'supabase_edge_url', type: 'string', size: 1000 },
+            { id: 'review_imgbb_key', type: 'string', size: 255 },
+            { id: 'telegram_main_chats', type: 'string', size: 4000 },
+            { id: 'messaging_apps', type: 'string', size: 4000 },
+            { id: 'crypto_coins', type: 'string', size: 4000 }
+        ],
+        banners: [
+            { id: 'image_url', type: 'string', size: 1000 },
+            { id: 'title', type: 'string', size: 255 },
+            { id: 'subtitle', type: 'string', size: 500 },
+            { id: 'link_url', type: 'string', size: 1000 },
+            { id: 'sort_order', type: 'integer', default: 0 },
+            { id: 'is_active', type: 'boolean', default: true }
+        ],
+        categories: [
+            { id: 'name', type: 'string', size: 255 },
+            { id: 'icon_url', type: 'string', size: 1000 },
+            { id: 'sort_order', type: 'integer', default: 0 },
+            { id: 'is_active', type: 'boolean', default: true }
+        ],
+        home_sections: [
+            { id: 'title', type: 'string', size: 255 },
+            { id: 'type', type: 'string', size: 50, default: 'category' },
+            { id: 'category_id', type: 'string', size: 255 },
+            { id: 'product_ids', type: 'string', size: 4000 },
+            { id: 'max_products', type: 'integer', default: 10 },
+            { id: 'sort_order', type: 'integer', default: 0 },
+            { id: 'is_active', type: 'boolean', default: true }
+        ],
+        products: [
+            { id: 'name', type: 'string', size: 255 },
+            { id: 'sku', type: 'string', size: 100 },
+            { id: 'description', type: 'string', size: 10000 },
+            { id: 'base_price', type: 'integer', default: 0 },
+            { id: 'flash_sale_price', type: 'integer', default: 0 },
+            { id: 'flash_sale_end', type: 'string', size: 255 },
+            { id: 'video_url', type: 'string', size: 1000 },
+            { id: 'video_type', type: 'string', size: 50 },
+            { id: 'is_active', type: 'boolean', default: true },
+            { id: 'is_featured', type: 'boolean', default: false },
+            { id: 'is_add_once', type: 'boolean', default: false },
+            { id: 'variants', type: 'string', size: 4000 },
+            { id: 'gallery_images', type: 'string', size: 4000 }
+        ],
+        product_categories: [
+            { id: 'product_id', type: 'string', size: 255 },
+            { id: 'category_id', type: 'string', size: 255 }
+        ],
+        promos: [
+            { id: 'code', type: 'string', size: 100 },
+            { id: 'discount', type: 'integer', default: 0 },
+            { id: 'is_active', type: 'boolean', default: true },
+            { id: 'usage_limit', type: 'integer', default: 0 },
+            { id: 'expires_at', type: 'string', size: 255 },
+            { id: 'type', type: 'string', size: 50 },
+            { id: 'disc_type', type: 'string', size: 50, default: 'percentage' },
+            { id: 'disc_val', type: 'integer', default: 0 },
+            { id: 'max_cap', type: 'integer', default: 0 },
+            { id: 'min_spend', type: 'integer', default: 0 },
+            { id: 'is_repeated_config', type: 'boolean', default: false },
+            { id: 'rep_type', type: 'string', size: 50 },
+            { id: 'rep_value', type: 'integer', default: 0 },
+            { id: 'rep_cap', type: 'integer', default: 0 },
+            { id: 'rep_expiry_days', type: 'integer', default: 0 },
+            { id: 'rep_min_spend', type: 'integer', default: 0 }
+        ],
+        addons: [
+            { id: 'name', type: 'string', size: 255 },
+            { id: 'icon', type: 'string', size: 1000 },
+            { id: 'price', type: 'integer', default: 0 },
+            { id: 'is_active', type: 'boolean', default: true }
+        ],
+        delivery_zones: [
+            { id: 'zone_name', type: 'string', size: 255 },
+            { id: 'charge', type: 'integer', default: 0 },
+            { id: 'districts', type: 'string', size: 4000 }
+        ],
+        reviews: [
+            { id: 'product_id', type: 'string', size: 255 },
+            { id: 'customer_name', type: 'string', size: 255 },
+            { id: 'customer_phone', type: 'string', size: 50 },
+            { id: 'rating', type: 'integer', default: 5 },
+            { id: 'review_text', type: 'string', size: 2000 },
+            { id: 'review_image', type: 'string', size: 1000 },
+            { id: 'is_approved', type: 'boolean', default: false }
+        ],
+        orders: [
+            { id: 'customer_name', type: 'string', size: 255 },
+            { id: 'customer_phone', type: 'string', size: 50 },
+            { id: 'customer_email', type: 'string', size: 255 },
+            { id: 'division', type: 'string', size: 255 },
+            { id: 'district', type: 'string', size: 255 },
+            { id: 'upazila', type: 'string', size: 255 },
+            { id: 'address', type: 'string', size: 1000 },
+            { id: 'items', type: 'string', size: 10000 },
+            { id: 'addons', type: 'string', size: 2000 },
+            { id: 'subtotal', type: 'integer', default: 0 },
+            { id: 'addon_total', type: 'integer', default: 0 },
+            { id: 'delivery_charge', type: 'integer', default: 0 },
+            { id: 'promo_code', type: 'string', size: 100 },
+            { id: 'promo_discount', type: 'integer', default: 0 },
+            { id: 'grand_total', type: 'integer', default: 0 },
+            { id: 'advance_payable', type: 'integer', default: 0 },
+            { id: 'payment_method', type: 'string', size: 255 },
+            { id: 'payment_status', type: 'string', size: 50, default: 'Unpaid' },
+            { id: 'payment_trx_id', type: 'string', size: 255 },
+            { id: 'payment_sender', type: 'string', size: 255 },
+            { id: 'status', type: 'string', size: 50, default: 'Pending' },
+            { id: 'order_type', type: 'string', size: 50, default: 'delivery' },
+            { id: 'admin_note', type: 'string', size: 2000 },
+            { id: 'courier_name', type: 'string', size: 255 },
+            { id: 'tracking_number', type: 'string', size: 255 },
+            { id: 'tracking_url', type: 'string', size: 1000 }
+        ],
+        verified_payments: [
+            { id: 'transaction_id', type: 'string', size: 255 },
+            { id: 'method', type: 'string', size: 50 },
+            { id: 'amount', type: 'integer', default: 0 },
+            { id: 'order_id', type: 'string', size: 255 }
+        ]
+    };
+
+    function log(msg, isErr = false) {
+        const d = document.getElementById('logs');
+        d.innerHTML += `<div class="${isErr?'error':''}">${msg}</div>`;
+        d.scrollTop = d.scrollHeight;
+    }
+
+    async function req(method, path, body) {
+        const ep = document.getElementById('endpoint').value.trim();
+        const pid = document.getElementById('projectId').value.trim();
+        const key = document.getElementById('apiKey').value.trim();
+        
+        const url = `${ep}${path}`;
+        const headers = { 'X-Appwrite-Project': pid, 'X-Appwrite-Key': key, 'Content-Type': 'application/json' };
+        
+        const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
+        if (!res.ok) {
+            const e = await res.json();
+            if (e.code === 409) return { exists: true }; // Already exists
+            throw new Error(e.message || 'Unknown error');
+        }
+        return await res.json();
+    }
+
+    async function startSetup() {
+        const dbId = document.getElementById('dbId').value.trim();
+        if(!dbId || !document.getElementById('projectId').value.trim() || !document.getElementById('apiKey').value.trim()) {
+            return alert('Please fill all fields!');
+        }
+        document.getElementById('startBtn').disabled = true;
+        log('Starting setup...');
+
+        try {
+            // 1. Create DB (if not exists)
+            log(`Checking/Creating database: ${dbId}`);
+            try {
+                await req('POST', '/databases', { databaseId: dbId, name: dbId });
+                log(`Created database ${dbId}`);
+            } catch(e) { if(!e.message.includes('already exists')) log('Database likely exists already.'); }
+
+            // 2. Loop collections
+            for (const [collId, attrs] of Object.entries(schema)) {
+                log(`\n> Processing collection: ${collId}`);
+                
+                // Create collection
+                try {
+                    await req('POST', `/databases/${dbId}/collections`, { collectionId: collId, name: collId, documentSecurity: false });
+                    log(`  [+] Created collection ${collId}`);
+                } catch(e) { if(e.exists) log(`  [~] Collection ${collId} already exists`); else throw e; }
+
+                // Delay to allow Appwrite worker to create collection internally
+                await new Promise(r => setTimeout(r, 1000));
+
+                // Add attributes
+                for (const attr of attrs) {
+                    let path = `/databases/${dbId}/collections/${collId}/attributes/${attr.type}`;
+                    let payload = { key: attr.id, required: false, array: false };
+                    
+                    if (attr.type === 'string') payload.size = attr.size || 255;
+                    if (attr.default !== undefined) payload.default = attr.default;
+
+                    try {
+                        await req('POST', path, payload);
+                        log(`    [+] Added attribute: ${attr.id} (${attr.type})`);
+                    } catch(e) {
+                        if (e.exists) log(`    [~] Attribute ${attr.id} exists`);
+                        else log(`    [!] Error on ${attr.id}: ${e.message}`, true);
+                    }
+                    // Small delay to prevent rate limit / schema lock
+                    await new Promise(r => setTimeout(r, 200));
+                }
+            }
+            log('<br><b style="color:#10b981;">? SUCCESS: Database setup complete!</b>');
+
+        } catch(e) {
+            log('CRITICAL ERROR: ' + e.message, true);
+        }
+        document.getElementById('startBtn').disabled = false;
+    }
+</script>
+</body>
+</html>
