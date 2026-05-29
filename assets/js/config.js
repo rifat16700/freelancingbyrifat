@@ -28,10 +28,6 @@ var CONFIG = {
     // ── ⚡ DB PROVIDER — এই একটি line পরিবর্তন করলেই পুরো সাইট বদলায় ──
     DB_PROVIDER: 'supabase',   // 'supabase' | 'appwrite'
 
-    // ── 🔵 SUPABASE ─────────────────────────────────────────
-    // Supabase Dashboard → Project Settings → API
-    SUPABASE_URL:      'https://qdkppbwjgkkxzgzgsykv.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk',
 
     // ── 🟡 APPWRITE ──────────────────────────────────────────
     // Appwrite Console → Project Settings → Project ID
