@@ -35,7 +35,7 @@ var CONFIG = {
     // Appwrite Console → Project Settings → Project ID
     APPWRITE_ENDPOINT:    'https://sgp.cloud.appwrite.io/v1',
     APPWRITE_PROJECT:     '69de4fa50032182e9b91',       // ← এখানে তোমার Project ID বসাও
-    APPWRITE_DATABASE_ID: 'main_db',               // ← Database বানানোর সময় এই ID দাও
+    APPWRITE_DATABASE_ID: '6a19e07f002427086405',               // ← Database বানানোর সময় এই ID দাও
     // ────────────────────────────────────────────────────────
 
     // ── 🟢 Frontend Constants (DB ছাড়াই কাজ করে) ───────────
