@@ -102,7 +102,7 @@ function loadZones() {
             .then(function(res) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';
-                allZones = res.documents.map(function(doc) { doc.id = doc.$id; return doc; });
+                allZones = res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; return doc; });
                 renderZones();
             })
             .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
@@ -201,7 +201,6 @@ function saveZone() {
         if (editingId) {
             req = appwriteDatabases.updateDocument(APP_DB, 'delivery_zones', editingId, payload);
         } else {
-            payload.created_at = new Date().toISOString();
             req = appwriteDatabases.createDocument(APP_DB, 'delivery_zones', AppwriteID.unique(), payload);
         }
         req.then(function() {
@@ -242,3 +241,4 @@ function closeModal() { document.getElementById('zoneModal').classList.remove('s
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+

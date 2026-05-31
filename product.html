@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         p1 = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings').then(function(doc) { if (typeof doc.messaging_apps==='string') { try { doc.messaging_apps=JSON.parse(doc.messaging_apps); } catch(e){} } return { data: doc }; }).catch(function() { return { data: {} }; });
         p3 = appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.equal('product_id', id), AppwriteQuery.equal('is_approved', true)]).then(function(res) { return { data: res.documents }; }).catch(function() { return { data: [] }; });
         p5 = appwriteDatabases.listDocuments(APP_DB, 'product_categories', [AppwriteQuery.limit(5000)]).then(function(res) { return { data: res.documents.map(function(d){ d.id=d.$id; return d; }) }; }).catch(function() { return { data: [] }; });
-        p6 = appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.equal('product_id', id), AppwriteQuery.equal('is_approved', true), AppwriteQuery.orderDesc('created_at'), AppwriteQuery.limit(REVIEWS_PAGE_SIZE)]).then(function(res) { return { data: res.documents }; }).catch(function() { return { data: [] }; });
+        p6 = appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.equal('product_id', id), AppwriteQuery.equal('is_approved', true), AppwriteQuery.orderDesc('$createdAt'), AppwriteQuery.limit(REVIEWS_PAGE_SIZE)]).then(function(res) { return { data: res.documents }; }).catch(function() { return { data: [] }; });
     } else {
         p1 = Promise.resolve({ data: {} });
         p3 = Promise.resolve({ data: [] });
@@ -1036,7 +1036,7 @@ function showMoreReviews() {
           .range(reviewsShown, reviewsShown + REVIEWS_PAGE_SIZE - 1);
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         var productId = id;
-        reviewsPromise = appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.equal('product_id', productId), AppwriteQuery.equal('is_approved', true), AppwriteQuery.orderDesc('created_at'), AppwriteQuery.limit(REVIEWS_PAGE_SIZE), AppwriteQuery.offset(reviewsShown)]).then(function(res) { return { data: res.documents, error: null }; }).catch(function(err) { return { data: [], error: err }; });
+        reviewsPromise = appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.equal('product_id', productId), AppwriteQuery.equal('is_approved', true), AppwriteQuery.orderDesc('$createdAt'), AppwriteQuery.limit(REVIEWS_PAGE_SIZE), AppwriteQuery.offset(reviewsShown)]).then(function(res) { return { data: res.documents, error: null }; }).catch(function(err) { return { data: [], error: err }; });
     } else {
         reviewsPromise = Promise.resolve({ data: [] });
     }
@@ -1155,3 +1155,4 @@ document.addEventListener('scroll', function() {
     <script src="assets/js/context-menu.js"></script>
 </body>
 </html>
+

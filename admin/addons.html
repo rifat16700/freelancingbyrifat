@@ -91,12 +91,12 @@ function loadAddons() {
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.listDocuments(APP_DB, 'addons', [
-            AppwriteQuery.orderAsc('created_at')
+            AppwriteQuery.orderAsc('$createdAt')
         ]).then(function(res) {
             document.getElementById('pageLoader').style.display = 'none';
             document.getElementById('adminMain').style.display  = 'flex';
             allAddons = res.documents.map(function(doc) {
-                doc.id = doc.$id;
+                doc.id = doc.$id; doc.created_at = doc.$createdAt;
                 return doc;
             });
             renderAddons();
@@ -213,3 +213,4 @@ function closeModal() { document.getElementById('addonModal').classList.remove('
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+

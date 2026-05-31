@@ -310,10 +310,10 @@
                 AppwriteQuery.equal('is_active', true),
                 AppwriteQuery.orderAsc('sort_order')
             ]).then(function(res) {
-                allCategories = res.documents.map(function(d) { d.id = d.$id; return d; });
+                allCategories = res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; });
                 var catFilter  = document.getElementById('catFilter');
                 var catFilterM = document.getElementById('catFilterM');
-                var pCatList   = document.getElementById('pCatList');
+                var pCatList   = document.getElementById('pCategoryList');
                 allCategories.forEach(function(c) {
                     var opt = '<option value="' + c.id + '">' + c.name + '</option>';
                     catFilter.innerHTML  += opt;
@@ -389,14 +389,14 @@
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             Promise.all([
-                appwriteDatabases.listDocuments(APP_DB, 'products',           [AppwriteQuery.orderDesc('created_at'), AppwriteQuery.limit(500)]),
+                appwriteDatabases.listDocuments(APP_DB, 'products',           [AppwriteQuery.orderDesc('$createdAt'), AppwriteQuery.limit(500)]),
                 appwriteDatabases.listDocuments(APP_DB, 'product_categories', [AppwriteQuery.limit(5000)])
             ]).then(function(results) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';
                 var pc = results[1].documents;
                 allProducts = results[0].documents.map(function(doc) {
-                    doc.id = doc.$id;
+                    doc.id = doc.$id; doc.created_at = doc.$createdAt;
                     // variants stored as JSON string
                     if (typeof doc.variants === 'string') {
                         try { doc.variants = JSON.parse(doc.variants); } catch(e) { doc.variants = []; }
@@ -946,8 +946,7 @@
                     showToast('Error: ' + err.message, 'error');
                 });
             } else {
-                awProductPayload.created_at = new Date().toISOString();
-                appwriteDatabases.createDocument(APP_DB, 'products', AppwriteID.unique(), awProductPayload)
+                awProductappwriteDatabases.createDocument(APP_DB, 'products', AppwriteID.unique(), awProductPayload)
                 .then(function(doc) {
                     finishSaveAW(doc.$id);
                 }).catch(function(err) {
@@ -1091,3 +1090,4 @@
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+

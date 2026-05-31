@@ -69,11 +69,11 @@ function loadReviews() {
             filterReviews();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.orderDesc('created_at')])
+        appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.orderDesc('$createdAt')])
             .then(function(res) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';
-                allReviews = res.documents.map(function(doc) { doc.id = doc.$id; return doc; });
+                allReviews = res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; return doc; });
                 var pending = allReviews.filter(function(rv) { return !rv.is_approved; }).length;
                 document.getElementById('reviewSub').textContent = allReviews.length + ' total | ' + pending + ' pending';
                 filterReviews();
@@ -186,3 +186,4 @@ function deleteReview(id) {
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+

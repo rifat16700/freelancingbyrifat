@@ -239,10 +239,10 @@
                 showUI();
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            appwriteDatabases.listDocuments(APP_DB, 'orders', [AppwriteQuery.orderDesc('created_at'), AppwriteQuery.limit(5000)])
+            appwriteDatabases.listDocuments(APP_DB, 'orders', [AppwriteQuery.orderDesc('$createdAt'), AppwriteQuery.limit(5000)])
                 .then(function(res) {
                     var orders = res.documents.map(function(doc) {
-                        doc.id = doc.$id;
+                        doc.id = doc.$id; doc.created_at = doc.$createdAt;
                         if (typeof doc.items === 'string') {
                             try { doc.items = JSON.parse(doc.items); } catch(e) { doc.items = []; }
                         }
@@ -439,3 +439,4 @@
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+

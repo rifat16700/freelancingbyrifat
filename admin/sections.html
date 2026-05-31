@@ -353,11 +353,11 @@ function loadAll() {
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         p1 = appwriteDatabases.listDocuments(APP_DB, 'home_sections', [AppwriteQuery.orderAsc('sort_order')])
             .then(function(res) {
-                return { data: res.documents.map(function(doc) { doc.id = doc.$id; return doc; }) };
+                return { data: res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; return doc; }) };
             });
         p2 = appwriteDatabases.listDocuments(APP_DB, 'categories', [AppwriteQuery.equal('is_active', true), AppwriteQuery.orderAsc('sort_order')])
             .then(function(res) {
-                return { data: res.documents.map(function(doc) { doc.id = doc.$id; return doc; }) };
+                return { data: res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; return doc; }) };
             });
     }
     var p3 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
@@ -603,7 +603,6 @@ function saveSection() {
         if (editingId) {
             req = appwriteDatabases.updateDocument(APP_DB, 'home_sections', editingId, payload);
         } else {
-            payload.created_at = new Date().toISOString();
             req = appwriteDatabases.createDocument(APP_DB, 'home_sections', AppwriteID.unique(), payload);
         }
         req.then(function() {
@@ -668,3 +667,4 @@ function escHtml(s) {
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+
