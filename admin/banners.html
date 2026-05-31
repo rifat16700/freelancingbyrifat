@@ -126,7 +126,7 @@ function loadBanners() {
         ]).then(function(res) {
             document.getElementById('pageLoader').style.display = 'none';
             document.getElementById('adminMain').style.display  = 'flex';
-            allBanners = res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; return doc; });
+            allBanners = res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } } return doc; });
             renderBanners();
         }).catch(function(err) {
             showToast('Load failed: ' + err.message, 'error');
@@ -396,4 +396,5 @@ function closeModal() { document.getElementById('bannerModal').classList.remove(
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+
 

@@ -458,24 +458,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 return { data: doc };
             }).catch(function() { return { data: {} }; });
         p2 = appwriteDatabases.listDocuments(APP_DB, 'delivery_zones', [])
-            .then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; }) }; })
+            .then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
             .catch(function() { return { data: [] }; });
         p3 = appwriteDatabases.listDocuments(APP_DB, 'addons', [
                 AppwriteQuery.equal('is_active', true),
                 AppwriteQuery.orderAsc('$createdAt')
-            ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; }) }; })
+            ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
             .catch(function() { return { data: [] }; });
         p4 = appwriteDatabases.listDocuments(APP_DB, 'promos', [
                 AppwriteQuery.equal('is_active', true),
                 AppwriteQuery.limit(500)
-            ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; }) }; })
+            ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
             .catch(function() { return { data: [] }; });
         p5 = appwriteDatabases.listDocuments(APP_DB, 'products', [
                 AppwriteQuery.equal('is_add_once', true),
                 AppwriteQuery.equal('is_active', true)
             ]).then(function(res) {
                 return { data: res.documents.map(function(d) {
-                    d.id = d.$id; d.created_at = d.$createdAt;
+                    d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } }
                     if (typeof d.variants === 'string') { try { d.variants = JSON.parse(d.variants); } catch(e) { d.variants = []; } }
                     return d;
                 })};
@@ -1620,7 +1620,7 @@ function verifyGatewayPayment(orderId, trxId) {
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         selectPromise = appwriteDatabases.getDocument(APP_DB, 'orders', orderId)
             .then(function(doc) {
-                doc.id = doc.$id; doc.created_at = doc.$createdAt;
+                doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
                 if (typeof doc.items  === 'string') { try { doc.items  = JSON.parse(doc.items);  } catch(e) { doc.items = []; } }
                 if (typeof doc.addons === 'string') { try { doc.addons = JSON.parse(doc.addons); } catch(e) { doc.addons = []; } }
                 return { data: doc, error: null };
@@ -2489,4 +2489,5 @@ function copyElementText(elId) {
     <script src="assets/js/offline-handler.js"></script>
 </body>
 </html>
+
 

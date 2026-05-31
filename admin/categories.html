@@ -82,7 +82,7 @@ function loadCats() {
         ]).then(function(res) {
             document.getElementById('pageLoader').style.display = 'none';
             document.getElementById('adminMain').style.display  = 'flex';
-            allCats = res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; return doc; });
+            allCats = res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } } return doc; });
             renderCats();
         }).catch(function(err) {
             showToast('Load failed: ' + err.message, 'error');
@@ -209,4 +209,5 @@ function closeModal() { document.getElementById('catModal').classList.remove('sh
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+
 

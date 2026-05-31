@@ -310,7 +310,7 @@
                 AppwriteQuery.equal('is_active', true),
                 AppwriteQuery.orderAsc('sort_order')
             ]).then(function(res) {
-                allCategories = res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; });
+                allCategories = res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; });
                 var catFilter  = document.getElementById('catFilter');
                 var catFilterM = document.getElementById('catFilterM');
                 var pCatList   = document.getElementById('pCategoryList');
@@ -396,14 +396,14 @@
                 document.getElementById('adminMain').style.display  = 'flex';
                 var pc = results[1].documents;
                 allProducts = results[0].documents.map(function(doc) {
-                    doc.id = doc.$id; doc.created_at = doc.$createdAt;
+                    doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
                     // variants stored as JSON string
                     if (typeof doc.variants === 'string') {
                         try { doc.variants = JSON.parse(doc.variants); } catch(e) { doc.variants = []; }
                     }
                     doc.variants = doc.variants || [];
-                    // gallery_images is already an Array in Appwrite
-                    doc.gallery_images = doc.gallery_images || [];
+                    if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
+                    else { doc.gallery_images = doc.gallery_images || []; }
                     doc.category_ids = pc
                         .filter(function(x) { return x.product_id === doc.id; })
                         .map(function(x) { return x.category_id; });
@@ -904,7 +904,7 @@
                 is_active:        payload.is_active,
                 is_featured:      payload.is_featured,
                 is_add_once:      payload.is_add_once,
-                gallery_images:   payload.gallery_images,         // Array of String — Appwrite সরাসরি Array accept করে
+                gallery_images:   JSON.stringify(payload.gallery_images),
                 variants:         JSON.stringify(payload.variants) // Complex object হলে JSON string
             };
 
@@ -1090,4 +1090,5 @@
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+
 

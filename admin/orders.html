@@ -245,7 +245,7 @@
                     document.getElementById('pageLoader').style.display = 'none';
                     document.getElementById('adminMain').style.display  = 'flex';
                     allOrders = res.documents.map(function(doc) {
-                        doc.id = doc.$id; doc.created_at = doc.$createdAt;
+                        doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
                         // items is stored as JSON string in Appwrite
                         if (typeof doc.items === 'string') {
                             try { doc.items = JSON.parse(doc.items); } catch(e) { doc.items = []; }
@@ -619,4 +619,5 @@
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+
 

@@ -187,25 +187,25 @@ function loadSiteData() {
                 AppwriteQuery.equal('is_active', true),
                 AppwriteQuery.orderAsc('sort_order')
             ]).then(function(res) {
-                return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; }) };
+                return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) };
             }).catch(function() { return { data: [] }; });
         p3 = appwriteDatabases.listDocuments(APP_DB, 'categories', [
                 AppwriteQuery.equal('is_active', true),
                 AppwriteQuery.orderAsc('sort_order')
             ]).then(function(res) {
-                return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; }) };
+                return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) };
             }).catch(function() { return { data: [] }; });
         p4 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
         p5 = appwriteDatabases.listDocuments(APP_DB, 'home_sections', [
                 AppwriteQuery.equal('is_active', true),
                 AppwriteQuery.orderAsc('sort_order')
             ]).then(function(res) {
-                return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; }) };
+                return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) };
             }).catch(function() { return { data: [] }; });
         p6 = appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
                 AppwriteQuery.limit(5000)
             ]).then(function(res) {
-                return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; }) };
+                return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) };
             }).catch(function() { return { data: [] }; });
     }
 
@@ -635,4 +635,5 @@ function closeMobileMenu() {
     <script src="assets/js/context-menu.js"></script>
 </body>
 </html>
+
 

@@ -452,9 +452,9 @@ function loadData() {
         ]).then(function(results) {
             document.getElementById('pageLoader').style.display = 'none';
             document.getElementById('adminMain').style.display  = 'flex';
-            allCategories = results[0].documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; });
-            allProducts   = results[1].documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; });
-            allPromos     = results[2].documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; return d; });
+            allCategories = results[0].documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; });
+            allProducts   = results[1].documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; });
+            allPromos     = results[2].documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; });
             populateMultiSelects();
             renderPromos();
             checkRepeatCustPromo();
@@ -999,4 +999,5 @@ function closeRepeatModal() { document.getElementById('repeatModal').classList.r
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+
 

@@ -353,11 +353,11 @@ function loadAll() {
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         p1 = appwriteDatabases.listDocuments(APP_DB, 'home_sections', [AppwriteQuery.orderAsc('sort_order')])
             .then(function(res) {
-                return { data: res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; return doc; }) };
+                return { data: res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } } return doc; }) };
             });
         p2 = appwriteDatabases.listDocuments(APP_DB, 'categories', [AppwriteQuery.equal('is_active', true), AppwriteQuery.orderAsc('sort_order')])
             .then(function(res) {
-                return { data: res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; return doc; }) };
+                return { data: res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } } return doc; }) };
             });
     }
     var p3 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
@@ -667,4 +667,5 @@ function escHtml(s) {
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
+
 
