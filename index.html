@@ -306,7 +306,7 @@ function applySettings(s) {
         link.rel = 'icon';
         document.getElementsByTagName('head')[0].appendChild(link);
     }
-    link.href = s.logo_url || s.favicon_url || 'assets/images/favicon.ico';
+    link.href = s.favicon_url || s.logo_url || 'assets/images/favicon.ico';
     
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
