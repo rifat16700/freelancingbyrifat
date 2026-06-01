@@ -1766,20 +1766,16 @@ function sendDraftNotification() {
 function genOrderId() {
     var mustHave = ['A', 'F', 'R', 'S', 'H', 'N'];
     var numbers = '0123456789';
-    var lowercases = 'abcdefghijklmnopqrstuvwxyz';
-    var allChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    var allChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     
     var remainingList = [].concat(mustHave);
     
-    // Add one random digit and one random lowercase letter
+    // Add one random digit
     var randNumIdx = Math.floor(Math.random() * numbers.length);
     remainingList.push(numbers.charAt(randNumIdx));
     
-    var randLowIdx = Math.floor(Math.random() * lowercases.length);
-    remainingList.push(lowercases.charAt(randLowIdx));
-    
-    // Add 5 more random characters
-    for (var i = 0; i < 5; i++) {
+    // Add 6 more random characters (only uppercase and numbers)
+    for (var i = 0; i < 6; i++) {
         var randIdx = Math.floor(Math.random() * allChars.length);
         remainingList.push(allChars.charAt(randIdx));
     }
