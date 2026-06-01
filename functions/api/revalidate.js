@@ -64,7 +64,6 @@ export async function onRequestPost(context) {
     // Note: Adjust the domain if your production domain is different
     const origin = new URL(context.request.url).origin;
     const listUrl = `${origin}/api/get-products-list`;
-    const appwriteListUrl = `${origin}/api/appwrite-get-products`;
 
     const purgeRequests = [
         fetch(CF_PURGE_URL, {
@@ -73,13 +72,12 @@ export async function onRequestPost(context) {
                 'Authorization': `Bearer ${config.CF_API_TOKEN}`,
                 'Content-Type':  'application/json',
             },
-            body: JSON.stringify({ files: [listUrl, appwriteListUrl] }),
+            body: JSON.stringify({ files: [listUrl] }),
         }),
     ];
 
     if (productId) {
         const urlToPurge = `${origin}/api/get-single-product?id=${productId}`;
-        const appwriteUrlToPurge = `${origin}/api/appwrite-get-single-product?id=${productId}`;
         purgeRequests.push(
             fetch(CF_PURGE_URL, {
                 method:  'POST',
@@ -87,7 +85,7 @@ export async function onRequestPost(context) {
                     'Authorization': `Bearer ${config.CF_API_TOKEN}`,
                     'Content-Type':  'application/json',
                 },
-                body: JSON.stringify({ files: [urlToPurge, appwriteUrlToPurge] }),
+                body: JSON.stringify({ files: [urlToPurge] }),
             })
         );
     }
