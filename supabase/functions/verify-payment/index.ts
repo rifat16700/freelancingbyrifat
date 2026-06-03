@@ -186,8 +186,8 @@ serve(async (req: Request) => {
         failReason = `Currency mismatch — Binance Pay-তে শুধু USDT accept করা হয়। পাওয়া গেছে: ${txCurrency}। দয়া করে সাপোর্টে যোগাযোগ করুন।`;
       } else if (!['SUCCESS', 'COMPLETED', 'PAID', 'SUCCESSFUL'].includes(txStatus)) {
         failReason = `Payment status এখনো confirmed না। Current status: ${txStatus}`;
-      } else if (amount > 0 && paidAmount < amount - 0.05) {
-        // ±0.05 USDT tolerance (exchange rate difference)
+      } else if (amount > 0 && paidAmount < amount - 0.01) {
+        // ±0.01 USDT tolerance (exchange rate difference)
         failReason = `Amount mismatch — Expected: ${amount} USDT, Paid: ${paidAmount} USDT`;
       } else {
         isVerified = true;
@@ -239,8 +239,8 @@ serve(async (req: Request) => {
         failReason = `Deposit confirmed হয়নি। Status: ${statusMap[depStatus] ?? 'Unknown (' + depStatus + ')'}`;
       } else if (coin && foundCoin !== coin) {
         failReason = `Coin mismatch — Expected: ${coin}, Found: ${foundCoin}`;
-      } else if (amount > 0 && paidAmount < amount * 0.98) {
-        // 2% tolerance
+      } else if (amount > 0 && paidAmount < amount - 0.01) {
+        // 0.01 tolerance
         failReason = `Amount mismatch — Expected: ~${amount} ${coin}, Found: ${paidAmount} ${foundCoin}`;
       } else {
         isVerified = true;

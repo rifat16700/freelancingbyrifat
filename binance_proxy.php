@@ -157,9 +157,9 @@ if ($action === 'verify-pay') {
         exit();
     }
 
-    // Amount check (optional tolerance ±0.5 USDT for exchange rate)
+    // Amount check (tolerance ±0.01 USDT for exchange rate)
     $paidAmount = isset($matched['amount']) ? floatval($matched['amount']) : 0;
-    if ($expectedUsdt > 0 && $paidAmount < ($expectedUsdt - 0.5)) {
+    if ($expectedUsdt > 0 && $paidAmount < ($expectedUsdt - 0.01)) {
         echo json_encode([
             'success' => false,
             'error'   => 'Amount mismatch. Expected: ' . $expectedUsdt . ' USDT, Found: ' . $paidAmount . ' USDT'
@@ -230,10 +230,10 @@ if ($action === 'verify-deposit') {
         exit();
     }
 
-    // Amount check (tolerance ±0.5 for stablecoins, or larger for volatile)
+    // Amount check (tolerance ±0.01)
     $paidAmount = isset($matched['amount']) ? floatval($matched['amount']) : 0;
     $coinName   = isset($matched['coin'])   ? strtoupper($matched['coin']) : $expectedCoin;
-    if ($expectedAmt > 0 && $paidAmount < ($expectedAmt * 0.98)) { // 2% tolerance
+    if ($expectedAmt > 0 && $paidAmount < ($expectedAmt - 0.01)) { // 0.01 tolerance
         echo json_encode([
             'success' => false,
             'error'   => 'Amount mismatch. Expected ~' . $expectedAmt . ' ' . $coinName . ', Found: ' . $paidAmount . ' ' . $coinName

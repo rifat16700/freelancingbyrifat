@@ -327,8 +327,9 @@
                         <option value="auto">🔄 Auto — PHP চেষ্টা করবে, fail হলে Supabase backup</option>
                         <option value="php_only">🔵 PHP Proxy Only — cPanel available আছে</option>
                         <option value="supabase_only">🟠 Supabase Edge Only — cPanel নেই, Edge Function use করো</option>
+                        <option value="hugging_face">🤗 Hugging Face API — External Backend API</option>
                     </select>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
                         <div style="font-size:11px;padding:8px;background:rgba(99,102,241,0.08);border-radius:8px;border:2px solid #6366f1;">
                             <div style="font-weight:800;color:#4f46e5;">☁️ Cloudflare</div>
                             <div style="color:#666;margin-top:2px;">Recommended। Edge-এ Binance API সরাসরি verify। কোনো server লাগে না।</div>
@@ -345,11 +346,20 @@
                             <div style="font-weight:700;color:#c2610b;">🟠 Supabase Only</div>
                             <div style="color:#666;margin-top:2px;">cPanel নেই, Edge Function only</div>
                         </div>
+                        <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
+                            <div style="font-weight:700;color:#eab308;">🤗 Hugging Face</div>
+                            <div style="color:#666;margin-top:2px;">External HF Space API</div>
+                        </div>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label" style="font-size:11px;">Supabase Edge Function URL <span style="color:#aaa;font-weight:400;">(optional — খালি রাখলে auto-detect)</span></label>
                         <input class="form-input" id="supabaseEdgeUrl" placeholder="https://qdkppbwjgkkxzgzgsykv.supabase.co/functions/v1/verify-payment" style="font-size:12px;">
                         <div class="form-hint">Custom deploy করলে URL দাও। নইলে খালি রাখো — config থেকে auto নেবে।</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;margin-top:10px;">
+                        <label class="form-label" style="font-size:11px;">Hugging Face API URL <span style="color:#aaa;font-weight:400;">(if using Hugging Face mode)</span></label>
+                        <input class="form-input" id="hfApiUrl" placeholder="https://[YOUR_SPACE].hf.space/api/verify-payment" style="font-size:12px;">
+                        <div class="form-hint">URL of your external Hugging Face verification API.</div>
                     </div>
                 </div>
 
@@ -608,6 +618,7 @@
             setVal('binanceApiSecret', s.binance_api_secret || '');
             document.getElementById('verifyMode').value = s.verify_mode || 'cloudflare';
             setVal('supabaseEdgeUrl',  s.supabase_edge_url  || '');
+            setVal('hfApiUrl',         s.hf_api_url         || '');
             cryptoCoins = s.crypto_coins || [];
             renderCryptoCoins();
 
@@ -679,6 +690,7 @@
                 setVal('binanceApiSecret', s.binance_api_secret || '');
                 if (document.getElementById('verifyMode')) document.getElementById('verifyMode').value = s.verify_mode || 'cloudflare';
                 setVal('supabaseEdgeUrl',  s.supabase_edge_url  || '');
+                setVal('hfApiUrl',         s.hf_api_url         || '');
                 cryptoCoins = Array.isArray(s.crypto_coins) ? s.crypto_coins : [];
                 renderCryptoCoins();
 
@@ -807,6 +819,7 @@
             usd_to_bdt_rate:      parseFloat(document.getElementById('usdToBdtRate').value) || 110,
             verify_mode:          document.getElementById('verifyMode').value,
             supabase_edge_url:    document.getElementById('supabaseEdgeUrl').value.trim(),
+            hf_api_url:           document.getElementById('hfApiUrl').value.trim(),
             crypto_coins:         collectCryptoCoins(),
             review_imgbb_key:     document.getElementById('reviewImgbbKey').value.trim(),
             id: 1

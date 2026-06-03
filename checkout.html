@@ -2220,6 +2220,70 @@ function verifyCryptoPayment() {
             ? { action: 'verify-pay',     order_ref: txid, expected_amount: targetAmt }
             : { action: 'verify-deposit', tx_hash: txid, coin: intlCoinSymbol, expected_amount: targetAmt };
 
+        // ── 🤗 NEW: Hugging Face API (External) ──────────────
+        if (verifyMode === 'hugging_face') {
+            var hfUrl = (settings.hf_api_url || '').trim();
+            if (!hfUrl) {
+                setVerifyStatus('❌ Hugging Face API URL is not configured.', 'error');
+                btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+                return;
+            }
+
+            // Step 1: Duplicate check via Supabase API
+            var supabaseUrl = CONFIG.SUPABASE_URL;
+            var anonKey = CONFIG.SUPABASE_ANON_KEY;
+            
+            fetch(supabaseUrl + '/rest/v1/verified_payments?transaction_id=eq.' + encodeURIComponent(txid) + '&select=id&limit=1', {
+                method: 'GET',
+                headers: {
+                    'apikey': anonKey,
+                    'Authorization': 'Bearer ' + anonKey
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(dupData) {
+                // Step 2: Handle Duplicate
+                if (dupData && dupData.length > 0) {
+                    setVerifyStatus('❌ This Transaction ID has already been used! Double-spend rejected.', 'error');
+                    btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+                    return;
+                }
+
+                // Step 3: Hugging Face Call
+                fetch(hfUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: intlPayMode === 'binance_pay' ? 'verify-pay' : 'verify-deposit',
+                        tx_id: txid,
+                        expected_amount: targetAmt,
+                        coin: intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol,
+                        network: intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName,
+                        order_id: 'PENDING'
+                    })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    // Step 4: Final Update
+                    if (data.success || data.status === 'Verified' || data.status === 'verified') {
+                        saveTxidAndPlace(txid, targetAmt, btn, false);
+                    } else {
+                        setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction rejected by Hugging Face API.'), 'error');
+                        btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+                    }
+                })
+                .catch(function(err) {
+                    setVerifyStatus('❌ Hugging Face API unavailable: ' + err.message, 'error');
+                    btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+                });
+            })
+            .catch(function(err) {
+                setVerifyStatus('❌ Supabase check failed: ' + err.message, 'error');
+                btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+            });
+            return;
+        }
+
         // ── ☁️ NEW: Cloudflare Edge Proxy (Recommended) ──────────────
         if (verifyMode === 'cloudflare') {
             var cfTimeout = new Promise(function(_, reject) {
