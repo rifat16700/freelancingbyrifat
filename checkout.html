@@ -2400,10 +2400,14 @@ function saveTxidAndPlace(txid, usdt, btn, isBackup) {
 
 // ── BACKUP path: Supabase Edge Function (no cPanel/PHP needed) ───────────────
 function runSupabaseEdgeBackup(txid, usdt, btn) {
+    var edgeUrl  = (settings.supabase_edge_url || '').trim();
+    if (!edgeUrl) {
+        setVerifyStatus('❌ Supabase Edge Function URL is not configured.', 'error');
+        btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+        return;
+    }
     setVerifyStatus('🔄 Connecting to backup system (Supabase)...', 'loading');
 
-    var edgeUrl  = (settings.supabase_edge_url || '').trim() ||
-                   (CONFIG.SUPABASE_URL + '/functions/v1/verify-payment');
     var anonKey  = CONFIG.SUPABASE_ANON_KEY;
     var coinVal  = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
     var netVal   = intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName;
