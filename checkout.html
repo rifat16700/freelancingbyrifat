@@ -2245,9 +2245,11 @@ function verifyCryptoPayment() {
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                // Step 4: Final Update
                 if (data.success || data.status === 'Verified' || data.status === 'verified') {
-                    saveTxidAndPlace(txid, targetAmt, btn, false);
+                    intlVerified = true;
+                    setVerifyStatus('✅ Verified via Hugging Face! Locking payment & placing order...', 'success');
+                    btn.textContent = '✅ Verified — Placing Order...';
+                    setTimeout(function() { placeCryptoOrder(txid, targetAmt, false); }, 700);
                 } else {
                     setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction rejected by Hugging Face API.'), 'error');
                     btn.disabled = false; btn.textContent = '✅ Verify & Pay';
