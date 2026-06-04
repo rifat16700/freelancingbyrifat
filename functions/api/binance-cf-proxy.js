@@ -28,7 +28,7 @@ async function fetchSettings(config, fields) {
         const collId = config.APPWRITE_COLLECTION_SETTINGS;
         const url    = `${config.APPWRITE_ENDPOINT}/databases/${dbId}/collections/${collId}/documents`;
         const params = new URLSearchParams();
-        params.append('queries[]', 'limit(1)');
+        params.append('queries[]', JSON.stringify({ method: 'limit', values: [1] }));
         const res  = await fetch(`${url}?${params}`, {
             headers: {
                 'X-Appwrite-Project': config.APPWRITE_PROJECT,
