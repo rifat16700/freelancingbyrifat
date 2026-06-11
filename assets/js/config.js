@@ -28,7 +28,7 @@ var CONFIG = {
     // ── ⚡ DB PROVIDER ─────────────────────────────────────────
     // এই লাইন বদলালে  functions/utils/config.js এর DB_PROVIDER লাইনটাও একই value দিন
     // 'supabase' | 'appwrite'
-    DB_PROVIDER: 'appwrite',
+    DB_PROVIDER: 'supabase',
 
 
     // ── 🟡 APPWRITE ──────────────────────────────────────────

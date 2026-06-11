@@ -1,0 +1,32 @@
+{
+  "name": "fn-pay-backend",
+  "version": "1.0.0",
+  "description": "Dockerized Express.js backend for FN Pay custom payment gateway, integrated with Binance Pay and Supabase.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "express",
+    "binance-pay",
+    "supabase",
+    "payment-gateway",
+    "fn-pay",
+    "docker",
+    "huggingface-spaces"
+  ],
+  "author": "FN Pay Developer",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.4",
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-appwrite": "^14.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
