@@ -33,6 +33,13 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Inject Secrets into config.js
+        run: |
+          sed -i "s|__SUPABASE_URL__|${{ secrets.SUPABASE_URL }}|g" assets/js/config.js
+          sed -i "s|__SUPABASE_ANON_KEY__|${{ secrets.SUPABASE_ANON_KEY }}|g" assets/js/config.js
+          sed -i "s|__APPWRITE_ENDPOINT__|${{ secrets.APPWRITE_ENDPOINT }}|g" assets/js/config.js
+          sed -i "s|__APPWRITE_PROJECT__|${{ secrets.APPWRITE_PROJECT }}|g" assets/js/config.js
+          sed -i "s|__APPWRITE_DATABASE_ID__|${{ secrets.APPWRITE_DATABASE_ID }}|g" assets/js/config.js
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

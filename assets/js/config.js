@@ -19,8 +19,8 @@ var CONFIG = {
 
     // ── 🔵 SUPABASE ─────────────────────────────────────────
     // Supabase Dashboard → Project Settings → API
-    SUPABASE_URL:      'https://qdkppbwjgkkxzgzgsykv.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk',
+    SUPABASE_URL:      '__SUPABASE_URL__',
+    SUPABASE_ANON_KEY: '__SUPABASE_ANON_KEY__',
 
     // ── 🟡 [MULTI-DB PLACEHOLDER] ────────────────────────────
     // পরে Appwrite বা অন্য DB ব্যবহার করতে চাইলে:
@@ -33,9 +33,9 @@ var CONFIG = {
 
     // ── 🟡 APPWRITE ──────────────────────────────────────────
     // Appwrite Console → Project Settings → Project ID
-    APPWRITE_ENDPOINT:    'https://sgp.cloud.appwrite.io/v1',
-    APPWRITE_PROJECT:     '69de4fa50032182e9b91',       // ← এখানে তোমার Project ID বসাও
-    APPWRITE_DATABASE_ID: '6a19e07f002427086405',  // ← Appwrite Console থেকে সঠিক Database ID
+    APPWRITE_ENDPOINT:    '__APPWRITE_ENDPOINT__',
+    APPWRITE_PROJECT:     '__APPWRITE_PROJECT__',
+    APPWRITE_DATABASE_ID: '__APPWRITE_DATABASE_ID__',  // ← Appwrite Console থেকে সঠিক Database ID
     // ────────────────────────────────────────────────────────
 
     // ── 🟢 Frontend Constants (DB ছাড়াই কাজ করে) ───────────
