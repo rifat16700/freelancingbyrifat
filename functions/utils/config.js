@@ -7,12 +7,11 @@
 // assets/js/config.js এর DB_PROVIDER এর সাথে মিলিয়ে রাখুন
 // 'supabase' → Supabase ব্যবহার করবে
 // 'appwrite'  → Appwrite ব্যবহার করবে
-const DB_PROVIDER = 'supabase';
 // ════════════════════════════════════════════════════════════
 
 export function getConfig(env) {
     return {
-        DB_PROVIDER: DB_PROVIDER,
+        DB_PROVIDER: env.DB_PROVIDER || 'supabase',
 
         // ── Supabase ───────────────────────────────────────────
         SUPABASE_URL: env.SUPABASE_URL || '',
