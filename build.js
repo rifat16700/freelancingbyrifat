@@ -31,3 +31,23 @@ var CONFIG = {
 const configPath = path.join(__dirname, 'assets', 'js', 'config.js');
 fs.writeFileSync(configPath, configJs, 'utf8');
 console.log('✅ assets/js/config.js generated successfully during build!');
+
+// ── Cache Busting for HTML files ─────────────────────────────
+const timestamp = Date.now();
+const directories = [__dirname, path.join(__dirname, 'admin')];
+
+directories.forEach(dir => {
+    if (!fs.existsSync(dir)) return;
+    const files = fs.readdirSync(dir);
+    files.forEach(file => {
+        if (file.endsWith('.html')) {
+            const filePath = path.join(dir, file);
+            let content = fs.readFileSync(filePath, 'utf8');
+            const updatedContent = content.replace(/assets\/js\/config\.js\?v=\d+/g, `assets/js/config.js?v=${timestamp}`);
+            if (content !== updatedContent) {
+                fs.writeFileSync(filePath, updatedContent, 'utf8');
+                console.log(`✅ Cache busted config.js in ${file}`);
+            }
+        }
+    });
+});

@@ -702,7 +702,7 @@ function renderAddons() {
     if (!addons.length) { document.getElementById('addonsSection').style.display = 'none'; return; }
     var html = addons.map(function(a) {
         return '<div class="addon-item" onclick="toggleAddon(\'' + a.id + '\',this)" data-id="' + a.id + '" data-price="' + a.price + '">' +
-            '<span style="font-size:22px;">' + (a.icon||'<i data-lucide="gift" class="lucide-icon icon-bounce"></i>') + '</span>' +
+            '<span style="font-size:22px;">' + (a.icon ? a.icon.replace(/<style\\b[^<]*(?:(?!<\\/style>)<[^<]*)*<\\/style>/gi, '') : '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>') + '</span>' +
             '<div style="flex:1;"><div style="font-weight:700;font-size:14px;">' + a.name + '</div></div>' +
             '<div style="font-weight:800;color:var(--primary);">+৳' + a.price + '</div>' +
             '<input type="checkbox" style="width:18px;height:18px;accent-color:var(--primary);" data-chk="' + a.id + '">' +
@@ -1552,7 +1552,9 @@ function initiateGatewayPayment(orderId, total, orderData) {
     var proxyUrl = (gatewayVersion === 'v2') 
         ? 'https://payment.freelancingbyrifat.top/proxyv2.php'
         : 'https://mypay.freelancingbyrifat.top/api_proxy.php';
-    var apiKey   = settings.gateway_api_key   || CONFIG.GATEWAY_API_KEY;
+    var apiKey = (gatewayVersion === 'v2') 
+        ? (settings.gateway_api_key_v2 || CONFIG.GATEWAY_API_KEY || '')
+        : (settings.gateway_api_key || CONFIG.GATEWAY_API_KEY || '');
     var name     = document.getElementById('custName').value.trim();
     var phone    = document.getElementById('custPhone').value.trim();
     var email    = document.getElementById('custEmail').value.trim() || (phone + '@linko.com');
