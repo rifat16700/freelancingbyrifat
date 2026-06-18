@@ -1559,8 +1559,8 @@ function initiateGatewayPayment(orderId, total, orderData) {
     var email    = document.getElementById('custEmail').value.trim() || (phone + '@linko.com');
 
     var baseUrl  = window.location.href.split('?')[0];
-    var sUrl = proxyUrl + '?action=callback&status=completed&order_id=' + orderId + '&redirect=' + encodeURIComponent(baseUrl);
-    var cUrl = proxyUrl + '?action=callback&status=cancel&order_id=' + orderId + '&redirect=' + encodeURIComponent(baseUrl);
+    var sUrl = baseUrl + '?status=completed&order_id=' + orderId;
+    var cUrl = baseUrl + '?status=cancel&order_id=' + orderId;
 
     // ── DB-তে আগে order save করো ──────────────────────────────
     var insertPromise;
