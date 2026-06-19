@@ -1460,6 +1460,8 @@ function placeOrder() {
     // ── Manual payment inputs: read from active sub-card ────────────
     var senderNum = '', trxId = '';
     var isManualPay = (selectedPayMethod === 'manual_bkash' || selectedPayMethod === 'manual_nagad' || selectedPayMethod === 'manual_binance');
+    var isCodManualAdvance = (selectedPayMethod === 'cod' && advancePayable > 0 && settings.advance_method === 'manual');
+
     if (isManualPay) {
         // Find the visible (selected) sub-card's inputs
         var activeSub = document.querySelector('.pay-sub-card.selected');
@@ -1475,6 +1477,10 @@ function placeOrder() {
         } else {
             if (!senderNum || !trxId) { alert('Please enter Sender Number and Transaction ID'); return; }
         }
+    } else if (isCodManualAdvance) {
+        senderNum = document.getElementById('senderNumber') ? document.getElementById('senderNumber').value.trim() : '';
+        trxId     = document.getElementById('trxId') ? document.getElementById('trxId').value.trim() : '';
+        if (!senderNum || !trxId) { alert('Please enter Sender Number and Transaction ID for Advance Payment'); return; }
     }
 
     var orderId = genOrderId();
