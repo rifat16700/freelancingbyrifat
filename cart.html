@@ -160,22 +160,23 @@ var cartSettings = {};
 document.addEventListener('DOMContentLoaded', function() {
     // Settings লোড করো (messaging apps + store name)
     var settingsPromise;
-    if (CONFIG.DB_PROVIDER === 'supabase') {
-        settingsPromise = supabaseClient.from('settings').select('*').eq('id', 1).single();
-    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        settingsPromise = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
-            .then(function(doc) {
-                if (typeof doc.messaging_apps === 'string') {
-                    try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e) { doc.messaging_apps = []; }
-                }
-                return { data: doc };
-            }).catch(function() { return { data: {} }; });
-    } else {
-        settingsPromise = Promise.reject(new Error('Unknown DB_PROVIDER'));
-    }
+    try {
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            settingsPromise = supabaseClient.from('settings').select('*').eq('id', 1).single();
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            settingsPromise = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
+                .then(function(doc) {
+                    if (typeof doc.messaging_apps === 'string') {
+                        try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e) { doc.messaging_apps = []; }
+                    }
+                    return { data: doc };
+                }).catch(function() { return { data: {} }; });
+        } else {
+            settingsPromise = Promise.resolve({ data: {} });
+        }
 
     settingsPromise.then(function(r) {
-        if (r.data) {
+        if (r && r.data) {
             cartSettings = r.data;
             if (r.data.store_name) {
                 document.getElementById('navBrand').textContent = r.data.store_name;
@@ -187,9 +188,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         document.getElementById('pageLoader').style.display = 'none';
-    }).catch(function() {
+    }).catch(function(err) {
+        console.error('Settings load error:', err);
         document.getElementById('pageLoader').style.display = 'none';
     });
+    } catch (e) {
+        console.error('Init error:', e);
+        document.getElementById('pageLoader').style.display = 'none';
+    }
 
     renderCart();
 });

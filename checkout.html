@@ -442,38 +442,41 @@ document.addEventListener('DOMContentLoaded', function() {
     var trxId = urlParams.get('trx_id') || urlParams.get('transaction_id') || urlParams.get('tran_id') || urlParams.get('transactionId');
 
     var p1, p2, p3, p4, p5;
-    if (CONFIG.DB_PROVIDER === 'supabase') {
-        p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
-        p2 = supabaseClient.from('delivery_zones').select('*');
-        p3 = supabaseClient.from('addons').select('*').eq('is_active',true).order('created_at');
-        p4 = supabaseClient.from('promos').select('*').eq('is_active',true);
-        p5 = supabaseClient.from('products').select('id,name,base_price,flash_sale_price,gallery_images,variants').eq('is_add_once',true).eq('is_active',true);
-    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        p1 = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
-            .then(function(doc) {
-                if (typeof doc.messaging_apps === 'string') { try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e) { doc.messaging_apps = []; } }
-                if (typeof doc.crypto_coins  === 'string') { try { doc.crypto_coins  = JSON.parse(doc.crypto_coins);  } catch(e) { doc.crypto_coins = []; } }
-                return { data: doc };
-            }).catch(function() { return { data: {} }; });
-        p2 = appwriteDatabases.listDocuments(APP_DB, 'delivery_zones', [])
-            .then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
-            .catch(function() { return { data: [] }; });
-        p3 = appwriteDatabases.listDocuments(APP_DB, 'addons', [
-                AppwriteQuery.equal('is_active', true),
-                AppwriteQuery.orderAsc('$createdAt')
-            ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
-            .catch(function() { return { data: [] }; });
-        p4 = appwriteDatabases.listDocuments(APP_DB, 'promos', [
-                AppwriteQuery.equal('is_active', true),
-                AppwriteQuery.limit(500)
-            ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
-            .catch(function() { return { data: [] }; });
-        p5 = fetch('/api/appwrite-get-products?t=' + Date.now()).then(function(r) { return r.json(); }).then(function(data) {
-            return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
-        }).catch(function() { return { data: [] }; });
-    }
+    try {
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
+            p2 = supabaseClient.from('delivery_zones').select('*');
+            p3 = supabaseClient.from('addons').select('*').eq('is_active',true).order('created_at');
+            p4 = supabaseClient.from('promos').select('*').eq('is_active',true);
+            p5 = supabaseClient.from('products').select('id,name,base_price,flash_sale_price,gallery_images,variants').eq('is_add_once',true).eq('is_active',true);
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            p1 = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
+                .then(function(doc) {
+                    if (typeof doc.messaging_apps === 'string') { try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e) { doc.messaging_apps = []; } }
+                    if (typeof doc.crypto_coins  === 'string') { try { doc.crypto_coins  = JSON.parse(doc.crypto_coins);  } catch(e) { doc.crypto_coins = []; } }
+                    return { data: doc };
+                }).catch(function() { return { data: {} }; });
+            p2 = appwriteDatabases.listDocuments(APP_DB, 'delivery_zones', [])
+                .then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
+                .catch(function() { return { data: [] }; });
+            p3 = appwriteDatabases.listDocuments(APP_DB, 'addons', [
+                    AppwriteQuery.equal('is_active', true),
+                    AppwriteQuery.orderAsc('$createdAt')
+                ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
+                .catch(function() { return { data: [] }; });
+            p4 = appwriteDatabases.listDocuments(APP_DB, 'promos', [
+                    AppwriteQuery.equal('is_active', true),
+                    AppwriteQuery.limit(500)
+                ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
+                .catch(function() { return { data: [] }; });
+            p5 = fetch('/api/appwrite-get-products?t=' + Date.now()).then(function(r) { return r.json(); }).then(function(data) {
+                return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
+            }).catch(function() { return { data: [] }; });
+        } else {
+            p1 = Promise.resolve({data:{}}); p2 = Promise.resolve({data:[]}); p3 = Promise.resolve({data:[]}); p4 = Promise.resolve({data:[]}); p5 = Promise.resolve({data:[]});
+        }
 
-    Promise.all([p1, p2, p3, p4, p5]).then(function(results) {
+        Promise.all([p1, p2, p3, p4, p5]).then(function(results) {
         settings = results[0].data || {};
         zones    = results[1].data || [];
         addons   = results[2].data || [];
@@ -495,7 +498,14 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Payment was cancelled or failed.');
             window.history.replaceState({}, document.title, window.location.pathname);
         }
+    }).catch(function(err) {
+        console.error('Data load error:', err);
+        document.getElementById('pageLoader').style.display = 'none';
     });
+    } catch (e) {
+        console.error('Init error:', e);
+        document.getElementById('pageLoader').style.display = 'none';
+    }
 
     document.addEventListener('visibilitychange', function() {
         if (document.hidden && !draftSent && cart.length) {
