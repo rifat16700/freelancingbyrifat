@@ -181,7 +181,7 @@ function loadSiteData() {
         p4 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
         p5 = supabaseClient.from('home_sections').select('*').eq('is_active', true).order('sort_order');
         p6 = supabaseClient.from('product_categories').select('*');
-        p7 = supabaseClient.from('devtools').select('*').eq('id', 1).single().catch(function(){return {data:{}};});
+        p7 = supabaseClient.from('devtools').select('*').eq('id', 1).single().then(function(r){return r;}).catch(function(){return {data:{}};});
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         p7 = Promise.resolve({ data: {} });
         p1 = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')

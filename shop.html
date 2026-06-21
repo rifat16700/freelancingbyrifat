@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
         p2 = supabaseClient.from('categories').select('*').eq('is_active',true).order('sort_order');
         p4 = supabaseClient.from('product_categories').select('*');
-        p5 = supabaseClient.from('devtools').select('*').eq('id',1).single().catch(function(){return {data:{}};});
+        p5 = supabaseClient.from('devtools').select('*').eq('id',1).single().then(function(r){return r;}).catch(function(){return {data:{}};});
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         p5 = Promise.resolve({ data: {} });
         p3 = fetch('/api/appwrite-get-products').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; }).catch(function() { return { data: [] }; });

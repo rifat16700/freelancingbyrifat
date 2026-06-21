@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
         p3 = supabaseClient.from('reviews').select('rating').eq('product_id', id).eq('is_approved', true);
         p5 = supabaseClient.from('product_categories').select('*');
         p6 = supabaseClient.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false }).range(0, REVIEWS_PAGE_SIZE - 1);
-        p7 = supabaseClient.from('devtools').select('*').eq('id', 1).single().catch(function(){return {data:{}};});
+        p7 = supabaseClient.from('devtools').select('*').eq('id', 1).single().then(function(r){return r;}).catch(function(){return {data:{}};});
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         p7 = Promise.resolve({ data: {} });
         p2 = fetch('/api/appwrite-get-single-product?id=' + id).then(function(r) { return r.json(); }).then(function(data) { return { data: (data && !data.error) ? data : null }; }).catch(function() { return { data: null }; });
