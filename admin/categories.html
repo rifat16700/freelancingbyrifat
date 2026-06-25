@@ -76,6 +76,25 @@ function loadCats() {
             allCats = r.data || [];
             renderCats();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM categories ORDER BY sort_order ASC" })
+        }).then(res=>res.json()).then(function(resData) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            if (resData.success && resData.result && resData.result[0].results) {
+                allCats = resData.result[0].results;
+            } else {
+                allCats = [];
+            }
+            renderCats();
+        }).catch(function(err) { console.error(err); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.listDocuments(APP_DB, 'categories', [
             AppwriteQuery.orderAsc('sort_order')
@@ -154,6 +173,25 @@ function saveCat() {
             if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadCats();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var sql;
+        if (editingId) {
+            sql = "UPDATE categories SET name = '" + payload.name.replace(/'/g, "''") + "', icon_url = '" + payload.icon_url.replace(/'/g, "''") + "', sort_order = " + payload.sort_order + ", is_active = " + (payload.is_active ? 1 : 0) + " WHERE id = '" + editingId + "'";
+        } else {
+            sql = "INSERT INTO categories (id, name, icon_url, sort_order, is_active) VALUES ('" + genId() + "', '" + payload.name.replace(/'/g, "''") + "', '" + payload.icon_url.replace(/'/g, "''") + "', " + payload.sort_order + ", " + (payload.is_active ? 1 : 0) + ")";
+        }
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Error: query failed', 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadCats();
+        }).catch(function(err) { showToast("Error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         if (editingId) {
             appwriteDatabases.updateDocument(APP_DB, 'categories', editingId, payload)
@@ -184,6 +222,19 @@ function deleteCat(id) {
             if (r.error) { showToast('Delete failed', 'error'); return; }
             showToast('Deleted!', 'success'); loadCats();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM categories WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success'); loadCats();
+        }).catch(function(err) { showToast("Delete error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.deleteDocument(APP_DB, 'categories', id)
         .then(function() {

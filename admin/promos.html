@@ -444,6 +444,47 @@ function loadData() {
             renderPromos();
             checkRepeatCustPromo();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        Promise.all([
+            fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN },
+                body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" })
+            }).then(r=>r.json()),
+            fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN },
+                body: JSON.stringify({ sql: "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC" })
+            }).then(r=>r.json()),
+            fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN },
+                body: JSON.stringify({ sql: "SELECT * FROM promos ORDER BY created_at DESC LIMIT 500" })
+            }).then(r=>r.json())
+        ]).then(function(results) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            
+            var resC = results[0];
+            var resP = results[1];
+            var resPr = results[2];
+            
+            allCategories = (resC.success && resC.result && resC.result[0].results) ? resC.result[0].results : [];
+            allProducts = (resP.success && resP.result && resP.result[0].results) ? resP.result[0].results : [];
+            allPromos = (resPr.success && resPr.result && resPr.result[0].results) ? resPr.result[0].results : [];
+            
+            allPromos.forEach(function(p) {
+                if (typeof p.applicable_products === 'string') { try { p.applicable_products = JSON.parse(p.applicable_products); } catch(e) { p.applicable_products = []; } }
+                if (typeof p.applicable_categories === 'string') { try { p.applicable_categories = JSON.parse(p.applicable_categories); } catch(e) { p.applicable_categories = []; } }
+                if (typeof p.applicable_districts === 'string') { try { p.applicable_districts = JSON.parse(p.applicable_districts); } catch(e) { p.applicable_districts = []; } }
+                if (typeof p.applicable_payments === 'string') { try { p.applicable_payments = JSON.parse(p.applicable_payments); } catch(e) { p.applicable_payments = []; } }
+            });
+            
+            populateMultiSelects();
+            renderPromos();
+            checkRepeatCustPromo();
+        }).catch(function(err) { console.error(err); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         Promise.all([
             appwriteDatabases.listDocuments(APP_DB, 'categories', [AppwriteQuery.equal('is_active', true), AppwriteQuery.orderAsc('sort_order')]),
@@ -876,6 +917,27 @@ function savePromo() {
             if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
             showToast('✅ Coupon saved!', 'success'); closeModal(); loadData();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var pId = editingId || genId();
+        var sql;
+        if (editingId) {
+            sql = "UPDATE promos SET code = '" + payload.code.replace(/'/g, "''") + "', discount = " + payload.discount + ", is_active = " + (payload.is_active ? 1 : 0) + ", usage_limit = " + (payload.usage_limit ? payload.usage_limit : "NULL") + ", expires_at = " + (payload.expires_at ? "'" + payload.expires_at + "'" : "NULL") + ", type = '" + payload.type + "', disc_type = '" + payload.disc_type + "', disc_val = " + payload.disc_val + ", max_cap = " + (payload.max_cap ? payload.max_cap : "NULL") + ", min_spend = " + (payload.min_spend ? payload.min_spend : "NULL") + ", del_reward = '" + payload.del_reward + "', del_disc_amount = " + (payload.del_disc_amount ? payload.del_disc_amount : "NULL") + ", del_disc_cap = " + (payload.del_disc_cap ? payload.del_disc_cap : "NULL") + ", applicable_products = '" + JSON.stringify(payload.applicable_products).replace(/'/g, "''") + "', applicable_categories = '" + JSON.stringify(payload.applicable_categories).replace(/'/g, "''") + "', applicable_districts = '" + JSON.stringify(payload.applicable_districts).replace(/'/g, "''") + "', applicable_payments = '" + JSON.stringify(payload.applicable_payments).replace(/'/g, "''") + "' WHERE id = '" + pId + "'";
+        } else {
+            sql = "INSERT INTO promos (id, code, discount, is_active, usage_limit, expires_at, type, disc_type, disc_val, max_cap, min_spend, del_reward, del_disc_amount, del_disc_cap, applicable_products, applicable_categories, applicable_districts, applicable_payments) VALUES ('" + pId + "', '" + payload.code.replace(/'/g, "''") + "', " + payload.discount + ", " + (payload.is_active ? 1 : 0) + ", " + (payload.usage_limit ? payload.usage_limit : "NULL") + ", " + (payload.expires_at ? "'" + payload.expires_at + "'" : "NULL") + ", '" + payload.type + "', '" + payload.disc_type + "', " + payload.disc_val + ", " + (payload.max_cap ? payload.max_cap : "NULL") + ", " + (payload.min_spend ? payload.min_spend : "NULL") + ", '" + payload.del_reward + "', " + (payload.del_disc_amount ? payload.del_disc_amount : "NULL") + ", " + (payload.del_disc_cap ? payload.del_disc_cap : "NULL") + ", '" + JSON.stringify(payload.applicable_products).replace(/'/g, "''") + "', '" + JSON.stringify(payload.applicable_categories).replace(/'/g, "''") + "', '" + JSON.stringify(payload.applicable_districts).replace(/'/g, "''") + "', '" + JSON.stringify(payload.applicable_payments).replace(/'/g, "''") + "')";
+        }
+
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Error saving promo', 'error'); return; }
+            showToast('✅ Coupon saved!', 'success'); closeModal(); loadData();
+        }).catch(function(err) { showToast("Error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         if (editingId) {
             appwriteDatabases.updateDocument(APP_DB, 'promos', editingId, payload)
@@ -907,6 +969,19 @@ function deletePromo(id) {
             if (r.error) { showToast('Delete failed', 'error'); return; }
             showToast('Deleted!', 'success'); loadData();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM promos WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success'); loadData();
+        }).catch(function(err) { showToast("Delete error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.deleteDocument(APP_DB, 'promos', id)
         .then(function() {
@@ -961,6 +1036,27 @@ function saveRepeatCustConfig() {
             showToast('✅ Repeat customer config saved!', 'success');
             closeRepeatModal(); loadData();
         });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var pId = repRow ? repRow.id : genId();
+        var sql;
+        if (repRow) {
+            sql = "UPDATE promos SET code = '" + payload.code + "', discount = " + payload.discount + ", is_active = " + (payload.is_active ? 1 : 0) + ", is_repeated_config = " + (payload.is_repeated_config ? 1 : 0) + ", type = '" + payload.type + "', rep_type = '" + payload.rep_type + "', rep_value = " + payload.rep_value + ", rep_cap = " + (payload.rep_cap ? payload.rep_cap : "NULL") + ", rep_expiry_days = " + (payload.rep_expiry_days ? payload.rep_expiry_days : "NULL") + ", rep_min_spend = " + (payload.rep_min_spend ? payload.rep_min_spend : "NULL") + ", rep_del_reward = '" + payload.rep_del_reward + "' WHERE id = '" + pId + "'";
+        } else {
+            sql = "INSERT INTO promos (id, code, discount, is_active, is_repeated_config, type, rep_type, rep_value, rep_cap, rep_expiry_days, rep_min_spend, rep_del_reward) VALUES ('" + pId + "', '" + payload.code + "', " + payload.discount + ", " + (payload.is_active ? 1 : 0) + ", " + (payload.is_repeated_config ? 1 : 0) + ", '" + payload.type + "', '" + payload.rep_type + "', " + payload.rep_value + ", " + (payload.rep_cap ? payload.rep_cap : "NULL") + ", " + (payload.rep_expiry_days ? payload.rep_expiry_days : "NULL") + ", " + (payload.rep_min_spend ? payload.rep_min_spend : "NULL") + ", '" + payload.rep_del_reward + "')";
+        }
+
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Error saving repeat config', 'error'); return; }
+            showToast('✅ Repeat customer config saved!', 'success');
+            closeRepeatModal(); loadData();
+        }).catch(function(err) { showToast("Error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         var repRow2 = allPromos.find(function(p) { return p.is_repeated_config || (p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG')); });
         var awRepPayload = payload;
@@ -999,5 +1095,3 @@ function closeRepeatModal() { document.getElementById('repeatModal').classList.r
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
-
-

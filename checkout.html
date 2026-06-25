@@ -476,6 +476,12 @@ document.addEventListener('DOMContentLoaded', function() {
             p5 = fetch('/api/appwrite-get-products').then(function(r) { return r.json(); }).then(function(data) {
                 return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
             }).catch(function() { return { data: [] }; });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            p1 = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id = 1" }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; if (arr.length) { let doc = arr[0]; if (typeof doc.messaging_apps === 'string') { try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e) { doc.messaging_apps = []; } } if (typeof doc.crypto_coins === 'string') { try { doc.crypto_coins = JSON.parse(doc.crypto_coins); } catch(e) { doc.crypto_coins = []; } } return { data: doc }; } return { data: {} }; }).catch(e => ({ data: {} }));
+            p2 = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM delivery_zones" }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr }; }).catch(e => ({ data: [] }));
+            p3 = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM addons WHERE is_active = 1 ORDER BY created_at ASC" }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr }; }).catch(e => ({ data: [] }));
+            p4 = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM promos WHERE is_active = 1" }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr }; }).catch(e => ({ data: [] }));
+            p5 = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "SELECT id,name,base_price,flash_sale_price,gallery_images,variants FROM products WHERE is_add_once = 1 AND is_active = 1" }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr.map(d => { d.gallery_images = (typeof d.gallery_images === 'string' ? JSON.parse(d.gallery_images) : d.gallery_images); d.variants = (typeof d.variants === 'string' ? JSON.parse(d.variants) : d.variants); return d; }) }; }).catch(e => ({ data: [] }));
         } else {
             p1 = Promise.resolve({data:{}}); p2 = Promise.resolve({data:[]}); p3 = Promise.resolve({data:[]}); p4 = Promise.resolve({data:[]}); p5 = Promise.resolve({data:[]});
         }
@@ -1556,6 +1562,13 @@ function placeOrder() {
         insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awOrderData)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var awOrderData = Object.assign({}, orderData);
+        awOrderData.items  = JSON.stringify(awOrderData.items  || []);
+        awOrderData.addons = JSON.stringify(awOrderData.addons || []);
+        var qCols = Object.keys(awOrderData).join(", ");
+        var qVals = Object.values(awOrderData).map(v => typeof v === 'string' ? "'" + v.replace(/'/g, "''") + "'" : (v === null ? 'NULL' : v)).join(", ");
+        insertPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "INSERT INTO orders (" + qCols + ") VALUES (" + qVals + ")" }) }).then(r => r.json()).then(d => ({ data: [{ id: orderId }], error: null })).catch(err => ({ data: null, error: err }));
     }
     insertPromise.then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
@@ -1599,6 +1612,13 @@ function initiateGatewayPayment(orderId, total, orderData) {
         insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awOrderData2)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var awOrderData2 = Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' });
+        awOrderData2.items  = JSON.stringify(awOrderData2.items  || []);
+        awOrderData2.addons = JSON.stringify(awOrderData2.addons || []);
+        var qCols = Object.keys(awOrderData2).join(", ");
+        var qVals = Object.values(awOrderData2).map(v => typeof v === 'string' ? "'" + v.replace(/'/g, "''") + "'" : (v === null ? 'NULL' : v)).join(", ");
+        insertPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "INSERT INTO orders (" + qCols + ") VALUES (" + qVals + ")" }) }).then(r => r.json()).then(d => ({ data: [{ id: orderId }], error: null })).catch(err => ({ data: null, error: err }));
     }
 
     insertPromise.then(function(r) {
@@ -1655,6 +1675,8 @@ function verifyGatewayPayment(orderId, trxId) {
                 if (typeof doc.addons === 'string') { try { doc.addons = JSON.parse(doc.addons); } catch(e) { doc.addons = []; } }
                 return { data: doc, error: null };
             }).catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        selectPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM orders WHERE id = '" + orderId + "'" }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; if (arr.length) { let doc = arr[0]; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } } if (typeof doc.items === 'string') { try { doc.items = JSON.parse(doc.items); } catch(e) { doc.items = []; } } if (typeof doc.addons === 'string') { try { doc.addons = JSON.parse(doc.addons); } catch(e) { doc.addons = []; } } return { data: doc, error: null }; } return { data: null, error: null }; }).catch(e => ({ data: null, error: e }));
     }
     selectPromise.then(function(oRes) {
         if (oRes.error || !oRes.data) {
@@ -1685,6 +1707,8 @@ function verifyGatewayPayment(orderId, trxId) {
                         var docs = res.documents.filter(function(d) { return d.$id !== orderId; });
                         return docs.length ? { data: { id: docs[0].$id }, error: null } : { data: null, error: null };
                     }).catch(function(err) { return { data: null, error: err }; });
+            } else if (trxId && CONFIG.DB_PROVIDER === 'cf_db') {
+                dupCheck = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM orders WHERE payment_trx_id = '" + trxId.replace(/'/g, "''") + "' AND id != '" + orderId + "' LIMIT 1" }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr.length ? { id: arr[0].id } : null, error: null }; }).catch(e => ({ data: null, error: e }));
             } else {
                 dupCheck = Promise.resolve({ data: null });
             }
@@ -1721,6 +1745,9 @@ function verifyGatewayPayment(orderId, trxId) {
                             updatePromise = appwriteDatabases.updateDocument(APP_DB, 'orders', orderId, upData)
                                 .then(function() { return { error: null }; })
                                 .catch(function(err) { return { error: err }; });
+                        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+                            var uSql = "UPDATE orders SET payment_status = '" + upData.payment_status + "', payment_trx_id = '" + (upData.payment_trx_id || '').replace(/'/g, "''") + "', status = '" + upData.status + "' WHERE id = '" + orderId + "'";
+                            updatePromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: uSql }) }).then(r => r.json()).then(d => ({ error: null })).catch(err => ({ error: err }));
                         } else {
                             updatePromise = Promise.resolve({ data: null });
                         }
@@ -2233,6 +2260,8 @@ function verifyCryptoPayment() {
                     ? { data: { id: res.documents[0].$id }, error: null }
                     : { data: null, error: null };
             }).catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        checkPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "SELECT id FROM verified_payments WHERE transaction_id = '" + txid.replace(/'/g, "''") + "' LIMIT 1" }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr.length ? arr[0] : null, error: null }; }).catch(e => ({ data: null, error: e }));
     } else {
         checkPromise = Promise.resolve({ data: null });
     }
@@ -2397,6 +2426,12 @@ function saveTxidAndPlace(txid, usdt, btn, isBackup) {
         insPromise = appwriteDatabases.createDocument(APP_DB, 'verified_payments', AppwriteID.unique(), awInsData)
             .then(function() { return { error: null }; })
             .catch(function(err) { return { error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var awInsData = Object.assign({}, insData);
+        if (typeof awInsData.raw_response !== 'string') awInsData.raw_response = JSON.stringify(awInsData.raw_response || {});
+        var qCols = Object.keys(awInsData).join(", ");
+        var qVals = Object.values(awInsData).map(v => typeof v === 'string' ? "'" + v.replace(/'/g, "''") + "'" : (v === null ? 'NULL' : v)).join(", ");
+        insPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "INSERT INTO verified_payments (" + qCols + ") VALUES (" + qVals + ")" }) }).then(r => r.json()).then(d => { if (d.errors && d.errors.length) { return { error: { code: '23505', message: d.errors[0].message } }; } return { error: null }; }).catch(err => ({ error: err }));
     } else {
         insPromise = Promise.resolve({ data: null, error: { code: 'not_implemented' } });
     }
@@ -2520,6 +2555,13 @@ function placeCryptoOrder(txid, usdt, isBackup) {
         insertOrderPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awCryptoOrder)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var awCryptoOrder = Object.assign({}, orderData);
+        awCryptoOrder.items  = JSON.stringify(awCryptoOrder.items  || []);
+        awCryptoOrder.addons = JSON.stringify(awCryptoOrder.addons || []);
+        var qCols = Object.keys(awCryptoOrder).join(", ");
+        var qVals = Object.values(awCryptoOrder).map(v => typeof v === 'string' ? "'" + v.replace(/'/g, "''") + "'" : (v === null ? 'NULL' : v)).join(", ");
+        insertOrderPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "INSERT INTO orders (" + qCols + ") VALUES (" + qVals + ")" }) }).then(r => r.json()).then(d => ({ data: [{ id: orderId }], error: null })).catch(err => ({ data: null, error: err }));
     } else {
         insertOrderPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
     }
@@ -2541,6 +2583,8 @@ function placeCryptoOrder(txid, usdt, isBackup) {
                     return appwriteDatabases.updateDocument(APP_DB, 'verified_payments', res.documents[0].$id, { order_id: orderId });
                 }
             }).catch(function(err) { console.error('VP update error:', err.message); });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: "UPDATE verified_payments SET order_id = '" + orderId + "' WHERE transaction_id = '" + txid.replace(/'/g, "''") + "'" }) }).catch(e => console.error('VP update error:', e));
         }
 
         sendOrderNotification(orderData);

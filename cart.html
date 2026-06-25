@@ -171,6 +171,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     return { data: doc };
                 }).catch(function() { return { data: {} }; });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            settingsPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: `SELECT * FROM settings WHERE id = 1` }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; if (arr.length) { let doc = arr[0]; if (typeof doc.messaging_apps === 'string') { try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e) { doc.messaging_apps = []; } } return { data: doc }; } return { data: {} }; }).catch(e => ({ data: {} }));
         } else {
             settingsPromise = Promise.resolve({ data: {} });
         }

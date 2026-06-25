@@ -120,6 +120,25 @@ function loadBanners() {
             allBanners = r.data || [];
             renderBanners();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM banners ORDER BY sort_order ASC" })
+        }).then(res=>res.json()).then(function(resData) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            if (resData.success && resData.result && resData.result[0].results) {
+                allBanners = resData.result[0].results;
+            } else {
+                allBanners = [];
+            }
+            renderBanners();
+        }).catch(function(err) { console.error(err); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.listDocuments(APP_DB, 'banners', [
             AppwriteQuery.orderAsc('sort_order')
@@ -342,6 +361,25 @@ function saveBanner() {
             if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadBanners();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var sql;
+        if (editingId) {
+            sql = "UPDATE banners SET image_url = '" + payload.image_url + "', title = '" + payload.title.replace(/'/g, "''") + "', subtitle = '" + payload.subtitle.replace(/'/g, "''") + "', link_url = '" + payload.link_url.replace(/'/g, "''") + "', sort_order = " + payload.sort_order + ", is_active = " + (payload.is_active ? 1 : 0) + " WHERE id = '" + editingId + "'";
+        } else {
+            sql = "INSERT INTO banners (id, image_url, title, subtitle, link_url, sort_order, is_active) VALUES ('" + genId() + "', '" + payload.image_url + "', '" + payload.title.replace(/'/g, "''") + "', '" + payload.subtitle.replace(/'/g, "''") + "', '" + payload.link_url.replace(/'/g, "''") + "', " + payload.sort_order + ", " + (payload.is_active ? 1 : 0) + ")";
+        }
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Error: query failed', 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadBanners();
+        }).catch(function(err) { showToast("Error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         if (editingId) {
             appwriteDatabases.updateDocument(APP_DB, 'banners', editingId, payload)
@@ -372,6 +410,19 @@ function deleteBanner(id) {
             if (r.error) { showToast('Delete failed', 'error'); return; }
             showToast('Deleted!', 'success'); loadBanners();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM banners WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success'); loadBanners();
+        }).catch(function(err) { showToast("Delete error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.deleteDocument(APP_DB, 'banners', id)
         .then(function() {

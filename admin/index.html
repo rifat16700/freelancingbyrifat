@@ -615,7 +615,15 @@
                         window.location.href = 'dashboard.html';
                     }
                 });
-            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var token = localStorage.getItem("admin_token");
+        if (token && token.startsWith("cf_d1_admin_token_")) {
+            sessionPromise = Promise.resolve({ user: { id: "admin" } });
+        } else {
+            sessionPromise = Promise.resolve(null);
+        }
+ else if (CONFIG.DB_PROVIDER === 'appwrite') {
                 appwriteAccount.getSession('current')
                 .then(function(session) {
                     if (session) {
@@ -668,7 +676,23 @@
                     showToast('📧 Check your email to confirm your account!', 'success');
                     btn.disabled = false; btn.innerHTML = orig; return;
                 }
-            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        const queryRes = await fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM admins WHERE email = '" + email + "' AND password = '" + pass + "'" })
+        }).then(r=>r.json());
+        
+        if (queryRes.success && queryRes.result && queryRes.result[0].results.length > 0) {
+            localStorage.setItem("admin_token", "cf_d1_admin_token_" + Date.now());
+            res = { error: null, data: { session: true } };
+        } else {
+            res = { error: { message: "Invalid email or password" } };
+        }
+ else if (CONFIG.DB_PROVIDER === 'appwrite') {
                 try {
                     // Try login first
                     var session = await appwriteAccount.createEmailPasswordSession(email, pass);
@@ -708,7 +732,11 @@
                     }
                 });
                 error = res.error;
-            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        localStorage.setItem("admin_token", "cf_d1_admin_token_" + Date.now());
+        error = null;
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
                 try {
                     appwriteAccount.createOAuth2Session(
                         'google',
@@ -801,7 +829,11 @@
                         address: address,
                     });
                     error = res.error;
-                } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        localStorage.setItem("admin_token", "cf_d1_admin_token_" + Date.now());
+        error = null;
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
                     // Appwrite তে Web3 native auth নেই — wallet address প্রমাণ করে bypass করি
                     // Custom session: signed message verify করে admin access
                     const msgToSign = 'Sign in to Admin Panel: ' + new Date().toISOString().substring(0,10);
@@ -875,7 +907,11 @@
                         address: address,
                     });
                     error = res.error;
-                } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        localStorage.setItem("admin_token", "cf_d1_admin_token_" + Date.now());
+        error = null;
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
                     // Solana wallet verify — sign message করে localStorage তে store
                     const msgToSign2 = 'Sign in to Admin Panel: ' + new Date().toISOString().substring(0,10);
                     const encoded2 = new TextEncoder().encode(msgToSign2);

@@ -97,6 +97,29 @@ function loadZones() {
             allZones = r.data || [];
             renderZones();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM delivery_zones ORDER BY created_at" })
+        }).then(res=>res.json()).then(function(resData) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            if (resData.success && resData.result && resData.result[0].results) {
+                allZones = resData.result[0].results;
+                allZones = allZones.map(function(z) {
+                    if (typeof z.districts === 'string') { try { z.districts = JSON.parse(z.districts); } catch(e) { z.districts = []; } }
+                    return z;
+                });
+            } else {
+                allZones = [];
+            }
+            renderZones();
+        }).catch(function(err) { console.error(err); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.listDocuments(APP_DB, 'delivery_zones', [AppwriteQuery.orderAsc('zone_name')])
             .then(function(res) {
@@ -196,6 +219,25 @@ function saveZone() {
             if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadZones();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var sql;
+        if (editingId) {
+            sql = "UPDATE delivery_zones SET zone_name = '" + payload.zone_name.replace(/'/g, "''") + "', charge = " + payload.charge + ", districts = '" + JSON.stringify(payload.districts).replace(/'/g, "''") + "' WHERE id = '" + editingId + "'";
+        } else {
+            sql = "INSERT INTO delivery_zones (id, zone_name, charge, districts) VALUES ('" + genId() + "', '" + payload.zone_name.replace(/'/g, "''") + "', " + payload.charge + ", '" + JSON.stringify(payload.districts).replace(/'/g, "''") + "')";
+        }
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Error: query failed', 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadZones();
+        }).catch(function(err) { showToast("Error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         var req;
         if (editingId) {
@@ -218,6 +260,19 @@ function deleteZone(id) {
             if (r.error) { showToast('Delete failed', 'error'); return; }
             showToast('Deleted!', 'success'); loadZones();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM delivery_zones WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success'); loadZones();
+        }).catch(function(err) { showToast("Delete error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.deleteDocument(APP_DB, 'delivery_zones', id)
             .then(function() {

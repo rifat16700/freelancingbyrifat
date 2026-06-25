@@ -237,7 +237,35 @@
 
                     autoCleanupOrders();
                 });
-            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM orders ORDER BY created_at DESC" })
+        }).then(res=>res.json()).then(function(resData) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            
+            if (!resData.success) { showToast('Failed to load orders', 'error'); return; }
+            var orders = (resData.result && resData.result[0].results) ? resData.result[0].results : [];
+            allOrders = orders.map(function(o) {
+                if (typeof o.items === 'string') { try { o.items = JSON.parse(o.items); } catch(e) { o.items = []; } }
+                return o;
+            });
+            document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
+            filterOrders();
+            
+            if (urlId) {
+                var found = allOrders.find(function(o) { return o.id === urlId; });
+                if (found) openOrderModal(found);
+            }
+            autoCleanupOrders();
+        }).catch(function(err) { console.error(err); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
                 appwriteDatabases.listDocuments(APP_DB, 'orders', [
                     AppwriteQuery.orderDesc('$createdAt'),
                     AppwriteQuery.limit(5000)
@@ -284,7 +312,17 @@
                       console.error('Auto cleanup failed:', r.error);
                   }
               });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM orders WHERE (status = 'Delivered' OR status = 'Cancelled') AND created_at < '" + dateStr + "'" })
+        }).then(res=>res.json()).catch(err=>console.error('Auto cleanup error:', err));
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             // Appwrite: filter and delete old delivered/cancelled orders
             var thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -308,7 +346,22 @@
                 allOrders = allOrders.filter(function(o) { return o.id !== id; });
                 filterOrders();
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM orders WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Failed to delete', 'error'); return; }
+            showToast('Order deleted successfully!', 'success');
+            allOrders = allOrders.filter(function(o) { return o.id !== id; });
+            filterOrders();
+        }).catch(function(err) { showToast("Delete error: " + err.message, "error"); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.deleteDocument(APP_DB, 'orders', id)
             .then(function() {
                 showToast('Order deleted successfully!', 'success');
@@ -545,7 +598,65 @@
                 if (idx > -1) Object.assign(allOrders[idx], payload);
                 filterOrders();
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var sql = "UPDATE orders SET status = '" + payload.status + "', payment_status = '" + payload.payment_status + "', courier_name = '" + payload.courier_name.replace(/'/g, "''") + "', tracking_number = '" + payload.tracking_number.replace(/'/g, "''") + "', tracking_url = '" + payload.tracking_url.replace(/'/g, "''") + "', admin_note = '" + payload.admin_note.replace(/'/g, "''") + "' WHERE id = '" + orderId + "'";
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Update failed', 'error'); return; }
+            
+            if (payload.status === 'Delivered' && currentOrder && currentOrder.customer_phone) {
+                var phone = currentOrder.customer_phone.trim();
+                fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+                    },
+                    body: JSON.stringify({ sql: "SELECT * FROM promos" })
+                }).then(res=>res.json()).then(function(pres) {
+                    var promosList = (pres.success && pres.result && pres.result[0].results) ? pres.result[0].results : [];
+                    var repConfig = promosList.find(function(p) { return p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'); });
+                    var existingCoupon = promosList.find(function(p) { return p.code && p.code.split('|v1|')[0] === phone; });
+                    
+                    if (repConfig && repConfig.is_active && !existingCoupon) {
+                        try {
+                            var meta = JSON.parse(repConfig.code.split('|v1|')[1]);
+                            var expiry = null;
+                            if (meta.repExpiryDays) {
+                                var d = new Date(); d.setDate(d.getDate() + parseInt(meta.repExpiryDays));
+                                expiry = d.toISOString();
+                            }
+                            var newPromoMeta = { type: 'private', disc_type: meta.repType || 'flat', disc_val: parseFloat(meta.repValue) || 0, max_cap: parseFloat(meta.repCap) || null, min_spend: parseFloat(meta.repMinSpend) || null, del_reward: meta.repDelReward || 'none', is_repeated_cust: true };
+                            var fullCode = phone + '|v1|' + JSON.stringify(newPromoMeta);
+                            
+                            var insSql = "INSERT INTO promos (id, code, discount, is_active, expires_at) VALUES ('" + genId() + "', '" + fullCode + "', " + (meta.repType === 'flat' ? parseFloat(meta.repValue) : 0) + ", 1, " + (expiry ? "'" + expiry + "'" : "NULL") + ")";
+                            fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+                                },
+                                body: JSON.stringify({ sql: insSql })
+                            }).then(function() { showToast('🎉 Personal coupon created for customer: ' + phone, 'success'); });
+                        } catch(e) {}
+                    }
+                });
+            }
+            
+            showToast('Order updated!', 'success');
+            closeModal('orderModal');
+            var idx = allOrders.findIndex(function(o) { return o.id === orderId; });
+            if (idx > -1) Object.assign(allOrders[idx], payload);
+            filterOrders();
+        }).catch(function(err) { showToast("Update error: " + err.message, "error"); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.updateDocument(APP_DB, 'orders', orderId, payload)
             .then(function() {
                 // Trigger repeated customer personal coupon if status = Delivered

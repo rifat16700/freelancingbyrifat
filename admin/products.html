@@ -305,7 +305,36 @@
                         '</label>';
                 });
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (resData.success && resData.result && resData.result[0].results) {
+                allCategories = resData.result[0].results;
+            } else {
+                allCategories = [];
+            }
+            var catFilter  = document.getElementById('catFilter');
+            var catFilterM = document.getElementById('catFilterM');
+            var pCatList   = document.getElementById('pCategoryList');
+            allCategories.forEach(function(c) {
+                var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                catFilter.innerHTML  += opt;
+                if (catFilterM) catFilterM.innerHTML += opt;
+                pCatList.innerHTML +=
+                '<label class="category-checkbox-item">' +
+                '<input type="checkbox" name="pCat" value="' + c.id + '">' +
+                '<span>' + c.name + '</span>' +
+                '</label>';
+            });
+        }).catch(function(err) { console.error(err); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.listDocuments(APP_DB, 'categories', [
                 AppwriteQuery.equal('is_active', true),
                 AppwriteQuery.orderAsc('sort_order')
@@ -387,7 +416,41 @@
                 document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
                 renderProducts(allProducts);
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        Promise.all([
+            fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN },
+                body: JSON.stringify({ sql: "SELECT * FROM products ORDER BY created_at DESC" })
+            }).then(r=>r.json()),
+            fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN },
+                body: JSON.stringify({ sql: "SELECT * FROM product_categories" })
+            }).then(r=>r.json())
+        ]).then(function(results) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            
+            var resP = results[0];
+            var resPC = results[1];
+            
+            allProducts = (resP.success && resP.result && resP.result[0].results) ? resP.result[0].results : [];
+            var pc = (resPC.success && resPC.result && resPC.result[0].results) ? resPC.result[0].results : [];
+            
+            allProducts.forEach(function(p) {
+                if (typeof p.variants === 'string') { try { p.variants = JSON.parse(p.variants); } catch(e) { p.variants = []; } }
+                if (typeof p.gallery_images === 'string') { try { p.gallery_images = JSON.parse(p.gallery_images); } catch(e) { p.gallery_images = []; } }
+                
+                p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
+                if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+            });
+            
+            document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
+            renderProducts(allProducts);
+        }).catch(function(err) { console.error(err); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             Promise.all([
                 appwriteDatabases.listDocuments(APP_DB, 'products',           [AppwriteQuery.orderDesc('$createdAt'), AppwriteQuery.limit(500)]),
                 appwriteDatabases.listDocuments(APP_DB, 'product_categories', [AppwriteQuery.limit(5000)])
@@ -530,7 +593,24 @@
                     cb.checked = selectedIds.includes(cb.value);
                 });
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT category_id FROM product_categories WHERE product_id = '" + p.id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            var pcList = (resData.success && resData.result && resData.result[0].results) ? resData.result[0].results : [];
+            var selectedIds = pcList.map(function(c) { return c.category_id; });
+            if (p.category_id && !selectedIds.includes(p.category_id)) selectedIds.push(p.category_id);
+            document.querySelectorAll('input[name="pCat"]').forEach(function(cb) {
+                cb.checked = selectedIds.includes(cb.value);
+            });
+        }).catch(function(err) { console.error(err); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
                 AppwriteQuery.equal('product_id', p.id)
             ]).then(function(catRes) {
@@ -891,7 +971,65 @@
                     finishSave();
                 }
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var pId = editingProductId || genId();
+        var sql;
+        if (editingProductId) {
+            sql = "UPDATE products SET name = '" + payload.name.replace(/'/g, "''") + "', sku = " + (payload.sku ? "'" + payload.sku.replace(/'/g, "''") + "'" : "NULL") + ", description = '" + payload.description.replace(/'/g, "''") + "', base_price = " + payload.base_price + ", flash_sale_price = " + payload.flash_sale_price + ", flash_sale_end = " + (payload.flash_sale_end ? "'" + payload.flash_sale_end + "'" : "NULL") + ", video_url = " + (payload.video_url ? "'" + payload.video_url.replace(/'/g, "''") + "'" : "NULL") + ", video_type = '" + payload.video_type + "', is_active = " + (payload.is_active ? 1 : 0) + ", is_featured = " + (payload.is_featured ? 1 : 0) + ", is_add_once = " + (payload.is_add_once ? 1 : 0) + ", gallery_images = '" + JSON.stringify(payload.gallery_images).replace(/'/g, "''") + "', variants = '" + JSON.stringify(payload.variants).replace(/'/g, "''") + "' WHERE id = '" + pId + "'";
+        } else {
+            sql = "INSERT INTO products (id, name, sku, description, base_price, flash_sale_price, flash_sale_end, video_url, video_type, is_active, is_featured, is_add_once, gallery_images, variants) VALUES ('" + pId + "', '" + payload.name.replace(/'/g, "''") + "', " + (payload.sku ? "'" + payload.sku.replace(/'/g, "''") + "'" : "NULL") + ", '" + payload.description.replace(/'/g, "''") + "', " + payload.base_price + ", " + payload.flash_sale_price + ", " + (payload.flash_sale_end ? "'" + payload.flash_sale_end + "'" : "NULL") + ", " + (payload.video_url ? "'" + payload.video_url.replace(/'/g, "''") + "'" : "NULL") + ", '" + payload.video_type + "', " + (payload.is_active ? 1 : 0) + ", " + (payload.is_featured ? 1 : 0) + ", " + (payload.is_add_once ? 1 : 0) + ", '" + JSON.stringify(payload.gallery_images).replace(/'/g, "''") + "', '" + JSON.stringify(payload.variants).replace(/'/g, "''") + "')";
+        }
+
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) {
+                setBtnLoading(btn, false, '💾 Save Product');
+                showToast('Error: query failed', 'error');
+                return;
+            }
+            
+            function finishSave() {
+                setBtnLoading(btn, false, '💾 Save Product');
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Product saved!', 'success');
+                closeModal('productModal');
+                loadProducts();
+            }
+
+            fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN },
+                body: JSON.stringify({ sql: "DELETE FROM product_categories WHERE product_id = '" + pId + "'" })
+            }).then(function() {
+                if (selectedCats.length) {
+                    var sqls = selectedCats.map(function(cid) { return "INSERT INTO product_categories (product_id, category_id) VALUES ('" + pId + "', '" + cid + "')"; });
+                    var pchain = Promise.resolve();
+                    sqls.forEach(function(s) {
+                        pchain = pchain.then(function() {
+                            return fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN },
+                                body: JSON.stringify({ sql: s })
+                            });
+                        });
+                    });
+                    pchain.then(finishSave).catch(finishSave);
+                } else {
+                    finishSave();
+                }
+            }).catch(finishSave);
+
+        }).catch(function(err) {
+            setBtnLoading(btn, false, '💾 Save Product');
+            showToast("Error: " + err.message, "error");
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             var awProductPayload = {
                 name:             payload.name,
                 sku:              payload.sku,
@@ -967,7 +1105,31 @@
                 allProducts = allProducts.filter(function(p) { return p.id !== id; });
                 renderProducts(allProducts);
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM product_categories WHERE product_id = '" + id + "'" })
+        }).then(function() {
+            return fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+                },
+                body: JSON.stringify({ sql: "DELETE FROM products WHERE id = '" + id + "'" })
+            });
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success');
+            allProducts = allProducts.filter(function(p) { return p.id !== id; });
+            renderProducts(allProducts);
+        }).catch(function(err) { showToast("Delete error: " + err.message, "error"); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             // Delete product_categories first, then the product
             appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
                 AppwriteQuery.equal('product_id', id)
@@ -996,7 +1158,22 @@
                 if (idx > -1) allProducts[idx].is_active = !current;
                 renderProducts(allProducts);
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "UPDATE products SET is_active = " + (!current ? 1 : 0) + " WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Update failed', 'error'); return; }
+            var idx = allProducts.findIndex(function(p) { return p.id === id; });
+            if (idx > -1) allProducts[idx].is_active = !current;
+            renderProducts(allProducts);
+        }).catch(function(err) { showToast("Update error: " + err.message, "error"); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.updateDocument(APP_DB, 'products', id, { is_active: !current })
             .then(function() {
                 var idx = allProducts.findIndex(function(p) { return p.id === id; });

@@ -20,6 +20,11 @@ var CONFIG = {
     APPWRITE_PROJECT:     '${s(process.env.APPWRITE_PROJECT)}',
     APPWRITE_DATABASE_ID: '${s(process.env.APPWRITE_DATABASE_ID)}',
 
+
+    // ── Cloudflare D1 ────────────────────────────────────────
+    CF_ACCOUNT_ID:    '${s(process.env.CF_ACCOUNT_ID)}',
+    CF_DB_ID:         '${s(process.env.CF_DB_ID)}',
+    CF_D1_TOKEN:     '${s(process.env.CF_D1_TOKEN)}',
     // ── Frontend Constants ───────────────────────────────────
     CART_KEY:         'fbr_cart',
     DIRECT_ORDER_KEY: 'fbr_direct_order',

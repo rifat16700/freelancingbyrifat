@@ -77,6 +77,8 @@ document.addEventListener('DOMContentLoaded', function() {
         settingsPromise = supabaseClient.from('settings').select('store_name').eq('id',1).single();
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         settingsPromise = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings').then(function(doc) { return { data: doc }; }).catch(function() { return { data: {} }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        settingsPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: `SELECT * FROM settings WHERE id = 1` }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr.length ? arr[0] : {} }; }).catch(e => ({ data: {} }));
     } else {
         settingsPromise = Promise.resolve({ data: {} });
     }
@@ -120,8 +122,10 @@ function trackOrder() {
         trackPromise = supabaseClient.from('orders').select('*').eq('id', orderId).eq('customer_phone', phone).single();
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         trackPromise = appwriteDatabases.listDocuments(APP_DB, 'orders', [AppwriteQuery.equal('$id', orderId), AppwriteQuery.equal('customer_phone', phone), AppwriteQuery.limit(1)]).then(function(res) { var doc = res.documents[0]; if (doc) { doc.id=doc.$id; if (typeof doc.items==='string') { try{doc.items=JSON.parse(doc.items);}catch(e){doc.items=[];} } return { data: doc }; } return { data: null }; }).catch(function() { return { data: null }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        trackPromise = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: `SELECT * FROM orders WHERE id = '${orderId}' AND customer_phone = '${phone}'` }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr.length ? (d => { d.items = (typeof d.items === 'string' ? JSON.parse(d.items) : d.items); return d; })(arr[0]) : null }; }).catch(e => ({ data: null, error: e }));
     } else {
-        trackPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
+        trackPromise = Promise.resolve({ data: null, error: { message: 'Not implemented' } });
     }
     trackPromise.then(function(r) {
         btn.disabled = false; btn.innerHTML = '<i data-lucide="search" class="lucide-icon"></i> Track Order';

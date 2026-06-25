@@ -128,6 +128,9 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         p1 = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings').then(function(doc) { return { data: doc }; }).catch(function() { return { data: {} }; });
         p2 = appwriteDatabases.getDocument(APP_DB, 'orders', orderId).then(function(doc) { doc.id=doc.$id; if (typeof doc.items==='string') { try { doc.items=JSON.parse(doc.items); } catch(e){ doc.items=[]; } } return { data: doc }; }).catch(function() { return { data: null }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        p1 = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: `SELECT * FROM settings WHERE id = 1` }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr.length ? arr[0] : {} }; }).catch(e => ({ data: {} }));
+        p2 = fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN }, body: JSON.stringify({ sql: `SELECT * FROM orders WHERE id = '${orderId}'` }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr.length ? (d => { d.items = (typeof d.items === 'string' ? JSON.parse(d.items) : d.items); return d; })(arr[0]) : null }; }).catch(e => ({ data: null, error: e }));
     } else {
         p1 = Promise.resolve({ data: {} });
         p2 = Promise.resolve({ data: null });

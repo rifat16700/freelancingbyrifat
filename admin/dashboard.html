@@ -238,7 +238,48 @@
                 showToast('❌ Failed to load orders: ' + err.message, 'error');
                 showUI();
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM orders ORDER BY created_at DESC" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) {
+                console.error('Orders load error:', resData);
+                showToast('❌ Orders error', 'error');
+                showUI();
+                return;
+            }
+            var orders = (resData.result && resData.result[0].results) ? resData.result[0].results : [];
+            orders = orders.map(function(o) {
+                if (typeof o.items === 'string') { try { o.items = JSON.parse(o.items); } catch(e) { o.items = []; } }
+                return o;
+            });
+            var total = orders.length;
+            var todayOrders = orders.filter(function(o) {
+                return new Date(o.created_at) >= today;
+            });
+            var pending = orders.filter(function(o) { return o.status === 'Pending'; }).length;
+            var revenue = orders.filter(function(o) {
+                return o.status !== 'Cancelled' && o.status !== 'Pending';
+            }).reduce(function(sum, o) { return sum + (o.grand_total || 0); }, 0);
+
+            document.getElementById('statTotal').textContent   = total;
+            document.getElementById('statToday').textContent   = todayOrders.length;
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statRevenue').textContent = formatMoney(revenue);
+
+            renderRecentOrders(orders.slice(0, 10));
+            buildRevenueChart(orders);
+            buildBestSellers(orders);
+
+            showUI();
+        }).catch(function(err) { console.error(err); showUI(); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.listDocuments(APP_DB, 'orders', [AppwriteQuery.orderDesc('$createdAt'), AppwriteQuery.limit(5000)])
                 .then(function(res) {
                     var orders = res.documents.map(function(doc) {
@@ -282,7 +323,23 @@
               .then(function(r) {
                 document.getElementById('statProducts').textContent = r.count || 0;
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT COUNT(*) as count FROM products WHERE is_active = 1" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (resData.success && resData.result && resData.result[0].results) {
+                document.getElementById('statProducts').textContent = resData.result[0].results[0].count || 0;
+            } else {
+                document.getElementById('statProducts').textContent = 0;
+            }
+        }).catch(function(err) { console.error(err); document.getElementById('statProducts').textContent = 0; });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.listDocuments(APP_DB, 'products', [AppwriteQuery.equal('is_active', true), AppwriteQuery.limit(1)])
                 .then(function(res) {
                     document.getElementById('statProducts').textContent = res.total || 0;

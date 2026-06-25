@@ -644,7 +644,102 @@
             // Review ImgBB Key (from Supabase)
             setVal('reviewImgbbKey', s.review_imgbb_key || '');
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id = 1 LIMIT 1" })
+        }).then(res=>res.json()).then(function(resData) {
+            document.getElementById('pageLoader').style.display  = 'none';
+            document.getElementById('adminMain').style.display   = 'flex';
+            
+            var s = (resData.success && resData.result && resData.result[0].results && resData.result[0].results.length > 0) ? resData.result[0].results[0] : {};
+            if (typeof s.telegram_main_chats === 'string') { try { s.telegram_main_chats = JSON.parse(s.telegram_main_chats); } catch(e){} }
+            if (typeof s.messaging_apps === 'string') { try { s.messaging_apps = JSON.parse(s.messaging_apps); } catch(e){} }
+            if (typeof s.crypto_coins === 'string') { try { s.crypto_coins = JSON.parse(s.crypto_coins); } catch(e){} }
+            
+            settingsData = s;
+            
+            // Store info
+            setVal('storeName',   s.store_name  || CONFIG.STORE_NAME);
+            setVal('logoUrl',     s.logo_url    || '');
+            setVal('faviconUrl',  s.favicon_url || '');
+            setVal('footerText',  s.footer_text || '© ' + new Date().getFullYear() + ' ' + CONFIG.STORE_NAME + '. All rights reserved.');
+            
+            // Logo/Favicon preview যদি URL থাকে
+            if (s.logo_url)    previewSettingImg('logoUrl',    'logoPreview');
+            if (s.favicon_url) previewSettingImg('faviconUrl', 'faviconPreview');
+            
+            // Social
+            setVal('whatsappNumber', s.whatsapp_number || '');
+            setVal('facebookUrl',    s.facebook_url    || '');
+            setVal('instagramUrl',   s.instagram_url   || '');
+            setVal('youtubeUrl',     s.youtube_url     || '');
+            
+            // Telegram
+            setVal('telegramMainBot',  s.telegram_main_bot   || '');
+            setVal('telegramDraftBot', s.telegram_draft_bot  || '');
+            setVal('telegramDraftChat',s.telegram_draft_chat || '');
+            
+            // Main chat IDs
+            mainChatIds = s.telegram_main_chats || [];
+            renderChatIds();
+            
+            // Payment — Manual numbers
+            setVal('bkashNumber',     s.bkash_number      || '');
+            setVal('nagadNumber',     s.nagad_number      || '');
+            setVal('binanceManualUid',s.binance_manual_uid|| '');
+            setVal('gatewayProxyUrl', s.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL);
+            setVal('gatewayApiKey',   s.gateway_api_key   || '');
+            setVal('gatewayApiKeyV2', s.gateway_api_key_v2 || '');
+            document.getElementById('gatewayVersion').value = s.gateway_version || 'v1';
+            updateGatewayUrlDisplay();
+            
+            setVal('advanceAmount',  s.advance_amount !== undefined && s.advance_amount !== null ? s.advance_amount : 0);
+            
+            document.getElementById('advanceMethod').value = s.advance_method || 'manual';
+            
+            // Toggles
+            codEnabled = s.allow_cod !== undefined ? s.allow_cod !== false : true;
+            msgOrderEnabled = s.allow_whatsapp_order === true || s.allow_msg_order === true;
+            pickupEnabled = s.allow_pickup === true;
+            funCheckEnabled = s.enable_fun_checkbox === true;
+            updateToggle('codToggle', codEnabled);
+            updateToggle('msgOrderToggle', msgOrderEnabled);
+            updateToggle('pickupToggle', pickupEnabled);
+            updateToggle('funCheckToggle', funCheckEnabled);
+            
+            // Messaging Apps
+            messagingApps = s.messaging_apps || [];
+            renderMsgApps();
+            
+            // Pickup
+            setVal('storeAddress', s.store_address || '');
+            setVal('storeMapLink', s.store_map_link || '');
+            setVal('pickupBotToken', s.pickup_bot_token || '');
+            setVal('pickupChatId', s.pickup_chat_id || '');
+            
+            // Crypto & Binance Pay
+            setVal('binancePayUid',    s.binance_pay_uid    || '');
+            setVal('binanceProxyUrl',  s.binance_proxy_url  || '');
+            setVal('usdToBdtRate',     s.usd_to_bdt_rate    || '110');
+            setVal('binanceApiKey',    s.binance_api_key    || '');
+            setVal('binanceApiSecret', s.binance_api_secret || '');
+            document.getElementById('verifyMode').value = s.verify_mode || 'cloudflare';
+            setVal('supabaseEdgeUrl',  s.supabase_edge_url  || '');
+            setVal('hfApiUrl',         s.hf_api_url         || '');
+            cryptoCoins = s.crypto_coins || [];
+            renderCryptoCoins();
+            
+            // Review ImgBB Key (from Supabase)
+            setVal('reviewImgbbKey', s.review_imgbb_key || '');
+            
+        }).catch(function(err) { console.error(err); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
             .then(function(doc) {
                 document.getElementById('pageLoader').style.display  = 'none';
@@ -858,7 +953,31 @@
             saveImgbbKey();
             showToast('✅ Settings saved!', 'success');
             });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var p = Object.assign({}, payload);
+        p.telegram_main_chats = JSON.stringify(p.telegram_main_chats || []).replace(/'/g, "''");
+        p.messaging_apps      = JSON.stringify(p.messaging_apps || []).replace(/'/g, "''");
+        p.crypto_coins        = JSON.stringify(p.crypto_coins || []).replace(/'/g, "''");
+        
+        var sql = "INSERT INTO settings (id, store_name, logo_url, favicon_url, footer_text, whatsapp_number, facebook_url, instagram_url, youtube_url, bkash_number, nagad_number, binance_manual_uid, gateway_api_key, gateway_api_key_v2, gateway_version, allow_cod, enable_fun_checkbox, allow_whatsapp_order, allow_msg_order, advance_amount, advance_method, telegram_main_bot, telegram_main_chats, telegram_draft_bot, telegram_draft_chat, messaging_apps, allow_pickup, store_address, store_map_link, pickup_bot_token, pickup_chat_id, binance_pay_uid, binance_proxy_url, binance_api_key, binance_api_secret, usd_to_bdt_rate, verify_mode, supabase_edge_url, hf_api_url, crypto_coins, review_imgbb_key) VALUES (1, '" + (p.store_name||'').replace(/'/g, "''") + "', '" + (p.logo_url||'').replace(/'/g, "''") + "', '" + (p.favicon_url||'').replace(/'/g, "''") + "', '" + (p.footer_text||'').replace(/'/g, "''") + "', '" + (p.whatsapp_number||'').replace(/'/g, "''") + "', '" + (p.facebook_url||'').replace(/'/g, "''") + "', '" + (p.instagram_url||'').replace(/'/g, "''") + "', '" + (p.youtube_url||'').replace(/'/g, "''") + "', '" + (p.bkash_number||'').replace(/'/g, "''") + "', '" + (p.nagad_number||'').replace(/'/g, "''") + "', '" + (p.binance_manual_uid||'').replace(/'/g, "''") + "', '" + (p.gateway_api_key||'').replace(/'/g, "''") + "', '" + (p.gateway_api_key_v2||'').replace(/'/g, "''") + "', '" + (p.gateway_version||'').replace(/'/g, "''") + "', " + (p.allow_cod?1:0) + ", " + (p.enable_fun_checkbox?1:0) + ", " + (p.allow_whatsapp_order?1:0) + ", " + (p.allow_msg_order?1:0) + ", " + (p.advance_amount||0) + ", '" + (p.advance_method||'').replace(/'/g, "''") + "', '" + (p.telegram_main_bot||'').replace(/'/g, "''") + "', '" + p.telegram_main_chats + "', '" + (p.telegram_draft_bot||'').replace(/'/g, "''") + "', '" + (p.telegram_draft_chat||'').replace(/'/g, "''") + "', '" + p.messaging_apps + "', " + (p.allow_pickup?1:0) + ", '" + (p.store_address||'').replace(/'/g, "''") + "', '" + (p.store_map_link||'').replace(/'/g, "''") + "', '" + (p.pickup_bot_token||'').replace(/'/g, "''") + "', '" + (p.pickup_chat_id||'').replace(/'/g, "''") + "', '" + (p.binance_pay_uid||'').replace(/'/g, "''") + "', '" + (p.binance_proxy_url||'').replace(/'/g, "''") + "', '" + (p.binance_api_key||'').replace(/'/g, "''") + "', '" + (p.binance_api_secret||'').replace(/'/g, "''") + "', " + (p.usd_to_bdt_rate||110) + ", '" + (p.verify_mode||'').replace(/'/g, "''") + "', '" + (p.supabase_edge_url||'').replace(/'/g, "''") + "', '" + (p.hf_api_url||'').replace(/'/g, "''") + "', '" + p.crypto_coins + "', '" + (p.review_imgbb_key||'').replace(/'/g, "''") + "') ON CONFLICT(id) DO UPDATE SET store_name = excluded.store_name, logo_url = excluded.logo_url, favicon_url = excluded.favicon_url, footer_text = excluded.footer_text, whatsapp_number = excluded.whatsapp_number, facebook_url = excluded.facebook_url, instagram_url = excluded.instagram_url, youtube_url = excluded.youtube_url, bkash_number = excluded.bkash_number, nagad_number = excluded.nagad_number, binance_manual_uid = excluded.binance_manual_uid, gateway_api_key = excluded.gateway_api_key, gateway_api_key_v2 = excluded.gateway_api_key_v2, gateway_version = excluded.gateway_version, allow_cod = excluded.allow_cod, enable_fun_checkbox = excluded.enable_fun_checkbox, allow_whatsapp_order = excluded.allow_whatsapp_order, allow_msg_order = excluded.allow_msg_order, advance_amount = excluded.advance_amount, advance_method = excluded.advance_method, telegram_main_bot = excluded.telegram_main_bot, telegram_main_chats = excluded.telegram_main_chats, telegram_draft_bot = excluded.telegram_draft_bot, telegram_draft_chat = excluded.telegram_draft_chat, messaging_apps = excluded.messaging_apps, allow_pickup = excluded.allow_pickup, store_address = excluded.store_address, store_map_link = excluded.store_map_link, pickup_bot_token = excluded.pickup_bot_token, pickup_chat_id = excluded.pickup_chat_id, binance_pay_uid = excluded.binance_pay_uid, binance_proxy_url = excluded.binance_proxy_url, binance_api_key = excluded.binance_api_key, binance_api_secret = excluded.binance_api_secret, usd_to_bdt_rate = excluded.usd_to_bdt_rate, verify_mode = excluded.verify_mode, supabase_edge_url = excluded.supabase_edge_url, hf_api_url = excluded.hf_api_url, crypto_coins = excluded.crypto_coins, review_imgbb_key = excluded.review_imgbb_key";
+
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) {
+                showToast('<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Save failed', 'error');
+                return;
+            }
+            saveImgbbKey();
+            showToast('✅ Settings saved!', 'success');
+        }).catch(function(err) { showToast("Save error: " + err.message, "error"); });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             // JSON fields stringify করে পাঠাতে হবে
             var awPayload = Object.assign({}, payload);
             awPayload.telegram_main_chats = Array.isArray(awPayload.telegram_main_chats) ? awPayload.telegram_main_chats : [];

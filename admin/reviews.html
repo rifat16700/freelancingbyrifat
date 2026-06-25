@@ -68,6 +68,30 @@ function loadReviews() {
             document.getElementById('reviewSub').textContent = allReviews.length + ' total | ' + pending + ' pending';
             filterReviews();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT r.*, p.name as product_name FROM reviews r LEFT JOIN products p ON r.product_id = p.id ORDER BY r.created_at DESC" })
+        }).then(res=>res.json()).then(function(resData) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            if (resData.success && resData.result && resData.result[0].results) {
+                allReviews = resData.result[0].results.map(function(r) {
+                    r.products = { name: r.product_name };
+                    return r;
+                });
+            } else {
+                allReviews = [];
+            }
+            var pending = allReviews.filter(function(rv) { return !rv.is_approved; }).length;
+            document.getElementById('reviewSub').textContent = allReviews.length + ' total | ' + pending + ' pending';
+            filterReviews();
+        }).catch(function(err) { console.error(err); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.orderDesc('$createdAt')])
             .then(function(res) {
@@ -141,6 +165,23 @@ function approveReview(id) {
             filterReviews();
             adminLoadBadges();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "UPDATE reviews SET is_approved = 1 WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Error', 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Review approved!', 'success');
+            var idx = allReviews.findIndex(function(rv) { return rv.id === id; });
+            if (idx > -1) allReviews[idx].is_approved = true;
+            filterReviews();
+            adminLoadBadges();
+        }).catch(function(err) { showToast("Update error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.updateDocument(APP_DB, 'reviews', id, { is_approved: true })
             .then(function() {
@@ -163,6 +204,21 @@ function deleteReview(id) {
             allReviews = allReviews.filter(function(rv) { return rv.id !== id; });
             filterReviews();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM reviews WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Error', 'error'); return; }
+            showToast('Deleted!', 'success');
+            allReviews = allReviews.filter(function(rv) { return rv.id !== id; });
+            filterReviews();
+        }).catch(function(err) { showToast("Delete error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.deleteDocument(APP_DB, 'reviews', id)
             .then(function() {

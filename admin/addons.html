@@ -89,6 +89,25 @@ function loadAddons() {
             allAddons = r.data || [];
             renderAddons();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "SELECT * FROM addons ORDER BY created_at" })
+        }).then(res=>res.json()).then(function(resData) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            if (resData.success && resData.result && resData.result[0].results) {
+                allAddons = resData.result[0].results;
+            } else {
+                allAddons = [];
+            }
+            renderAddons();
+        }).catch(function(err) { console.error(err); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.listDocuments(APP_DB, 'addons', [
             AppwriteQuery.orderAsc('$createdAt')
@@ -158,6 +177,25 @@ function saveAddon() {
             if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadAddons();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var sql;
+        if (editingId) {
+            sql = "UPDATE addons SET name = '" + payload.name + "', icon = '" + payload.icon + "', price = " + payload.price + ", is_active = " + (payload.is_active ? 1 : 0) + " WHERE id = '" + editingId + "'";
+        } else {
+            sql = "INSERT INTO addons (id, name, icon, price, is_active) VALUES ('" + genId() + "', '" + payload.name + "', '" + payload.icon + "', " + payload.price + ", " + (payload.is_active ? 1 : 0) + ")";
+        }
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: sql })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Error: query failed', 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadAddons();
+        }).catch(function(err) { showToast("Error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         var awPayload = { name: payload.name, icon: payload.icon, price: payload.price, is_active: payload.is_active, created_at: new Date().toISOString() };
         if (editingId) {
@@ -189,6 +227,19 @@ function deleteAddon(id) {
             if (r.error || !true) { showToast('Delete failed', 'error'); return; }
             showToast('Deleted!', 'success'); loadAddons();
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch("https://api.cloudflare.com/client/v4/accounts/" + CONFIG.CF_ACCOUNT_ID + "/d1/database/" + CONFIG.CF_DB_ID + "/query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + CONFIG.CF_D1_TOKEN
+            },
+            body: JSON.stringify({ sql: "DELETE FROM addons WHERE id = '" + id + "'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (!resData.success) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success'); loadAddons();
+        }).catch(function(err) { showToast("Delete error: " + err.message, "error"); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.deleteDocument(APP_DB, 'addons', id)
         .then(function() {
