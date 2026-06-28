@@ -1,8 +1,8 @@
-﻿<!DOCTYPE html>
+�<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout â€” Freelancing By Rifat</title>
+    <title>Checkout � Freelancing By Rifat</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/config.js?v=1782024132023"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -21,7 +21,7 @@
         .payment-desc  { font-size: 12px; color: var(--text-muted); }
         .manual-pay-box { background: rgba(255,77,77,0.05); border: 1.5px dashed var(--primary); border-radius: var(--radius-md); padding: 16px; margin-top: 12px; display: none; }
 
-        /* â”€â”€ Accordion Payment Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* ���� Accordion Payment Cards ������������������������������������������������������ */
         .pay-card { border: 2px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; }
         .pay-card.selected { border-color: var(--primary); }
         .pay-card-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; transition: background 0.15s; }
@@ -62,7 +62,7 @@
         .order-item-row2 { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         @media (max-width: 900px) { .checkout-layout { grid-template-columns: 1fr; } }
 
-        /* â”€â”€ International Transfer UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* ���� International Transfer UI ������������������������������������������������������ */
         .transfer-tab-bar { display:flex; border:2px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:18px; }
         .transfer-tab-btn { flex:1; padding:13px 10px; font-size:13px; font-weight:700; border:none; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:7px; }
         .transfer-tab-btn.active { background:var(--primary); color:#fff; }
@@ -109,7 +109,7 @@
         .verify-status.error   { background:rgba(239,68,68,0.06); color:#b91c1c; border:1px solid rgba(239,68,68,0.2); display:block; }
         .verify-status.loading { background:rgba(98,126,234,0.08); color:#3730a3; border:1px solid rgba(98,126,234,0.2); display:block; }
         .backup-badge { font-size:10px; background:rgba(255,149,0,0.12); color:#c2610b; border:1px solid rgba(255,149,0,0.3); border-radius:20px; padding:2px 8px; font-weight:700; display:inline-block; vertical-align:middle; margin-left:6px; }
-        /* â”€â”€ Add-Once Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* ���� Add-Once Section ���������������������������������������������������������������� */
         .add-once-card { border: 1.5px solid rgba(98,126,234,0.25); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; background: #fff; margin-bottom: 8px; }
         .add-once-card:hover { border-color: #627EEA; background: rgba(98,126,234,0.04); transform: translateY(-1px); }
         .add-once-card.selected { border-color: #627EEA; background: rgba(98,126,234,0.08); }
@@ -129,9 +129,9 @@
 </div>
 
 <nav class="navbar">
-    <a href="cart.html" class="nav-icon-btn">â†</a>
+    <a href="cart.html" class="nav-icon-btn">� �</a>
     <a href="index.html" class="navbar-brand"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <span id="navBrand">Checkout</span></a>
-    <div style="margin-left:auto;font-size:13px;color:#888;">ðŸ”’ Secure Checkout</div>
+    <div style="margin-left:auto;font-size:13px;color:#888;">�x Secure Checkout</div>
 </nav>
 
 <div class="container">
@@ -159,7 +159,7 @@
 
             <!-- STEP 1: Customer Info -->
             <div id="step1" class="section-card">
-                <div class="section-card-title">ðŸ‘¤ Step 1: Customer Information</div>
+                <div class="section-card-title">�x� Step 1: Customer Information</div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Full Name *</label>
@@ -174,7 +174,7 @@
                     <label class="form-label">Email (optional)</label>
                     <input class="form-input" id="custEmail" placeholder="email@example.com" type="email">
                 </div>
-                <button class="btn btn-primary btn-full" onclick="goStep2()">Continue to Delivery â†’</button>
+                <button class="btn btn-primary btn-full" onclick="goStep2()">Continue to Delivery � </button>
             </div>
 
             <!-- STEP 2: Delivery -->
@@ -201,7 +201,7 @@
 
                 <!-- Delivery charge display -->
                 <div id="deliveryInfo" class="adv-box" style="display:none;background:rgba(52,199,89,0.06);border-color:rgba(52,199,89,0.3);">
-                    <div style="font-size:13px;font-weight:700;color:#22C55E;"><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Delivery Charge: <span id="deliveryChargeLabel">à§³0</span></div>
+                    <div style="font-size:13px;font-weight:700;color:#22C55E;"><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Delivery Charge: <span id="deliveryChargeLabel">৳0</span></div>
                 </div>
 
                 <!-- Addons -->
@@ -213,17 +213,17 @@
                 <!-- Add-Once Products -->
                 <div id="addOnceSection" style="display:none; margin-top:16px;">
                     <div style="font-size:13px;font-weight:800;color:#627EEA;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-                        ðŸ›ï¸ Add-Once Products <span style="font-size:11px;font-weight:500;color:#888;">(Optional)</span>
+                        �x:�️ Add-Once Products <span style="font-size:11px;font-weight:500;color:#888;">(Optional)</span>
                     </div>
                     <div id="addOncePreviewList"></div>
                     <button id="addOnceViewMoreBtn" onclick="openAddOnceSheet()" style="display:none; width:100%; margin-top:4px; padding:10px; border:1.5px dashed rgba(98,126,234,0.4); border-radius:10px; background:rgba(98,126,234,0.04); color:#627EEA; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;">
-                        ðŸ›ï¸ View More Add-Once Products
+                        �x:�️ View More Add-Once Products
                     </button>
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:4px;">
-                    <button class="btn btn-ghost" id="backBtn" onclick="goStep(1)">â† Back</button>
-                    <button class="btn btn-primary" style="flex:1;" onclick="goStep3()">Continue to Payment â†’</button>
+                    <button class="btn btn-ghost" id="backBtn" onclick="goStep(1)">� � Back</button>
+                    <button class="btn btn-primary" style="flex:1;" onclick="goStep3()">Continue to Payment � </button>
                 </div>
             </div>
 
@@ -239,30 +239,30 @@
 
                 <!-- Advance payment info -->
                 <div id="advanceSection" class="adv-box" style="display:none;">
-                    <div style="font-size:13px;font-weight:700;color:#FF9500;margin-bottom:4px;">âš ï¸ Advance Required</div>
+                    <div style="font-size:13px;font-weight:700;color:#FF9500;margin-bottom:4px;">�a�️ Advance Required</div>
                     <div style="font-size:13px;color:#666;" id="advanceInfoText"></div>
-                    <div style="font-size:20px;font-weight:900;color:var(--text-dark);margin-top:6px;">Advance: <span id="advanceAmountLabel" style="color:var(--primary);">à§³0</span></div>
+                    <div style="font-size:20px;font-weight:900;color:var(--text-dark);margin-top:6px;">Advance: <span id="advanceAmountLabel" style="color:var(--primary);">৳0</span></div>
                 </div>
 
-                <!-- â”€â”€ Transfer Type Tab Bar â”€â”€ -->
+                <!-- ���� Transfer Type Tab Bar ���� -->
                 <div class="transfer-tab-bar" id="transferTabBar">
                     <button class="transfer-tab-btn active" id="tabNational" onclick="switchTransferTab('national')">
-                        ðŸ‡§ðŸ‡© National Transfer
+                        �x!��x!� National Transfer
                     </button>
                     <button class="transfer-tab-btn" id="tabInternational" onclick="switchTransferTab('international')">
-                        ðŸŒ International Transfer
+                        �xR� International Transfer
                     </button>
                 </div>
 
-                <!-- â”€â”€ NATIONAL PANEL â”€â”€ -->
+                <!-- ���� NATIONAL PANEL ���� -->
                 <div id="nationalPayPanel">
-                    <!-- Accordion Payment Options â€” built by buildPaymentOptions() -->
+                    <!-- Accordion Payment Options � built by buildPaymentOptions() -->
                     <div id="paymentOptions"></div>
 
                     <!-- Legacy manualPayBox kept for COD+advance compatibility -->
                     <div class="manual-pay-box" id="manualPayBox" style="display:none;">
                         <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-                            Send <span id="manualPayAmt" style="color:var(--primary);font-size:16px;">à§³0</span>
+                            Send <span id="manualPayAmt" style="color:var(--primary);font-size:16px;">৳0</span>
                             <button type="button" onclick="copyElementText('manualPayAmt')" style="background:none;border:none;cursor:pointer;color:#888;padding:2px;"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button> to:
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
@@ -281,14 +281,14 @@
                     </div>
                 </div>
 
-                <!-- â”€â”€ INTERNATIONAL PANEL â”€â”€ -->
+                <!-- ���� INTERNATIONAL PANEL ���� -->
                 <div id="internationalPayPanel" style="display:none;">
 
                     <!-- USDT Amount Display -->
                     <div class="intl-amount-box" id="intlAmountBox">
                         <div class="intl-amount-usdt" id="intlUsdtAmt">0.00 USDT</div>
-                        <div class="intl-amount-bdt" id="intlBdtAmt">= à§³0</div>
-                        <div class="intl-amount-rate" id="intlRateLabel">Rate: 1 USD = à§³110</div>
+                        <div class="intl-amount-bdt" id="intlBdtAmt">= ৳0</div>
+                        <div class="intl-amount-rate" id="intlRateLabel">Rate: 1 USD = ৳110</div>
                     </div>
 
                     <!-- Crypto Payment Options (Binance Pay + Coins) -->
@@ -305,7 +305,7 @@
 
                     <!-- TxID Input -->
                     <div class="txid-input-wrap" id="cryptoTxidWrap" style="display:none;">
-                        <label class="form-label" style="font-weight:700;font-size:13px;">ðŸ“‹ Transaction ID / TxHash *</label>
+                        <label class="form-label" style="font-weight:700;font-size:13px;">�x9 Transaction ID / TxHash *</label>
                         <input class="form-input" id="cryptoTxidInput" placeholder="Paste your Transaction ID or TxHash here" style="font-size:13px;">
                         <div style="font-size:11px;color:#888;margin-top:5px;">Binance Pay: Transaction ID from Binance app. Crypto: TxHash from blockchain explorer.</div>
                     </div>
@@ -315,7 +315,7 @@
 
                     <!-- Verify & Pay Button -->
                     <button class="verify-btn" id="verifyCryptoBtn" onclick="verifyCryptoCheck(event)" style="display:none;">
-                        âœ… Verify & Pay
+                        �S& Verify & Pay
                     </button>
                 </div>
 
@@ -323,10 +323,10 @@
                 <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
                     <div style="position:relative; flex:1;">
                         <input class="form-input" id="promoInput" placeholder="Promo code (optional)" style="width:100%; padding-right:32px;" oninput="document.getElementById('removePromoBtn').style.display=this.value.trim()?'block':'none'">
-                        <button id="removePromoBtn" onclick="removePromo()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#ff3b30; font-size:16px; font-weight:bold; cursor:pointer; display:none; padding:4px; line-height:1;" title="Remove Promo">âœ•</button>
+                        <button id="removePromoBtn" onclick="removePromo()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#ff3b30; font-size:16px; font-weight:bold; cursor:pointer; display:none; padding:4px; line-height:1;" title="Remove Promo">�S"</button>
                     </div>
                     <button class="btn btn-ghost" onclick="applyPromo()" style="padding: 10px 14px;">Apply</button>
-                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;">ðŸŽŸï¸ Coupons</button>
+                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;">�x}x️ Coupons</button>
                 </div>
                 <div id="promoMsg" style="font-size:13px;margin-top:6px;"></div>
 
@@ -345,29 +345,29 @@
                         <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
                             <input type="checkbox" id="funPromiseCheck1" style="margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: #FF3B30;">
                             <span style="font-size: 14.5px; color: #1C1C1E; line-height: 1.5; text-align: left; font-weight: 600;">
-                                à¦†à¦®à¦¿ à¦¨à¦¿à¦¶à§à¦šà¦¿à¦¤, à¦à¦‡ à¦…à¦°à§à¦¡à¦¾à¦° à¦¸à¦¤à§à¦¯à¦¿à¦‡ à¦¨à¦¿à¦¤à§‡ à¦ªà§à¦°à¦¤à¦¿à¦¶à§à¦°à§à¦¤à¦¿à¦¬à¦¦à§à¦§à¥¤ à¦°à¦¿à¦¸à¦¿à¦­ à¦¨à¦¾ à¦•à¦°à¦²à§‡ à¦†à¦²à§à¦²à¦¾à¦¹à¦° à¦—à¦œà¦¬ à¦†à¦®à¦¾à¦° à¦‰à¦ªà¦° à¦ªà§œà¦¬à§‡ à¦à¦¬à¦‚ à¦ªà¦°à¦•à¦¾à¦²à§‡ à¦•à¦ à§‹à¦° à¦¶à¦¾à¦¸à§à¦¤à¦¿ à¦¹à¦¬à§‡à¥¤
+                                � মি নিশ্�aিত, এ�! �&র্ডার সত্যি�! নিত�! প্রতিশ্রুতিবদ্ধ। রিসিভ না �"রল�! � ল্লাহর ��Sব � মার �0পর প�Sব�! এব� পর�"াল�! �"ঠ�9র শাস্তি হব�!।
                             </span>
                         </label>
                         <div id="funTooltip1" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%) translateY(10px); opacity: 0; visibility: hidden; background: #34C759; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 6px 15px rgba(52, 199, 89, 0.25); z-index: 100;">
-                            à¦®à¦¾à¦¶à¦¾à¦†à¦²à§à¦²à¦¾à¦¹! à¦†à¦ªà¦¨à¦¾à¦° à¦¨à¦¿à§Ÿà¦¤ à¦ªà¦°à¦¿à¦·à§à¦•à¦¾à¦° ðŸ˜‡
+                            মাশা� ল্লাহ! � পনার নি�xত পরিষ্�"ার �x�!
                             <div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #34C759 transparent transparent transparent;"></div>
                         </div>
 
                         <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0; padding-top: 10px; border-top: 1px solid rgba(255, 59, 48, 0.2);">
                             <input type="checkbox" id="funPromiseCheck2" style="margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: #34C759;">
                             <span style="font-size: 14.5px; color: #1C1C1E; line-height: 1.5; text-align: left; font-weight: 600;">
-                                à¦ªà¦£à§à¦¯ à¦¹à¦¾à¦¤à§‡ à¦ªà§‡à§Ÿà§‡ à¦¡à§‡à¦²à¦¿à¦­à¦¾à¦°à¦¿ à¦®à§à¦¯à¦¾à¦¨à§‡à¦° à¦•à¦¾à¦›à§‡ à¦®à§‚à¦²à§à¦¯ à¦ªà¦°à¦¿à¦¶à§‹à¦§ à¦•à¦°à§à¦¨
+                                পণ্য হাত�! প�!�x�! ড�!লিভারি ম্যান�!র �"া�:�! ম�ল্য পরিশ�9ধ �"রুন
                             </span>
                         </label>
                         <div id="funTooltip2" style="position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%) translateY(-10px); opacity: 0; visibility: hidden; background: #007AFF; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 6px 15px rgba(0, 122, 255, 0.25); z-index: 100;">
-                            à¦§à¦¨à§à¦¯à¦¬à¦¾à¦¦! <i data-lucide="truck" class="lucide-icon icon-bounce"></i>
+                            ধন্যবাদ! <i data-lucide="truck" class="lucide-icon icon-bounce"></i>
                             <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: transparent transparent #007AFF transparent;"></div>
                         </div>
                     </div>
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:20px;" id="nationalPlaceOrderRow">
-                    <button class="btn btn-ghost" onclick="goStep(2)">â† Back</button>
+                    <button class="btn btn-ghost" onclick="goStep(2)">� � Back</button>
                     <button class="btn btn-primary btn-full btn-lg" id="placeOrderBtn" onclick="placeOrderCheck(event)">
                         <i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order
                     </button>
@@ -382,13 +382,13 @@
                 <div class="section-card-title"><i data-lucide="clipboard-list" class="lucide-icon"></i> Order Summary</div>
                 <div id="summaryItems"></div>
                 <div style="margin-top:14px;">
-                    <div class="summary-line"><span>Subtotal</span><span id="smSubtotal">à§³0</span></div>
-                    <div class="summary-line" id="addonLine" style="display:none;"><span>Add-ons</span><span id="smAddon">à§³0</span></div>
-                    <div class="summary-line"><span>Delivery</span><span id="smDelivery">â€”</span></div>
-                    <div class="summary-line" id="promoLine" style="display:none;color:var(--success);"><span>Promo Discount</span><span id="smPromo">-à§³0</span></div>
-                    <div class="summary-line summary-total"><span>Total</span><span id="smTotal" style="color:var(--primary);">à§³0</span></div>
-                    <div class="summary-line" id="advPayLine" style="display:none;color:var(--warning);"><span>To Pay Now (Advance)</span><span id="smAdvPay">à§³0</span></div>
-                    <div class="summary-line" id="codPayLine" style="display:none;color:#888;"><span>Cash on Delivery</span><span id="smCod">à§³0</span></div>
+                    <div class="summary-line"><span>Subtotal</span><span id="smSubtotal">৳0</span></div>
+                    <div class="summary-line" id="addonLine" style="display:none;"><span>Add-ons</span><span id="smAddon">৳0</span></div>
+                    <div class="summary-line"><span>Delivery</span><span id="smDelivery">�</span></div>
+                    <div class="summary-line" id="promoLine" style="display:none;color:var(--success);"><span>Promo Discount</span><span id="smPromo">-৳0</span></div>
+                    <div class="summary-line summary-total"><span>Total</span><span id="smTotal" style="color:var(--primary);">৳0</span></div>
+                    <div class="summary-line" id="advPayLine" style="display:none;color:var(--warning);"><span>To Pay Now (Advance)</span><span id="smAdvPay">৳0</span></div>
+                    <div class="summary-line" id="codPayLine" style="display:none;color:#888;"><span>Cash on Delivery</span><span id="smCod">৳0</span></div>
                 </div>
             </div>
         </div>
@@ -396,7 +396,7 @@
 </div>
 
 <script>
-// â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� State ��������������������������������������������������������������������������������������������������������
 var cart = [], settings = {}, zones = [], addons = [];
 var addOnceProducts = []; // Add-Once products list
 var currentStep  = 1;
@@ -409,13 +409,13 @@ var draftSent = false;
 var promoPaymentRestrictions = []; // payment methods required by applied coupon
 var promoFreeDelivery = false;     // if coupon gives free delivery
 var isPickup = new URLSearchParams(window.location.search).get('pickup') === '1';
-// Direct Order (Buy Now) â€” main cart à¦¥à§‡à¦•à§‡ à¦†à¦²à¦¾à¦¦à¦¾
+// Direct Order (Buy Now) � main cart থ�!�"�! � লাদা
 var isDirectOrder = new URLSearchParams(window.location.search).get('direct') === '1';
 var DIRECT_KEY = (typeof CONFIG !== 'undefined' && CONFIG.DIRECT_ORDER_KEY) ? CONFIG.DIRECT_ORDER_KEY : 'fbr_direct_order';
 
-// â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Init ����������������������������������������������������������������������������������������������������������
 document.addEventListener('DOMContentLoaded', function() {
-    // Direct Order à¦¹à¦²à§‡ à¦†à¦²à¦¾à¦¦à¦¾ key à¦¥à§‡à¦•à§‡ load à¦•à¦°à§‹, main cart untouched
+    // Direct Order হল�! � লাদা key থ�!�"�! load �"র�9, main cart untouched
     if (isDirectOrder) {
         try { cart = JSON.parse(localStorage.getItem(DIRECT_KEY) || '[]'); } catch(e) { cart = []; }
         if (!cart.length) { window.location.href = 'shop.html'; return; }
@@ -476,6 +476,33 @@ document.addEventListener('DOMContentLoaded', function() {
             p5 = fetch('/api/appwrite-get-products').then(function(r) { return r.json(); }).then(function(data) {
                 return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
             }).catch(function() { return { data: [] }; });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            var h = { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN };
+            p1 = fetch("/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id=1" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results.length) ? r.result[0].results[0] : {} })).then(function(res) {
+                var doc = res.data;
+                if (typeof doc.messaging_apps === 'string') try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e){}
+                if (typeof doc.crypto_coins === 'string') try { doc.crypto_coins = JSON.parse(doc.crypto_coins); } catch(e){}
+                return { data: doc };
+            });
+            p2 = fetch("/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM delivery_zones" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
+                return { data: res.data.map(function(d) { if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} return d; }) };
+            });
+            p3 = fetch("/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM addons WHERE is_active=1 ORDER BY created_at" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
+                return { data: res.data.map(function(d) { d.is_active = d.is_active === 1; if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} return d; }) };
+            });
+            p4 = fetch("/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM promos WHERE is_active=1 LIMIT 500" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
+                return { data: res.data.map(function(d) {
+                    d.is_active = d.is_active === 1;
+                    d.is_repeated_config = d.is_repeated_config === 1;
+                    ['applicable_products','applicable_categories','applicable_districts','applicable_payments'].forEach(function(k){
+                        if(typeof d[k]==='string') try{ d[k]=JSON.parse(d[k]); }catch(e){}
+                    });
+                    return d;
+                })};
+            });
+            p5 = fetch("/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT id,name,base_price,flash_sale_price,gallery_images,variants FROM products WHERE is_add_once=1 AND is_active=1" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
+                return { data: res.data.map(function(d) { if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} if(typeof d.variants==='string') try{ d.variants=JSON.parse(d.variants); }catch(e){} return d; }) };
+            });
         } else {
             p1 = Promise.resolve({data:{}}); p2 = Promise.resolve({data:[]}); p3 = Promise.resolve({data:[]}); p4 = Promise.resolve({data:[]}); p5 = Promise.resolve({data:[]});
         }
@@ -519,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// â”€â”€ Render Order Summary Items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Render Order Summary Items ����������������������������������������������������������������
 function renderSummaryItems() {
     var subtotal = 0;
     var html = cart.map(function(item) {
@@ -529,14 +556,14 @@ function renderSummaryItems() {
             (item.image ? '<img src="' + item.image + '" style="width:48px;height:48px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0;">' : '') +
             '<div style="flex:1;font-size:13px;">' +
                 '<div style="font-weight:700;">' + item.productName + '</div>' +
-                '<div style="color:#888;">' + (item.color||'') + ' / ' + (item.size||'') + ' Ã— ' + (item.quantity||1) + '</div>' +
+                '<div style="color:#888;">' + (item.color||'') + ' / ' + (item.size||'') + ' � ' + (item.quantity||1) + '</div>' +
             '</div>' +
-            '<div style="font-weight:800;font-size:14px;color:var(--primary);">à§³' + lineTotal + '</div>' +
+            '<div style="font-weight:800;font-size:14px;color:var(--primary);">৳' + lineTotal + '</div>' +
         '</div>';
     }).join('');
 
     document.getElementById('summaryItems').innerHTML = html;
-    document.getElementById('smSubtotal').textContent = 'à§³' + subtotal;
+    document.getElementById('smSubtotal').textContent = '৳' + subtotal;
     updateSummaryTotals();
 }
 
@@ -590,16 +617,16 @@ function updateSummaryTotals() {
     
     var total = subtotal + addonTotal + effectiveDelivery - prodDisc;
     
-    document.getElementById('smAddon').textContent   = 'à§³' + addonTotal;
+    document.getElementById('smAddon').textContent   = '৳' + addonTotal;
     
     if (delDisc > 0) {
-        document.getElementById('smDelivery').innerHTML = '<del style="color:#aaa;font-size:11px;">à§³' + deliveryCharge + '</del> ' + (effectiveDelivery > 0 ? 'à§³' + effectiveDelivery : '<span style="color:var(--success);">Free</span>');
+        document.getElementById('smDelivery').innerHTML = '<del style="color:#aaa;font-size:11px;">৳' + deliveryCharge + '</del> ' + (effectiveDelivery > 0 ? '৳' + effectiveDelivery : '<span style="color:var(--success);">Free</span>');
     } else {
-        document.getElementById('smDelivery').textContent = deliveryCharge > 0 ? 'à§³' + deliveryCharge : 'â€”';
+        document.getElementById('smDelivery').textContent = deliveryCharge > 0 ? '৳' + deliveryCharge : '�';
     }
     
-    document.getElementById('smPromo').textContent    = '-à§³' + prodDisc.toFixed(0);
-    document.getElementById('smTotal').textContent    = 'à§³' + total.toFixed(0);
+    document.getElementById('smPromo').textContent    = '-৳' + prodDisc.toFixed(0);
+    document.getElementById('smTotal').textContent    = '৳' + total.toFixed(0);
     
     document.getElementById('addonLine').style.display  = addonTotal > 0 ? 'flex' : 'none';
     document.getElementById('promoLine').style.display  = prodDisc > 0 ? 'flex' : 'none';
@@ -607,7 +634,7 @@ function updateSummaryTotals() {
     return total;
 }
 
-// â”€â”€ Add-Once Products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Add-Once Products ����������������������������������������������������������������������������������
 var selectedAddOnce = []; // {id, name, price}
 
 function getAddOncePrice(p) {
@@ -649,8 +676,8 @@ function buildAddOnceCardHtml(p) {
         (img ? '<img src="' + img + '" class="add-once-img" onerror="this.style.display=\'none\'">' : '') +
         '<div style="flex:1;">' +
             '<div style="font-weight:700;font-size:14px;color:var(--text-dark);">' + (p.name||'') + '</div>' +
-            (p.flash_sale_price > 0 ? '<div style="font-size:12px;color:#888;"><del>à§³' + p.base_price + '</del></div>' : '') +
-            '<div style="font-size:15px;font-weight:800;color:#627EEA;">+à§³' + price + '</div>' +
+            (p.flash_sale_price > 0 ? '<div style="font-size:12px;color:#888;"><del>৳' + p.base_price + '</del></div>' : '') +
+            '<div style="font-size:15px;font-weight:800;color:#627EEA;">+৳' + price + '</div>' +
         '</div>' +
         '<div style="width:22px;height:22px;border-radius:50%;border:2px solid ' + (isSel ? '#627EEA' : '#ddd') + ';background:' + (isSel ? '#627EEA' : 'transparent') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;">' +
             (isSel ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
@@ -709,7 +736,7 @@ function closeAddOnceSheet() {
     renderAddOnce();
 }
 
-// â”€â”€ Addons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Addons ��������������������������������������������������������������������������������������������������������
 function renderAddons() {
     if (!addons.length) { document.getElementById('addonsSection').style.display = 'none'; return; }
     var html = addons.map(function(a) {
@@ -717,7 +744,7 @@ function renderAddons() {
         return '<div class="addon-item" onclick="toggleAddon(\'' + a.id + '\',this)" data-id="' + a.id + '" data-price="' + a.price + '">' +
             '<span style="font-size:22px;">' + (a.icon ? a.icon.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') : '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>') + '</span>' +
             '<div style="flex:1;"><div style="font-weight:700;font-size:14px;">' + a.name + '</div></div>' +
-            '<div style="font-weight:800;color:var(--primary);">+à§³' + a.price + '</div>' +
+            '<div style="font-weight:800;color:var(--primary);">+৳' + a.price + '</div>' +
             '<input type="checkbox" style="width:18px;height:18px;accent-color:var(--primary);" data-chk="' + a.id + '">' +
         '</div>';
     }).join('');
@@ -740,7 +767,7 @@ function toggleAddon(id, el) {
     updateSummaryTotals();
 }
 
-// â”€â”€ BD APIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� BD APIs ��������������������������������������������������������������������������������������������������
 function loadBdDivisions() {
     fetch('https://bdapis.com/api/v1.1/divisions').then(function(r){return r.json();}).then(function(d) {
         var sel = document.getElementById('divSelect');
@@ -806,11 +833,11 @@ function calcDelivery() {
     }
 
     document.getElementById('deliveryInfo').style.display = 'block';
-    document.getElementById('deliveryChargeLabel').textContent = 'à§³' + deliveryCharge;
+    document.getElementById('deliveryChargeLabel').textContent = '৳' + deliveryCharge;
     updateSummaryTotals();
 }
 
-// â”€â”€ Stepper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Stepper ����������������������������������������������������������������������������������������������������
 function goStep(n) {
     currentStep = n;
     ['step1','step2','step3'].forEach(function(id, i) {
@@ -859,7 +886,7 @@ function goStep3() {
     goStep(3);
 }
 
-// â”€â”€ Payment Options â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Payment Options ��������������������������������������������������������������������������������������
 function buildPaymentOptions() {
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
 
@@ -891,12 +918,12 @@ function buildPaymentOptions() {
         advancePayable = 0;
     }
 
-    // Advance section: à¦¶à§à¦§à§ COD select à¦¹à¦²à§‡ à¦¦à§‡à¦–à¦¾à¦¬à§‡ â€” selectPayment() à¦ control à¦¹à¦¯à¦¼
-    // Initially hide à¦•à¦°à§‡ à¦°à¦¾à¦–à§‹, payment type à¦¬à§‡à¦›à§‡ à¦¨à¦¿à¦²à§‡ à¦¸à¦ à¦¿à¦•à¦­à¦¾à¦¬à§‡ show/hide à¦¹à¦¬à§‡
+    // Advance section: শুধু COD select হল�! দ�!�াব�! � selectPayment() এ control হয়
+    // Initially hide �"র�! রা��9, payment type ব�!�:�! নিল�! সঠি�"ভাব�! show/hide হব�!
     document.getElementById('advanceSection').style.display = 'none';
     document.getElementById('advPayLine').style.display = 'none';
     document.getElementById('codPayLine').style.display = 'none';
-    // If rebuilding (coupon applied) and COD was already selected â€” re-show
+    // If rebuilding (coupon applied) and COD was already selected � re-show
     if (selectedPayMethod === 'cod' && advancePayable > 0 && !isPickup) {
         var advSec2 = document.getElementById('advanceSection');
         advSec2.style.display = 'block';
@@ -933,42 +960,42 @@ function buildPaymentOptions() {
     var total = updateSummaryTotals();
     var html = '';
 
-    // â”€â”€ 1. Auto Payment Gateway â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ���� 1. Auto Payment Gateway ��������������������������������������������������������������
     if (hasGateway) {
         html += buildPayCard(
             'auto_gateway',
             '<i data-lucide="globe" class="lucide-icon icon-spin" style="font-size:20px;"></i>',
             'Auto Payment',
-            'bKash / Nagad / Card â€” via payment gateway',
+            'bKash / Nagad / Card � via payment gateway',
             // body: redirect button rendered by gateway flow
             '<div style="padding:4px 0 2px;">' +
                 '<div style="font-size:12px;color:#666;margin-bottom:10px;">Click "Place Order" below to be redirected to the secure payment gateway.</div>' +
-                '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#888;"><span>ðŸ”’</span> Secured by payment gateway</div>' +
+                '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#888;"><span>�x</span> Secured by payment gateway</div>' +
             '</div>'
         );
     }
 
-    // â”€â”€ 2. Manual Payment (accordion with sub-options) â”€â”€â”€â”€â”€â”€â”€â”€
+    // ���� 2. Manual Payment (accordion with sub-options) ����������������
     if (hasManual) {
         var subCards = '';
 
         if (hasBkash) {
             subCards += buildSubCard(
-                'manual_bkash', 'ðŸ’œ', 'bKash',
+                'manual_bkash', '�xS', 'bKash',
                 'Send to ' + settings.bkash_number,
-                buildManualDetail(settings.bkash_number, 'bKash', 'à§³' + Math.round(total), 'bkash')
+                buildManualDetail(settings.bkash_number, 'bKash', '৳' + Math.round(total), 'bkash')
             );
         }
         if (hasNagad) {
             subCards += buildSubCard(
-                'manual_nagad', 'ðŸ§¡', 'Nagad',
+                'manual_nagad', '�x��', 'Nagad',
                 'Send to ' + settings.nagad_number,
-                buildManualDetail(settings.nagad_number, 'Nagad', 'à§³' + Math.round(total), 'nagad')
+                buildManualDetail(settings.nagad_number, 'Nagad', '৳' + Math.round(total), 'nagad')
             );
         }
         if (hasBinanceM) {
             subCards += buildSubCard(
-                'manual_binance', 'ðŸŸ¡', 'Binance Manual',
+                'manual_binance', '�xx�', 'Binance Manual',
                 'Send USDT to UID: ' + settings.binance_pay_uid,
                 buildBinanceManualDetail(settings.binance_pay_uid, total)
             );
@@ -976,35 +1003,35 @@ function buildPaymentOptions() {
 
         html += buildPayCard(
             'manual_group',
-            'ðŸ’³',
+            '�x�',
             'Manual Payment',
-            'bKash / Nagad / Binance â€” send & enter TrxID',
+            'bKash / Nagad / Binance � send & enter TrxID',
             subCards
         );
     }
 
-    // â”€â”€ 3. COD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ���� 3. COD ������������������������������������������������������������������������������������������������
     if (hasCod) {
         var codLabel = advancePayable > 0 ? 'Hybrid COD (Advance + Delivery)' : 'Cash on Delivery';
-        var codDesc  = advancePayable > 0 ? 'Pay à§³' + advancePayable + ' advance, rest on delivery' : 'Pay when product is received';
-        html += buildPayCard('cod', 'ðŸ’µ', codLabel, codDesc,
-            '<div style="font-size:12px;color:#666;padding:2px 0;">âœ… No advance payment needed online. Pay the delivery agent when your order arrives.</div>'
+        var codDesc  = advancePayable > 0 ? 'Pay ৳' + advancePayable + ' advance, rest on delivery' : 'Pay when product is received';
+        html += buildPayCard('cod', '�x�', codLabel, codDesc,
+            '<div style="font-size:12px;color:#666;padding:2px 0;">�S& No advance payment needed online. Pay the delivery agent when your order arrives.</div>'
         );
     }
     if (isPickup) {
-        html += buildPayCard('cod', 'ðŸª', 'Pay at Pickup', 'Pay when you collect your order',
-            '<div style="font-size:12px;color:#666;padding:2px 0;">âœ… Pay at the store when you arrive to pick up your order.</div>'
+        html += buildPayCard('cod', '�x��', 'Pay at Pickup', 'Pay when you collect your order',
+            '<div style="font-size:12px;color:#666;padding:2px 0;">�S& Pay at the store when you arrive to pick up your order.</div>'
         );
     }
 
-    if (!html) html = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">âš ï¸ No payment method available for this coupon. Please remove the coupon or contact support.</div>';
+    if (!html) html = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">�a�️ No payment method available for this coupon. Please remove the coupon or contact support.</div>';
 
     document.getElementById('paymentOptions').innerHTML = html;
     document.getElementById('manualPayBox').style.display = 'none'; // legacy hidden
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-// â”€â”€ Accordion card builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Accordion card builders ����������������������������������������������������������������������
 function buildPayCard(value, icon, label, desc, bodyHtml) {
     return '<div class="pay-card" id="pc-' + value + '" data-paycard="' + value + '">' +
         '<div class="pay-card-header" onclick="selectPayCard(\'' + value + '\')">' +
@@ -1014,7 +1041,7 @@ function buildPayCard(value, icon, label, desc, bodyHtml) {
                 '<div class="pay-card-label">' + label + '</div>' +
                 '<div class="pay-card-desc">' + desc + '</div>' +
             '</div>' +
-            '<span class="pay-card-chevron">â€º</span>' +
+            '<span class="pay-card-chevron">⬺</span>' +
         '</div>' +
         '<div class="pay-card-body">' + bodyHtml + '</div>' +
     '</div>';
@@ -1029,7 +1056,7 @@ function buildSubCard(value, icon, label, desc, bodyHtml) {
                 '<div class="pay-sub-label">' + label + '</div>' +
                 '<div class="pay-sub-desc">' + desc + '</div>' +
             '</div>' +
-            '<span class="pay-sub-chevron">â€º</span>' +
+            '<span class="pay-sub-chevron">⬺</span>' +
         '</div>' +
         '<div class="pay-sub-body">' + bodyHtml + '</div>' +
     '</div>';
@@ -1040,7 +1067,7 @@ function buildManualDetail(number, methodName, amtLabel, methodKey) {
     var tId = 'trxId_' + methodKey;
     return '<div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
             'Send <span style="color:var(--primary);font-size:16px;">' + amtLabel + '</span>' +
-            ' <button type="button" onclick="copyDirect(this,\'' + amtLabel + '\')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;padding:2px 4px;border-radius:4px;" title="Copy amount">ðŸ“‹</button> to:' +
+            ' <button type="button" onclick="copyDirect(this,\'' + amtLabel + '\')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;padding:2px 4px;border-radius:4px;" title="Copy amount">�x9</button> to:' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">' +
             '<div style="font-size:20px;font-weight:900;color:var(--text-dark);">' + number + '</div>' +
@@ -1062,12 +1089,12 @@ function buildBinanceManualDetail(uid, total) {
     var usdtAmt = (total / rate).toFixed(2);
     var tId = 'trxId_binance';
     return '<div style="background:rgba(240,185,11,0.07);border:1.5px solid rgba(240,185,11,0.3);border-radius:10px;padding:12px;margin-bottom:12px;">' +
-        '<div style="font-size:12px;color:#92710B;font-weight:700;margin-bottom:6px;">ðŸŸ¡ Send USDT (Binance Pay)</div>' +
+        '<div style="font-size:12px;color:#92710B;font-weight:700;margin-bottom:6px;">�xx� Send USDT (Binance Pay)</div>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
             '<div style="font-size:18px;font-weight:900;color:#B8860B;">' + uid + '</div>' +
             '<button type="button" onclick="copyDirect(this,\'' + uid + '\')" style="background:rgba(240,185,11,0.15);border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:700;color:#92710B;">Copy UID</button>' +
         '</div>' +
-        '<div style="font-size:12px;color:#888;">Amount: ~' + usdtAmt + ' USDT <span style="color:#aaa;">(à§³' + Math.round(total) + ' Ã· ' + rate + ')</span></div>' +
+        '<div style="font-size:12px;color:#888;">Amount: ~' + usdtAmt + ' USDT <span style="color:#aaa;">(৳' + Math.round(total) + ' ÷ ' + rate + ')</span></div>' +
         '<div style="margin-top:6px;">' +
             '<button type="button" onclick="copyDirect(this,\'' + usdtAmt + '\')" style="background:rgba(240,185,11,0.15);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:700;color:#92710B;">Copy Amount</button>' +
         '</div>' +
@@ -1075,7 +1102,7 @@ function buildBinanceManualDetail(uid, total) {
     '<div class="form-group" style="margin-bottom:0;">' +
         '<label class="form-label">Binance Transaction ID / TxID *</label>' +
         '<input class="form-input" id="' + tId + '" data-role="trxInput" placeholder="Binance Pay Transaction ID">' +
-        '<div style="font-size:11px;color:#aaa;margin-top:4px;">Binance App â†’ Pay History â†’ à¦¸à§‡à¦‡ transaction à¦à¦° ID à¦¦à¦¾à¦“</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-top:4px;">Binance App �  Pay History �  স�!�! transaction এর ID দা�</div>' +
     '</div>';
 }
 
@@ -1088,7 +1115,7 @@ function payOpt(value, icon, name, desc, badge) {
     '</div>';
 }
 
-// â”€â”€ Accordion: select a top-level pay card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Accordion: select a top-level pay card ��������������������������������������
 function selectPayCard(value) {
     // Toggle: click same card again to collapse
     var isSame = (selectedPayMethod === value || (value === 'manual_group' && selectedPayMethod && selectedPayMethod.startsWith('manual_')));
@@ -1113,7 +1140,7 @@ function selectPayCard(value) {
     var total = updateSummaryTotals();
 
     if (value === 'manual_group') {
-        // Don't set selectedPayMethod yet â€” wait for sub-card selection
+        // Don't set selectedPayMethod yet � wait for sub-card selection
         // Clear any previous manual selection
         if (!selectedPayMethod || !selectedPayMethod.startsWith('manual_')) {
             selectedPayMethod = '';
@@ -1129,8 +1156,8 @@ function selectPayCard(value) {
         var autoAdvCheck = settings.advance_method && settings.advance_method.toString().includes('auto');
         if (isCod && advancePayable > 0 && !autoAdvCheck) {
             document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
-            document.getElementById('manualPayMethodName').textContent = 'bKash (Advance â€” à§³' + advancePayable + ')';
-            document.getElementById('manualPayAmt').textContent        = 'à§³' + advancePayable;
+            document.getElementById('manualPayMethodName').textContent = 'bKash (Advance � ৳' + advancePayable + ')';
+            document.getElementById('manualPayAmt').textContent        = '৳' + advancePayable;
             manualBox.style.display = 'block';
         } else {
             manualBox.style.display = 'none';
@@ -1138,7 +1165,7 @@ function selectPayCard(value) {
     }
 }
 
-// â”€â”€ Accordion: select a sub-card inside Manual group â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Accordion: select a sub-card inside Manual group ������������������
 function selectSubCard(value) {
     // Deselect all sub-cards
     document.querySelectorAll('.pay-sub-card').forEach(function(c){ c.classList.remove('selected'); c.querySelector('.pay-sub-radio').checked = false; });
@@ -1154,7 +1181,7 @@ function selectSubCard(value) {
     document.getElementById('manualPayBox').style.display = 'none';
 }
 
-// â”€â”€ Shared advance + fun-checkbox UI updater â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Shared advance + fun-checkbox UI updater ����������������������������������
 function _updateAdvanceFunUI(isCod, advAmt, total) {
     var advSection = document.getElementById('advanceSection');
     var advPayLine = document.getElementById('advPayLine');
@@ -1164,10 +1191,10 @@ function _updateAdvanceFunUI(isCod, advAmt, total) {
         advSection.style.display = 'block';
         advPayLine.style.display = 'flex';
         codPayLine.style.display = 'flex';
-        document.getElementById('advanceInfoText').textContent    = 'Remaining à§³' + Math.round(total - advAmt) + ' will be paid on delivery.';
-        document.getElementById('advanceAmountLabel').textContent = 'à§³' + advAmt;
-        document.getElementById('smAdvPay').textContent           = 'à§³' + advAmt;
-        document.getElementById('smCod').textContent              = 'à§³' + Math.round(total - advAmt);
+        document.getElementById('advanceInfoText').textContent    = 'Remaining ৳' + Math.round(total - advAmt) + ' will be paid on delivery.';
+        document.getElementById('advanceAmountLabel').textContent = '৳' + advAmt;
+        document.getElementById('smAdvPay').textContent           = '৳' + advAmt;
+        document.getElementById('smCod').textContent              = '৳' + Math.round(total - advAmt);
     } else {
         advSection.style.display = 'none';
         advPayLine.style.display = 'none';
@@ -1190,7 +1217,7 @@ function _updateAdvanceFunUI(isCod, advAmt, total) {
     }
 }
 
-// â”€â”€ copyDirect: pass text directly â€” no ID needed, most reliable â”€â”€â”€â”€â”€â”€
+// ���� copyDirect: pass text directly � no ID needed, most reliable ������������
 function copyDirect(btn, text) {
     var fallback = function() {
         var ta = document.createElement('textarea');
@@ -1204,7 +1231,7 @@ function copyDirect(btn, text) {
     var done = function() {
         var orig = btn.textContent;
         var origColor = btn.style.color;
-        btn.textContent = 'âœ… Copied!';
+        btn.textContent = '�S& Copied!';
         btn.style.color = '#15803d';
         setTimeout(function() {
             btn.textContent = orig;
@@ -1218,7 +1245,7 @@ function copyDirect(btn, text) {
     }
 }
 
-// â”€â”€ copyText helper â€” delegates to copyElementText with button feedback
+// ���� copyText helper � delegates to copyElementText with button feedback
 function copyText(elId) {
     var el = document.getElementById(elId);
     if (!el) return;
@@ -1230,12 +1257,12 @@ function copyText(elId) {
     if (btn) {
         copyDirect(btn, text);
     } else {
-        // no button found â€” just copy silently
+        // no button found � just copy silently
         copyDirect({ textContent: '', style: {} }, text);
     }
 }
 
-// â”€â”€ Legacy selectPayment â€” kept for any external callers â”€â”€â”€â”€â”€â”€
+// ���� Legacy selectPayment � kept for any external callers ������������
 function selectPayment(value) {
     // Delegate to new accordion system
     if (value === 'manual_bkash' || value === 'manual_nagad' || value === 'manual_binance') {
@@ -1246,7 +1273,7 @@ function selectPayment(value) {
     }
 }
 
-// â”€â”€ Promo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Promo ����������������������������������������������������������������������������������������������������������
 function removePromo() {
     document.getElementById('promoInput').value = '';
     document.getElementById('removePromoBtn').style.display = 'none';
@@ -1265,7 +1292,7 @@ function applyPromo(providedCode) {
             promoPaymentRestrictions = [];
             buildPaymentOptions(); // restore all
             updateSummaryTotals();
-            msg.innerHTML = 'â„¹ï¸ Coupon removed.';
+            msg.innerHTML = '��️ Coupon removed.';
             msg.style.color = '#888';
         }
         return;
@@ -1279,11 +1306,11 @@ function applyPromo(providedCode) {
     });
 
     if (!promo) {
-        msg.innerHTML = 'â›” Invalid or inactive promo code';
+        msg.innerHTML = '�: Invalid or inactive promo code';
         msg.style.color = 'var(--danger)'; return;
     }
     if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
-        msg.innerHTML = 'â›” This promo code has expired';
+        msg.innerHTML = '�: This promo code has expired';
         msg.style.color = 'var(--danger)'; return;
     }
 
@@ -1301,21 +1328,21 @@ function applyPromo(providedCode) {
 
     // 1. Min spend check
     if (minSpend && subtotal < minSpend) {
-        msg.innerHTML = 'â›” Minimum cart value of à§³' + minSpend + ' required';
+        msg.innerHTML = '�: Minimum cart value of ৳' + minSpend + ' required';
         msg.style.color = 'var(--danger)'; return;
     }
 
     // 2. Product restriction
     if (appProds.length) {
         var matched = cart.some(function(i){ return appProds.indexOf(i.id) > -1; });
-        if (!matched) { msg.innerHTML = 'â›” Coupon not valid for products in your cart'; msg.style.color='var(--danger)'; return; }
+        if (!matched) { msg.innerHTML = '�: Coupon not valid for products in your cart'; msg.style.color='var(--danger)'; return; }
     }
 
     // 3. District restriction
     if (appDists.length) {
         var dist = document.getElementById('distSelect').value;
         var distOk = dist && appDists.some(function(d){ return d.toLowerCase() === dist.toLowerCase(); });
-        if (!distOk) { msg.innerHTML = 'â›” Coupon only valid for: ' + appDists.join(', '); msg.style.color='var(--danger)'; return; }
+        if (!distOk) { msg.innerHTML = '�: Coupon only valid for: ' + appDists.join(', '); msg.style.color='var(--danger)'; return; }
     }
 
     activePromoObj = promo;
@@ -1329,11 +1356,11 @@ function applyPromo(providedCode) {
     // 6. Payment restriction enforcement
     promoPaymentRestrictions = appPays;
     
-    var succMsg = 'âœ… Coupon "' + promoCode + '" applied! ';
-    if (promoDiscount > 0) succMsg += 'à§³' + promoDiscount.toFixed(0) + ' discount. ';
-    if (promo.del_reward === 'free') succMsg += 'ðŸšš Free Delivery! ';
-    else if (promo.del_reward === 'amount' && promo.del_disc_amount) succMsg += 'ðŸšš à§³' + promo.del_disc_amount + ' delivery discount! ';
-    else if (promo.del_reward === 'percent' && promo.del_disc_amount) succMsg += 'ðŸšš ' + promo.del_disc_amount + '% delivery discount! ';
+    var succMsg = '�S& Coupon "' + promoCode + '" applied! ';
+    if (promoDiscount > 0) succMsg += '৳' + promoDiscount.toFixed(0) + ' discount. ';
+    if (promo.del_reward === 'free') succMsg += '�xaa Free Delivery! ';
+    else if (promo.del_reward === 'amount' && promo.del_disc_amount) succMsg += '�xaa ৳' + promo.del_disc_amount + ' delivery discount! ';
+    else if (promo.del_reward === 'percent' && promo.del_disc_amount) succMsg += '�xaa ' + promo.del_disc_amount + '% delivery discount! ';
     
     // Always rebuild payment options when coupon has delivery discount OR payment restriction
     // This ensures advance amount reflects delivery discount correctly
@@ -1351,7 +1378,7 @@ function applyPromo(providedCode) {
             }
         }
         if (appPays.length) {
-            msg.innerHTML = succMsg + '<br><small style="color:#FF9500;">âš ï¸ Only specific payment methods available.</small>';
+            msg.innerHTML = succMsg + '<br><small style="color:#FF9500;">�a�️ Only specific payment methods available.</small>';
         } else {
             msg.innerHTML = succMsg;
         }
@@ -1361,7 +1388,7 @@ function applyPromo(providedCode) {
     msg.style.color = 'var(--success)';
 }
 
-// â”€â”€ View All Coupons â€” Bottom Sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� View All Coupons � Bottom Sheet ������������������������������������������������������
 function openAllCouponsModal() {
     // Ensure bottom sheet exists
     if (!document.getElementById('allCouponsSheet')) {
@@ -1373,8 +1400,8 @@ function openAllCouponsModal() {
             '<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:78vh;overflow-y:auto;padding:0 0 20px;animation:slideUpSheet 0.35s cubic-bezier(0.22,0.61,0.36,1);">' +
                 '<div style="width:40px;height:4px;background:#ddd;border-radius:4px;margin:12px auto 4px;"></div>' +
                 '<div style="padding:14px 20px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;">' +
-                    '<div style="font-size:16px;font-weight:800;color:var(--text-dark);">ðŸŽŸï¸ Available Coupons</div>' +
-                    '<button onclick="closeAllCouponsModal()" style="border:none;background:rgba(0,0,0,0.06);border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">âœ•</button>' +
+                    '<div style="font-size:16px;font-weight:800;color:var(--text-dark);">�x}x️ Available Coupons</div>' +
+                    '<button onclick="closeAllCouponsModal()" style="border:none;background:rgba(0,0,0,0.06);border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">�S"</button>' +
                 '</div>' +
                 '<div id="allCouponsList" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;"></div>' +
             '</div>';
@@ -1400,7 +1427,7 @@ function openAllCouponsModal() {
         publicCoupons.forEach(function(p) {
             var reqSpend = p.min_spend || 0;
             var discType = p.disc_type || 'flat';
-            var dVal = discType === 'percent' ? (p.disc_val || 0)+'%' : 'à§³'+(p.disc_val || 0);
+            var dVal = discType === 'percent' ? (p.disc_val || 0)+'%' : '৳'+(p.disc_val || 0);
             var obj = { promo:p, reqSpend:reqSpend, dVal:dVal };
             if (reqSpend <= subtotal) eligible.push(obj);
             else if (reqSpend - subtotal <= 300) closeToEl.push(obj);
@@ -1414,18 +1441,18 @@ function openAllCouponsModal() {
             var isEligible = diff <= 0;
 
             var extras = '';
-            if (p.del_reward === 'free') extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">ðŸšš + Free Delivery</span> ';
-            if (p.del_reward === 'amount' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">ðŸšš -à§³'+p.del_disc_amount+' Delivery</span> ';
-            if (p.del_reward === 'percent' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">ðŸšš -'+p.del_disc_amount+'% Delivery</span> ';
-            if (!isEligible) extras += '<div style="font-size:11px;color:#FF9500;font-weight:700;margin-top:3px;">Add à§³'+diff.toFixed(0)+' more to unlock</div>';
+            if (p.del_reward === 'free') extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">�xaa + Free Delivery</span> ';
+            if (p.del_reward === 'amount' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">�xaa -৳'+p.del_disc_amount+' Delivery</span> ';
+            if (p.del_reward === 'percent' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">�xaa -'+p.del_disc_amount+'% Delivery</span> ';
+            if (!isEligible) extras += '<div style="font-size:11px;color:#FF9500;font-weight:700;margin-top:3px;">Add ৳'+diff.toFixed(0)+' more to unlock</div>';
 
             var card = document.createElement('div');
             card.style.cssText = 'border:1.5px solid '+(isEligible?'#22C55E':'var(--border)')+';border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:'+(isEligible?'rgba(34,197,94,0.03)':'#fafafa')+';';
             card.innerHTML =
                 '<div style="flex:1;">' +
                     '<code style="font-size:13px;font-weight:800;color:var(--primary);background:rgba(139,26,26,0.07);padding:3px 8px;border-radius:6px;display:inline-block;margin-bottom:4px;">' + cleanCode + '</code>' +
-                    '<div style="font-size:13px;font-weight:700;color:var(--text-dark);">' + item.dVal + ' Discount' + (p.max_cap?' (Max à§³'+p.max_cap+')':'') + '</div>' +
-                    '<div style="font-size:12px;color:#777;margin-top:1px;">' + (item.reqSpend?'Min à§³'+item.reqSpend:'No minimum') + '</div>' +
+                    '<div style="font-size:13px;font-weight:700;color:var(--text-dark);">' + item.dVal + ' Discount' + (p.max_cap?' (Max ৳'+p.max_cap+')':'') + '</div>' +
+                    '<div style="font-size:12px;color:#777;margin-top:1px;">' + (item.reqSpend?'Min ৳'+item.reqSpend:'No minimum') + '</div>' +
                     (extras ? '<div style="margin-top:4px;">'+extras+'</div>' : '') +
                 '</div>' +
                 (isEligible
@@ -1452,7 +1479,7 @@ function applyPublicPromo(cleanCode) {
 
 
 
-// â”€â”€ Place Order â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Place Order ����������������������������������������������������������������������������������������������
 function placeOrder() {
     if (!selectedPayMethod) { alert('Please select a payment method'); return; }
 
@@ -1473,7 +1500,7 @@ function placeOrder() {
     var effectiveDeliveryPO = Math.max(0, deliveryCharge - delDiscPO);
     var total    = subtotal + addonTotal + effectiveDeliveryPO - promoDiscount;
 
-    // â”€â”€ Manual payment inputs: read from active sub-card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ���� Manual payment inputs: read from active sub-card ������������������������
     var senderNum = '', trxId = '';
     var isManualPay = (selectedPayMethod === 'manual_bkash' || selectedPayMethod === 'manual_nagad' || selectedPayMethod === 'manual_binance');
     var autoAdvCheck = settings.advance_method && settings.advance_method.toString().includes('auto');
@@ -1569,7 +1596,7 @@ function placeOrder() {
     insertPromise.then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
         sendOrderNotification(orderData);
-        // Direct Order à¦¹à¦²à§‡ à¦¶à§à¦§à§ direct key clear à¦•à¦°à§‹ â€” main cart à¦…à¦•à§à¦·à¦¤ à¦¥à¦¾à¦•à¦¬à§‡
+        // Direct Order হল�! শুধু direct key clear �"র�9 � main cart �&�"্ষত থা�"ব�!
         if (isDirectOrder) {
             localStorage.removeItem(DIRECT_KEY);
         } else {
@@ -1579,7 +1606,7 @@ function placeOrder() {
     });
 }
 
-// â”€â”€ Auto Gateway Payment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Auto Gateway Payment ����������������������������������������������������������������������������
 function initiateGatewayPayment(orderId, total, orderData) {
     var gatewayVersion = (settings.gateway_version || 'v1');
     var proxyUrl = (gatewayVersion === 'v2') 
@@ -1596,7 +1623,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
     var sUrl = baseUrl + '?status=completed&order_id=' + orderId;
     var cUrl = baseUrl + '?status=cancel&order_id=' + orderId;
 
-    // â”€â”€ DB-à¦¤à§‡ à¦†à¦—à§‡ order save à¦•à¦°à§‹ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ���� DB-ত�! � ��! order save �"র�9 ������������������������������������������������������������
     var insertPromise;
     if (CONFIG.DB_PROVIDER === 'supabase') {
         insertPromise = supabaseClient.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]);
@@ -1622,7 +1649,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
     insertPromise.then(function(r) {
         if (r.error) { alert('Order save failed: ' + r.error.message); return; }
 
-        // â”€â”€ ðŸ”„ Gateway Execution (v1 and v2 now use same JSON logic) â”€â”€â”€â”€â”€â”€â”€â”€
+        // ���� �x Gateway Execution (v1 and v2 now use same JSON logic) ����������������
         var reqBody = {
             cus_name:    name,
             cus_email:   email,
@@ -1773,16 +1800,16 @@ function verifyGatewayPayment(orderId, trxId) {
     });
 }
 
-// â”€â”€ Telegram Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Telegram Notifications ������������������������������������������������������������������������
 function sendOrderNotification(order) {
-    var msg = 'ðŸ›ï¸ *NEW ORDER* â€” #' + order.id + '\n\n' +
-              'ðŸ‘¤ ' + (order.customer_name || 'â€”') + ' | ðŸ“ž ' + (order.customer_phone || 'â€”') + '\n' +
-              'ðŸ“ ' + (order.district || 'â€”') + ', ' + (order.division || 'â€”') + '\n' +
-              'ðŸ“ Type: ' + (order.order_type === 'pickup' ? 'ðŸš¶ Pickup' : 'ðŸšš Delivery') + '\n' +
-              'ðŸ’³ Method: ' + (order.payment_method || 'â€”') + '\n' +
-              'ðŸ’° Total: à§³' + (order.grand_total || 0) + '\n' +
-              (order.payment_trx_id ? 'ðŸ”‘ TrxID: `' + order.payment_trx_id + '`\n' : '') +
-              'ðŸ“¦ Items: ' + (Array.isArray(order.items) ? order.items.map(function(i){return i.productName;}).join(', ') : 'â€”');
+    var msg = '�x:�️ *NEW ORDER* � #' + order.id + '\n\n' +
+              '�x� ' + (order.customer_name || '�') + ' | �x~ ' + (order.customer_phone || '�') + '\n' +
+              '�x� ' + (order.district || '�') + ', ' + (order.division || '�') + '\n' +
+              '�x� Type: ' + (order.order_type === 'pickup' ? '�xa� Pickup' : '�xaa Delivery') + '\n' +
+              '�x� Method: ' + (order.payment_method || '�') + '\n' +
+              '�x� Total: ৳' + (order.grand_total || 0) + '\n' +
+              (order.payment_trx_id ? '�x TrxID: `' + order.payment_trx_id + '`\n' : '') +
+              '�x� Items: ' + (Array.isArray(order.items) ? order.items.map(function(i){return i.productName;}).join(', ') : '�');
 
     if (order.order_type === 'pickup' && settings.pickup_bot_token && settings.pickup_chat_id) {
         sendTelegram(settings.pickup_bot_token, settings.pickup_chat_id, msg);
@@ -1810,11 +1837,11 @@ function sendDraftNotification() {
     var phone  = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
 
-    var msg = 'âš ï¸ *DRAFT ORDER* â€” Tab switched!\n\n' +
-              (name  ? 'ðŸ‘¤ ' + name  + '\n' : '') +
-              (phone ? 'ðŸ“ž ' + phone + '\n' : '') +
-              'ðŸ›’ Items: ' + cart.length + '\n' +
-              'ðŸ’° Cart Value: à§³' + subtotal;
+    var msg = '�a�️ *DRAFT ORDER* � Tab switched!\n\n' +
+              (name  ? '�x� ' + name  + '\n' : '') +
+              (phone ? '�x~ ' + phone + '\n' : '') +
+              '�x: Items: ' + cart.length + '\n' +
+              '�x� Cart Value: ৳' + subtotal;
 
     fetch('https://api.telegram.org/bot' + settings.telegram_draft_bot + '/sendMessage', {
         method: 'POST',
@@ -1823,7 +1850,7 @@ function sendDraftNotification() {
     }).catch(function(){});
 }
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Helpers ������������������������������������������������������������������������������������������������������
 function genOrderId() {
     var mustHave = ['A', 'F', 'R', 'S', 'H', 'N'];
     var numbers = '0123456789';
@@ -1855,7 +1882,7 @@ function genOrderId() {
 
 function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
 
-// â”€â”€ International Transfer System â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� International Transfer System ����������������������������������������������������������
 var currentTransferTab = 'national';
 var intlPayMode       = ''; // 'binance_pay' | 'crypto'
 var intlCoinSymbol    = '';
@@ -1887,8 +1914,8 @@ function buildInternationalOptions() {
     var usdtAmt = (total / usdRate).toFixed(2);
 
     document.getElementById('intlUsdtAmt').textContent  = usdtAmt + ' USDT';
-    document.getElementById('intlBdtAmt').textContent   = '= à§³' + Math.round(total);
-    document.getElementById('intlRateLabel').textContent = 'Rate: 1 USD = à§³' + usdRate;
+    document.getElementById('intlBdtAmt').textContent   = '= ৳' + Math.round(total);
+    document.getElementById('intlRateLabel').textContent = 'Rate: 1 USD = ৳' + usdRate;
 
     var html = '';
     var hasProxy = !!(settings.binance_proxy_url || CONFIG.BINANCE_PROXY_URL);
@@ -1897,7 +1924,7 @@ function buildInternationalOptions() {
     if (settings.binance_pay_uid) {
         var badge = hasProxy ? '' : '<span class="backup-badge">Manual Review</span>';
         html += '<div class="crypto-opt" id="copt_binance_pay" onclick="selectIntlMethod(\'binance_pay\')">' +
-            '<span style="font-size:26px;">ðŸŸ¡</span>' +
+            '<span style="font-size:26px;">�xx�</span>' +
             '<div style="flex:1;">' +
                 '<div style="font-weight:800;font-size:14px;">Binance Pay ' + badge + '</div>' +
                 '<div style="font-size:12px;color:#888;">Send via Binance Pay to UID: <strong>' + settings.binance_pay_uid + '</strong></div>' +
@@ -1912,7 +1939,7 @@ function buildInternationalOptions() {
     
     if (hasCoins) {
         html += '<div class="crypto-opt" id="copt_crypto_main" onclick="selectIntlMethod(\'crypto_main\')">' +
-            '<span style="font-size:26px;">ðŸª™</span>' +
+            '<span style="font-size:26px;">�x�"</span>' +
             '<div style="flex:1;">' +
                 '<div style="font-weight:800;font-size:14px;">Crypto Payment</div>' +
                 '<div style="font-size:12px;color:#888;">Pay via USDT, BTC, ETH, etc.</div>' +
@@ -1923,7 +1950,7 @@ function buildInternationalOptions() {
 
     if (!html) {
         html = '<div style="text-align:center;padding:24px;color:#999;font-size:13px;border:1.5px dashed var(--border);border-radius:12px;">' +
-               'âš ï¸ No international payment method configured.<br>Admin â†’ Settings â†’ Crypto & Binance Pay à¦¥à§‡à¦•à§‡ à¦¯à§‹à¦— à¦•à¦°à§‹à¥¤</div>';
+               '�a�️ No international payment method configured.<br>Admin �  Settings �  Crypto & Binance Pay থ�!�"�! য�9� �"র�9।</div>';
     }
 
     document.getElementById('cryptoPaymentOptions').innerHTML = html;
@@ -1966,13 +1993,13 @@ function selectIntlMethod(method) {
         document.getElementById('cryptoWalletBox').style.display = 'block';
         document.getElementById('cryptoWalletBox').innerHTML =
             '<div class="wallet-addr-box" style="border-color:#F0B90B;background:rgba(240,185,11,0.05);">' +
-                '<div style="font-size:12px;font-weight:700;color:#B8860B;margin-bottom:6px;">ðŸŸ¡ Binance Pay Instructions</div>' +
+                '<div style="font-size:12px;font-weight:700;color:#B8860B;margin-bottom:6px;">�xx� Binance Pay Instructions</div>' +
                 '<div style="font-size:13px;color:#555;margin-bottom:6px;display:flex;align-items:center;gap:6px;">Send exactly <strong style="color:#1a1a2e;">' + usdt + ' USDT</strong> <button class="copy-btn" style="background:none;border:none;color:#888;padding:2px;min-width:auto;" onclick="copyText(\'' + usdt + '\',this)" title="Copy Amount"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button> to:</div>' +
                 '<div class="wallet-addr-text" style="border-color:rgba(240,185,11,0.4);">' +
                     '<span id="binanceUidDisplay" style="font-size:18px;letter-spacing:2px;font-weight:900;">UID: ' + uid + '</span>' +
-                    '<button class="copy-btn" style="background:#F0B90B;color:#1a1a2e;" onclick="copyText(\'' + uid + '\',this)">ðŸ“‹ Copy</button>' +
+                    '<button class="copy-btn" style="background:#F0B90B;color:#1a1a2e;" onclick="copyText(\'' + uid + '\',this)">�x9 Copy</button>' +
                 '</div>' +
-                '<div style="font-size:11px;color:#888;">After sending, open Binance app â†’ Pay â†’ History â†’ copy the <strong>Transaction ID</strong>.</div>' +
+                '<div style="font-size:11px;color:#888;">After sending, open Binance app �  Pay �  History �  copy the <strong>Transaction ID</strong>.</div>' +
             '</div>';
 
         document.getElementById('cryptoTxidWrap').style.display = 'block';
@@ -1989,12 +2016,12 @@ function selectIntlMethod(method) {
         setVerifyStatus('', '');
 
         var coins = settings.crypto_coins || [];
-        var coinHtml = '<div style="margin-top:10px;"><div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;">ðŸª™ Select Crypto</div>';
+        var coinHtml = '<div style="margin-top:10px;"><div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;">�x�" Select Crypto</div>';
         coins.forEach(function(coin) {
             if (!coin.symbol || !coin.networks || !coin.networks.length) return;
             var nets = coin.networks.map(function(n) { return n.name; }).join(' / ');
             coinHtml += '<div class="crypto-opt" id="copt_' + coin.symbol + '" onclick="selectIntlCoin(\'' + coin.symbol + '\')" style="margin-bottom:6px;border-color:rgba(98,126,234,0.3);">' +
-                '<span style="font-size:20px;">ðŸ’ </span>' +
+                '<span style="font-size:20px;">�x�</span>' +
                 '<div style="flex:1;">' +
                     '<div style="font-weight:800;font-size:13px;">' + coin.symbol +
                         '<span style="font-size:11px;font-weight:400;color:#888;margin-left:6px;">' + (coin.name || '') + '</span></div>' +
@@ -2034,16 +2061,16 @@ function selectIntlCoin(symbol) {
     if (!coin) return;
 
     var netsHtml = '<div style="margin-top:4px;">' +
-        '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">â›“ï¸ Select Network</div>';
+        '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">�:️ Select Network</div>';
 
     coin.networks.forEach(function(net) {
         var safeNet = (net.name || '').replace(/'/g, "\\'");
         var safeAddr = (net.address || '').replace(/'/g, "\\'");
         var safeQr   = (net.qr_url || '').replace(/'/g, "\\'");
         netsHtml += '<div class="net-opt" id="netopt_' + safeNet + '" onclick="selectIntlNetwork(\'' + safeNet + '\',\'' + safeAddr + '\',\'' + safeQr + '\')">' +
-            '<span style="font-size:18px;">â›“ï¸</span>' +
+            '<span style="font-size:18px;">�:️</span>' +
             '<div style="flex:1;">' +
-                '<div style="font-weight:700;font-size:13px;">' + (net.name || 'â€”') + '</div>' +
+                '<div style="font-weight:700;font-size:13px;">' + (net.name || '�') + '</div>' +
                 '<div style="font-size:11px;color:#888;">' + (net.address ? net.address.substring(0,16) + '...' : 'No address') + '</div>' +
             '</div>' +
             '<input type="radio" name="netMethod" style="width:16px;height:16px;accent-color:#627EEA;">' +
@@ -2114,7 +2141,7 @@ function selectIntlNetwork(netName, addr, qrUrl) {
         var addrBoxHtml = 
             '<div style="background:rgba(98,126,234,0.06);border:1.5px dashed rgba(98,126,234,0.3);border-radius:12px;padding:16px;">' +
                 '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
-                    '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">ðŸ’³ Send to ' + sym + ' (' + netName + ')</div>' +
+                    '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">�x� Send to ' + sym + ' (' + netName + ')</div>' +
                     (qrUrl ? '<button type="button" onclick="document.getElementById(\'netQrWrap\').style.display=document.getElementById(\'netQrWrap\').style.display===\'none\'?\'block\':\'none\'" style="background:none;border:none;color:#627EEA;font-size:12px;font-weight:700;cursor:pointer;"><i data-lucide="qr-code" class="lucide-icon"></i> Show QR</button>' : '') +
                 '</div>' +
                 (qrUrl ? '<div id="netQrWrap" style="display:none;text-align:center;margin-bottom:16px;"><img src="' + qrUrl + '" style="max-width:150px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.1);"></div>' : '') +
@@ -2128,7 +2155,7 @@ function selectIntlNetwork(netName, addr, qrUrl) {
                     '<input type="text" class="form-input" id="finalWalletAddr" value="' + addr + '" readonly style="flex:1;background:rgba(255,255,255,0.5);font-family:monospace;font-size:12px;">' +
                     '<button type="button" onclick="copyElementText(\'finalWalletAddr\')" style="background:rgba(98,126,234,0.1);color:#627EEA;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Copy</button>' +
                 '</div>' +
-                '<div style="font-size:11px;color:#ff3b30;margin-top:12px;font-weight:600;">âš ï¸ Please make sure to select the correct network (' + netName + '). Otherwise funds will be lost.</div>' +
+                '<div style="font-size:11px;color:#ff3b30;margin-top:12px;font-weight:600;">�a�️ Please make sure to select the correct network (' + netName + '). Otherwise funds will be lost.</div>' +
             '</div>';
         
         document.getElementById('cryptoWalletBox').innerHTML = addrBoxHtml;
@@ -2161,11 +2188,11 @@ function placeOrderCheck(event) {
         var funCheck1 = document.getElementById('funPromiseCheck1');
         var funCheck2 = document.getElementById('funPromiseCheck2');
         if (funCheck1 && !funCheck1.checked) {
-            alert('à¦…à¦°à§à¦¡à¦¾à¦° à¦•à¦¨à¦«à¦¾à¦°à§à¦® à¦•à¦°à¦¤à§‡ à¦¦à§Ÿà¦¾ à¦•à¦°à§‡ "à¦†à¦®à¦¿ à¦¨à¦¿à¦¶à§à¦šà¦¿à¦¤..." à¦¬à¦•à§à¦¸à§‡ à¦Ÿà¦¿à¦• à¦¦à¦¿à¦¨!');
+            alert('�&র্ডার �"নফার্ম �"রত�! দ�xা �"র�! "� মি নিশ্�aিত..." ব�"্স�! �xি�" দিন!');
             return;
         }
         if (funCheck2 && !funCheck2.checked) {
-            alert('à¦…à¦°à§à¦¡à¦¾à¦° à¦•à¦¨à¦«à¦¾à¦°à§à¦® à¦•à¦°à¦¤à§‡ à¦¦à§Ÿà¦¾ à¦•à¦°à§‡ "à¦ªà¦£à§à¦¯ à¦¹à¦¾à¦¤à§‡ à¦ªà§‡à§Ÿà§‡..." à¦¬à¦•à§à¦¸à§‡ à¦Ÿà¦¿à¦• à¦¦à¦¿à¦¨!');
+            alert('�&র্ডার �"নফার্ম �"রত�! দ�xা �"র�! "পণ্য হাত�! প�!�x�!..." ব�"্স�! �xি�" দিন!');
             return;
         }
     }
@@ -2203,7 +2230,7 @@ function copyText(text, btn) {
     if (!text) return;
     navigator.clipboard.writeText(text).then(function() {
         var orig = btn.textContent;
-        btn.textContent = 'âœ… Copied!';
+        btn.textContent = '�S& Copied!';
         btn.classList.add('copied');
         setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
     }).catch(function() {
@@ -2211,8 +2238,8 @@ function copyText(text, btn) {
         var el = document.createElement('textarea');
         el.value = text; document.body.appendChild(el); el.select();
         document.execCommand('copy'); document.body.removeChild(el);
-        btn.textContent = 'âœ… Copied!';
-        setTimeout(function() { btn.textContent = 'ðŸ“‹ Copy'; }, 1800);
+        btn.textContent = '�S& Copied!';
+        setTimeout(function() { btn.textContent = '�x9 Copy'; }, 1800);
     });
 }
 
@@ -2222,29 +2249,29 @@ function setVerifyStatus(msg, type) {
     el.textContent = msg;
 }
 
-// â”€â”€ Crypto Payment Verification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// PRIMARY:  PHP Proxy â†’ Binance API (no Supabase needed for verify)
+// ���� Crypto Payment Verification ������������������������������������������������������������������������������������������
+// PRIMARY:  PHP Proxy �  Binance API (no Supabase needed for verify)
 // BACKUP:   Supabase Edge Function (no cPanel/PHP needed)
 // CONTROL:  settings.verify_mode = 'auto' | 'php_only' | 'supabase_only'
 function verifyCryptoPayment() {
     if (intlVerified) { placeCryptoOrder(); return; }
 
     var txid = (document.getElementById('cryptoTxidInput').value || '').trim();
-    if (!txid) { setVerifyStatus('âŒ Please enter your Transaction ID / TxHash.', 'error'); return; }
-    if (!intlPayMode) { setVerifyStatus('âŒ Please select a payment method first.', 'error'); return; }
-    if (intlPayMode === 'crypto' && !intlNetworkName) { setVerifyStatus('âŒ Please select a network first.', 'error'); return; }
+    if (!txid) { setVerifyStatus('�R Please enter your Transaction ID / TxHash.', 'error'); return; }
+    if (!intlPayMode) { setVerifyStatus('�R Please select a payment method first.', 'error'); return; }
+    if (intlPayMode === 'crypto' && !intlNetworkName) { setVerifyStatus('�R Please select a network first.', 'error'); return; }
 
     var btn = document.getElementById('verifyCryptoBtn');
     var verifyMode = (settings.verify_mode || 'auto');
     btn.disabled = true;
-    btn.textContent = 'ðŸ” Verifying...';
-    setVerifyStatus('ðŸ” Checking transaction...', 'loading');
+    btn.textContent = '�x� Verifying...';
+    setVerifyStatus('�x� Checking transaction...', 'loading');
 
     var total = updateSummaryTotals();
     var rate  = parseFloat(settings.usd_to_bdt_rate || 110);
     var targetAmt = intlPayMode === 'binance_pay' ? parseFloat((total / rate).toFixed(2)) : window.expectedCryptoAmt;
 
-    // â”€â”€ Layer 1: Quick frontend double-spend pre-check â”€â”€â”€â”€â”€â”€â”€â”€
+    // ���� Layer 1: Quick frontend double-spend pre-check ����������������
     var checkPromise;
     if (CONFIG.DB_PROVIDER === 'supabase') {
         checkPromise = supabaseClient.from('verified_payments').select('id').eq('transaction_id', txid).maybeSingle();
@@ -2263,30 +2290,30 @@ function verifyCryptoPayment() {
     checkPromise
     .then(function(dupRes) {
         if (!dupRes.error && dupRes.data) {
-            setVerifyStatus('âŒ This Transaction ID has already been used! Double-spend rejected.', 'error');
-            btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+            setVerifyStatus('�R This Transaction ID has already been used! Double-spend rejected.', 'error');
+            btn.disabled = false; btn.textContent = '�S& Verify & Pay';
             return;
         }
 
-        // â”€â”€ Layer 2: Route based on verify_mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ���� Layer 2: Route based on verify_mode ��������������������������������������������
         //
-        // â˜ï¸ cloudflare  â†’ /api/binance-cf-proxy  (NEW default â€” Cloudflare Edge)
-        // ðŸ”„ auto        â†’ PHP proxy, fail à¦¹à¦²à§‡ Supabase backup (legacy)
-        // ðŸ”µ php_only    â†’ PHP proxy only, no fallback (legacy)
-        // ðŸŸ  supabase_only â†’ Supabase Edge Function only (legacy)
+        // �܁️ cloudflare  �  /api/binance-cf-proxy  (NEW default � Cloudflare Edge)
+        // �x auto        �  PHP proxy, fail হল�! Supabase backup (legacy)
+        // �x� php_only    �  PHP proxy only, no fallback (legacy)
+        // �xx� supabase_only �  Supabase Edge Function only (legacy)
         //
-        // à¦¸à¦¬ legacy path à¦…à¦•à§à¦·à¦¤ à¦†à¦›à§‡ â€” à¦•à§‹à¦¨à§‹ à¦•à¦¿à¦›à§ delete à¦•à¦°à¦¾ à¦¹à¦¯à¦¼à¦¨à¦¿
+        // সব legacy path �&�"্ষত � �:�! � �"�9ন�9 �"ি�:ু delete �"রা হয়নি
 
         var body = intlPayMode === 'binance_pay'
             ? { action: 'verify-pay',     order_ref: txid, expected_amount: targetAmt }
             : { action: 'verify-deposit', tx_hash: txid, coin: intlCoinSymbol, expected_amount: targetAmt };
 
-        // â”€â”€ ðŸ¤— NEW: Hugging Face API (External) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ���� �x� NEW: Hugging Face API (External) ����������������������������
         if (verifyMode === 'hugging_face') {
             var hfUrl = (settings.hf_api_url || '').trim();
             if (!hfUrl) {
-                setVerifyStatus('âŒ Hugging Face API URL is not configured.', 'error');
-                btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+                setVerifyStatus('�R Hugging Face API URL is not configured.', 'error');
+                btn.disabled = false; btn.textContent = '�S& Verify & Pay';
                 return;
             }
 
@@ -2308,22 +2335,22 @@ function verifyCryptoPayment() {
             .then(function(data) {
                 if (data.success || data.status === 'Verified' || data.status === 'verified') {
                     intlVerified = true;
-                    setVerifyStatus('âœ… Verified via Hugging Face! Locking payment & placing order...', 'success');
-                    btn.textContent = 'âœ… Verified â€” Placing Order...';
+                    setVerifyStatus('�S& Verified via Hugging Face! Locking payment & placing order...', 'success');
+                    btn.textContent = '�S& Verified � Placing Order...';
                     setTimeout(function() { placeCryptoOrder(txid, targetAmt, false); }, 700);
                 } else {
-                    setVerifyStatus('âŒ Verification failed: ' + (data.error || 'Transaction rejected by Hugging Face API.'), 'error');
-                    btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+                    setVerifyStatus('�R Verification failed: ' + (data.error || 'Transaction rejected by Hugging Face API.'), 'error');
+                    btn.disabled = false; btn.textContent = '�S& Verify & Pay';
                 }
             })
             .catch(function(err) {
-                setVerifyStatus('âŒ Hugging Face API unavailable: ' + err.message, 'error');
-                btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+                setVerifyStatus('�R Hugging Face API unavailable: ' + err.message, 'error');
+                btn.disabled = false; btn.textContent = '�S& Verify & Pay';
             });
             return;
         }
 
-        // â”€â”€ â˜ï¸ NEW: Cloudflare Edge Proxy (Recommended) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ���� �܁️ NEW: Cloudflare Edge Proxy (Recommended) ����������������������������
         if (verifyMode === 'cloudflare') {
             var cfTimeout = new Promise(function(_, reject) {
                 setTimeout(function() { reject(new Error('timeout')); }, 15000);
@@ -2340,26 +2367,26 @@ function verifyCryptoPayment() {
                 if (data.success) {
                     saveTxidAndPlace(txid, targetAmt, btn, false);
                 } else {
-                    setVerifyStatus('âŒ Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
-                    btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+                    setVerifyStatus('�R Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
+                    btn.disabled = false; btn.textContent = '�S& Verify & Pay';
                 }
             })
             .catch(function() {
-                // Cloudflare proxy fail à¦¹à¦²à§‡ Supabase backup
-                setVerifyStatus('âš ï¸ Cloudflare proxy unavailable. Switching to Supabase backup...', 'loading');
+                // Cloudflare proxy fail হল�! Supabase backup
+                setVerifyStatus('�a�️ Cloudflare proxy unavailable. Switching to Supabase backup...', 'loading');
                 runSupabaseEdgeBackup(txid, targetAmt, btn);
             });
             return;
         }
 
-        // â”€â”€ ðŸŸ  Supabase Edge Only (legacy) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ���� �xx� Supabase Edge Only (legacy) ��������������������������������������������������������
         var proxyUrl = (settings.binance_proxy_url || '').trim();
         if (verifyMode === 'supabase_only' || !proxyUrl) {
             runSupabaseEdgeBackup(txid, targetAmt, btn);
             return;
         }
 
-        // â”€â”€ ðŸ”„ Auto / ðŸ”µ PHP Only (legacy) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ���� �x Auto / �x� PHP Only (legacy) ������������������������������������������������������
         var phpTimeout = new Promise(function(_, reject) {
             setTimeout(function() { reject(new Error('timeout')); }, 12000);
         });
@@ -2374,28 +2401,28 @@ function verifyCryptoPayment() {
         ])
         .then(function(data) {
             if (data.success) {
-                // âœ… PHP verified via Binance API
+                // �S& PHP verified via Binance API
                 // Now lock in Supabase from frontend (PHP doesn't touch Supabase)
                 saveTxidAndPlace(txid, targetAmt, btn, false);
             } else {
-                setVerifyStatus('âŒ Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
-                btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+                setVerifyStatus('�R Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
+                btn.disabled = false; btn.textContent = '�S& Verify & Pay';
             }
         })
         .catch(function() {
             if (verifyMode === 'php_only') {
-                // php_only mode â€” do not fallback
-                setVerifyStatus('âŒ PHP proxy unavailable. Please check cPanel or switch to Auto mode.', 'error');
-                btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+                // php_only mode � do not fallback
+                setVerifyStatus('�R PHP proxy unavailable. Please check cPanel or switch to Auto mode.', 'error');
+                btn.disabled = false; btn.textContent = '�S& Verify & Pay';
             } else {
-                setVerifyStatus('âš ï¸ Primary unavailable. Switching to Supabase backup...', 'loading');
+                setVerifyStatus('�a�️ Primary unavailable. Switching to Supabase backup...', 'loading');
                 runSupabaseEdgeBackup(txid, targetAmt, btn);
             }
         });
     });
 }
 
-// â”€â”€ PRIMARY path: PHP verified â†’ save TxID lock to Supabase â†’ place order â”€â”€â”€â”€
+// ���� PRIMARY path: PHP verified �  save TxID lock to Supabase �  place order ��������
 function saveTxidAndPlace(txid, usdt, btn, isBackup) {
     var coinVal = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
     var netVal  = intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName;
@@ -2426,26 +2453,26 @@ function saveTxidAndPlace(txid, usdt, btn, isBackup) {
     }
     insPromise.then(function(insRes) {
         if (insRes.error && insRes.error.code === '23505') {
-            setVerifyStatus('âŒ Transaction ID already recorded. Double-spend blocked.', 'error');
-            btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+            setVerifyStatus('�R Transaction ID already recorded. Double-spend blocked.', 'error');
+            btn.disabled = false; btn.textContent = '�S& Verify & Pay';
             return;
         }
         intlVerified = true;
-        setVerifyStatus('âœ… Verified on Binance! Locking payment & placing order...', 'success');
-        btn.textContent = 'âœ… Verified â€” Placing Order...';
+        setVerifyStatus('�S& Verified on Binance! Locking payment & placing order...', 'success');
+        btn.textContent = '�S& Verified � Placing Order...';
         setTimeout(function() { placeCryptoOrder(txid, usdt, false); }, 700);
     });
 }
 
-// â”€â”€ BACKUP path: Supabase Edge Function (no cPanel/PHP needed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� BACKUP path: Supabase Edge Function (no cPanel/PHP needed) ������������������������������
 function runSupabaseEdgeBackup(txid, usdt, btn) {
     var edgeUrl  = (settings.supabase_edge_url || '').trim();
     if (!edgeUrl) {
-        setVerifyStatus('âŒ Supabase Edge Function URL is not configured.', 'error');
-        btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+        setVerifyStatus('�R Supabase Edge Function URL is not configured.', 'error');
+        btn.disabled = false; btn.textContent = '�S& Verify & Pay';
         return;
     }
-    setVerifyStatus('ðŸ”„ Connecting to backup system (Supabase)...', 'loading');
+    setVerifyStatus('�x Connecting to backup system (Supabase)...', 'loading');
 
     var anonKey  = CONFIG.SUPABASE_ANON_KEY;
     var coinVal  = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
@@ -2472,18 +2499,18 @@ function runSupabaseEdgeBackup(txid, usdt, btn) {
     .then(function(data) {
         if (data.success) {
             intlVerified = true;
-            setVerifyStatus('âœ… Recorded via Supabase backup. Admin will verify manually. Placing order...', 'success');
-            btn.textContent = 'âœ… Recorded â€” Placing Order...';
+            setVerifyStatus('�S& Recorded via Supabase backup. Admin will verify manually. Placing order...', 'success');
+            btn.textContent = '�S& Recorded � Placing Order...';
             setTimeout(function() { placeCryptoOrder(txid, usdt, true); }, 700);
         } else {
             var errMsg = data.message || 'Backup verification failed.';
-            setVerifyStatus('âŒ ' + errMsg, 'error');
-            btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+            setVerifyStatus('�R ' + errMsg, 'error');
+            btn.disabled = false; btn.textContent = '�S& Verify & Pay';
         }
     })
     .catch(function(err) {
-        setVerifyStatus('âš ï¸ Both systems unavailable. Please check your internet and try again.', 'error');
-        btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+        setVerifyStatus('�a�️ Both systems unavailable. Please check your internet and try again.', 'error');
+        btn.disabled = false; btn.textContent = '�S& Verify & Pay';
     });
 }
 
@@ -2558,9 +2585,9 @@ function placeCryptoOrder(txid, usdt, isBackup) {
     }
     insertOrderPromise.then(function(r) {
         if (r.error) {
-            setVerifyStatus('âŒ Order save error: ' + r.error.message, 'error');
+            setVerifyStatus('�R Order save error: ' + r.error.message, 'error');
             var btn = document.getElementById('verifyCryptoBtn');
-            btn.disabled = false; btn.textContent = 'âœ… Verify & Pay';
+            btn.disabled = false; btn.textContent = '�S& Verify & Pay';
             return;
         }
         // Update verified_payments with real order_id
@@ -2583,11 +2610,11 @@ function placeCryptoOrder(txid, usdt, isBackup) {
     });
 }
 
-// â”€â”€ Utils â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ���� Utils ����������������������������������������������������������������������������������������������������������
 function copyElementText(elId) {
     var el = document.getElementById(elId);
     if (!el) return;
-    var text = (el.textContent || el.innerText || '').replace(/[à§³]/g, '').trim();
+    var text = (el.textContent || el.innerText || '').replace(/[৳]/g, '').trim();
 
     var fallback = function() {
         var ta = document.createElement('textarea');
