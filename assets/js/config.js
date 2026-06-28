@@ -5,6 +5,7 @@
 var CONFIG = {
     // ── DB Provider ──────────────────────────────────────────
     DB_PROVIDER: 'cf_db',
+    VERCEL_API_BASE: 'https://freelancingbyrifat.vercel.app',
 
     // ── Supabase ─────────────────────────────────────────────
     SUPABASE_URL:      '',
