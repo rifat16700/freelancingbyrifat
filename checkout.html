@@ -1771,7 +1771,7 @@ function verifyGatewayPayment(orderId, trxId) {
                                 .then(function() { return { error: null }; })
                                 .catch(function(err) { return { error: err }; });
                         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-                            updatePromise = fetch((CONFIG.VERCEL_API_BASE||'')+'/api/update-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, upData: upData }) }).then(r => r.json()).then(r => r.success ? { error: null } : { error: new Error(r.error) }).catch(e => ({ error: e }));
+                            updatePromise = fetch((CONFIG.VERCEL_API_BASE||'')+'/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, upData: upData }) }).then(r => r.json()).then(r => r.success ? { error: null } : { error: new Error(r.error) }).catch(e => ({ error: e }));
                         } else {
                             updatePromise = Promise.resolve({ data: null });
                         }
