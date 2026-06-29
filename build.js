@@ -11,10 +11,7 @@ var CONFIG = {
     // ── DB Provider ──────────────────────────────────────────
     DB_PROVIDER: '${s(process.env.DB_PROVIDER) || 'cf_db'}',
     
-    // ── Hugging Face API Base URL ────────────────────────────
-    // Set HF_API_BASE in Cloudflare Pages env vars
-    // Example: https://rifat1670-e-requestssrn.hf.space
-    HF_API_BASE: '${s(process.env.HF_API_BASE) || 'https://rifat1670-e-requestssrn.hf.space'}',
+    HF_API_BASE: '',
 
     // ── Supabase ─────────────────────────────────────────────
     SUPABASE_URL:      '${s(process.env.SUPABASE_URL)}',
