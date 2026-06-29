@@ -174,7 +174,7 @@
                     <label class="form-label">Email (optional)</label>
                     <input class="form-input" id="custEmail" placeholder="email@example.com" type="email">
                 </div>
-                <button class="btn btn-primary btn-full" onclick="goStep2()">Continue to Delivery � </button>
+                <button class="btn btn-primary btn-full" onclick="goStep2()">Continue to Delivery <i data-lucide="arrow-right" class="lucide-icon"></i></button>
             </div>
 
             <!-- STEP 2: Delivery -->
@@ -218,8 +218,8 @@
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:4px;">
-                    <button class="btn btn-ghost" id="backBtn" onclick="goStep(1)">� � Back</button>
-                    <button class="btn btn-primary" style="flex:1;" onclick="goStep3()">Continue to Payment � </button>
+                    <button class="btn btn-ghost" id="backBtn" onclick="goStep(1)"><i data-lucide="arrow-left" class="lucide-icon"></i> Back</button>
+                    <button class="btn btn-primary" style="flex:1;" onclick="goStep3()">Continue to Payment <i data-lucide="arrow-right" class="lucide-icon"></i></button>
                 </div>
             </div>
 
@@ -338,7 +338,7 @@
                                 � মি নিশ্�aিত, এ�! �&র্ডার সত্যি�! নিত�! প্রতিশ্রুতিবদ্ধ। রিসিভ না �"রল�! � ল্লাহর ��Sব � মার �0পর প�Sব�! এব� পর�"াল�! �"ঠ�9র শাস্তি হব�!।
                             </span>
                         </label>
-                        <div id="funTooltip1">??????????! ????? ???? ????????!<div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #34C759 transparent transparent transparent;"></div>
+                        <div id="funTooltip1">মাশাআল্লাহ! আপনার নিয়ত পরিষ্কার 🌟<div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #34C759 transparent transparent transparent;"></div>
                         </div>
 
                         <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0; padding-top: 10px; border-top: 1px solid rgba(255, 59, 48, 0.2);">
@@ -355,7 +355,7 @@
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:20px;" id="nationalPlaceOrderRow">
-                    <button class="btn btn-ghost" onclick="goStep(2)">� � Back</button>
+                    <button class="btn btn-ghost" onclick="goStep(2)"><i data-lucide="arrow-left" class="lucide-icon"></i> Back</button>
                     <button class="btn btn-primary btn-full btn-lg" id="placeOrderBtn" onclick="placeOrderCheck(event)">
                         <i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order
                     </button>
@@ -951,9 +951,7 @@ function buildPaymentOptions() {
 
     // ���� 1. Auto Payment Gateway ��������������������������������������������������������������
     if (hasGateway) {
-        html += buildPayCard(
-            'auto_gateway',
-            '<i data-lucide="globe" class="lucide-icon icon-spin" style="font-size:20px;"></i>',
+        html += buildPayCard('auto_gateway', '<i data-lucide="credit-card" class="lucide-icon"></i>',
             'Auto Payment',
             'bKash / Nagad / Card � via payment gateway',
             // body: redirect button rendered by gateway flow
@@ -1003,12 +1001,12 @@ function buildPaymentOptions() {
     if (hasCod) {
         var codLabel = advancePayable > 0 ? 'Hybrid COD (Advance + Delivery)' : 'Cash on Delivery';
         var codDesc  = advancePayable > 0 ? 'Pay ৳' + advancePayable + ' advance, rest on delivery' : 'Pay when product is received';
-        html += buildPayCard('cod', '�x�', codLabel, codDesc,
-            '<div style="font-size:12px;color:#666;padding:2px 0;">�S& No advance payment needed online. Pay the delivery agent when your order arrives.</div>'
+        html += buildPayCard('cod', '<i data-lucide="banknote" class="lucide-icon"></i>', codLabel, codDesc,
+            '<div style="font-size:12px;color:#666;padding:2px 0;">�<i data-lucide="shield-check" class="lucide-icon"></i> No advance payment needed online. Pay the delivery agent when your order arrives.</div>'
         );
     }
     if (isPickup) {
-        html += buildPayCard('cod', '�x��', 'Pay at Pickup', 'Pay when you collect your order',
+        html += buildPayCard('cod', '<i data-lucide="banknote" class="lucide-icon"></i>', 'Pay at Pickup', 'Pay when you collect your order',
             '<div style="font-size:12px;color:#666;padding:2px 0;">�S& Pay at the store when you arrive to pick up your order.</div>'
         );
     }
