@@ -1061,7 +1061,7 @@ var _maintActive = false;
 function loadMaintenanceStatus() {
     getDB().from('devtools').select('maintenance_mode, maintenance_message').eq('id', 1).single().then(function(r) {
         var s = r.data || {};
-        _maintActive = s.maintenance_mode === true;
+        _maintActive = (s.maintenance_mode === true || s.maintenance_mode == 1);
         updateMaintUI(_maintActive, s.maintenance_message || '');
         refreshPreview();
     });

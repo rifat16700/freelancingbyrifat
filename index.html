@@ -250,7 +250,7 @@ function loadSiteData() {
         siteSettings = settings;
 
         // ═ MAINTENANCE MODE CHECK ═
-        if (devtools.maintenance_mode === true) {
+        if (devtools.maintenance_mode === true || devtools.maintenance_mode == 1) {
             showMaintenancePage(devtools.maintenance_message || 'আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে।');
             return;
         }

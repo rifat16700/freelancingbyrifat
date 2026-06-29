@@ -229,7 +229,7 @@ function loadSiteData() {
         siteSettings = settings;
 
         // ΓòÉ MAINTENANCE MODE CHECK ΓòÉ
-        if (devtools.maintenance_mode === true) {
+        if (devtools.maintenance_mode === true || devtools.maintenance_mode == 1) {
             showMaintenancePage(devtools.maintenance_message || 'αªåαª«αª░αª╛ αª╢αºÇαªÿαºìαª░αªç αª½αª┐αª░αºç αªåαª╕αª¢αª┐αÑñ αªòαª┐αª¢αºü technical αªòαª╛αª£ αªÜαª▓αª¢αºçαÑñ');
             return;
         }
