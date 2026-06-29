@@ -1,16 +1,5 @@
 export async function onRequestGet(context) {
-    const { request, env } = context;
-    const cacheUrl = new URL(request.url);
-    const cacheKey = new Request(cacheUrl.toString(), request);
-    const cache = caches.default;
-
-    try {
-        let response = await cache.match(cacheKey);
-        if (response) {
-            return response;
-        }
-    } catch(e) {}
-
+    const { env } = context;
     if (!env.DB) return Response.json({ success: false, error: "Database not configured" });
 
     try {
@@ -34,19 +23,13 @@ export async function onRequestGet(context) {
             devtools: (devtools.results && devtools.results.length) ? devtools.results[0] : {}
         };
 
-        const response = new Response(JSON.stringify({ success: true, data }), {
+        return new Response(JSON.stringify({ success: true, data }), {
             headers: {
                 "Content-Type": "application/json",
                 "Cache-Control": "public, max-age=86400, s-maxage=86400",
                 "Access-Control-Allow-Origin": "*"
             }
         });
-
-        try {
-            context.waitUntil(cache.put(cacheKey, response.clone()));
-        } catch(e) {}
-
-        return response;
     } catch(e) {
         return Response.json({ success: false, error: e.message });
     }
