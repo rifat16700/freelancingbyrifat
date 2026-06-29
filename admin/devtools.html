@@ -828,10 +828,11 @@
 
                 try {
                     let token = localStorage.getItem('fbr_admin_token') || '';
+                    let devKey = sessionStorage.getItem(_SK) || '';
                     const hfBase = (typeof CONFIG !== 'undefined' && CONFIG.HF_API_BASE) ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '';
-                    const r = await fetch(hfBase + "/api/d1-query", {
+                    const r = await fetch(hfBase + "/api/dev-query", {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'X-Dev-Key': devKey },
                         body: JSON.stringify({ sql, params })
                     }).then(res => res.json());
 
@@ -1301,10 +1302,11 @@ function runSql() {
     if (CONFIG.DB_PROVIDER !== 'supabase') {
         // Direct D1 query via Cloudflare Pages Function
         let token = localStorage.getItem('fbr_admin_token') || '';
+        let devKey = sessionStorage.getItem(_SK) || '';
         const hfBase = (typeof CONFIG !== 'undefined' && CONFIG.HF_API_BASE) ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '';
-        fetch(hfBase + "/api/d1-query", {
+        fetch(hfBase + "/api/dev-query", {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'X-Dev-Key': devKey },
             body: JSON.stringify({ sql: query })
         }).then(r => r.json()).then(r => {
             if (!r.success) {
