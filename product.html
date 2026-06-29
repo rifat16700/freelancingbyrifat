@@ -284,14 +284,42 @@ document.addEventListener('DOMContentLoaded', function() {
         p5 = appwriteDatabases.listDocuments(APP_DB, 'product_categories', [AppwriteQuery.limit(5000)]).then(function(res) { return { data: res.documents.map(function(d){ d.id=d.$id; return d; }) }; }).catch(function() { return { data: [] }; });
         p6 = appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.equal('product_id', id), AppwriteQuery.equal('is_approved', true), AppwriteQuery.orderDesc('$createdAt'), AppwriteQuery.limit(REVIEWS_PAGE_SIZE)]).then(function(res) { return { data: res.documents }; }).catch(function() { return { data: [] }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        const d1Fetch = (sql) => fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr }; }).catch(e => ({ data: [], error: e }));
-        p1 = d1Fetch(`SELECT * FROM settings WHERE id = 1`).then(r => ({ data: r.data.length ? r.data[0] : null }));
-        p2 = d1Fetch(`SELECT * FROM products WHERE id = '${id}'`).then(r => ({ data: r.data.length ? (d => { d.gallery_images = (typeof d.gallery_images === 'string' ? JSON.parse(d.gallery_images) : d.gallery_images); d.variants = (typeof d.variants === 'string' ? JSON.parse(d.variants) : d.variants); return d; })(r.data[0]) : null }));
-        p3 = d1Fetch(`SELECT * FROM reviews WHERE product_id = '${id}' AND is_approved = 1`);
-        p4 = d1Fetch(`SELECT * FROM products WHERE is_active = 1`).then(r => ({ data: r.data.map(d => { d.gallery_images = (typeof d.gallery_images === 'string' ? JSON.parse(d.gallery_images) : d.gallery_images); d.variants = (typeof d.variants === 'string' ? JSON.parse(d.variants) : d.variants); return d; }) }));
-        p5 = d1Fetch(`SELECT * FROM product_categories`);
-        p6 = d1Fetch(`SELECT * FROM reviews WHERE product_id = '${id}' AND is_approved = 1 ORDER BY created_at DESC LIMIT ${REVIEWS_PAGE_SIZE}`);
-        p7 = d1Fetch(`SELECT * FROM devtools WHERE id = 1`).then(r => ({ data: r.data.length ? r.data[0] : null }));
+        const fetchPublicData = async () => {
+            try {
+                const cachedStr = localStorage.getItem('__fbr_public_data');
+                if (cachedStr) {
+                    const cachedObj = JSON.parse(cachedStr);
+                    if (Date.now() - cachedObj.time < 5 * 60 * 1000) {
+                        return cachedObj.data;
+                    }
+                }
+            } catch(e) {}
+            try {
+                const res = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-data").then(r => r.json());
+                if (res.success) {
+                    localStorage.setItem('__fbr_public_data', JSON.stringify({ time: Date.now(), data: res.data }));
+                    return res.data;
+                }
+            } catch(e) {}
+            return null;
+        };
+        const fetchReviews = async (pid) => {
+            try {
+                const res = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-reviews?product_id="+pid).then(r=>r.json());
+                return res.success ? res.data : [];
+            } catch(e) { return []; }
+        };
+
+        const pubDataPromise = fetchPublicData();
+        const reviewsPromise = fetchReviews(id);
+
+        p1 = pubDataPromise.then(d => ({ data: d ? d.settings : null }));
+        p4 = pubDataPromise.then(d => ({ data: d ? d.products.map(p => { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); return p; }) : [] }));
+        p2 = p4.then(res => ({ data: res.data.find(x => String(x.id) === String(id)) || null }));
+        p5 = pubDataPromise.then(d => ({ data: d ? d.product_categories : [] }));
+        p7 = pubDataPromise.then(d => ({ data: d ? d.devtools : null }));
+        p3 = reviewsPromise.then(d => ({ data: d }));
+        p6 = reviewsPromise.then(d => ({ data: d.slice(0, REVIEWS_PAGE_SIZE) }));
     } else {
         p1 = Promise.resolve({ data: {} });
         p2 = Promise.resolve({ data: null });

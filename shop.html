@@ -233,12 +233,31 @@ document.addEventListener('DOMContentLoaded', function() {
         p2 = appwriteDatabases.listDocuments(APP_DB, 'categories', [AppwriteQuery.equal('is_active', true), AppwriteQuery.orderAsc('sort_order')]).then(function(res) { return { data: res.documents.map(function(d){ d.id=d.$id; return d; }) }; }).catch(function() { return { data: [] }; });
         p4 = appwriteDatabases.listDocuments(APP_DB, 'product_categories', [AppwriteQuery.limit(5000)]).then(function(res) { return { data: res.documents.map(function(d){ d.id=d.$id; return d; }) }; }).catch(function() { return { data: [] }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        const d1Fetch = (sql) => fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr }; }).catch(e => ({ data: [], error: e }));
-        p1 = d1Fetch(`SELECT * FROM settings WHERE id = 1`).then(r => ({ data: r.data.length ? r.data[0] : null }));
-        p2 = d1Fetch(`SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order`);
-        p3 = d1Fetch(`SELECT * FROM products WHERE is_active = 1`).then(r => ({ data: r.data.map(d => { d.gallery_images = (typeof d.gallery_images === 'string' ? JSON.parse(d.gallery_images) : d.gallery_images); d.variants = (typeof d.variants === 'string' ? JSON.parse(d.variants) : d.variants); return d; }) }));
-        p4 = d1Fetch(`SELECT * FROM product_categories`);
-        p5 = d1Fetch(`SELECT * FROM devtools WHERE id = 1`).then(r => ({ data: r.data.length ? r.data[0] : null }));
+        const fetchPublicData = async () => {
+            try {
+                const cachedStr = localStorage.getItem('__fbr_public_data');
+                if (cachedStr) {
+                    const cachedObj = JSON.parse(cachedStr);
+                    if (Date.now() - cachedObj.time < 5 * 60 * 1000) {
+                        return cachedObj.data;
+                    }
+                }
+            } catch(e) {}
+            try {
+                const res = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-data").then(r => r.json());
+                if (res.success) {
+                    localStorage.setItem('__fbr_public_data', JSON.stringify({ time: Date.now(), data: res.data }));
+                    return res.data;
+                }
+            } catch(e) {}
+            return null;
+        };
+        const pubDataPromise = fetchPublicData();
+        p1 = pubDataPromise.then(d => ({ data: d ? d.settings : null }));
+        p2 = pubDataPromise.then(d => ({ data: d ? d.categories : [] }));
+        p3 = pubDataPromise.then(d => ({ data: d ? d.products.map(p => { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); return p; }) : [] }));
+        p4 = pubDataPromise.then(d => ({ data: d ? d.product_categories : [] }));
+        p5 = pubDataPromise.then(d => ({ data: d ? d.devtools : null }));
     } else {
         p1 = Promise.resolve({ data: {} });
         p2 = Promise.resolve({ data: [] });
