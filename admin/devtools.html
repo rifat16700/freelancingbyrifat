@@ -756,20 +756,94 @@
 
 <script>
 
-    const mockDB = {
-        from: () => ({
-            select: () => ({
-                eq: () => ({ single: () => Promise.resolve({data:null}), then: cb => cb({data:[]}) }),
-                limit: () => ({ then: cb => cb({data:[]}) })
-            }),
-            upsert: () => Promise.resolve({data:null}),
-            update: () => ({ eq: () => Promise.resolve({data:null}), then: cb => cb({data:null}) }),
-            delete: () => ({ eq: () => ({ lt: () => Promise.resolve({data:null}) }) })
-        })
+    const d1DB = {
+        from: (table) => {
+            let _select = '*';
+            let _eq = [];
+            let _lt = [];
+            let _limit = null;
+            let _single = false;
+            let _count = false;
+            let _method = 'select'; // 'select', 'delete'
+            let _payload = null;
+
+            const executeQuery = async () => {
+                let sql = '';
+                let params = [];
+                if (_method === 'select') {
+                    if (_count) {
+                        sql = `SELECT COUNT(*) as cnt FROM ${table}`;
+                    } else {
+                        sql = `SELECT ${_select} FROM ${table}`;
+                    }
+                } else if (_method === 'delete') {
+                    sql = `DELETE FROM ${table}`;
+                } else if (_method === 'update') {
+                    const keys = Object.keys(_payload);
+                    sql = `UPDATE ${table} SET ${keys.map(k => `${k}=?`).join(', ')}`;
+                    params.push(...keys.map(k => _payload[k]));
+                } else if (_method === 'upsert') {
+                    const obj = Array.isArray(_payload) ? _payload[0] : _payload;
+                    const keys = Object.keys(obj);
+                    sql = `INSERT OR REPLACE INTO ${table} (${keys.join(', ')}) VALUES (${keys.map(()=>'?').join(', ')})`;
+                    params.push(...keys.map(k => obj[k]));
+                }
+
+                let where = [];
+                _eq.forEach(cond => { where.push(`${cond.col} = ?`); params.push(cond.val); });
+                _lt.forEach(cond => { where.push(`${cond.col} < ?`); params.push(cond.val); });
+
+                if (where.length > 0) {
+                    sql += ` WHERE ${where.join(' AND ')}`;
+                }
+                
+                if (_limit && _method === 'select') sql += ` LIMIT ${_limit}`;
+
+                try {
+                    let token = localStorage.getItem('fbr_admin_token') || '';
+                    const hfBase = (typeof CONFIG !== 'undefined' && CONFIG.HF_API_BASE) ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '';
+                    const r = await fetch(hfBase + "/api/d1-query", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                        body: JSON.stringify({ sql, params })
+                    }).then(res => res.json());
+
+                    if (!r.success) throw new Error(r.error || 'DB Error');
+                    let rows = (r.result && r.result[0] && r.result[0].results) ? r.result[0].results : [];
+                    
+                    if (_method === 'select') {
+                        if (_count) return { data: null, count: rows[0] ? rows[0].cnt : 0, error: null };
+                        if (_single) return { data: rows[0] || null, error: rows[0] ? null : {code:'PGRST116', message:'No row'} };
+                        return { data: rows, error: null };
+                    }
+                    return { data: rows, error: null };
+                } catch (e) {
+                    return { data: null, error: { message: e.message } };
+                }
+            };
+
+            const chain = {
+                select: (cols, opts) => { _method='select'; _select = cols || '*'; if(opts && opts.count) _count = true; return chain; },
+                eq: (col, val) => { _eq.push({col, val}); return chain; },
+                lt: (col, val) => { _lt.push({col, val}); return chain; },
+                limit: (n) => { _limit = n; return chain; },
+                single: () => { _single = true; return executeQuery(); },
+                then: (cb) => { return executeQuery().then(cb); },
+                delete: () => { _method='delete'; return chain; },
+                update: (payload) => {
+                    _method='update'; _payload=payload;
+                    return {
+                        eq: (col, val) => { _eq.push({col, val}); return executeQuery(); }
+                    };
+                },
+                upsert: (payload) => { _method='upsert'; _payload=payload; return executeQuery(); }
+            };
+            return chain;
+        }
     };
     function getDB() {
         if (CONFIG.DB_PROVIDER === 'supabase') return supabaseClient;
-        return mockDB;
+        return d1DB; // Now routes through our D1 adapter
     }
 
 // ═══════════════════════════════════════════════════════════
@@ -1197,25 +1271,50 @@ function runSql() {
     document.getElementById('sqlResult').innerHTML = '<div style="color:var(--text2);font-family:var(--mono);font-size:12px;">Running...</div>';
     devLog('SQL: ' + query.substring(0,60), 'info');
 
-    sb.rpc('exec_sql', { sql: query }).then(function(r) {
-        if (r.error) {
-            // Fallback: try direct query parsing
-            var match = query.match(/^SELECT .+ FROM (\w+)/i);
-            if (match) {
-                getDB().from(match[1]).select('*').limit(100).then(function(r2) {
-                    if (r2.error) {
-                        document.getElementById('sqlResult').innerHTML = '<div class="code-block" style="color:var(--primary);">Error: ' + r2.error.message + '</div>';
-                    } else {
-                        renderSqlResult(r2.data);
-                    }
-                });
+    if (CONFIG.DB_PROVIDER !== 'supabase') {
+        // Direct D1 query via Cloudflare Pages Function
+        let token = localStorage.getItem('fbr_admin_token') || '';
+        const hfBase = (typeof CONFIG !== 'undefined' && CONFIG.HF_API_BASE) ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '';
+        fetch(hfBase + "/api/d1-query", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ sql: query })
+        }).then(r => r.json()).then(r => {
+            if (!r.success) {
+                document.getElementById('sqlResult').innerHTML = '<div class="code-block" style="color:var(--primary);">Error: ' + (r.error || 'Unknown error') + '</div>';
             } else {
-                document.getElementById('sqlResult').innerHTML = '<div class="code-block" style="color:var(--primary);">Error: ' + r.error.message + '\n\nNote: exec_sql RPC may not be enabled. Use the Table Browser tab for SELECT queries.</div>';
+                let rows = (r.result && r.result[0] && r.result[0].results) ? r.result[0].results : [];
+                renderSqlResult(rows);
             }
-        } else {
-            renderSqlResult(r.data);
+        }).catch(e => {
+            document.getElementById('sqlResult').innerHTML = '<div class="code-block" style="color:var(--primary);">Error: ' + e.message + '</div>';
+        });
+    } else {
+        // Supabase query
+        if (typeof supabaseClient === 'undefined') {
+            document.getElementById('sqlResult').innerHTML = '<div class="code-block" style="color:var(--primary);">Error: supabaseClient not initialized</div>';
+            return;
         }
-    });
+        supabaseClient.rpc('exec_sql', { sql: query }).then(function(r) {
+            if (r.error) {
+                // Fallback: try direct query parsing
+                var match = query.match(/^SELECT .+ FROM (\w+)/i);
+                if (match) {
+                    getDB().from(match[1]).select('*').limit(100).then(function(r2) {
+                        if (r2.error) {
+                            document.getElementById('sqlResult').innerHTML = '<div class="code-block" style="color:var(--primary);">Error: ' + r2.error.message + '</div>';
+                        } else {
+                            renderSqlResult(r2.data);
+                        }
+                    });
+                } else {
+                    document.getElementById('sqlResult').innerHTML = '<div class="code-block" style="color:var(--primary);">Error: ' + r.error.message + '\n\nNote: exec_sql RPC may not be enabled. Use the Table Browser tab for SELECT queries.</div>';
+                }
+            } else {
+                renderSqlResult(r.data);
+            }
+        });
+    }
 }
 
 function runQuick(q) { sqlInput(q); switchTab('sql'); event.target.closest('.tab-btn') || document.querySelectorAll('.tab-btn')[2].click(); runSql(); }
