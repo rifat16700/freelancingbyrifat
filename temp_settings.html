@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings GÇö Admin Panel</title>
+    <title>Settings Gï¿½ï¿½ Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -39,14 +39,14 @@
     <main class="admin-main" id="adminMain" style="display:none;">
         <header class="admin-header">
             <div class="header-left">
-                <button class="hamburger-btn" onclick="openSidebar()">Gÿ¦</button>
+                <button class="hamburger-btn" onclick="openSidebar()">Gï¿½ï¿½</button>
                 <div>
                     <div class="page-title">Settings</div>
                     <div class="page-subtitle">Platform configuration</div>
                 </div>
             </div>
             <div class="header-right">
-                <button class="btn btn-primary" onclick="saveSettings()">=ƒÆ+ Save All Settings</button>
+                <button class="btn btn-primary" onclick="saveSettings()">=ï¿½ï¿½+ Save All Settings</button>
             </div>
         </header>
 
@@ -66,7 +66,7 @@
                     <label class="form-label">Logo URL</label>
                     <div class="imgbb-upload-row">
                         <input class="form-input" id="logoUrl" placeholder="https://...logo.png" oninput="previewSettingImg('logoUrl','logoPreview')">
-                        <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" id="logoUploadBtn" title="ImgBB aªñaºç aªåaª¬aª¦aºïaªí aªòaª¦aºï">=ƒôñ Upload</button>
+                        <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" id="logoUploadBtn" title="ImgBB aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½">=ï¿½ï¿½ï¿½ Upload</button>
                     </div>
                     <div id="logoPreview" class="imgbb-preview-wrap" style="height:70px;margin-top:8px;display:none;">
                         <img class="imgbb-img-preview" src="" alt="logo preview" onerror="this.parentElement.style.display='none'">
@@ -76,7 +76,7 @@
                     <label class="form-label">Favicon URL</label>
                     <div class="imgbb-upload-row">
                         <input class="form-input" id="faviconUrl" placeholder="https://...favicon.ico" oninput="previewSettingImg('faviconUrl','faviconPreview')">
-                        <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" id="faviconUploadBtn" title="ImgBB aªñaºç aªåaª¬aª¦aºïaªí aªòaª¦aºï">=ƒôñ Upload</button>
+                        <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" id="faviconUploadBtn" title="ImgBB aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½">=ï¿½ï¿½ï¿½ Upload</button>
                     </div>
                     <div id="faviconPreview" class="imgbb-preview-wrap" style="height:50px;width:50px;margin-top:8px;display:none;">
                         <img class="imgbb-img-preview" src="" alt="favicon preview" onerror="this.parentElement.style.display='none'">
@@ -84,7 +84,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Footer Text</label>
-                    <input class="form-input" id="footerText" placeholder="-¬ 2025 Your Store. All rights reserved.">
+                    <input class="form-input" id="footerText" placeholder="-ï¿½ 2025 Your Store. All rights reserved.">
                 </div>
             </div>
 
@@ -118,13 +118,13 @@
                 <div class="form-group">
                     <label class="form-label">Main Bot Token</label>
                     <input class="form-input" id="telegramMainBot" placeholder="123456789:ABCDEF...">
-                    <div class="form-hint">@BotFather aªÑaºçaªòaºç aª¬aª+aª¼aºçaÑñ aªÅaªç bot aªÅ order notification aª»aª+aª¼aºçaÑñ</div>
+                    <div class="form-hint">@BotFather aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½ bot aï¿½ï¿½ order notification aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Main Chat IDs (multiple allowed)</label>
                     <div id="mainChatIdsWrap"></div>
                     <button type="button" class="btn btn-ghost btn-sm" onclick="addChatIdRow()" style="margin-top:8px;">+ Add Chat ID</button>
-                    <div class="form-hint">Chat ID aª¬aºçaªñaºç: Bot aªòaºç message aªòaª¦aºï GåÆ api.telegram.org/bot TOKEN/getUpdates</div>
+                    <div class="form-hint">Chat ID aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½: Bot aï¿½ï¿½aï¿½ï¿½ message aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Gï¿½ï¿½ api.telegram.org/bot TOKEN/getUpdates</div>
                 </div>
 
                 <hr class="section-divider">
@@ -133,7 +133,7 @@
                 <div class="form-group">
                     <label class="form-label">Draft Bot Token</label>
                     <input class="form-input" id="telegramDraftBot" placeholder="123456789:ABCDEF...">
-                    <div class="form-hint">Tab switch aªòaª¦aª¦aºç draft order notification aª¬aª+aªáaª+aª¼aºçaÑñ</div>
+                    <div class="form-hint">Tab switch aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ draft order notification aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Draft Chat ID</label>
@@ -144,43 +144,43 @@
 
         <!-- RIGHT COLUMN -->
         <div>
-            <!-- Payment GÇö bKash / Nagad / Binance Manual -->
+            <!-- Payment Gï¿½ï¿½ bKash / Nagad / Binance Manual -->
             <div class="card" style="margin-bottom:20px;">
                 <div class="settings-section-title"><i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> Manual Payment Numbers</div>
 
                 <div class="form-group">
-                    <label class="form-label">=ƒÆ£ bKash Number</label>
+                    <label class="form-label">=ï¿½Æ£ bKash Number</label>
                     <input class="form-input" id="bkashNumber" placeholder="01XXXXXXXXX" maxlength="11">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">=ƒºí Nagad Number</label>
+                    <label class="form-label">=ï¿½ï¿½ï¿½ Nagad Number</label>
                     <input class="form-input" id="nagadNumber" placeholder="01XXXXXXXXX" maxlength="11">
                 </div>
 
-                <!-- Binance Manual UID GÇö separate from API-based auto verify -->
+                <!-- Binance Manual UID Gï¿½ï¿½ separate from API-based auto verify -->
                 <div style="border-top:1.5px dashed rgba(240,185,11,0.35);margin:14px 0 14px;"></div>
                 <div class="form-group" style="margin-bottom:4px;">
-                    <label class="form-label">=ƒƒí Binance Manual Pay UID</label>
+                    <label class="form-label">=ï¿½ï¿½ï¿½ Binance Manual Pay UID</label>
                     <input class="form-input" id="binanceManualUid" placeholder="e.g. 123456789" type="text">
                     <div class="form-hint">
-                        Checkout aªÅ customer aªÅaªç UID aªÅ USDT aª¬aª+aªáaª+aª¼aºç, aªñaª+aª¦aª¬aª¦ TxID aªªaª+aªñaºç aª¦aª¼aºç GÇö <strong>aª+aª¼ aª«aª+aª¿aºüaª»aª+aª+aª¦ aª¡aºçaª¦aª+aª½aª+aª»aª+</strong>aÑñ<br>
-                        <span style="color:#aaa;">(Auto verify Binance API aªàaª¿aºìaª» account aªÅaª¦ GÇö aª¿aª+aªÜaºç aª+aºìaª¼aªñaª¿aºìaªñaºìaª¦aª¡aª+aª¼aºç set aªòaª¦aºï)</span>
+                        Checkout aï¿½ï¿½ customer aï¿½ï¿½aï¿½ï¿½ UID aï¿½ï¿½ USDT aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½, aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ TxID aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Gï¿½ï¿½ <strong>aï¿½+aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½+aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+</strong>aï¿½ï¿½<br>
+                        <span style="color:#aaa;">(Auto verify Binance API aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ account aï¿½ï¿½aï¿½ï¿½ Gï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ set aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½)</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Payment GÇö Auto Gateway -->
+            <!-- Payment Gï¿½ï¿½ Auto Gateway -->
             <div class="card" style="margin-bottom:20px;">
                 <div class="settings-section-title"><i data-lucide="globe" class="lucide-icon icon-spin"></i> Auto Payment Gateway</div>
                 <div class="form-group">
                     <label class="form-label" style="color:var(--text-secondary);">Gateway Proxy URL (Fixed)</label>
                     <input class="form-input" id="gatewayProxyUrl" value="https://mypay.freelancingbyrifat.top/api_proxy.php" readonly style="opacity:0.6; cursor:not-allowed; background:rgba(255,255,255,0.02); border-color:transparent;">
-                    <div class="form-hint" style="opacity:0.6;">PHP proxy aªÅaª¦ URL Fixed aªòaª¦aª+ aªåaª¢aºçaÑñ</div>
+                    <div class="form-hint" style="opacity:0.6;">PHP proxy aï¿½ï¿½aï¿½ï¿½ URL Fixed aï¿½ï¿½aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Gateway API Key</label>
                     <input class="form-input" id="gatewayApiKey" type="password" placeholder="Your secret API key">
-                    <div class="form-hint">Proxy PHP aª½aª+aªçaª¦aºç aª»aºç API_KEY aªåaª¢aºç aª+aºçaªƒaª+ aªªaª+aªôaÑñ</div>
+                    <div class="form-hint">Proxy PHP aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½ API_KEY aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
             </div>
 
@@ -192,7 +192,7 @@
                 <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleCod()">
                     <div>
                         <div class="toggle-label">Allow Cash on Delivery (COD)</div>
-                        <div class="toggle-desc">Off aªòaª¦aª¦aºç aª¦aºüaªºaºü Online/bKash/Nagad aªªaª+aª»aª+aºç order aªòaª¦aª+ aª»aª+aª¼aºçaÑñ</div>
+                        <div class="toggle-desc">Off aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Online/bKash/Nagad aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½ order aï¿½ï¿½aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                     </div>
                     <button class="toggle-switch" id="codToggle" type="button"></button>
                 </div>
@@ -200,8 +200,8 @@
                 <!-- Fun Promise Checkboxes toggle -->
                 <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleFunCheckbox()">
                     <div>
-                        <div class="toggle-label">=ƒñú Fun Promise Checkboxes</div>
-                        <div class="toggle-desc">Checkout aªÅ COD aª+aª+aª¦aºçaªòaºìaªƒ aªòaª¦aª¦aºç aª«aª£aª+aªªaª+aª¦ aª¬aºìaª¦aª«aª+aª+ aªÜaºçaªòaª¼aªòaºìaª+ aªªaºçaªûaª+aª¼aºçaÑñ</div>
+                        <div class="toggle-label">=ï¿½ï¿½ï¿½ Fun Promise Checkboxes</div>
+                        <div class="toggle-desc">Checkout aï¿½ï¿½ COD aï¿½+aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½+ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                     </div>
                     <button class="toggle-switch" id="funCheckToggle" type="button"></button>
                 </div>
@@ -209,8 +209,8 @@
                 <!-- Messaging Apps Order Toggle (replaces old WhatsApp toggle) -->
                 <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleMsgOrder()">
                     <div>
-                        <div class="toggle-label">=ƒô¦ Message aªªaª+aª»aª+aºç Order Button</div>
-                        <div class="toggle-desc">Product page aªÅ messaging apps button aªªaºçaªûaª+aª¼aºçaÑñ</div>
+                        <div class="toggle-label">=ï¿½ï¿½ï¿½ Message aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½ Order Button</div>
+                        <div class="toggle-desc">Product page aï¿½ï¿½ messaging apps button aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                     </div>
                     <button class="toggle-switch" id="msgOrderToggle" type="button"></button>
                 </div>
@@ -218,20 +218,20 @@
                 <hr class="section-divider">
 
                 <div class="form-group">
-                    <label class="form-label">Advance Payment Amount (aªƒaª+aªòaª+)</label>
+                    <label class="form-label">Advance Payment Amount (aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+)</label>
                     <input class="form-input" id="advanceAmount" type="number" placeholder="0">
                     <div class="form-hint">
-                        <b>0</b> = aªòaºïaª¿aºï advance aª¿aºçaªç (pure COD) &nbsp;|&nbsp;
-                        <b>-1</b> = Delivery Charge aªÅaª¦ aª+aª«aª+aª¿ &nbsp;|&nbsp;
-                        <b>200</b> = Fixed 200 aªƒaª+aªòaª+ advance
+                        <b>0</b> = aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ advance aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ (pure COD) &nbsp;|&nbsp;
+                        <b>-1</b> = Delivery Charge aï¿½ï¿½aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½ &nbsp;|&nbsp;
+                        <b>200</b> = Fixed 200 aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+ advance
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Advance Payment Method</label>
                     <select class="form-select" id="advanceMethod">
-                        <option value="manual">Manual GÇö bKash / Nagad (TrxID aªªaª+aªñaºç aª¦aª¼aºç)</option>
-                        <option value="auto">Auto GÇö Payment Gateway redirect</option>
+                        <option value="manual">Manual Gï¿½ï¿½ bKash / Nagad (TrxID aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½)</option>
+                        <option value="auto">Auto Gï¿½ï¿½ Payment Gateway redirect</option>
                     </select>
                 </div>
             </div>
@@ -239,36 +239,36 @@
             <!-- Messaging Apps Config -->
             <div class="card" style="margin-bottom:20px;">
                 <div class="settings-section-title"><i data-lucide="message-circle" class="lucide-icon"></i> Messaging Apps (Order via Message)</div>
-                <div class="form-hint" style="margin-bottom:14px;">aª»aºçaª+aª¼ aªàaºìaª»aª+aª¬ ON aªòaª¦aª¼aºç, Product page aªÅ aª+aºçaªùaºüaª¦aºï aªªaºçaªûaª+aª¼aºçaÑñ Number/Username aªªaª+aªñaºç aª¦aª¼aºçaÑñ</div>
+                <div class="form-hint" style="margin-bottom:14px;">aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½ ON aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½, Product page aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Number/Username aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 <div id="msgAppsWrap"></div>
             </div>
 
             <!-- Pickup Order Settings -->
             <div class="card" style="margin-bottom:20px;">
-                <div class="settings-section-title"><i data-lucide="footprints" class="lucide-icon"></i> =ƒÜ¦ Pickup Order Settings</div>
+                <div class="settings-section-title"><i data-lucide="footprints" class="lucide-icon"></i> =ï¿½Ü¦ Pickup Order Settings</div>
                 <div class="toggle-wrap" style="margin-bottom:14px;" onclick="togglePickup()">
                     <div>
                         <div class="toggle-label">Allow Pickup from Store</div>
-                        <div class="toggle-desc">ON aªòaª¦aª¦aºç Product page aªÅ "Pickup from Store" button aªªaºçaªûaª+aª¼aºçaÑñ</div>
+                        <div class="toggle-desc">ON aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Product page aï¿½ï¿½ "Pickup from Store" button aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                     </div>
                     <button class="toggle-switch" id="pickupToggle" type="button"></button>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Store Address</label>
                     <input class="form-input" id="storeAddress" placeholder="Shop #5, Mirpur 10, Dhaka">
-                    <div class="form-hint">Pickup button aªÅ aªÅaªç address aªªaºçaªûaª+aª¼aºçaÑñ</div>
+                    <div class="form-hint">Pickup button aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½ address aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Store Map Link (Google Maps)</label>
                     <input class="form-input" id="storeMapLink" placeholder="https://maps.google.com/...">
-                    <div class="form-hint">Footer-aªÅ aªÅaª¼aªé success page-aªÅ aªÅaªç aª¦aª+aªéaªòaºçaªç map open aª¦aª¼aºçaÑñ</div>
+                    <div class="form-hint">Footer-aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ success page-aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ map open aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
                 <hr class="section-divider">
                 <div class="settings-section-title" style="font-size:11px;border:none;color:#34C759;padding:0;margin-bottom:10px;">Pickup Telegram Bot</div>
                 <div class="form-group">
                     <label class="form-label">Pickup Bot Token</label>
                     <input class="form-input" id="pickupBotToken" placeholder="123456789:ABCDEF...">
-                    <div class="form-hint">Pickup aªàaª¦aºìaªíaª+aª¦aºçaª¦ notification aªÅaªç bot aªÅ aª»aª+aª¼aºçaÑñ</div>
+                    <div class="form-hint">Pickup aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ notification aï¿½ï¿½aï¿½ï¿½ bot aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Pickup Chat ID</label>
@@ -276,78 +276,78 @@
                 </div>
             </div>
 
-            <!-- GòÉGòÉ Crypto & Binance Pay GòÉGòÉ -->
+            <!-- Gï¿½ï¿½Gï¿½ï¿½ Crypto & Binance Pay Gï¿½ï¿½Gï¿½ï¿½ -->
             <div class="card" style="margin-bottom:20px;">
                 <div class="settings-section-title"><i data-lucide="bitcoin" class="lucide-icon icon-pulse"></i> Crypto & Binance Pay</div>
 
                 <!-- Binance Pay -->
                 <div class="settings-section-title" style="font-size:11px;border:none;color:#F0B90B;padding:0;margin-bottom:10px;">
-                    =ƒÆ¢ Binance Pay
+                    =ï¿½Æ¢ Binance Pay
                 </div>
                 <div class="form-group">
                     <label class="form-label">Binance Pay UID</label>
                     <input class="form-input" id="binancePayUid" placeholder="e.g. 123456789">
-                    <div class="form-hint">aªñaºïaª«aª+aª¦ Binance App GåÆ Pay GåÆ Receive GåÆ UIDaÑñ User aªÅaªƒaª+ aªªaª+aª»aª+aºç aª¬aª+aªáaª+aª¼aºçaÑñ</div>
+                    <div class="form-hint">aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½ Binance App Gï¿½ï¿½ Pay Gï¿½ï¿½ Receive Gï¿½ï¿½ UIDaï¿½ï¿½ User aï¿½ï¿½aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Binance Pay Proxy URL</label>
                     <input class="form-input" id="binanceProxyUrl" placeholder="https://mypay.freelancingbyrifat.top/binance_proxy.php">
-                    <div class="form-hint">Server-aªÅ deploy aªòaª¦aª+ <code>binance_proxy.php</code> aªÅaª¦ URLaÑñ cPanel access aª¿aª+ aªÑaª+aªòaª¦aºç aªûaª+aª¦aª+ aª¦aª+aªûaºï GÇö backup mode aªÜaª¦aª¼aºçaÑñ</div>
+                    <div class="form-hint">Server-aï¿½ï¿½ deploy aï¿½ï¿½aï¿½ï¿½aï¿½+ <code>binance_proxy.php</code> aï¿½ï¿½aï¿½ï¿½ URLaï¿½ï¿½ cPanel access aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ Gï¿½ï¿½ backup mode aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
 
                 <!-- USD Rate -->
                 <div class="form-group" style="background:rgba(240,185,11,0.06);border:1px solid rgba(240,185,11,0.3);border-radius:10px;padding:14px;">
-                    <label class="form-label" style="color:#B8860B;">=ƒÆ¦ 1 USD = ? BDT (Exchange Rate)</label>
+                    <label class="form-label" style="color:#B8860B;">=ï¿½Æ¦ 1 USD = ? BDT (Exchange Rate)</label>
                     <input class="form-input" id="usdToBdtRate" type="number" step="0.01" placeholder="e.g. 110" style="font-size:18px;font-weight:800;">
-                    <div class="form-hint">Checkout aªÅ BDT total aªÑaºçaªòaºç USDT amount aªÅaªç rate aªªaª+aª»aª+aºç calculate aª¦aª¼aºçaÑñ aªåaª£aªòaºçaª¦ rate aªªaª+aªôaÑñ</div>
+                    <div class="form-hint">Checkout aï¿½ï¿½ BDT total aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ USDT amount aï¿½ï¿½aï¿½ï¿½ rate aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½ calculate aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ rate aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
 
                 <!-- Verification System Mode -->
                 <!-- Binance API Keys (used by Cloudflare Proxy) -->
                 <div style="background:rgba(240,185,11,0.06);border:1.5px solid rgba(240,185,11,0.3);border-radius:12px;padding:16px;margin-bottom:14px;">
-                    <div style="font-size:12px;font-weight:800;color:#B8860B;margin-bottom:10px;">=ƒöæ Binance API Keys <span style="font-weight:400;color:#888;">(Cloudflare Proxy aªÅaª¦ aª£aª¿aºìaª»)</span></div>
+                    <div style="font-size:12px;font-weight:800;color:#B8860B;margin-bottom:10px;">=ï¿½ï¿½ï¿½ Binance API Keys <span style="font-weight:400;color:#888;">(Cloudflare Proxy aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½)</span></div>
                     <div class="form-group">
                         <label class="form-label" style="font-size:11px;">Binance API Key</label>
                         <input class="form-input" id="binanceApiKey" type="password" placeholder="Your Binance API Key" style="font-size:12px;">
-                        <div class="form-hint">Binance GåÆ API Management GåÆ Create API GåÆ "Enable Reading" permission aªªaª+aª¦aºçaªç aª¦aª¼aºçaÑñ</div>
+                        <div class="form-hint">Binance Gï¿½ï¿½ API Management Gï¿½ï¿½ Create API Gï¿½ï¿½ "Enable Reading" permission aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label" style="font-size:11px;">Binance API Secret</label>
                         <input class="form-input" id="binanceApiSecret" type="password" placeholder="Your Binance API Secret" style="font-size:12px;">
-                        <div class="form-hint">GÜán+Å Secret aª¦aºüaªºaºü Supabase DB aªñaºç store aª¦aª¼aºç GÇö source code aª¼aª+ browser aªÅ aªªaºçaªûaª+ aª»aª+aª¼aºç aª¿aª+aÑñ</div>
+                        <div class="form-hint">Gï¿½ï¿½n+ï¿½ Secret aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Supabase DB aï¿½ï¿½aï¿½ï¿½ store aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Gï¿½ï¿½ source code aï¿½ï¿½aï¿½+ browser aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½</div>
                     </div>
                 </div>
 
                 <div style="background:rgba(98,126,234,0.06);border:1.5px solid rgba(98,126,234,0.25);border-radius:12px;padding:16px;margin-top:14px;">
-                    <div style="font-size:12px;font-weight:800;color:#627EEA;margin-bottom:10px;">GÜÖn+Å aªòaºïaª¿ Verification System aª¼aºìaª»aª¼aª¦aª+aª¦ aª¦aª¼aºç?</div>
+                    <div style="font-size:12px;font-weight:800;color:#627EEA;margin-bottom:10px;">Gï¿½ï¿½n+ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Verification System aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½?</div>
                     <select class="form-select" id="verifyMode" style="font-weight:700;margin-bottom:10px;">
-                        <option value="cloudflare">Gÿün+Å Cloudflare Proxy (Default &amp; Recommended) GÇö Edge-aªÅ secure verify, no cPanel needed</option>
-                        <option value="auto">=ƒöä Auto GÇö PHP aªÜaºçaª+aºìaªƒaª+ aªòaª¦aª¼aºç, fail aª¦aª¦aºç Supabase backup</option>
-                        <option value="php_only">=ƒö¦ PHP Proxy Only GÇö cPanel available aªåaª¢aºç</option>
-                        <option value="supabase_only">=ƒƒá Supabase Edge Only GÇö cPanel aª¿aºçaªç, Edge Function use aªòaª¦aºï</option>
+                        <option value="cloudflare">Gï¿½ï¿½n+ï¿½ Cloudflare Proxy (Default &amp; Recommended) Gï¿½ï¿½ Edge-aï¿½ï¿½ secure verify, no cPanel needed</option>
+                        <option value="auto">=ï¿½ï¿½ï¿½ Auto Gï¿½ï¿½ PHP aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½, fail aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Supabase backup</option>
+                        <option value="php_only">=ï¿½ï¿½ï¿½ PHP Proxy Only Gï¿½ï¿½ cPanel available aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</option>
+                        <option value="supabase_only">=ï¿½ï¿½ï¿½ Supabase Edge Only Gï¿½ï¿½ cPanel aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½, Edge Function use aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</option>
                     </select>
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
                         <div style="font-size:11px;padding:8px;background:rgba(99,102,241,0.08);border-radius:8px;border:2px solid #6366f1;">
-                            <div style="font-weight:800;color:#4f46e5;">Gÿün+Å Cloudflare</div>
-                            <div style="color:#666;margin-top:2px;">RecommendedaÑñ Edge-aªÅ Binance API aª+aª¦aª+aª+aª¦aª+ verifyaÑñ aªòaºïaª¿aºï server aª¦aª+aªùaºç aª¿aª+aÑñ</div>
+                            <div style="font-weight:800;color:#4f46e5;">Gï¿½ï¿½n+ï¿½ Cloudflare</div>
+                            <div style="color:#666;margin-top:2px;">Recommendedaï¿½ï¿½ Edge-aï¿½ï¿½ Binance API aï¿½+aï¿½ï¿½aï¿½+aï¿½+aï¿½ï¿½aï¿½+ verifyaï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ server aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½</div>
                         </div>
                         <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
-                            <div style="font-weight:700;color:#15803d;">=ƒöä Auto</div>
-                            <div style="color:#666;margin-top:2px;">PHP verify GåÆ fail aª¦aª¦aºç Supabase backup aªÜaª¦aª¼aºç</div>
+                            <div style="font-weight:700;color:#15803d;">=ï¿½ï¿½ï¿½ Auto</div>
+                            <div style="color:#666;margin-top:2px;">PHP verify Gï¿½ï¿½ fail aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Supabase backup aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                         </div>
                         <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
-                            <div style="font-weight:700;color:#1d4ed8;">=ƒö¦ PHP Only</div>
-                            <div style="color:#666;margin-top:2px;">cPanel aªåaª¢aºç, PHP proxy aªªaª+aª»aª+aºç verify</div>
+                            <div style="font-weight:700;color:#1d4ed8;">=ï¿½ï¿½ï¿½ PHP Only</div>
+                            <div style="color:#666;margin-top:2px;">cPanel aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½, PHP proxy aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½ verify</div>
                         </div>
                         <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
-                            <div style="font-weight:700;color:#c2610b;">=ƒƒá Supabase Only</div>
-                            <div style="color:#666;margin-top:2px;">cPanel aª¿aºçaªç, Edge Function only</div>
+                            <div style="font-weight:700;color:#c2610b;">=ï¿½ï¿½ï¿½ Supabase Only</div>
+                            <div style="color:#666;margin-top:2px;">cPanel aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½, Edge Function only</div>
                         </div>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label" style="font-size:11px;">Supabase Edge Function URL <span style="color:#aaa;font-weight:400;">(optional GÇö aªûaª+aª¦aª+ aª¦aª+aªûaª¦aºç auto-detect)</span></label>
+                        <label class="form-label" style="font-size:11px;">Supabase Edge Function URL <span style="color:#aaa;font-weight:400;">(optional Gï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ auto-detect)</span></label>
                         <input class="form-input" id="supabaseEdgeUrl" placeholder="https://qdkppbwjgkkxzgzgsykv.supabase.co/functions/v1/verify-payment" style="font-size:12px;">
-                        <div class="form-hint">Custom deploy aªòaª¦aª¦aºç URL aªªaª+aªôaÑñ aª¿aªçaª¦aºç aªûaª+aª¦aª+ aª¦aª+aªûaºï GÇö config aªÑaºçaªòaºç auto aª¿aºçaª¼aºçaÑñ</div>
+                        <div class="form-hint">Custom deploy aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ URL aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ Gï¿½ï¿½ config aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ auto aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                     </div>
                 </div>
 
@@ -355,9 +355,9 @@
 
                 <!-- Direct Crypto -->
                 <div class="settings-section-title" style="font-size:11px;border:none;color:#627EEA;padding:0;margin-bottom:10px;">
-                    =ƒö+ Direct Crypto Wallets
+                    =ï¿½ï¿½+ Direct Crypto Wallets
                 </div>
-                <div class="form-hint" style="margin-bottom:12px;">Coin aª»aºïaªù aªòaª¦aºïaÑñ aª¬aºìaª¦aªñaª+aªƒaª+ Coin-aªÅaª¦ aª¿aª+aªÜaºç networks aªô address aªªaª+aªôaÑñ</div>
+                <div class="form-hint" style="margin-bottom:12px;">Coin aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+ Coin-aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ networks aï¿½ï¿½ address aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½</div>
 
                 <div id="cryptoCoinsWrap"></div>
                 <button type="button" class="btn btn-ghost btn-sm" onclick="addCryptoCoin()" style="margin-top:8px; border: 1px dashed #627EEA;">
@@ -370,32 +370,32 @@
                 <div class="settings-section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ImgBB Image Upload (Admin)</div>
                 <div class="form-group">
                     <label class="form-label">Admin ImgBB API Key</label>
-                    <input class="form-input" id="imgbbApiKey" type="password" placeholder="aªåaª¬aª¿aª+aª¦ imgbb.com API Key aªªaª+aªô">
-                    <div class="form-hint">aªÅaªç Key aª¦aºüaªºaºü aªÅaªç browser aªÅ aª+aºçaª¡ aªÑaª+aªòaºç (localStorage)aÑñ Admin aª¿aª+aª£aºç product/banner aª¢aª¼aª+ upload aªòaª¦aª+aª¦ aª£aª¿aºìaª»aÑñ</div>
+                    <input class="form-input" id="imgbbApiKey" type="password" placeholder="aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½ imgbb.com API Key aï¿½ï¿½aï¿½+aï¿½ï¿½">
+                    <div class="form-hint">aï¿½ï¿½aï¿½ï¿½ Key aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½ browser aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ (localStorage)aï¿½ï¿½ Admin aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ product/banner aï¿½ï¿½aï¿½ï¿½aï¿½+ upload aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
-                <a href="https://api.imgbb.com/" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:4px;">=ƒöù imgbb.com/api aªÑaºçaªòaºç Key aª¿aª+aªô</a>
+                <a href="https://api.imgbb.com/" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:4px;">=ï¿½ï¿½ï¿½ imgbb.com/api aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Key aï¿½ï¿½aï¿½+aï¿½ï¿½</a>
             </div>
 
             <!-- Review Image Upload API Key -->
             <div class="card" style="margin-bottom:20px;border:1px solid rgba(88,86,214,0.2);">
                 <div class="settings-section-title" style="color:#5856D6;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Review Image Upload (User-Facing)</div>
                 <div style="font-size:12px;background:rgba(88,86,214,0.06);border:1px solid rgba(88,86,214,0.12);border-radius:10px;padding:10px 12px;margin-bottom:12px;color:#5856D6;">
-                    =ƒÆí <strong>Admin key aªÑaºçaªòaºç aªåaª¦aª+aªªaª+ aª¦aª+aªûaºï!</strong> aªÅaªç key aªªaª+aª»aª+aºç customer aªªaºçaª¦ review aª¢aª¼aª+ upload aª¦aª¼aºçaÑñ aªåaª¦aª+aªªaª+ aª¦aª+aªûaª¦aºç admin aªÅaª¦ limit aª¦aªòaºìaª+aª+ aª¬aª+aª¼aºçaÑñ
+                    =ï¿½ï¿½ï¿½ <strong>Admin key aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½!</strong> aï¿½ï¿½aï¿½ï¿½ key aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½ customer aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ review aï¿½ï¿½aï¿½ï¿½aï¿½+ upload aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ admin aï¿½ï¿½aï¿½ï¿½ limit aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½+ aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½
                 </div>
                 <div class="form-group">
                     <label class="form-label">Review ImgBB API Key</label>
-                    <input class="form-input" id="reviewImgbbKey" type="password" placeholder="Customer review photo upload aªÅaª¦ aª£aª¿aºìaª» aªåaª¦aª+aªªaª+ ImgBB Key">
-                    <div class="form-hint">aªÅaªç Key Supabase aªÅ aª+aºçaª¡ aª¦aª¼aºçaÑñ Product page aªÅ review form aªÅ "Upload Photo" button aªªaºçaªûaª+aª¼aºçaÑñ</div>
+                    <input class="form-input" id="reviewImgbbKey" type="password" placeholder="Customer review photo upload aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+ ImgBB Key">
+                    <div class="form-hint">aï¿½ï¿½aï¿½ï¿½ Key Supabase aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ Product page aï¿½ï¿½ review form aï¿½ï¿½ "Upload Photo" button aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</div>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="https://api.imgbb.com/" target="_blank" class="btn btn-ghost btn-sm">=ƒöù New ImgBB Account aªñaºêaª¦aª+ aªòaª¦aºï</a>
-                    <button class="btn btn-sm" style="background:rgba(88,86,214,0.08);color:#5856D6;border:1px solid rgba(88,86,214,0.2);" onclick="testReviewKey()">=ƒöì Test Key</button>
+                    <a href="https://api.imgbb.com/" target="_blank" class="btn btn-ghost btn-sm">=ï¿½ï¿½ï¿½ New ImgBB Account aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½</a>
+                    <button class="btn btn-sm" style="background:rgba(88,86,214,0.08);color:#5856D6;border:1px solid rgba(88,86,214,0.2);" onclick="testReviewKey()">=ï¿½ï¿½ï¿½ Test Key</button>
                 </div>
             </div>
 
             <!-- Save Button -->
             <button class="btn btn-primary btn-full btn-lg" onclick="saveSettings()">
-                =ƒÆ+ Save All Settings
+                =ï¿½ï¿½+ Save All Settings
             </button>
 
         </div>
@@ -407,7 +407,7 @@
     var settingsData = {};
     var mainChatIds = [];
 
-    // ImgBB Key GÇö localStorage aªÑaºçaªòaºç aª¬aªíaª+aºï
+    // ImgBB Key Gï¿½ï¿½ localStorage aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½
     function loadImgbbKey() {
         var k = localStorage.getItem('imgbb_api_key') || (typeof CONFIG !== 'undefined' ? CONFIG.IMGBB_API_KEY : '') || '';
         document.getElementById('imgbbApiKey').value = k;
@@ -420,7 +420,7 @@
 
     function testReviewKey() {
         var k = document.getElementById('reviewImgbbKey').value.trim();
-        if (!k) { showToast('GÜán+Å Review ImgBB Key aª¦aª+aªùaª+aªô', 'warning'); return; }
+        if (!k) { showToast('Gï¿½ï¿½n+ï¿½ Review ImgBB Key aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½', 'warning'); return; }
         // Test by fetching a small 1x1 pixel image
         var fd = new FormData();
         fd.append('key', k);
@@ -429,10 +429,10 @@
         fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: fd })
             .then(function(r){ return r.json(); })
             .then(function(d){
-                if (d.success) showToast('G£à Review key valid! Upload aªòaª+aª£ aªòaª¦aª¼aºçaÑñ', 'success');
-                else showToast('G¥î Invalid key: ' + (d.error ? d.error.message : 'Unknown'), 'error');
+                if (d.success) showToast('Gï¿½ï¿½ Review key valid! Upload aï¿½ï¿½aï¿½+aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½', 'success');
+                else showToast('Gï¿½ï¿½ Invalid key: ' + (d.error ? d.error.message : 'Unknown'), 'error');
             })
-            .catch(function(e){ showToast('G¥î Network error: ' + e.message, 'error'); });
+            .catch(function(e){ showToast('Gï¿½ï¿½ Network error: ' + e.message, 'error'); });
     }
 
     // Settings image preview helper
@@ -461,10 +461,10 @@
         {key:'messenger',name:'Messenger',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/messenger.svg',placeholder:'Page username',urlPattern:'https://m.me/{contact}'},
         {key:'viber',name:'Viber',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/viber.svg',placeholder:'8801XXXXXXXXX',urlPattern:'viber://chat?number=%2B{contact}'},
         {key:'signal',name:'Signal',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/signal.svg',placeholder:'+8801XXXXXXXXX',urlPattern:'https://signal.me/#p/{contact}'},
-        {key:'imo',name:'IMO',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/imo.svg',placeholder:'8801XXXXXXXXX',urlPattern:'https://imo.im/{contact}'},
+        {key:'imo',name:'IMO',icon:'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%2300a0dc"/><text x="50" y="65" font-family="sans-serif" font-size="40" font-weight="bold" fill="%23fff" text-anchor="middle">imo</text></svg>',placeholder:'8801XXXXXXXXX',urlPattern:'https://imo.im/{contact}'},
         {key:'line',name:'LINE',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/line.svg',placeholder:'LINE ID',urlPattern:'https://line.me/R/ti/p/{contact}'},
         {key:'wechat',name:'WeChat',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/wechat.svg',placeholder:'WeChat ID',urlPattern:'weixin://dl/chat?{contact}'},
-        {key:'skype',name:'Skype',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/skype.svg',placeholder:'Skype username',urlPattern:'skype:{contact}?chat'},
+        {key:'skype',name:'Skype',icon:'https://api.iconify.design/logos:skype.svg',placeholder:'Skype username',urlPattern:'skype:{contact}?chat'},
         {key:'discord',name:'Discord',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/discord.svg',placeholder:'User ID',urlPattern:'https://discord.com/users/{contact}'},
         {key:'snapchat',name:'Snapchat',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/snapchat.svg',placeholder:'Username',urlPattern:'https://snapchat.com/add/{contact}'},
         {key:'instagram',name:'Instagram',icon:'https://cdn.jsdelivr.net/npm/simple-icons@v13/icons/instagram.svg',placeholder:'Username',urlPattern:'https://ig.me/m/{contact}'},
@@ -485,7 +485,7 @@
         if (logoBtn) {
             logoBtn.addEventListener('click', function() {
                 var apiKey = getImgbbKey();
-                if (!apiKey) { showToast('GÜán+Å ImgBB API Key aª+aºçaªƒ aªòaª¦aºï aªåaªùaºç!', 'warning'); return; }
+                if (!apiKey) { showToast('Gï¿½ï¿½n+ï¿½ ImgBB API Key aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½!', 'warning'); return; }
                 var input = document.createElement('input');
                 input.type = 'file'; input.accept = 'image/*';
                 input.onchange = function() {
@@ -496,11 +496,11 @@
                         .then(function(r) {
                             document.getElementById('logoUrl').value = r.url;
                             previewSettingImg('logoUrl','logoPreview');
-                            logoBtn.textContent = 'G£à Done';
-                            setTimeout(function(){ logoBtn.textContent='=ƒôñ Upload'; logoBtn.disabled=false; }, 1500);
-                            showToast('Logo aªåaª¬aª¦aºïaªí aª+aª½aª¦! Save aªòaª¦aªñaºç aª¡aºüaª¦aºï aª¿aª+aÑñ', 'success');
+                            logoBtn.textContent = 'Gï¿½ï¿½ Done';
+                            setTimeout(function(){ logoBtn.textContent='=ï¿½ï¿½ï¿½ Upload'; logoBtn.disabled=false; }, 1500);
+                            showToast('Logo aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½! Save aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½', 'success');
                         })
-                        .catch(function(e) { showToast('G¥î ' + e.message, 'error'); logoBtn.textContent='=ƒôñ Upload'; logoBtn.disabled=false; });
+                        .catch(function(e) { showToast('Gï¿½ï¿½ ' + e.message, 'error'); logoBtn.textContent='=ï¿½ï¿½ï¿½ Upload'; logoBtn.disabled=false; });
                 };
                 input.click();
             });
@@ -511,7 +511,7 @@
         if (faviconBtn) {
             faviconBtn.addEventListener('click', function() {
                 var apiKey = getImgbbKey();
-                if (!apiKey) { showToast('GÜán+Å ImgBB API Key aª+aºçaªƒ aªòaª¦aºï aªåaªùaºç!', 'warning'); return; }
+                if (!apiKey) { showToast('Gï¿½ï¿½n+ï¿½ ImgBB API Key aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½!', 'warning'); return; }
                 var input = document.createElement('input');
                 input.type = 'file'; input.accept = 'image/*';
                 input.onchange = function() {
@@ -522,11 +522,11 @@
                         .then(function(r) {
                             document.getElementById('faviconUrl').value = r.url;
                             previewSettingImg('faviconUrl','faviconPreview');
-                            faviconBtn.textContent = 'G£à Done';
-                            setTimeout(function(){ faviconBtn.textContent='=ƒôñ Upload'; faviconBtn.disabled=false; }, 1500);
-                            showToast('Favicon aªåaª¬aª¦aºïaªí aª+aª½aª¦! Save aªòaª¦aªñaºç aª¡aºüaª¦aºï aª¿aª+aÑñ', 'success');
+                            faviconBtn.textContent = 'Gï¿½ï¿½ Done';
+                            setTimeout(function(){ faviconBtn.textContent='=ï¿½ï¿½ï¿½ Upload'; faviconBtn.disabled=false; }, 1500);
+                            showToast('Favicon aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½! Save aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½+aï¿½ï¿½', 'success');
                         })
-                        .catch(function(e) { showToast('G¥î ' + e.message, 'error'); faviconBtn.textContent='=ƒôñ Upload'; faviconBtn.disabled=false; });
+                        .catch(function(e) { showToast('Gï¿½ï¿½ ' + e.message, 'error'); faviconBtn.textContent='=ï¿½ï¿½ï¿½ Upload'; faviconBtn.disabled=false; });
                 };
                 input.click();
             });
@@ -538,7 +538,7 @@
             document.getElementById('pageLoader').style.display  = 'none';
             document.getElementById('adminMain').style.display   = 'flex';
 
-            // GöÇGöÇ aª¬aºìaª¦aªÑaª«aª¼aª+aª¦: DB aªñaºç row aª¿aºçaªç, Config aªÑaºçaªòaºç defaults aªªaºçaªûaª+aªô GöÇGöÇ
+            // Gï¿½ï¿½Gï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½: DB aï¿½ï¿½aï¿½ï¿½ row aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½, Config aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ defaults aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½ Gï¿½ï¿½Gï¿½ï¿½
             var s = (r.data) ? r.data : {};
             settingsData = s;
 
@@ -546,9 +546,9 @@
             setVal('storeName',   s.store_name  || CONFIG.STORE_NAME);
             setVal('logoUrl',     s.logo_url    || '');
             setVal('faviconUrl',  s.favicon_url || '');
-            setVal('footerText',  s.footer_text || '-¬ ' + new Date().getFullYear() + ' ' + CONFIG.STORE_NAME + '. All rights reserved.');
+            setVal('footerText',  s.footer_text || '-ï¿½ ' + new Date().getFullYear() + ' ' + CONFIG.STORE_NAME + '. All rights reserved.');
 
-            // Logo/Favicon preview aª»aªªaª+ URL aªÑaª+aªòaºç
+            // Logo/Favicon preview aï¿½ï¿½aï¿½ï¿½aï¿½+ URL aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½
             if (s.logo_url)    previewSettingImg('logoUrl',    'logoPreview');
             if (s.favicon_url) previewSettingImg('faviconUrl', 'faviconPreview');
 
@@ -567,7 +567,7 @@
             mainChatIds = s.telegram_main_chats || [];
             renderChatIds();
 
-            // Payment GÇö Manual numbers
+            // Payment Gï¿½ï¿½ Manual numbers
             setVal('bkashNumber',     s.bkash_number      || '');
             setVal('nagadNumber',     s.nagad_number      || '');
             setVal('binanceManualUid',s.binance_manual_uid|| '');
@@ -654,7 +654,7 @@
             row.className = 'chat-id-row';
             row.innerHTML =
                 '<input class="form-input" placeholder="Chat ID (e.g. -1001234567890)" value="' + (cid || '') + '" data-cidx="' + i + '">' +
-                '<button type="button" class="btn btn-danger btn-sm" onclick="removeChatId(' + i + ')">G£ò</button>';
+                '<button type="button" class="btn btn-danger btn-sm" onclick="removeChatId(' + i + ')">Gï¿½ï¿½</button>';
             wrap.appendChild(row);
         });
     }
@@ -727,13 +727,13 @@
                 showToast('<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Save failed: ' + r.error.message, 'error');
                 return;
             }
-            // ImgBB key aªåaª¦aª+aªªaª+aª¡aª+aª¼aºç localStorage aªÅ aª+aºçaª¡ aªòaª¦aºï
+            // ImgBB key aï¿½ï¿½aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½+aï¿½ï¿½aï¿½ï¿½ localStorage aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½
             saveImgbbKey();
-            showToast('G£à Settings saved!', 'success');
+            showToast('Gï¿½ï¿½ Settings saved!', 'success');
         });
     }
 
-    // GöÇGöÇ Messaging Apps Renderer GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    // Gï¿½ï¿½Gï¿½ï¿½ Messaging Apps Renderer Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     function renderMsgApps() {
         var wrap = document.getElementById('msgAppsWrap');
         wrap.innerHTML = '';
@@ -775,7 +775,7 @@
         return result;
     }
 
-    // GöÇGöÇ Crypto Coins Renderer GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
+    // Gï¿½ï¿½Gï¿½ï¿½ Crypto Coins Renderer Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½Gï¿½ï¿½
     var cryptoCoins = [];
 
     function renderCryptoCoins() {
@@ -789,7 +789,7 @@
                 '<div style="display:flex; gap:10px; margin-bottom:10px; align-items:flex-end;">' +
                     '<div style="flex:1;"><label class="form-label" style="font-size:11px;">Coin Symbol</label><input class="form-input crypto-symbol" placeholder="e.g. USDT" value="' + (coin.symbol||'') + '"></div>' +
                     '<div style="flex:2;"><label class="form-label" style="font-size:11px;">Coin Name</label><input class="form-input crypto-name" placeholder="e.g. Tether" value="' + (coin.name||'') + '"></div>' +
-                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeCryptoCoin(' + cIdx + ')">G£ò</button>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeCryptoCoin(' + cIdx + ')">Gï¿½ï¿½</button>' +
                 '</div>';
             
             var netsWrap = document.createElement('div');
@@ -801,8 +801,8 @@
                     '<div style="flex:1;"><input class="form-input net-name" placeholder="Network (e.g. TRC20)" value="' + (net.name||'') + '"></div>' +
                     '<div style="flex:2;"><input class="form-input net-addr" placeholder="Wallet Address" value="' + (net.address||'') + '"></div>' +
                     '<div style="flex:2; display:flex; gap:4px;"><input class="form-input net-qr" placeholder="QR URL (Optional)" value="' + (net.qr_url||'') + '">' +
-                    '<button type="button" class="btn btn-ghost btn-sm" onclick="uploadNetworkQr(this)" title="Upload QR">=ƒôñ</button></div>' +
-                    '<button type="button" class="btn btn-outline btn-sm" onclick="removeCryptoNetwork(' + cIdx + ',' + nIdx + ')">G£ò</button>';
+                    '<button type="button" class="btn btn-ghost btn-sm" onclick="uploadNetworkQr(this)" title="Upload QR">=ï¿½ï¿½ï¿½</button></div>' +
+                    '<button type="button" class="btn btn-outline btn-sm" onclick="removeCryptoNetwork(' + cIdx + ',' + nIdx + ')">Gï¿½ï¿½</button>';
                 netsWrap.appendChild(netRow);
             });
 
@@ -877,7 +877,7 @@
 
     function uploadNetworkQr(btn) {
         var apiKey = getImgbbKey();
-        if (!apiKey) { showToast('GÜán+Å ImgBB API Key aª+aºçaªƒ aªòaª¦aºï aªåaªùaºç!', 'warning'); return; }
+        if (!apiKey) { showToast('Gï¿½ï¿½n+ï¿½ ImgBB API Key aï¿½+aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½!', 'warning'); return; }
         var input = document.createElement('input');
         input.type = 'file'; input.accept = 'image/*';
         input.onchange = function() {
@@ -887,11 +887,11 @@
             imgbbUpload(input.files[0], apiKey)
                 .then(function(r) {
                     btn.previousElementSibling.value = r.url; // set input value
-                    btn.textContent = 'G£à';
-                    setTimeout(function(){ btn.textContent='=ƒôñ'; btn.disabled=false; }, 1500);
-                    showToast('QR Code aªåaª¬aª¦aºïaªí aª+aª½aª¦!', 'success');
+                    btn.textContent = 'Gï¿½ï¿½';
+                    setTimeout(function(){ btn.textContent='=ï¿½ï¿½ï¿½'; btn.disabled=false; }, 1500);
+                    showToast('QR Code aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½aï¿½ï¿½ aï¿½+aï¿½ï¿½aï¿½ï¿½!', 'success');
                 })
-                .catch(function(e) { showToast('G¥î ' + e.message, 'error'); btn.textContent='=ƒôñ'; btn.disabled=false; });
+                .catch(function(e) { showToast('Gï¿½ï¿½ ' + e.message, 'error'); btn.textContent='=ï¿½ï¿½ï¿½'; btn.disabled=false; });
         };
         input.click();
     }
