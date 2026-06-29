@@ -1099,7 +1099,7 @@ async function enableMaintenance() {
     var msg = (document.getElementById('maintMessage').value.trim()) || 'আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে। 🔧';
     if (!confirm('⚠️ এখনই site বন্ধ করবেন? সব visitor maintenance page দেখবে।')) return;
 
-    var r = await getDB().from('devtools').upsert([{ id: 1, maintenance_mode: true, maintenance_message: msg }]);
+    var r = await getDB().from('devtools').upsert([{ id: '1', maintenance_mode: true, maintenance_message: msg }]);
     if (r.error) { devToast('✗ Error: ' + r.error.message, '#ff4d4d'); return; }
     _maintActive = true;
     updateMaintUI(true, msg);
@@ -1111,7 +1111,7 @@ async function enableMaintenance() {
 async function disableMaintenance() {
     if (!confirm('Site live করবেন? সব visitor access পাবে।')) return;
 
-    var r = await getDB().from('devtools').update({ maintenance_mode: false }).eq('id', 1);
+    var r = await getDB().from('devtools').update({ maintenance_mode: false }).eq('id', '1');
     if (r.error) { devToast('✗ Error: ' + r.error.message, '#ff4d4d'); return; }
     _maintActive = false;
     updateMaintUI(false, '');
