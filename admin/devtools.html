@@ -694,6 +694,30 @@
     <!-- ─── TAB: EXPORT ─── -->
     <div class="tab-content" id="tab-export">
         <div class="dev-card">
+            <div class="dev-card-title"><span>📥</span> Import / Restore Database</div>
+            <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:12px;">
+                // Upload a JSON file exported from Supabase to import into Cloudflare D1
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <select class="dev-select" id="importTableSelect" style="margin-bottom:0;">
+                    <option value="settings">settings</option>
+                    <option value="products">products</option>
+                    <option value="categories">categories</option>
+                    <option value="orders">orders</option>
+                    <option value="reviews">reviews</option>
+                    <option value="banners">banners</option>
+                    <option value="home_sections">home_sections</option>
+                    <option value="delivery_zones">delivery_zones</option>
+                    <option value="promo_codes">promo_codes</option>
+                    <option value="product_categories">product_categories</option>
+                </select>
+                <input class="dev-input" type="file" id="importFile" accept=".json" style="padding:6px; background:rgba(255,255,255,0.05); margin-bottom:0;">
+                <button class="dev-btn dev-btn-primary" onclick="importDatabase()">🚀 Import JSON Data</button>
+            </div>
+            <div id="importProgress" style="font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:10px;"></div>
+        </div>
+
+        <div class="dev-card">
             <div class="dev-card-title"><span>📤</span> Full Database Export</div>
             <div style="display:flex;flex-direction:column;gap:10px;">
                 <button class="dev-btn dev-btn-green" onclick="exportAll()">⬇ Export All Tables (JSON)</button>
@@ -783,10 +807,13 @@
                     sql = `UPDATE ${table} SET ${keys.map(k => `${k}=?`).join(', ')}`;
                     params.push(...keys.map(k => _payload[k]));
                 } else if (_method === 'upsert') {
-                    const obj = Array.isArray(_payload) ? _payload[0] : _payload;
-                    const keys = Object.keys(obj);
-                    sql = `INSERT OR REPLACE INTO ${table} (${keys.join(', ')}) VALUES (${keys.map(()=>'?').join(', ')})`;
-                    params.push(...keys.map(k => obj[k]));
+                    const arr = Array.isArray(_payload) ? _payload : [_payload];
+                    const keys = Object.keys(arr[0]);
+                    const valuesPlaceholder = `(${keys.map(()=>'?').join(', ')})`;
+                    sql = `INSERT OR REPLACE INTO ${table} (${keys.join(', ')}) VALUES ${arr.map(() => valuesPlaceholder).join(', ')}`;
+                    arr.forEach(obj => {
+                        params.push(...keys.map(k => obj[k]));
+                    });
                 }
 
                 let where = [];
@@ -1532,6 +1559,75 @@ function devToast(msg, color) {
         t.style.opacity = '0'; t.style.transition = '0.3s';
         setTimeout(function(){ t.remove(); }, 300);
     }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// IMPORT DATABASE
+// ═══════════════════════════════════════════════════════════
+async function importDatabase() {
+    var fileInput = document.getElementById('importFile');
+    var table = document.getElementById('importTableSelect').value;
+    var progressEl = document.getElementById('importProgress');
+    
+    if (!fileInput.files || !fileInput.files[0]) {
+        devToast('Please select a JSON file', '#ffd700');
+        return;
+    }
+    
+    var file = fileInput.files[0];
+    var reader = new FileReader();
+    
+    reader.onload = async function(e) {
+        try {
+            var data = JSON.parse(e.target.result);
+            if (!Array.isArray(data)) {
+                if (data[table] && Array.isArray(data[table])) {
+                    data = data[table];
+                } else {
+                    throw new Error('Invalid format. Expected an array of objects.');
+                }
+            }
+            if (data.length === 0) {
+                devToast('JSON file is empty', '#ffd700');
+                return;
+            }
+            if (!confirm(`Import ${data.length} rows into '${table}'?`)) return;
+            
+            progressEl.textContent = `Importing 0 / ${data.length} rows...`;
+            devToast(`Starting import to ${table}...`, '#4d9eff');
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            const BATCH_SIZE = 10;
+            for (let i = 0; i < data.length; i += BATCH_SIZE) {
+                const batch = data.slice(i, i + BATCH_SIZE);
+                try {
+                    const r = await getDB().from(table).upsert(batch);
+                    if (r.error) {
+                        console.error('Import error for batch:', r.error);
+                        errorCount += batch.length;
+                    } else {
+                        successCount += batch.length;
+                    }
+                } catch(err) {
+                    errorCount += batch.length;
+                }
+                progressEl.textContent = `Importing ${Math.min(i + BATCH_SIZE, data.length)} / ${data.length} rows...`;
+            }
+            
+            progressEl.innerHTML = `<span style="color:var(--green)">✓ Import complete: ${successCount} inserted</span>` + 
+                                   (errorCount > 0 ? `, <span style="color:var(--primary)">${errorCount} failed</span>` : '');
+            devToast(`Import finished!`, '#00ff88');
+            devLog(`Imported ${successCount} rows into ${table}`, 'ok');
+            fileInput.value = '';
+            
+        } catch(err) {
+            devToast('Error reading JSON: ' + err.message, '#ff4d4d');
+            progressEl.textContent = 'Failed to parse JSON file.';
+        }
+    };
+    reader.readAsText(file);
 }
 
 // ═══════════════════════════════════════════════════════════
