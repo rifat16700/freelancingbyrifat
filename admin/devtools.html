@@ -1593,6 +1593,32 @@ async function importDatabase() {
                 devToast('JSON file is empty', '#ffd700');
                 return;
             }
+            progressEl.textContent = `Analyzing table schema...`;
+            
+            // 1. Fetch valid columns for the table to avoid missing column errors
+            let token = localStorage.getItem('fbr_admin_token') || '';
+            let devKey = sessionStorage.getItem('_SK') || '';
+            const hfBase = (typeof CONFIG !== 'undefined' && CONFIG.HF_API_BASE) ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '';
+            const pragmaRes = await fetch(hfBase + "/api/dev-query", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'X-Dev-Key': devKey },
+                body: JSON.stringify({ sql: `PRAGMA table_info(${table})` })
+            }).then(res => res.json());
+
+            if (!pragmaRes.success) throw new Error("Failed to fetch table schema: " + pragmaRes.error);
+            const validCols = pragmaRes.result[0].results.map(r => r.name);
+
+            // 2. Filter data to only include valid columns
+            data = data.map(row => {
+                let newRow = {};
+                for (let key in row) {
+                    if (validCols.includes(key)) {
+                        newRow[key] = row[key];
+                    }
+                }
+                return newRow;
+            });
+            
             if (!confirm(`Import ${data.length} rows into '${table}'?`)) return;
             
             progressEl.textContent = `Importing 0 / ${data.length} rows...`;
@@ -1601,18 +1627,22 @@ async function importDatabase() {
             let successCount = 0;
             let errorCount = 0;
             
-            const BATCH_SIZE = 10;
+            // D1 parameter limit is 100. 3 * 30 cols = 90. Max batch size 3.
+            const BATCH_SIZE = 2;
             for (let i = 0; i < data.length; i += BATCH_SIZE) {
                 const batch = data.slice(i, i + BATCH_SIZE);
                 try {
                     const r = await getDB().from(table).upsert(batch);
                     if (r.error) {
                         console.error('Import error for batch:', r.error);
+                        devToast('Import error: ' + (r.error.message || r.error), '#ff4d4d');
                         errorCount += batch.length;
                     } else {
                         successCount += batch.length;
                     }
                 } catch(err) {
+                    console.error('Import exception:', err);
+                    devToast('Import exception: ' + (err.message || err), '#ff4d4d');
                     errorCount += batch.length;
                 }
                 progressEl.textContent = `Importing ${Math.min(i + BATCH_SIZE, data.length)} / ${data.length} rows...`;
