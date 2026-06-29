@@ -509,6 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderAddons();
         renderAddOnce();
         loadBdDivisions();
+        setTimeout(() => { if(typeof lucide !== 'undefined') lucide.createIcons(); }, 100); // dynamic render
 
         var checkStatus = (status || '').toLowerCase();
         if ((checkStatus === 'completed' || checkStatus === 'success') && orderId) {
