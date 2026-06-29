@@ -129,9 +129,9 @@
 </div>
 
 <nav class="navbar">
-    <a href="cart.html" class="nav-icon-btn">� �</a>
+    <a href="cart.html" class="nav-icon-btn"><i data-lucide="arrow-left" class="lucide-icon"></i></a>
     <a href="index.html" class="navbar-brand"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <span id="navBrand">Checkout</span></a>
-    <div style="margin-left:auto;font-size:13px;color:#888;">�x Secure Checkout</div>
+    <div style="margin-left:auto;font-size:13px;color:#888;"><i data-lucide="lock" class="lucide-icon"></i> Secure Checkout</div>
 </nav>
 
 <div class="container">
@@ -159,7 +159,7 @@
 
             <!-- STEP 1: Customer Info -->
             <div id="step1" class="section-card">
-                <div class="section-card-title">�x� Step 1: Customer Information</div>
+                <div class="section-card-title"><i data-lucide="user" class="lucide-icon"></i> Step 1: Customer Information</div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Full Name *</label>
@@ -212,13 +212,9 @@
 
                 <!-- Add-Once Products -->
                 <div id="addOnceSection" style="display:none; margin-top:16px;">
-                    <div style="font-size:13px;font-weight:800;color:#627EEA;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-                        �x:�️ Add-Once Products <span style="font-size:11px;font-weight:500;color:#888;">(Optional)</span>
-                    </div>
+                    <div style="font-size:13px;font-weight:800;color:#627EEA;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><i data-lucide="package-plus" class="lucide-icon"></i> Add-Once Products <span style="font-size:11px;font-weight:500;color:#888;">(Optional)</span></div>
                     <div id="addOncePreviewList"></div>
-                    <button id="addOnceViewMoreBtn" onclick="openAddOnceSheet()" style="display:none; width:100%; margin-top:4px; padding:10px; border:1.5px dashed rgba(98,126,234,0.4); border-radius:10px; background:rgba(98,126,234,0.04); color:#627EEA; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;">
-                        �x:�️ View More Add-Once Products
-                    </button>
+                    <button id="addOnceViewMoreBtn" onclick="openAddOnceSheet()" style="display:none; width:100%; margin-top:4px; padding:10px; border:1.5px dashed rgba(98,126,234,0.4); border-radius:10px; background:rgba(98,126,234,0.04); color:#627EEA; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;"><i data-lucide="package-plus" class="lucide-icon"></i> View More Add-Once Products</button>
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:4px;">
@@ -239,19 +235,15 @@
 
                 <!-- Advance payment info -->
                 <div id="advanceSection" class="adv-box" style="display:none;">
-                    <div style="font-size:13px;font-weight:700;color:#FF9500;margin-bottom:4px;">�a�️ Advance Required</div>
+                    <div style="font-size:13px;font-weight:700;color:#FF9500;margin-bottom:4px;"><i data-lucide="alert-triangle" class="lucide-icon"></i> Advance Required</div>
                     <div style="font-size:13px;color:#666;" id="advanceInfoText"></div>
                     <div style="font-size:20px;font-weight:900;color:var(--text-dark);margin-top:6px;">Advance: <span id="advanceAmountLabel" style="color:var(--primary);">৳0</span></div>
                 </div>
 
                 <!-- ���� Transfer Type Tab Bar ���� -->
                 <div class="transfer-tab-bar" id="transferTabBar">
-                    <button class="transfer-tab-btn active" id="tabNational" onclick="switchTransferTab('national')">
-                        �x!��x!� National Transfer
-                    </button>
-                    <button class="transfer-tab-btn" id="tabInternational" onclick="switchTransferTab('international')">
-                        �xR� International Transfer
-                    </button>
+                    <button class="transfer-tab-btn active" id="tabNational" onclick="switchTransferTab('national')"><i data-lucide="landmark" class="lucide-icon"></i> National Transfer</button>
+                    <button class="transfer-tab-btn" id="tabInternational" onclick="switchTransferTab('international')"><i data-lucide="globe" class="lucide-icon"></i> International Transfer</button>
                 </div>
 
                 <!-- ���� NATIONAL PANEL ���� -->
@@ -305,7 +297,7 @@
 
                     <!-- TxID Input -->
                     <div class="txid-input-wrap" id="cryptoTxidWrap" style="display:none;">
-                        <label class="form-label" style="font-weight:700;font-size:13px;">�x9 Transaction ID / TxHash *</label>
+                        <label class="form-label" style="font-weight:700;font-size:13px;"><i data-lucide="hash" class="lucide-icon"></i> Transaction ID / TxHash *</label>
                         <input class="form-input" id="cryptoTxidInput" placeholder="Paste your Transaction ID or TxHash here" style="font-size:13px;">
                         <div style="font-size:11px;color:#888;margin-top:5px;">Binance Pay: Transaction ID from Binance app. Crypto: TxHash from blockchain explorer.</div>
                     </div>
@@ -314,19 +306,17 @@
                     <div class="verify-status" id="cryptoVerifyStatus"></div>
 
                     <!-- Verify & Pay Button -->
-                    <button class="verify-btn" id="verifyCryptoBtn" onclick="verifyCryptoCheck(event)" style="display:none;">
-                        �S& Verify & Pay
-                    </button>
+                    <button class="verify-btn" id="verifyCryptoBtn" onclick="verifyCryptoCheck(event)" style="display:none;"><i data-lucide="shield-check" class="lucide-icon"></i> Verify & Pay</button>
                 </div>
 
                 <!-- Promo Code -->
                 <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
                     <div style="position:relative; flex:1;">
                         <input class="form-input" id="promoInput" placeholder="Promo code (optional)" style="width:100%; padding-right:32px;" oninput="document.getElementById('removePromoBtn').style.display=this.value.trim()?'block':'none'">
-                        <button id="removePromoBtn" onclick="removePromo()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#ff3b30; font-size:16px; font-weight:bold; cursor:pointer; display:none; padding:4px; line-height:1;" title="Remove Promo">�S"</button>
+                        <button id="removePromoBtn" onclick="removePromo()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#ff3b30; font-size:16px; font-weight:bold; cursor:pointer; display:none; padding:4px; line-height:1;" title="Remove Promo"><i data-lucide="x" class="lucide-icon"></i></button>
                     </div>
                     <button class="btn btn-ghost" onclick="applyPromo()" style="padding: 10px 14px;">Apply</button>
-                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;">�x}x️ Coupons</button>
+                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;"><i data-lucide="ticket" class="lucide-icon"></i> Coupons</button>
                 </div>
                 <div id="promoMsg" style="font-size:13px;margin-top:6px;"></div>
 
@@ -348,9 +338,7 @@
                                 � মি নিশ্�aিত, এ�! �&র্ডার সত্যি�! নিত�! প্রতিশ্রুতিবদ্ধ। রিসিভ না �"রল�! � ল্লাহর ��Sব � মার �0পর প�Sব�! এব� পর�"াল�! �"ঠ�9র শাস্তি হব�!।
                             </span>
                         </label>
-                        <div id="funTooltip1" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%) translateY(10px); opacity: 0; visibility: hidden; background: #34C759; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 6px 15px rgba(52, 199, 89, 0.25); z-index: 100;">
-                            মাশা� ল্লাহ! � পনার নি�xত পরিষ্�"ার �x�!
-                            <div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #34C759 transparent transparent transparent;"></div>
+                        <div id="funTooltip1">??????????! ????? ???? ????????!<div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #34C759 transparent transparent transparent;"></div>
                         </div>
 
                         <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0; padding-top: 10px; border-top: 1px solid rgba(255, 59, 48, 0.2);">
