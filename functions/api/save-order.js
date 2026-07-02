@@ -10,26 +10,28 @@ export async function onRequestPost(context) {
     try {
         const body = await request.json();
         const { 
-            id, customer_name, customer_phone, address, upazila, district, 
-            delivery_method, delivery_charge, payment_method, payment_trx_id, payment_number, 
-            subtotal, total, items, addons, promo_code, promo_discount, order_notes 
+            id, customer_name, customer_phone, customer_email, division, district, upazila, address,
+            items, addons, subtotal, addon_total, delivery_charge, promo_code, promo_discount,
+            grand_total, advance_payable, payment_method, payment_status, payment_trx_id, payment_sender,
+            status, order_type
         } = body;
         
         const sql = `
             INSERT INTO orders (
-                id, customer_name, customer_phone, address, upazila, district,
-                delivery_method, delivery_charge, payment_method, payment_trx_id, payment_number,
-                subtotal, total, items, addons, promo_code, promo_discount, order_notes, status, payment_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Unpaid')
+                id, customer_name, customer_phone, customer_email, division, district, upazila, address,
+                items, addons, subtotal, addon_total, delivery_charge, promo_code, promo_discount,
+                grand_total, advance_payable, payment_method, payment_status, payment_trx_id, payment_sender,
+                status, order_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         
         const params = [
-            id, customer_name, customer_phone, address, upazila, district,
-            delivery_method, delivery_charge, payment_method, payment_trx_id, payment_number,
-            subtotal, total,
+            id, customer_name, customer_phone, customer_email || null, division || null, district, upazila, address,
             typeof items === 'string' ? items : JSON.stringify(items || []),
             typeof addons === 'string' ? addons : JSON.stringify(addons || []),
-            promo_code || null, promo_discount || 0, order_notes || ''
+            subtotal, addon_total || 0, delivery_charge, promo_code || null, promo_discount || 0,
+            grand_total, advance_payable || 0, payment_method, payment_status || 'Unpaid', payment_trx_id || null, payment_sender || null,
+            status || 'Pending', order_type || 'delivery'
         ];
 
         const stmt = env.DB.prepare(sql);
