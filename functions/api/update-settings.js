@@ -53,6 +53,18 @@ export async function onRequestPost(context) {
         const stmt = env.DB.prepare(sql);
         const { results } = await stmt.bind(...params.map(v => v === undefined ? null : v)).run();
 
+        
+        // Auto-purge Cloudflare Cache in background if credentials exist
+        if (env.CLOUDFLARE_ZONE_ID && env.CLOUDFLARE_API_TOKEN) {
+            context.waitUntil(
+                fetch(`https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/purge_cache`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${env.CLOUDFLARE_API_TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ purge_everything: true })
+                }).catch(() => {})
+            );
+        }
+
         return new Response(JSON.stringify({ success: true, result: [{ results }] }), {
             status: 200,
             headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
