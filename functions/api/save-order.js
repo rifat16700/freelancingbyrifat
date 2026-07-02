@@ -10,21 +10,21 @@ export async function onRequestPost(context) {
     try {
         const body = await request.json();
         const { 
-            id, customer_name, customer_phone, customer_address, upazila, district, 
+            id, customer_name, customer_phone, address, upazila, district, 
             delivery_method, delivery_charge, payment_method, payment_trx_id, payment_number, 
             subtotal, total, items, addons, promo_code, promo_discount, order_notes 
         } = body;
         
         const sql = `
             INSERT INTO orders (
-                id, customer_name, customer_phone, customer_address, upazila, district,
+                id, customer_name, customer_phone, address, upazila, district,
                 delivery_method, delivery_charge, payment_method, payment_trx_id, payment_number,
                 subtotal, total, items, addons, promo_code, promo_discount, order_notes, status, payment_status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 'Unpaid')
         `;
         
         const params = [
-            id, customer_name, customer_phone, customer_address, upazila, district,
+            id, customer_name, customer_phone, address, upazila, district,
             delivery_method, delivery_charge, payment_method, payment_trx_id, payment_number,
             subtotal, total,
             typeof items === 'string' ? items : JSON.stringify(items || []),
