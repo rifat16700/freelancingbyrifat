@@ -1557,6 +1557,7 @@ function placeOrder() {
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     }
+    if (!insertPromise) { alert('Configuration Error: Unknown DB_PROVIDER'); var btn = document.getElementById('placeOrderBtn'); if(btn){btn.disabled=false; btn.innerHTML='<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order';} return; }
     insertPromise.then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
         sendOrderNotification(orderData);
@@ -1601,6 +1602,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
             .catch(function(err) { return { data: null, error: err }; });
     }
 
+    if (!insertPromise) { alert('Configuration Error: Unknown DB_PROVIDER'); var btn = document.getElementById('placeOrderBtn'); if(btn){btn.disabled=false; btn.innerHTML='<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order';} return; }
     insertPromise.then(function(r) {
         if (r.error) { alert('Order save failed: ' + r.error.message); return; }
 
