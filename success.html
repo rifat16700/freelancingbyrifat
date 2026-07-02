@@ -128,6 +128,22 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         p1 = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings').then(function(doc) { return { data: doc }; }).catch(function() { return { data: {} }; });
         p2 = appwriteDatabases.getDocument(APP_DB, 'orders', orderId).then(function(doc) { doc.id=doc.$id; if (typeof doc.items==='string') { try { doc.items=JSON.parse(doc.items); } catch(e){ doc.items=[]; } } return { data: doc }; }).catch(function() { return { data: null }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var h = { 'Content-Type': 'application/json' };
+        p1 = fetch((CONFIG.HF_API_BASE||'')+'/api/d1-query', { method: 'POST', headers: h, body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id=1" }) })
+            .then(function(r) { return r.json(); })
+            .then(function(r) { return { data: (r.success && r.result[0].results.length) ? r.result[0].results[0] : {} }; })
+            .catch(function() { return { data: {} }; });
+            
+        p2 = fetch((CONFIG.HF_API_BASE||'')+'/api/d1-query', { method: 'POST', headers: h, body: JSON.stringify({ sql: "SELECT * FROM orders WHERE id=?", params: [orderId] }) })
+            .then(function(r) { return r.json(); })
+            .then(function(r) { 
+                var obj = (r.success && r.result[0].results.length) ? r.result[0].results[0] : null;
+                if (obj && typeof obj.items === 'string') { try { obj.items = JSON.parse(obj.items); } catch(e){} }
+                if (obj && typeof obj.addons === 'string') { try { obj.addons = JSON.parse(obj.addons); } catch(e){} }
+                return { data: obj }; 
+            })
+            .catch(function() { return { data: null }; });
     } else {
         p1 = Promise.resolve({ data: {} });
         p2 = Promise.resolve({ data: null });
