@@ -832,9 +832,12 @@ tbody tr:hover { background: var(--bg-card); }
 
 /* ── Settings Grid (2-col responsive) ─────────────────────── */
 .settings-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    columns: 2;
+    column-gap: 20px;
+}
+.settings-grid > * {
+    break-inside: avoid;
+    margin-bottom: 20px;
 }
 
 /* ── Category Checkbox List (Products modal) ───────────────── */
@@ -1059,7 +1062,7 @@ tbody tr:hover { background: var(--bg-card); }
     .dashboard-grid { grid-template-columns: 1fr !important; }
 
     /* Settings 2-col → 1-col on tablet */
-    .settings-grid { grid-template-columns: 1fr; }
+    .settings-grid { columns: 1; }
 }
 
 @media (max-width: 640px) {
@@ -1110,5 +1113,5 @@ tbody tr:hover { background: var(--bg-card); }
     .size-item { grid-template-columns: 1fr 1fr; }
 
     /* Settings page 2-col → 1-col on mobile */
-    .settings-grid { grid-template-columns: 1fr; }
+    .settings-grid { columns: 1; }
 }
