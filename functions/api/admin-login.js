@@ -13,8 +13,8 @@ export async function onRequestPost(context) {
 
         // Default to 'admin' and '1234' if env variables are not set for easier setup, 
         // but strongly recommend setting them in Cloudflare.
-        const validUser = env.ADMIN_USERNAME || 'admin';
-        const validPass = env.ADMIN_PASSWORD || '1234';
+        const validUser = env.ADMIN_USERNAME || 'admin@rifat.com';
+        const validPass = env.ADMIN_PASSWORD || 'rifat123R@';
 
         if (username === validUser && password === validPass) {
             return new Response(JSON.stringify({ success: true, token: (env.ADMIN_SECRET_TOKEN || 'default_admin_token') }), {
