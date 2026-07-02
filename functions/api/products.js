@@ -26,7 +26,7 @@ export async function onRequestGet(context) {
             queryArgs = [limit];
         }
 
-        const { results } = await stmt.bind(...queryArgs).all();
+        const { results } = await stmt.bind(...queryArgs.map(v => v === undefined ? null : v)).all();
 
         return new Response(JSON.stringify({ success: true, data: results }), {
             status: 200,

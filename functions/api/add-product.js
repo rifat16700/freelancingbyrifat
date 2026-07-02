@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
         ];
 
         const stmt = env.DB.prepare(sql);
-        const { results } = await stmt.bind(...params).run();
+        const { results } = await stmt.bind(...params.map(v => v === undefined ? null : v)).run();
 
         return new Response(JSON.stringify({ success: true, result: [{ results }] }), {
             status: 200,
