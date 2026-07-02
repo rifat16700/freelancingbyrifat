@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout � Freelancing By Rifat</title>
+    <title>Checkout — Freelancing By Rifat</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="assets/js/config.js?v=1782024132023"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -21,7 +21,7 @@
         .payment-desc  { font-size: 12px; color: var(--text-muted); }
         .manual-pay-box { background: rgba(255,77,77,0.05); border: 1.5px dashed var(--primary); border-radius: var(--radius-md); padding: 16px; margin-top: 12px; display: none; }
 
-        /* ���� Accordion Payment Cards ������������������������������������������������������ */
+        /* ── Accordion Payment Cards ─────────────────────────── */
         .pay-card { border: 2px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; }
         .pay-card.selected { border-color: var(--primary); }
         .pay-card-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; transition: background 0.15s; }
@@ -62,7 +62,7 @@
         .order-item-row2 { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         @media (max-width: 900px) { .checkout-layout { grid-template-columns: 1fr; } }
 
-        /* ���� International Transfer UI ������������������������������������������������������ */
+        /* ── International Transfer UI ─────────────────────────── */
         .transfer-tab-bar { display:flex; border:2px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:18px; }
         .transfer-tab-btn { flex:1; padding:13px 10px; font-size:13px; font-weight:700; border:none; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:7px; }
         .transfer-tab-btn.active { background:var(--primary); color:#fff; }
@@ -109,7 +109,7 @@
         .verify-status.error   { background:rgba(239,68,68,0.06); color:#b91c1c; border:1px solid rgba(239,68,68,0.2); display:block; }
         .verify-status.loading { background:rgba(98,126,234,0.08); color:#3730a3; border:1px solid rgba(98,126,234,0.2); display:block; }
         .backup-badge { font-size:10px; background:rgba(255,149,0,0.12); color:#c2610b; border:1px solid rgba(255,149,0,0.3); border-radius:20px; padding:2px 8px; font-weight:700; display:inline-block; vertical-align:middle; margin-left:6px; }
-        /* ���� Add-Once Section ���������������������������������������������������������������� */
+        /* ── Add-Once Section ──────────────────────────────── */
         .add-once-card { border: 1.5px solid rgba(98,126,234,0.25); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; background: #fff; margin-bottom: 8px; }
         .add-once-card:hover { border-color: #627EEA; background: rgba(98,126,234,0.04); transform: translateY(-1px); }
         .add-once-card.selected { border-color: #627EEA; background: rgba(98,126,234,0.08); }
@@ -129,9 +129,9 @@
 </div>
 
 <nav class="navbar">
-    <a href="cart.html" class="nav-icon-btn"><i data-lucide="arrow-left" class="lucide-icon"></i></a>
+    <a href="cart.html" class="nav-icon-btn">←</a>
     <a href="index.html" class="navbar-brand"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <span id="navBrand">Checkout</span></a>
-    <div style="margin-left:auto;font-size:13px;color:#888;"><i data-lucide="lock" class="lucide-icon"></i> Secure Checkout</div>
+    <div style="margin-left:auto;font-size:13px;color:#888;">🔒 Secure Checkout</div>
 </nav>
 
 <div class="container">
@@ -159,7 +159,7 @@
 
             <!-- STEP 1: Customer Info -->
             <div id="step1" class="section-card">
-                <div class="section-card-title"><i data-lucide="user" class="lucide-icon"></i> Step 1: Customer Information</div>
+                <div class="section-card-title">👤 Step 1: Customer Information</div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Full Name *</label>
@@ -212,13 +212,17 @@
 
                 <!-- Add-Once Products -->
                 <div id="addOnceSection" style="display:none; margin-top:16px;">
-                    <div style="font-size:13px;font-weight:800;color:#627EEA;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><i data-lucide="package-plus" class="lucide-icon"></i> Add-Once Products <span style="font-size:11px;font-weight:500;color:#888;">(Optional)</span></div>
+                    <div style="font-size:13px;font-weight:800;color:#627EEA;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                        🛍️ Add-Once Products <span style="font-size:11px;font-weight:500;color:#888;">(Optional)</span>
+                    </div>
                     <div id="addOncePreviewList"></div>
-                    <button id="addOnceViewMoreBtn" onclick="openAddOnceSheet()" style="display:none; width:100%; margin-top:4px; padding:10px; border:1.5px dashed rgba(98,126,234,0.4); border-radius:10px; background:rgba(98,126,234,0.04); color:#627EEA; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;"><i data-lucide="package-plus" class="lucide-icon"></i> View More Add-Once Products</button>
+                    <button id="addOnceViewMoreBtn" onclick="openAddOnceSheet()" style="display:none; width:100%; margin-top:4px; padding:10px; border:1.5px dashed rgba(98,126,234,0.4); border-radius:10px; background:rgba(98,126,234,0.04); color:#627EEA; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;">
+                        🛍️ View More Add-Once Products
+                    </button>
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:4px;">
-                    <button class="btn btn-ghost" id="backBtn" onclick="goStep(1)"><i data-lucide="arrow-left" class="lucide-icon"></i><i data-lucide="arrow-left" class="lucide-icon"></i> Back</button>
+                    <button class="btn btn-ghost" id="backBtn" onclick="goStep(1)"><i data-lucide="arrow-left" class="lucide-icon"></i> Back</button>
                     <button class="btn btn-primary" style="flex:1;" onclick="goStep3()">Continue to Payment <i data-lucide="arrow-right" class="lucide-icon"></i></button>
                 </div>
             </div>
@@ -235,20 +239,24 @@
 
                 <!-- Advance payment info -->
                 <div id="advanceSection" class="adv-box" style="display:none;">
-                    <div style="font-size:13px;font-weight:700;color:#FF9500;margin-bottom:4px;"><i data-lucide="alert-triangle" class="lucide-icon"></i> Advance Required</div>
+                    <div style="font-size:13px;font-weight:700;color:#FF9500;margin-bottom:4px;">⚠️ Advance Required</div>
                     <div style="font-size:13px;color:#666;" id="advanceInfoText"></div>
                     <div style="font-size:20px;font-weight:900;color:var(--text-dark);margin-top:6px;">Advance: <span id="advanceAmountLabel" style="color:var(--primary);">৳0</span></div>
                 </div>
 
-                <!-- ���� Transfer Type Tab Bar ���� -->
+                <!-- ── Transfer Type Tab Bar ── -->
                 <div class="transfer-tab-bar" id="transferTabBar">
-                    <button class="transfer-tab-btn active" id="tabNational" onclick="switchTransferTab('national')"><i data-lucide="landmark" class="lucide-icon"></i> National Transfer</button>
-                    <button class="transfer-tab-btn" id="tabInternational" onclick="switchTransferTab('international')"><i data-lucide="globe" class="lucide-icon"></i> International Transfer</button>
+                    <button class="transfer-tab-btn active" id="tabNational" onclick="switchTransferTab('national')">
+                        🇧🇩 National Transfer
+                    </button>
+                    <button class="transfer-tab-btn" id="tabInternational" onclick="switchTransferTab('international')">
+                        🌐 International Transfer
+                    </button>
                 </div>
 
-                <!-- ���� NATIONAL PANEL ���� -->
+                <!-- ── NATIONAL PANEL ── -->
                 <div id="nationalPayPanel">
-                    <!-- Accordion Payment Options � built by buildPaymentOptions() -->
+                    <!-- Accordion Payment Options — built by buildPaymentOptions() -->
                     <div id="paymentOptions"></div>
 
                     <!-- Legacy manualPayBox kept for COD+advance compatibility -->
@@ -273,7 +281,7 @@
                     </div>
                 </div>
 
-                <!-- ���� INTERNATIONAL PANEL ���� -->
+                <!-- ── INTERNATIONAL PANEL ── -->
                 <div id="internationalPayPanel" style="display:none;">
 
                     <!-- USDT Amount Display -->
@@ -297,7 +305,7 @@
 
                     <!-- TxID Input -->
                     <div class="txid-input-wrap" id="cryptoTxidWrap" style="display:none;">
-                        <label class="form-label" style="font-weight:700;font-size:13px;"><i data-lucide="hash" class="lucide-icon"></i> Transaction ID / TxHash *</label>
+                        <label class="form-label" style="font-weight:700;font-size:13px;">📋 Transaction ID / TxHash *</label>
                         <input class="form-input" id="cryptoTxidInput" placeholder="Paste your Transaction ID or TxHash here" style="font-size:13px;">
                         <div style="font-size:11px;color:#888;margin-top:5px;">Binance Pay: Transaction ID from Binance app. Crypto: TxHash from blockchain explorer.</div>
                     </div>
@@ -306,17 +314,19 @@
                     <div class="verify-status" id="cryptoVerifyStatus"></div>
 
                     <!-- Verify & Pay Button -->
-                    <button class="verify-btn" id="verifyCryptoBtn" onclick="verifyCryptoCheck(event)" style="display:none;"><i data-lucide="shield-check" class="lucide-icon"></i> Verify & Pay</button>
+                    <button class="verify-btn" id="verifyCryptoBtn" onclick="verifyCryptoCheck(event)" style="display:none;">
+                        ✅ Verify & Pay
+                    </button>
                 </div>
 
                 <!-- Promo Code -->
                 <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
                     <div style="position:relative; flex:1;">
                         <input class="form-input" id="promoInput" placeholder="Promo code (optional)" style="width:100%; padding-right:32px;" oninput="document.getElementById('removePromoBtn').style.display=this.value.trim()?'block':'none'">
-                        <button id="removePromoBtn" onclick="removePromo()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#ff3b30; font-size:16px; font-weight:bold; cursor:pointer; display:none; padding:4px; line-height:1;" title="Remove Promo"><i data-lucide="x" class="lucide-icon"></i></button>
+                        <button id="removePromoBtn" onclick="removePromo()" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#ff3b30; font-size:16px; font-weight:bold; cursor:pointer; display:none; padding:4px; line-height:1;" title="Remove Promo">✕</button>
                     </div>
                     <button class="btn btn-ghost" onclick="applyPromo()" style="padding: 10px 14px;">Apply</button>
-                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;"><i data-lucide="ticket" class="lucide-icon"></i> Coupons</button>
+                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;">🎟️ Coupons</button>
                 </div>
                 <div id="promoMsg" style="font-size:13px;margin-top:6px;"></div>
 
@@ -335,16 +345,18 @@
                         <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
                             <input type="checkbox" id="funPromiseCheck1" style="margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: #FF3B30;">
                             <span style="font-size: 14.5px; color: #1C1C1E; line-height: 1.5; text-align: left; font-weight: 600;">
-                                � মি নিশ্�aিত, এ�! �&র্ডার সত্যি�! নিত�! প্রতিশ্রুতিবদ্ধ। রিসিভ না �"রল�! � ল্লাহর ��Sব � মার �0পর প�Sব�! এব� পর�"াল�! �"ঠ�9র শাস্তি হব�!।
+                                আমি নিশ্চিত, এই অর্ডার সত্যিই নিতে প্রতিশ্রুতিবদ্ধ। রিসিভ না করলে আল্লাহর গজব আমার উপর পড়বে এবং পরকালে কঠোর শাস্তি হবে।
                             </span>
                         </label>
-                        <div id="funTooltip1">মাশাআল্লাহ! আপনার নিয়ত পরিষ্কার 🌟<div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #34C759 transparent transparent transparent;"></div>
+                        <div id="funTooltip1" style="position: absolute; top: -40px; left: 50%; transform: translateX(-50%) translateY(10px); opacity: 0; visibility: hidden; background: #34C759; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 6px 15px rgba(52, 199, 89, 0.25); z-index: 100;">
+                            মাশাআল্লাহ! আপনার নিয়ত পরিষ্কার 😇
+                            <div style="position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: #34C759 transparent transparent transparent;"></div>
                         </div>
 
                         <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0; padding-top: 10px; border-top: 1px solid rgba(255, 59, 48, 0.2);">
                             <input type="checkbox" id="funPromiseCheck2" style="margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: #34C759;">
                             <span style="font-size: 14.5px; color: #1C1C1E; line-height: 1.5; text-align: left; font-weight: 600;">
-                                পণ্য হাত�! প�!�x�! ড�!লিভারি ম্যান�!র �"া�:�! ম�ল্য পরিশ�9ধ �"রুন
+                                পণ্য হাতে পেয়ে ডেলিভারি ম্যানের কাছে মূল্য পরিশোধ করুন
                             </span>
                         </label>
                         <div id="funTooltip2" style="position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%) translateY(-10px); opacity: 0; visibility: hidden; background: #007AFF; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 6px 15px rgba(0, 122, 255, 0.25); z-index: 100;">
@@ -355,7 +367,7 @@
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:20px;" id="nationalPlaceOrderRow">
-                    <button class="btn btn-ghost" onclick="goStep(2)"><i data-lucide="arrow-left" class="lucide-icon"></i><i data-lucide="arrow-left" class="lucide-icon"></i> Back</button>
+                    <button class="btn btn-ghost" onclick="goStep(2)"><i data-lucide="arrow-left" class="lucide-icon"></i> Back</button>
                     <button class="btn btn-primary btn-full btn-lg" id="placeOrderBtn" onclick="placeOrderCheck(event)">
                         <i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order
                     </button>
@@ -372,7 +384,7 @@
                 <div style="margin-top:14px;">
                     <div class="summary-line"><span>Subtotal</span><span id="smSubtotal">৳0</span></div>
                     <div class="summary-line" id="addonLine" style="display:none;"><span>Add-ons</span><span id="smAddon">৳0</span></div>
-                    <div class="summary-line"><span>Delivery</span><span id="smDelivery">�</span></div>
+                    <div class="summary-line"><span>Delivery</span><span id="smDelivery">—</span></div>
                     <div class="summary-line" id="promoLine" style="display:none;color:var(--success);"><span>Promo Discount</span><span id="smPromo">-৳0</span></div>
                     <div class="summary-line summary-total"><span>Total</span><span id="smTotal" style="color:var(--primary);">৳0</span></div>
                     <div class="summary-line" id="advPayLine" style="display:none;color:var(--warning);"><span>To Pay Now (Advance)</span><span id="smAdvPay">৳0</span></div>
@@ -384,7 +396,7 @@
 </div>
 
 <script>
-// ���� State ��������������������������������������������������������������������������������������������������������
+// ── State ────────────────────────────────────────────────────
 var cart = [], settings = {}, zones = [], addons = [];
 var addOnceProducts = []; // Add-Once products list
 var currentStep  = 1;
@@ -397,13 +409,13 @@ var draftSent = false;
 var promoPaymentRestrictions = []; // payment methods required by applied coupon
 var promoFreeDelivery = false;     // if coupon gives free delivery
 var isPickup = new URLSearchParams(window.location.search).get('pickup') === '1';
-// Direct Order (Buy Now) � main cart থ�!�"�! � লাদা
+// Direct Order (Buy Now) — main cart থেকে আলাদা
 var isDirectOrder = new URLSearchParams(window.location.search).get('direct') === '1';
 var DIRECT_KEY = (typeof CONFIG !== 'undefined' && CONFIG.DIRECT_ORDER_KEY) ? CONFIG.DIRECT_ORDER_KEY : 'fbr_direct_order';
 
-// ���� Init ����������������������������������������������������������������������������������������������������������
+// ── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-    // Direct Order হল�! � লাদা key থ�!�"�! load �"র�9, main cart untouched
+    // Direct Order হলে আলাদা key থেকে load করো, main cart untouched
     if (isDirectOrder) {
         try { cart = JSON.parse(localStorage.getItem(DIRECT_KEY) || '[]'); } catch(e) { cart = []; }
         if (!cart.length) { window.location.href = 'shop.html'; return; }
@@ -464,33 +476,6 @@ document.addEventListener('DOMContentLoaded', function() {
             p5 = fetch('/api/appwrite-get-products').then(function(r) { return r.json(); }).then(function(data) {
                 return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
             }).catch(function() { return { data: [] }; });
-        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            var h = { "Content-Type": "application/json" };
-            p1 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id=1" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results.length) ? r.result[0].results[0] : {} })).then(function(res) {
-                var doc = res.data;
-                if (typeof doc.messaging_apps === 'string') try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e){}
-                if (typeof doc.crypto_coins === 'string') try { doc.crypto_coins = JSON.parse(doc.crypto_coins); } catch(e){}
-                return { data: doc };
-            });
-            p2 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM delivery_zones" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
-                return { data: res.data.map(function(d) { if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} return d; }) };
-            });
-            p3 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM addons WHERE is_active=1 ORDER BY created_at" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
-                return { data: res.data.map(function(d) { d.is_active = d.is_active === 1; if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} return d; }) };
-            });
-            p4 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM promos WHERE is_active=1 LIMIT 500" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
-                return { data: res.data.map(function(d) {
-                    d.is_active = d.is_active === 1;
-                    d.is_repeated_config = d.is_repeated_config === 1;
-                    ['applicable_products','applicable_categories','applicable_districts','applicable_payments'].forEach(function(k){
-                        if(typeof d[k]==='string') try{ d[k]=JSON.parse(d[k]); }catch(e){}
-                    });
-                    return d;
-                })};
-            });
-            p5 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT id,name,base_price,flash_sale_price,gallery_images,variants FROM products WHERE is_add_once=1 AND is_active=1" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
-                return { data: res.data.map(function(d) { if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} if(typeof d.variants==='string') try{ d.variants=JSON.parse(d.variants); }catch(e){} return d; }) };
-            });
         } else {
             p1 = Promise.resolve({data:{}}); p2 = Promise.resolve({data:[]}); p3 = Promise.resolve({data:[]}); p4 = Promise.resolve({data:[]}); p5 = Promise.resolve({data:[]});
         }
@@ -509,7 +494,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderAddons();
         renderAddOnce();
         loadBdDivisions();
-        setTimeout(() => { if(typeof lucide !== 'undefined') lucide.createIcons(); }, 100); // dynamic render
 
         var checkStatus = (status || '').toLowerCase();
         if ((checkStatus === 'completed' || checkStatus === 'success') && orderId) {
@@ -535,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ���� Render Order Summary Items ����������������������������������������������������������������
+// ── Render Order Summary Items ────────────────────────────────
 function renderSummaryItems() {
     var subtotal = 0;
     var html = cart.map(function(item) {
@@ -545,7 +529,7 @@ function renderSummaryItems() {
             (item.image ? '<img src="' + item.image + '" style="width:48px;height:48px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0;">' : '') +
             '<div style="flex:1;font-size:13px;">' +
                 '<div style="font-weight:700;">' + item.productName + '</div>' +
-                            '<div style="color:#888;">' + (item.color||'') + ' / ' + (item.size||'') + ' x ' + (item.quantity||1) + '</div>' +
+                '<div style="color:#888;">' + (item.color||'') + ' / ' + (item.size||'') + ' × ' + (item.quantity||1) + '</div>' +
             '</div>' +
             '<div style="font-weight:800;font-size:14px;color:var(--primary);">৳' + lineTotal + '</div>' +
         '</div>';
@@ -611,7 +595,7 @@ function updateSummaryTotals() {
     if (delDisc > 0) {
         document.getElementById('smDelivery').innerHTML = '<del style="color:#aaa;font-size:11px;">৳' + deliveryCharge + '</del> ' + (effectiveDelivery > 0 ? '৳' + effectiveDelivery : '<span style="color:var(--success);">Free</span>');
     } else {
-        document.getElementById('smDelivery').textContent = deliveryCharge > 0 ? '৳' + deliveryCharge : '�';
+        document.getElementById('smDelivery').textContent = deliveryCharge > 0 ? '৳' + deliveryCharge : '—';
     }
     
     document.getElementById('smPromo').textContent    = '-৳' + prodDisc.toFixed(0);
@@ -623,7 +607,7 @@ function updateSummaryTotals() {
     return total;
 }
 
-// ���� Add-Once Products ����������������������������������������������������������������������������������
+// ── Add-Once Products ─────────────────────────────────────────
 var selectedAddOnce = []; // {id, name, price}
 
 function getAddOncePrice(p) {
@@ -725,7 +709,7 @@ function closeAddOnceSheet() {
     renderAddOnce();
 }
 
-// ���� Addons ��������������������������������������������������������������������������������������������������������
+// ── Addons ────────────────────────────────────────────────────
 function renderAddons() {
     if (!addons.length) { document.getElementById('addonsSection').style.display = 'none'; return; }
     var html = addons.map(function(a) {
@@ -756,7 +740,7 @@ function toggleAddon(id, el) {
     updateSummaryTotals();
 }
 
-// ���� BD APIs ��������������������������������������������������������������������������������������������������
+// ── BD APIs ─────────────────────────────────────────────────
 function loadBdDivisions() {
     fetch('https://bdapis.com/api/v1.1/divisions').then(function(r){return r.json();}).then(function(d) {
         var sel = document.getElementById('divSelect');
@@ -826,7 +810,7 @@ function calcDelivery() {
     updateSummaryTotals();
 }
 
-// ���� Stepper ����������������������������������������������������������������������������������������������������
+// ── Stepper ──────────────────────────────────────────────────
 function goStep(n) {
     currentStep = n;
     ['step1','step2','step3'].forEach(function(id, i) {
@@ -875,7 +859,7 @@ function goStep3() {
     goStep(3);
 }
 
-// ���� Payment Options ��������������������������������������������������������������������������������������
+// ── Payment Options ───────────────────────────────────────────
 function buildPaymentOptions() {
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
 
@@ -907,12 +891,12 @@ function buildPaymentOptions() {
         advancePayable = 0;
     }
 
-    // Advance section: শুধু COD select হল�! দ�!�াব�! � selectPayment() এ control হয়
-    // Initially hide �"র�! রা��9, payment type ব�!�:�! নিল�! সঠি�"ভাব�! show/hide হব�!
+    // Advance section: শুধু COD select হলে দেখাবে — selectPayment() এ control হয়
+    // Initially hide করে রাখো, payment type বেছে নিলে সঠিকভাবে show/hide হবে
     document.getElementById('advanceSection').style.display = 'none';
     document.getElementById('advPayLine').style.display = 'none';
     document.getElementById('codPayLine').style.display = 'none';
-    // If rebuilding (coupon applied) and COD was already selected � re-show
+    // If rebuilding (coupon applied) and COD was already selected — re-show
     if (selectedPayMethod === 'cod' && advancePayable > 0 && !isPickup) {
         var advSec2 = document.getElementById('advanceSection');
         advSec2.style.display = 'block';
@@ -949,20 +933,22 @@ function buildPaymentOptions() {
     var total = updateSummaryTotals();
     var html = '';
 
-    // ���� 1. Auto Payment Gateway ��������������������������������������������������������������
+    // ── 1. Auto Payment Gateway ───────────────────────────────
     if (hasGateway) {
-        html += buildPayCard('auto_gateway', '<i data-lucide="credit-card" class="lucide-icon"></i>',
+        html += buildPayCard(
+            'auto_gateway',
+            '<i data-lucide="credit-card" class="lucide-icon"></i>',
             'Auto Payment',
-            'bKash / Nagad / Card � via payment gateway',
+            'bKash / Nagad / Card — via payment gateway',
             // body: redirect button rendered by gateway flow
             '<div style="padding:4px 0 2px;">' +
                 '<div style="font-size:12px;color:#666;margin-bottom:10px;">Click "Place Order" below to be redirected to the secure payment gateway.</div>' +
-                '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#888;"><span>�x</span> Secured by payment gateway</div>' +
+                '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#888;"><span>🔒</span> Secured by payment gateway</div>' +
             '</div>'
         );
     }
 
-    // ���� 2. Manual Payment (accordion with sub-options) ����������������
+    // ── 2. Manual Payment (accordion with sub-options) ────────
     if (hasManual) {
         var subCards = '';
 
@@ -992,33 +978,33 @@ function buildPaymentOptions() {
             'manual_group',
             '<i data-lucide="wallet" class="lucide-icon"></i>',
             'Manual Payment',
-            'bKash / Nagad / Binance � send & enter TrxID',
+            'bKash / Nagad / Binance — send & enter TrxID',
             subCards
         );
     }
 
-    // ���� 3. COD ������������������������������������������������������������������������������������������������
+    // ── 3. COD ────────────────────────────────────────────────
     if (hasCod) {
         var codLabel = advancePayable > 0 ? 'Hybrid COD (Advance + Delivery)' : 'Cash on Delivery';
         var codDesc  = advancePayable > 0 ? 'Pay ৳' + advancePayable + ' advance, rest on delivery' : 'Pay when product is received';
         html += buildPayCard('cod', '<i data-lucide="banknote" class="lucide-icon"></i>', codLabel, codDesc,
-            '<div style="font-size:12px;color:#666;padding:2px 0;">�<i data-lucide="shield-check" class="lucide-icon"></i> No advance payment needed online. Pay the delivery agent when your order arrives.</div>'
+            '<div style="font-size:12px;color:#666;padding:2px 0;">✅ No advance payment needed online. Pay the delivery agent when your order arrives.</div>'
         );
     }
     if (isPickup) {
         html += buildPayCard('cod', '<i data-lucide="banknote" class="lucide-icon"></i>', 'Pay at Pickup', 'Pay when you collect your order',
-            '<div style="font-size:12px;color:#666;padding:2px 0;">�S& Pay at the store when you arrive to pick up your order.</div>'
+            '<div style="font-size:12px;color:#666;padding:2px 0;">✅ Pay at the store when you arrive to pick up your order.</div>'
         );
     }
 
-    if (!html) html = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">�a�️ No payment method available for this coupon. Please remove the coupon or contact support.</div>';
+    if (!html) html = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">⚠️ No payment method available for this coupon. Please remove the coupon or contact support.</div>';
 
     document.getElementById('paymentOptions').innerHTML = html;
     document.getElementById('manualPayBox').style.display = 'none'; // legacy hidden
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-// ���� Accordion card builders ����������������������������������������������������������������������
+// ── Accordion card builders ───────────────────────────────────
 function buildPayCard(value, icon, label, desc, bodyHtml) {
     return '<div class="pay-card" id="pc-' + value + '" data-paycard="' + value + '">' +
         '<div class="pay-card-header" onclick="selectPayCard(\'' + value + '\')">' +
@@ -1028,7 +1014,7 @@ function buildPayCard(value, icon, label, desc, bodyHtml) {
                 '<div class="pay-card-label">' + label + '</div>' +
                 '<div class="pay-card-desc">' + desc + '</div>' +
             '</div>' +
-            '<span class="pay-card-chevron">⬺</span>' +
+            '<span class="pay-card-chevron">›</span>' +
         '</div>' +
         '<div class="pay-card-body">' + bodyHtml + '</div>' +
     '</div>';
@@ -1043,7 +1029,7 @@ function buildSubCard(value, icon, label, desc, bodyHtml) {
                 '<div class="pay-sub-label">' + label + '</div>' +
                 '<div class="pay-sub-desc">' + desc + '</div>' +
             '</div>' +
-            '<span class="pay-sub-chevron">⬺</span>' +
+            '<span class="pay-sub-chevron">›</span>' +
         '</div>' +
         '<div class="pay-sub-body">' + bodyHtml + '</div>' +
     '</div>';
@@ -1054,7 +1040,7 @@ function buildManualDetail(number, methodName, amtLabel, methodKey) {
     var tId = 'trxId_' + methodKey;
     return '<div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
             'Send <span style="color:var(--primary);font-size:16px;">' + amtLabel + '</span>' +
-            ' <button type="button" onclick="copyDirect(this,\'' + amtLabel + '\')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;padding:2px 4px;border-radius:4px;" title="Copy amount">�x9</button> to:' +
+            ' <button type="button" onclick="copyDirect(this,\'' + amtLabel + '\')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;padding:2px 4px;border-radius:4px;" title="Copy amount">📋</button> to:' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">' +
             '<div style="font-size:20px;font-weight:900;color:var(--text-dark);">' + number + '</div>' +
@@ -1076,7 +1062,7 @@ function buildBinanceManualDetail(uid, total) {
     var usdtAmt = (total / rate).toFixed(2);
     var tId = 'trxId_binance';
     return '<div style="background:rgba(240,185,11,0.07);border:1.5px solid rgba(240,185,11,0.3);border-radius:10px;padding:12px;margin-bottom:12px;">' +
-        '<div style="font-size:12px;color:#92710B;font-weight:700;margin-bottom:6px;">�xx� Send USDT (Binance Pay)</div>' +
+        '<div style="font-size:12px;color:#92710B;font-weight:700;margin-bottom:6px;">🟡 Send USDT (Binance Pay)</div>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
             '<div style="font-size:18px;font-weight:900;color:#B8860B;">' + uid + '</div>' +
             '<button type="button" onclick="copyDirect(this,\'' + uid + '\')" style="background:rgba(240,185,11,0.15);border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:700;color:#92710B;">Copy UID</button>' +
@@ -1089,7 +1075,7 @@ function buildBinanceManualDetail(uid, total) {
     '<div class="form-group" style="margin-bottom:0;">' +
         '<label class="form-label">Binance Transaction ID / TxID *</label>' +
         '<input class="form-input" id="' + tId + '" data-role="trxInput" placeholder="Binance Pay Transaction ID">' +
-        '<div style="font-size:11px;color:#aaa;margin-top:4px;">Binance App �  Pay History �  স�!�! transaction এর ID দা�</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-top:4px;">Binance App → Pay History → সেই transaction এর ID দাও</div>' +
     '</div>';
 }
 
@@ -1102,7 +1088,7 @@ function payOpt(value, icon, name, desc, badge) {
     '</div>';
 }
 
-// ���� Accordion: select a top-level pay card ��������������������������������������
+// ── Accordion: select a top-level pay card ───────────────────
 function selectPayCard(value) {
     // Toggle: click same card again to collapse
     var isSame = (selectedPayMethod === value || (value === 'manual_group' && selectedPayMethod && selectedPayMethod.startsWith('manual_')));
@@ -1127,7 +1113,7 @@ function selectPayCard(value) {
     var total = updateSummaryTotals();
 
     if (value === 'manual_group') {
-        // Don't set selectedPayMethod yet � wait for sub-card selection
+        // Don't set selectedPayMethod yet — wait for sub-card selection
         // Clear any previous manual selection
         if (!selectedPayMethod || !selectedPayMethod.startsWith('manual_')) {
             selectedPayMethod = '';
@@ -1143,7 +1129,7 @@ function selectPayCard(value) {
         var autoAdvCheck = settings.advance_method && settings.advance_method.toString().includes('auto');
         if (isCod && advancePayable > 0 && !autoAdvCheck) {
             document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
-            document.getElementById('manualPayMethodName').textContent = 'bKash (Advance � ৳' + advancePayable + ')';
+            document.getElementById('manualPayMethodName').textContent = 'bKash (Advance — ৳' + advancePayable + ')';
             document.getElementById('manualPayAmt').textContent        = '৳' + advancePayable;
             manualBox.style.display = 'block';
         } else {
@@ -1152,7 +1138,7 @@ function selectPayCard(value) {
     }
 }
 
-// ���� Accordion: select a sub-card inside Manual group ������������������
+// ── Accordion: select a sub-card inside Manual group ─────────
 function selectSubCard(value) {
     // Deselect all sub-cards
     document.querySelectorAll('.pay-sub-card').forEach(function(c){ c.classList.remove('selected'); c.querySelector('.pay-sub-radio').checked = false; });
@@ -1168,7 +1154,7 @@ function selectSubCard(value) {
     document.getElementById('manualPayBox').style.display = 'none';
 }
 
-// ���� Shared advance + fun-checkbox UI updater ����������������������������������
+// ── Shared advance + fun-checkbox UI updater ─────────────────
 function _updateAdvanceFunUI(isCod, advAmt, total) {
     var advSection = document.getElementById('advanceSection');
     var advPayLine = document.getElementById('advPayLine');
@@ -1204,7 +1190,7 @@ function _updateAdvanceFunUI(isCod, advAmt, total) {
     }
 }
 
-// ���� copyDirect: pass text directly � no ID needed, most reliable ������������
+// ── copyDirect: pass text directly — no ID needed, most reliable ──────
 function copyDirect(btn, text) {
     var fallback = function() {
         var ta = document.createElement('textarea');
@@ -1218,7 +1204,7 @@ function copyDirect(btn, text) {
     var done = function() {
         var orig = btn.textContent;
         var origColor = btn.style.color;
-        btn.textContent = '�S& Copied!';
+        btn.textContent = '✅ Copied!';
         btn.style.color = '#15803d';
         setTimeout(function() {
             btn.textContent = orig;
@@ -1232,7 +1218,7 @@ function copyDirect(btn, text) {
     }
 }
 
-// ���� copyText helper � delegates to copyElementText with button feedback
+// ── copyText helper — delegates to copyElementText with button feedback
 function copyText(elId) {
     var el = document.getElementById(elId);
     if (!el) return;
@@ -1244,12 +1230,12 @@ function copyText(elId) {
     if (btn) {
         copyDirect(btn, text);
     } else {
-        // no button found � just copy silently
+        // no button found — just copy silently
         copyDirect({ textContent: '', style: {} }, text);
     }
 }
 
-// ���� Legacy selectPayment � kept for any external callers ������������
+// ── Legacy selectPayment — kept for any external callers ──────
 function selectPayment(value) {
     // Delegate to new accordion system
     if (value === 'manual_bkash' || value === 'manual_nagad' || value === 'manual_binance') {
@@ -1260,7 +1246,7 @@ function selectPayment(value) {
     }
 }
 
-// ���� Promo ����������������������������������������������������������������������������������������������������������
+// ── Promo ─────────────────────────────────────────────────────
 function removePromo() {
     document.getElementById('promoInput').value = '';
     document.getElementById('removePromoBtn').style.display = 'none';
@@ -1279,7 +1265,7 @@ function applyPromo(providedCode) {
             promoPaymentRestrictions = [];
             buildPaymentOptions(); // restore all
             updateSummaryTotals();
-            msg.innerHTML = '��️ Coupon removed.';
+            msg.innerHTML = 'ℹ️ Coupon removed.';
             msg.style.color = '#888';
         }
         return;
@@ -1293,11 +1279,11 @@ function applyPromo(providedCode) {
     });
 
     if (!promo) {
-        msg.innerHTML = '�: Invalid or inactive promo code';
+        msg.innerHTML = '⛔ Invalid or inactive promo code';
         msg.style.color = 'var(--danger)'; return;
     }
     if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
-        msg.innerHTML = '�: This promo code has expired';
+        msg.innerHTML = '⛔ This promo code has expired';
         msg.style.color = 'var(--danger)'; return;
     }
 
@@ -1315,21 +1301,21 @@ function applyPromo(providedCode) {
 
     // 1. Min spend check
     if (minSpend && subtotal < minSpend) {
-        msg.innerHTML = '�: Minimum cart value of ৳' + minSpend + ' required';
+        msg.innerHTML = '⛔ Minimum cart value of ৳' + minSpend + ' required';
         msg.style.color = 'var(--danger)'; return;
     }
 
     // 2. Product restriction
     if (appProds.length) {
         var matched = cart.some(function(i){ return appProds.indexOf(i.id) > -1; });
-        if (!matched) { msg.innerHTML = '�: Coupon not valid for products in your cart'; msg.style.color='var(--danger)'; return; }
+        if (!matched) { msg.innerHTML = '⛔ Coupon not valid for products in your cart'; msg.style.color='var(--danger)'; return; }
     }
 
     // 3. District restriction
     if (appDists.length) {
         var dist = document.getElementById('distSelect').value;
         var distOk = dist && appDists.some(function(d){ return d.toLowerCase() === dist.toLowerCase(); });
-        if (!distOk) { msg.innerHTML = '�: Coupon only valid for: ' + appDists.join(', '); msg.style.color='var(--danger)'; return; }
+        if (!distOk) { msg.innerHTML = '⛔ Coupon only valid for: ' + appDists.join(', '); msg.style.color='var(--danger)'; return; }
     }
 
     activePromoObj = promo;
@@ -1343,11 +1329,11 @@ function applyPromo(providedCode) {
     // 6. Payment restriction enforcement
     promoPaymentRestrictions = appPays;
     
-    var succMsg = '�S& Coupon "' + promoCode + '" applied! ';
+    var succMsg = '✅ Coupon "' + promoCode + '" applied! ';
     if (promoDiscount > 0) succMsg += '৳' + promoDiscount.toFixed(0) + ' discount. ';
-    if (promo.del_reward === 'free') succMsg += '�xaa Free Delivery! ';
-    else if (promo.del_reward === 'amount' && promo.del_disc_amount) succMsg += '�xaa ৳' + promo.del_disc_amount + ' delivery discount! ';
-    else if (promo.del_reward === 'percent' && promo.del_disc_amount) succMsg += '�xaa ' + promo.del_disc_amount + '% delivery discount! ';
+    if (promo.del_reward === 'free') succMsg += '🚚 Free Delivery! ';
+    else if (promo.del_reward === 'amount' && promo.del_disc_amount) succMsg += '🚚 ৳' + promo.del_disc_amount + ' delivery discount! ';
+    else if (promo.del_reward === 'percent' && promo.del_disc_amount) succMsg += '🚚 ' + promo.del_disc_amount + '% delivery discount! ';
     
     // Always rebuild payment options when coupon has delivery discount OR payment restriction
     // This ensures advance amount reflects delivery discount correctly
@@ -1365,7 +1351,7 @@ function applyPromo(providedCode) {
             }
         }
         if (appPays.length) {
-            msg.innerHTML = succMsg + '<br><small style="color:#FF9500;">�a�️ Only specific payment methods available.</small>';
+            msg.innerHTML = succMsg + '<br><small style="color:#FF9500;">⚠️ Only specific payment methods available.</small>';
         } else {
             msg.innerHTML = succMsg;
         }
@@ -1375,7 +1361,7 @@ function applyPromo(providedCode) {
     msg.style.color = 'var(--success)';
 }
 
-// ���� View All Coupons � Bottom Sheet ������������������������������������������������������
+// ── View All Coupons — Bottom Sheet ───────────────────────────
 function openAllCouponsModal() {
     // Ensure bottom sheet exists
     if (!document.getElementById('allCouponsSheet')) {
@@ -1387,8 +1373,8 @@ function openAllCouponsModal() {
             '<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:78vh;overflow-y:auto;padding:0 0 20px;animation:slideUpSheet 0.35s cubic-bezier(0.22,0.61,0.36,1);">' +
                 '<div style="width:40px;height:4px;background:#ddd;border-radius:4px;margin:12px auto 4px;"></div>' +
                 '<div style="padding:14px 20px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;">' +
-                    '<div style="font-size:16px;font-weight:800;color:var(--text-dark);">�x}x️ Available Coupons</div>' +
-                    '<button onclick="closeAllCouponsModal()" style="border:none;background:rgba(0,0,0,0.06);border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">�S"</button>' +
+                    '<div style="font-size:16px;font-weight:800;color:var(--text-dark);">🎟️ Available Coupons</div>' +
+                    '<button onclick="closeAllCouponsModal()" style="border:none;background:rgba(0,0,0,0.06);border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>' +
                 '</div>' +
                 '<div id="allCouponsList" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;"></div>' +
             '</div>';
@@ -1428,9 +1414,9 @@ function openAllCouponsModal() {
             var isEligible = diff <= 0;
 
             var extras = '';
-            if (p.del_reward === 'free') extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">�xaa + Free Delivery</span> ';
-            if (p.del_reward === 'amount' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">�xaa -৳'+p.del_disc_amount+' Delivery</span> ';
-            if (p.del_reward === 'percent' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">�xaa -'+p.del_disc_amount+'% Delivery</span> ';
+            if (p.del_reward === 'free') extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">🚚 + Free Delivery</span> ';
+            if (p.del_reward === 'amount' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">🚚 -৳'+p.del_disc_amount+' Delivery</span> ';
+            if (p.del_reward === 'percent' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">🚚 -'+p.del_disc_amount+'% Delivery</span> ';
             if (!isEligible) extras += '<div style="font-size:11px;color:#FF9500;font-weight:700;margin-top:3px;">Add ৳'+diff.toFixed(0)+' more to unlock</div>';
 
             var card = document.createElement('div');
@@ -1466,7 +1452,7 @@ function applyPublicPromo(cleanCode) {
 
 
 
-// ���� Place Order ����������������������������������������������������������������������������������������������
+// ── Place Order ───────────────────────────────────────────────
 function placeOrder() {
     if (!selectedPayMethod) { alert('Please select a payment method'); return; }
 
@@ -1487,7 +1473,7 @@ function placeOrder() {
     var effectiveDeliveryPO = Math.max(0, deliveryCharge - delDiscPO);
     var total    = subtotal + addonTotal + effectiveDeliveryPO - promoDiscount;
 
-    // ���� Manual payment inputs: read from active sub-card ������������������������
+    // ── Manual payment inputs: read from active sub-card ────────────
     var senderNum = '', trxId = '';
     var isManualPay = (selectedPayMethod === 'manual_bkash' || selectedPayMethod === 'manual_nagad' || selectedPayMethod === 'manual_binance');
     var autoAdvCheck = settings.advance_method && settings.advance_method.toString().includes('auto');
@@ -1570,20 +1556,11 @@ function placeOrder() {
         insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awOrderData)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
-    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insertPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderData: orderData })
-        }).then(function(res) { return res.json(); }).then(function(res) {
-            if (!res.success) throw new Error(res.error);
-            return { data: [{ id: orderId }], error: null };
-        }).catch(function(err) { return { data: null, error: err }; });
     }
     insertPromise.then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
         sendOrderNotification(orderData);
-        // Direct Order হল�! শুধু direct key clear �"র�9 � main cart �&�"্ষত থা�"ব�!
+        // Direct Order হলে শুধু direct key clear করো — main cart অক্ষত থাকবে
         if (isDirectOrder) {
             localStorage.removeItem(DIRECT_KEY);
         } else {
@@ -1593,7 +1570,7 @@ function placeOrder() {
     });
 }
 
-// ���� Auto Gateway Payment ����������������������������������������������������������������������������
+// ── Auto Gateway Payment ──────────────────────────────────────
 function initiateGatewayPayment(orderId, total, orderData) {
     var gatewayVersion = (settings.gateway_version || 'v1');
     var proxyUrl = (gatewayVersion === 'v2') 
@@ -1610,7 +1587,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
     var sUrl = baseUrl + '?status=completed&order_id=' + orderId;
     var cUrl = baseUrl + '?status=cancel&order_id=' + orderId;
 
-    // ���� DB-ত�! � ��! order save �"র�9 ������������������������������������������������������������
+    // ── DB-তে আগে order save করো ──────────────────────────────
     var insertPromise;
     if (CONFIG.DB_PROVIDER === 'supabase') {
         insertPromise = supabaseClient.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]);
@@ -1622,21 +1599,12 @@ function initiateGatewayPayment(orderId, total, orderData) {
         insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awOrderData2)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
-    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insertPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderData: Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' }) })
-        }).then(function(res) { return res.json(); }).then(function(res) {
-            if (!res.success) throw new Error(res.error);
-            return { data: [{ id: orderId }], error: null };
-        }).catch(function(err) { return { data: null, error: err }; });
     }
 
     insertPromise.then(function(r) {
         if (r.error) { alert('Order save failed: ' + r.error.message); return; }
 
-        // ���� �x Gateway Execution (v1 and v2 now use same JSON logic) ����������������
+        // ── 🔄 Gateway Execution (v1 and v2 now use same JSON logic) ────────
         var reqBody = {
             cus_name:    name,
             cus_email:   email,
@@ -1687,8 +1655,6 @@ function verifyGatewayPayment(orderId, trxId) {
                 if (typeof doc.addons === 'string') { try { doc.addons = JSON.parse(doc.addons); } catch(e) { doc.addons = []; } }
                 return { data: doc, error: null };
             }).catch(function(err) { return { data: null, error: err }; });
-    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        selectPromise = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM orders WHERE id = ?", params: [orderId] }) }).then(r => r.json()).then(d => { let obj = (d.success && d.result && d.result[0].results && d.result[0].results.length) ? d.result[0].results[0] : null; if(obj && typeof obj.items === 'string'){ try{obj.items=JSON.parse(obj.items)}catch(e){} } if(obj && typeof obj.addons === 'string'){ try{obj.addons=JSON.parse(obj.addons)}catch(e){} } return { data: obj, error: null }; }).catch(e => ({ data: null, error: e }));
     }
     selectPromise.then(function(oRes) {
         if (oRes.error || !oRes.data) {
@@ -1719,8 +1685,6 @@ function verifyGatewayPayment(orderId, trxId) {
                         var docs = res.documents.filter(function(d) { return d.$id !== orderId; });
                         return docs.length ? { data: { id: docs[0].$id }, error: null } : { data: null, error: null };
                     }).catch(function(err) { return { data: null, error: err }; });
-            } else if (trxId && CONFIG.DB_PROVIDER === 'cf_db') {
-                dupCheck = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT id,payment_trx_id FROM orders WHERE payment_trx_id = ? AND id != ? LIMIT 1", params: [trxId, orderId] }) }).then(r => r.json()).then(d => { let obj = (d.success && d.result && d.result[0].results && d.result[0].results.length) ? d.result[0].results[0] : null; return { data: obj, error: null }; }).catch(e => ({ data: null, error: e }));
             } else {
                 dupCheck = Promise.resolve({ data: null });
             }
@@ -1757,8 +1721,6 @@ function verifyGatewayPayment(orderId, trxId) {
                             updatePromise = appwriteDatabases.updateDocument(APP_DB, 'orders', orderId, upData)
                                 .then(function() { return { error: null }; })
                                 .catch(function(err) { return { error: err }; });
-                        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-                            updatePromise = fetch((CONFIG.HF_API_BASE||'')+'/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, upData: upData }) }).then(r => r.json()).then(r => r.success ? { error: null } : { error: new Error(r.error) }).catch(e => ({ error: e }));
                         } else {
                             updatePromise = Promise.resolve({ data: null });
                         }
@@ -1787,16 +1749,16 @@ function verifyGatewayPayment(orderId, trxId) {
     });
 }
 
-// ���� Telegram Notifications ������������������������������������������������������������������������
+// ── Telegram Notifications ────────────────────────────────────
 function sendOrderNotification(order) {
-    var msg = '�x:�️ *NEW ORDER* � #' + order.id + '\n\n' +
-              '�x� ' + (order.customer_name || '�') + ' | �x~ ' + (order.customer_phone || '�') + '\n' +
-              '�x� ' + (order.district || '�') + ', ' + (order.division || '�') + '\n' +
-              '�x� Type: ' + (order.order_type === 'pickup' ? '�xa� Pickup' : '�xaa Delivery') + '\n' +
-              '�x� Method: ' + (order.payment_method || '�') + '\n' +
-              '�x� Total: ৳' + (order.grand_total || 0) + '\n' +
-              (order.payment_trx_id ? '�x TrxID: `' + order.payment_trx_id + '`\n' : '') +
-              '�x� Items: ' + (Array.isArray(order.items) ? order.items.map(function(i){return i.productName;}).join(', ') : '�');
+    var msg = '🛍️ *NEW ORDER* — #' + order.id + '\n\n' +
+              '👤 ' + (order.customer_name || '—') + ' | 📞 ' + (order.customer_phone || '—') + '\n' +
+              '📍 ' + (order.district || '—') + ', ' + (order.division || '—') + '\n' +
+              '📝 Type: ' + (order.order_type === 'pickup' ? '🚶 Pickup' : '🚚 Delivery') + '\n' +
+              '💳 Method: ' + (order.payment_method || '—') + '\n' +
+              '💰 Total: ৳' + (order.grand_total || 0) + '\n' +
+              (order.payment_trx_id ? '🔑 TrxID: `' + order.payment_trx_id + '`\n' : '') +
+              '📦 Items: ' + (Array.isArray(order.items) ? order.items.map(function(i){return i.productName;}).join(', ') : '—');
 
     if (order.order_type === 'pickup' && settings.pickup_bot_token && settings.pickup_chat_id) {
         sendTelegram(settings.pickup_bot_token, settings.pickup_chat_id, msg);
@@ -1824,11 +1786,11 @@ function sendDraftNotification() {
     var phone  = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
 
-    var msg = '�a�️ *DRAFT ORDER* � Tab switched!\n\n' +
-              (name  ? '�x� ' + name  + '\n' : '') +
-              (phone ? '�x~ ' + phone + '\n' : '') +
-              '�x: Items: ' + cart.length + '\n' +
-              '�x� Cart Value: ৳' + subtotal;
+    var msg = '⚠️ *DRAFT ORDER* — Tab switched!\n\n' +
+              (name  ? '👤 ' + name  + '\n' : '') +
+              (phone ? '📞 ' + phone + '\n' : '') +
+              '🛒 Items: ' + cart.length + '\n' +
+              '💰 Cart Value: ৳' + subtotal;
 
     fetch('https://api.telegram.org/bot' + settings.telegram_draft_bot + '/sendMessage', {
         method: 'POST',
@@ -1837,7 +1799,7 @@ function sendDraftNotification() {
     }).catch(function(){});
 }
 
-// ���� Helpers ������������������������������������������������������������������������������������������������������
+// ── Helpers ───────────────────────────────────────────────────
 function genOrderId() {
     var mustHave = ['A', 'F', 'R', 'S', 'H', 'N'];
     var numbers = '0123456789';
@@ -1869,7 +1831,7 @@ function genOrderId() {
 
 function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
 
-// ���� International Transfer System ����������������������������������������������������������
+// ── International Transfer System ─────────────────────────────
 var currentTransferTab = 'national';
 var intlPayMode       = ''; // 'binance_pay' | 'crypto'
 var intlCoinSymbol    = '';
@@ -1911,7 +1873,7 @@ function buildInternationalOptions() {
     if (settings.binance_pay_uid) {
         var badge = hasProxy ? '' : '<span class="backup-badge">Manual Review</span>';
         html += '<div class="crypto-opt" id="copt_binance_pay" onclick="selectIntlMethod(\'binance_pay\')">' +
-            '<span style="font-size:26px;">�xx�</span>' +
+            '<span style="font-size:26px;">🟡</span>' +
             '<div style="flex:1;">' +
                 '<div style="font-weight:800;font-size:14px;">Binance Pay ' + badge + '</div>' +
                 '<div style="font-size:12px;color:#888;">Send via Binance Pay to UID: <strong>' + settings.binance_pay_uid + '</strong></div>' +
@@ -1926,7 +1888,7 @@ function buildInternationalOptions() {
     
     if (hasCoins) {
         html += '<div class="crypto-opt" id="copt_crypto_main" onclick="selectIntlMethod(\'crypto_main\')">' +
-            '<span style="font-size:26px;">�x�"</span>' +
+            '<span style="font-size:26px;">🪙</span>' +
             '<div style="flex:1;">' +
                 '<div style="font-weight:800;font-size:14px;">Crypto Payment</div>' +
                 '<div style="font-size:12px;color:#888;">Pay via USDT, BTC, ETH, etc.</div>' +
@@ -1937,7 +1899,7 @@ function buildInternationalOptions() {
 
     if (!html) {
         html = '<div style="text-align:center;padding:24px;color:#999;font-size:13px;border:1.5px dashed var(--border);border-radius:12px;">' +
-               '�a�️ No international payment method configured.<br>Admin �  Settings �  Crypto & Binance Pay থ�!�"�! য�9� �"র�9।</div>';
+               '⚠️ No international payment method configured.<br>Admin → Settings → Crypto & Binance Pay থেকে যোগ করো।</div>';
     }
 
     document.getElementById('cryptoPaymentOptions').innerHTML = html;
@@ -1980,13 +1942,13 @@ function selectIntlMethod(method) {
         document.getElementById('cryptoWalletBox').style.display = 'block';
         document.getElementById('cryptoWalletBox').innerHTML =
             '<div class="wallet-addr-box" style="border-color:#F0B90B;background:rgba(240,185,11,0.05);">' +
-                '<div style="font-size:12px;font-weight:700;color:#B8860B;margin-bottom:6px;">�xx� Binance Pay Instructions</div>' +
+                '<div style="font-size:12px;font-weight:700;color:#B8860B;margin-bottom:6px;">🟡 Binance Pay Instructions</div>' +
                 '<div style="font-size:13px;color:#555;margin-bottom:6px;display:flex;align-items:center;gap:6px;">Send exactly <strong style="color:#1a1a2e;">' + usdt + ' USDT</strong> <button class="copy-btn" style="background:none;border:none;color:#888;padding:2px;min-width:auto;" onclick="copyText(\'' + usdt + '\',this)" title="Copy Amount"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button> to:</div>' +
                 '<div class="wallet-addr-text" style="border-color:rgba(240,185,11,0.4);">' +
                     '<span id="binanceUidDisplay" style="font-size:18px;letter-spacing:2px;font-weight:900;">UID: ' + uid + '</span>' +
-                    '<button class="copy-btn" style="background:#F0B90B;color:#1a1a2e;" onclick="copyText(\'' + uid + '\',this)">�x9 Copy</button>' +
+                    '<button class="copy-btn" style="background:#F0B90B;color:#1a1a2e;" onclick="copyText(\'' + uid + '\',this)">📋 Copy</button>' +
                 '</div>' +
-                '<div style="font-size:11px;color:#888;">After sending, open Binance app �  Pay �  History �  copy the <strong>Transaction ID</strong>.</div>' +
+                '<div style="font-size:11px;color:#888;">After sending, open Binance app → Pay → History → copy the <strong>Transaction ID</strong>.</div>' +
             '</div>';
 
         document.getElementById('cryptoTxidWrap').style.display = 'block';
@@ -2003,12 +1965,12 @@ function selectIntlMethod(method) {
         setVerifyStatus('', '');
 
         var coins = settings.crypto_coins || [];
-        var coinHtml = '<div style="margin-top:10px;"><div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;">�x�" Select Crypto</div>';
+        var coinHtml = '<div style="margin-top:10px;"><div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;">🪙 Select Crypto</div>';
         coins.forEach(function(coin) {
             if (!coin.symbol || !coin.networks || !coin.networks.length) return;
             var nets = coin.networks.map(function(n) { return n.name; }).join(' / ');
             coinHtml += '<div class="crypto-opt" id="copt_' + coin.symbol + '" onclick="selectIntlCoin(\'' + coin.symbol + '\')" style="margin-bottom:6px;border-color:rgba(98,126,234,0.3);">' +
-                '<span style="font-size:20px;">�x�</span>' +
+                '<span style="font-size:20px;">💠</span>' +
                 '<div style="flex:1;">' +
                     '<div style="font-weight:800;font-size:13px;">' + coin.symbol +
                         '<span style="font-size:11px;font-weight:400;color:#888;margin-left:6px;">' + (coin.name || '') + '</span></div>' +
@@ -2048,16 +2010,16 @@ function selectIntlCoin(symbol) {
     if (!coin) return;
 
     var netsHtml = '<div style="margin-top:4px;">' +
-        '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">�:️ Select Network</div>';
+        '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">⛓️ Select Network</div>';
 
     coin.networks.forEach(function(net) {
         var safeNet = (net.name || '').replace(/'/g, "\\'");
         var safeAddr = (net.address || '').replace(/'/g, "\\'");
         var safeQr   = (net.qr_url || '').replace(/'/g, "\\'");
         netsHtml += '<div class="net-opt" id="netopt_' + safeNet + '" onclick="selectIntlNetwork(\'' + safeNet + '\',\'' + safeAddr + '\',\'' + safeQr + '\')">' +
-            '<span style="font-size:18px;">�:️</span>' +
+            '<span style="font-size:18px;">⛓️</span>' +
             '<div style="flex:1;">' +
-                '<div style="font-weight:700;font-size:13px;">' + (net.name || '�') + '</div>' +
+                '<div style="font-weight:700;font-size:13px;">' + (net.name || '—') + '</div>' +
                 '<div style="font-size:11px;color:#888;">' + (net.address ? net.address.substring(0,16) + '...' : 'No address') + '</div>' +
             '</div>' +
             '<input type="radio" name="netMethod" style="width:16px;height:16px;accent-color:#627EEA;">' +
@@ -2128,7 +2090,7 @@ function selectIntlNetwork(netName, addr, qrUrl) {
         var addrBoxHtml = 
             '<div style="background:rgba(98,126,234,0.06);border:1.5px dashed rgba(98,126,234,0.3);border-radius:12px;padding:16px;">' +
                 '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">' +
-                    '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">�x� Send to ' + sym + ' (' + netName + ')</div>' +
+                    '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;">💳 Send to ' + sym + ' (' + netName + ')</div>' +
                     (qrUrl ? '<button type="button" onclick="document.getElementById(\'netQrWrap\').style.display=document.getElementById(\'netQrWrap\').style.display===\'none\'?\'block\':\'none\'" style="background:none;border:none;color:#627EEA;font-size:12px;font-weight:700;cursor:pointer;"><i data-lucide="qr-code" class="lucide-icon"></i> Show QR</button>' : '') +
                 '</div>' +
                 (qrUrl ? '<div id="netQrWrap" style="display:none;text-align:center;margin-bottom:16px;"><img src="' + qrUrl + '" style="max-width:150px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.1);"></div>' : '') +
@@ -2142,7 +2104,7 @@ function selectIntlNetwork(netName, addr, qrUrl) {
                     '<input type="text" class="form-input" id="finalWalletAddr" value="' + addr + '" readonly style="flex:1;background:rgba(255,255,255,0.5);font-family:monospace;font-size:12px;">' +
                     '<button type="button" onclick="copyElementText(\'finalWalletAddr\')" style="background:rgba(98,126,234,0.1);color:#627EEA;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Copy</button>' +
                 '</div>' +
-                '<div style="font-size:11px;color:#ff3b30;margin-top:12px;font-weight:600;">�a�️ Please make sure to select the correct network (' + netName + '). Otherwise funds will be lost.</div>' +
+                '<div style="font-size:11px;color:#ff3b30;margin-top:12px;font-weight:600;">⚠️ Please make sure to select the correct network (' + netName + '). Otherwise funds will be lost.</div>' +
             '</div>';
         
         document.getElementById('cryptoWalletBox').innerHTML = addrBoxHtml;
@@ -2175,11 +2137,11 @@ function placeOrderCheck(event) {
         var funCheck1 = document.getElementById('funPromiseCheck1');
         var funCheck2 = document.getElementById('funPromiseCheck2');
         if (funCheck1 && !funCheck1.checked) {
-            alert('�&র্ডার �"নফার্ম �"রত�! দ�xা �"র�! "� মি নিশ্�aিত..." ব�"্স�! �xি�" দিন!');
+            alert('অর্ডার কনফার্ম করতে দয়া করে "আমি নিশ্চিত..." বক্সে টিক দিন!');
             return;
         }
         if (funCheck2 && !funCheck2.checked) {
-            alert('�&র্ডার �"নফার্ম �"রত�! দ�xা �"র�! "পণ্য হাত�! প�!�x�!..." ব�"্স�! �xি�" দিন!');
+            alert('অর্ডার কনফার্ম করতে দয়া করে "পণ্য হাতে পেয়ে..." বক্সে টিক দিন!');
             return;
         }
     }
@@ -2217,7 +2179,7 @@ function copyText(text, btn) {
     if (!text) return;
     navigator.clipboard.writeText(text).then(function() {
         var orig = btn.textContent;
-        btn.textContent = '�S& Copied!';
+        btn.textContent = '✅ Copied!';
         btn.classList.add('copied');
         setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
     }).catch(function() {
@@ -2225,8 +2187,8 @@ function copyText(text, btn) {
         var el = document.createElement('textarea');
         el.value = text; document.body.appendChild(el); el.select();
         document.execCommand('copy'); document.body.removeChild(el);
-        btn.textContent = '�S& Copied!';
-        setTimeout(function() { btn.textContent = '�x9 Copy'; }, 1800);
+        btn.textContent = '✅ Copied!';
+        setTimeout(function() { btn.textContent = '📋 Copy'; }, 1800);
     });
 }
 
@@ -2236,29 +2198,29 @@ function setVerifyStatus(msg, type) {
     el.textContent = msg;
 }
 
-// ���� Crypto Payment Verification ������������������������������������������������������������������������������������������
-// PRIMARY:  PHP Proxy �  Binance API (no Supabase needed for verify)
+// ── Crypto Payment Verification ─────────────────────────────────────────────
+// PRIMARY:  PHP Proxy → Binance API (no Supabase needed for verify)
 // BACKUP:   Supabase Edge Function (no cPanel/PHP needed)
 // CONTROL:  settings.verify_mode = 'auto' | 'php_only' | 'supabase_only'
 function verifyCryptoPayment() {
     if (intlVerified) { placeCryptoOrder(); return; }
 
     var txid = (document.getElementById('cryptoTxidInput').value || '').trim();
-    if (!txid) { setVerifyStatus('�R Please enter your Transaction ID / TxHash.', 'error'); return; }
-    if (!intlPayMode) { setVerifyStatus('�R Please select a payment method first.', 'error'); return; }
-    if (intlPayMode === 'crypto' && !intlNetworkName) { setVerifyStatus('�R Please select a network first.', 'error'); return; }
+    if (!txid) { setVerifyStatus('❌ Please enter your Transaction ID / TxHash.', 'error'); return; }
+    if (!intlPayMode) { setVerifyStatus('❌ Please select a payment method first.', 'error'); return; }
+    if (intlPayMode === 'crypto' && !intlNetworkName) { setVerifyStatus('❌ Please select a network first.', 'error'); return; }
 
     var btn = document.getElementById('verifyCryptoBtn');
     var verifyMode = (settings.verify_mode || 'auto');
     btn.disabled = true;
-    btn.textContent = '�x� Verifying...';
-    setVerifyStatus('�x� Checking transaction...', 'loading');
+    btn.textContent = '🔍 Verifying...';
+    setVerifyStatus('🔍 Checking transaction...', 'loading');
 
     var total = updateSummaryTotals();
     var rate  = parseFloat(settings.usd_to_bdt_rate || 110);
     var targetAmt = intlPayMode === 'binance_pay' ? parseFloat((total / rate).toFixed(2)) : window.expectedCryptoAmt;
 
-    // ���� Layer 1: Quick frontend double-spend pre-check ����������������
+    // ── Layer 1: Quick frontend double-spend pre-check ────────
     var checkPromise;
     if (CONFIG.DB_PROVIDER === 'supabase') {
         checkPromise = supabaseClient.from('verified_payments').select('id').eq('transaction_id', txid).maybeSingle();
@@ -2277,30 +2239,30 @@ function verifyCryptoPayment() {
     checkPromise
     .then(function(dupRes) {
         if (!dupRes.error && dupRes.data) {
-            setVerifyStatus('�R This Transaction ID has already been used! Double-spend rejected.', 'error');
-            btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+            setVerifyStatus('❌ This Transaction ID has already been used! Double-spend rejected.', 'error');
+            btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             return;
         }
 
-        // ���� Layer 2: Route based on verify_mode ��������������������������������������������
+        // ── Layer 2: Route based on verify_mode ──────────────────────
         //
-        // �܁️ cloudflare  �  /api/binance-cf-proxy  (NEW default � Cloudflare Edge)
-        // �x auto        �  PHP proxy, fail হল�! Supabase backup (legacy)
-        // �x� php_only    �  PHP proxy only, no fallback (legacy)
-        // �xx� supabase_only �  Supabase Edge Function only (legacy)
+        // ☁️ cloudflare  → /api/binance-cf-proxy  (NEW default — Cloudflare Edge)
+        // 🔄 auto        → PHP proxy, fail হলে Supabase backup (legacy)
+        // 🔵 php_only    → PHP proxy only, no fallback (legacy)
+        // 🟠 supabase_only → Supabase Edge Function only (legacy)
         //
-        // সব legacy path �&�"্ষত � �:�! � �"�9ন�9 �"ি�:ু delete �"রা হয়নি
+        // সব legacy path অক্ষত আছে — কোনো কিছু delete করা হয়নি
 
         var body = intlPayMode === 'binance_pay'
             ? { action: 'verify-pay',     order_ref: txid, expected_amount: targetAmt }
             : { action: 'verify-deposit', tx_hash: txid, coin: intlCoinSymbol, expected_amount: targetAmt };
 
-        // ���� �x� NEW: Hugging Face API (External) ����������������������������
+        // ── 🤗 NEW: Hugging Face API (External) ──────────────
         if (verifyMode === 'hugging_face') {
             var hfUrl = (settings.hf_api_url || '').trim();
             if (!hfUrl) {
-                setVerifyStatus('�R Hugging Face API URL is not configured.', 'error');
-                btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+                setVerifyStatus('❌ Hugging Face API URL is not configured.', 'error');
+                btn.disabled = false; btn.textContent = '✅ Verify & Pay';
                 return;
             }
 
@@ -2322,22 +2284,22 @@ function verifyCryptoPayment() {
             .then(function(data) {
                 if (data.success || data.status === 'Verified' || data.status === 'verified') {
                     intlVerified = true;
-                    setVerifyStatus('�S& Verified via Hugging Face! Locking payment & placing order...', 'success');
-                    btn.textContent = '�S& Verified � Placing Order...';
+                    setVerifyStatus('✅ Verified via Hugging Face! Locking payment & placing order...', 'success');
+                    btn.textContent = '✅ Verified — Placing Order...';
                     setTimeout(function() { placeCryptoOrder(txid, targetAmt, false); }, 700);
                 } else {
-                    setVerifyStatus('�R Verification failed: ' + (data.error || 'Transaction rejected by Hugging Face API.'), 'error');
-                    btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+                    setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction rejected by Hugging Face API.'), 'error');
+                    btn.disabled = false; btn.textContent = '✅ Verify & Pay';
                 }
             })
             .catch(function(err) {
-                setVerifyStatus('�R Hugging Face API unavailable: ' + err.message, 'error');
-                btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+                setVerifyStatus('❌ Hugging Face API unavailable: ' + err.message, 'error');
+                btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             });
             return;
         }
 
-        // ���� �܁️ NEW: Cloudflare Edge Proxy (Recommended) ����������������������������
+        // ── ☁️ NEW: Cloudflare Edge Proxy (Recommended) ──────────────
         if (verifyMode === 'cloudflare') {
             var cfTimeout = new Promise(function(_, reject) {
                 setTimeout(function() { reject(new Error('timeout')); }, 15000);
@@ -2354,26 +2316,26 @@ function verifyCryptoPayment() {
                 if (data.success) {
                     saveTxidAndPlace(txid, targetAmt, btn, false);
                 } else {
-                    setVerifyStatus('�R Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
-                    btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+                    setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
+                    btn.disabled = false; btn.textContent = '✅ Verify & Pay';
                 }
             })
             .catch(function() {
-                // Cloudflare proxy fail হল�! Supabase backup
-                setVerifyStatus('�a�️ Cloudflare proxy unavailable. Switching to Supabase backup...', 'loading');
+                // Cloudflare proxy fail হলে Supabase backup
+                setVerifyStatus('⚠️ Cloudflare proxy unavailable. Switching to Supabase backup...', 'loading');
                 runSupabaseEdgeBackup(txid, targetAmt, btn);
             });
             return;
         }
 
-        // ���� �xx� Supabase Edge Only (legacy) ��������������������������������������������������������
+        // ── 🟠 Supabase Edge Only (legacy) ────────────────────────────
         var proxyUrl = (settings.binance_proxy_url || '').trim();
         if (verifyMode === 'supabase_only' || !proxyUrl) {
             runSupabaseEdgeBackup(txid, targetAmt, btn);
             return;
         }
 
-        // ���� �x Auto / �x� PHP Only (legacy) ������������������������������������������������������
+        // ── 🔄 Auto / 🔵 PHP Only (legacy) ───────────────────────────
         var phpTimeout = new Promise(function(_, reject) {
             setTimeout(function() { reject(new Error('timeout')); }, 12000);
         });
@@ -2388,28 +2350,28 @@ function verifyCryptoPayment() {
         ])
         .then(function(data) {
             if (data.success) {
-                // �S& PHP verified via Binance API
+                // ✅ PHP verified via Binance API
                 // Now lock in Supabase from frontend (PHP doesn't touch Supabase)
                 saveTxidAndPlace(txid, targetAmt, btn, false);
             } else {
-                setVerifyStatus('�R Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
-                btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+                setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
+                btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             }
         })
         .catch(function() {
             if (verifyMode === 'php_only') {
-                // php_only mode � do not fallback
-                setVerifyStatus('�R PHP proxy unavailable. Please check cPanel or switch to Auto mode.', 'error');
-                btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+                // php_only mode — do not fallback
+                setVerifyStatus('❌ PHP proxy unavailable. Please check cPanel or switch to Auto mode.', 'error');
+                btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             } else {
-                setVerifyStatus('�a�️ Primary unavailable. Switching to Supabase backup...', 'loading');
+                setVerifyStatus('⚠️ Primary unavailable. Switching to Supabase backup...', 'loading');
                 runSupabaseEdgeBackup(txid, targetAmt, btn);
             }
         });
     });
 }
 
-// ���� PRIMARY path: PHP verified �  save TxID lock to Supabase �  place order ��������
+// ── PRIMARY path: PHP verified → save TxID lock to Supabase → place order ────
 function saveTxidAndPlace(txid, usdt, btn, isBackup) {
     var coinVal = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
     var netVal  = intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName;
@@ -2440,26 +2402,26 @@ function saveTxidAndPlace(txid, usdt, btn, isBackup) {
     }
     insPromise.then(function(insRes) {
         if (insRes.error && insRes.error.code === '23505') {
-            setVerifyStatus('�R Transaction ID already recorded. Double-spend blocked.', 'error');
-            btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+            setVerifyStatus('❌ Transaction ID already recorded. Double-spend blocked.', 'error');
+            btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             return;
         }
         intlVerified = true;
-        setVerifyStatus('�S& Verified on Binance! Locking payment & placing order...', 'success');
-        btn.textContent = '�S& Verified � Placing Order...';
+        setVerifyStatus('✅ Verified on Binance! Locking payment & placing order...', 'success');
+        btn.textContent = '✅ Verified — Placing Order...';
         setTimeout(function() { placeCryptoOrder(txid, usdt, false); }, 700);
     });
 }
 
-// ���� BACKUP path: Supabase Edge Function (no cPanel/PHP needed) ������������������������������
+// ── BACKUP path: Supabase Edge Function (no cPanel/PHP needed) ───────────────
 function runSupabaseEdgeBackup(txid, usdt, btn) {
     var edgeUrl  = (settings.supabase_edge_url || '').trim();
     if (!edgeUrl) {
-        setVerifyStatus('�R Supabase Edge Function URL is not configured.', 'error');
-        btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+        setVerifyStatus('❌ Supabase Edge Function URL is not configured.', 'error');
+        btn.disabled = false; btn.textContent = '✅ Verify & Pay';
         return;
     }
-    setVerifyStatus('�x Connecting to backup system (Supabase)...', 'loading');
+    setVerifyStatus('🔄 Connecting to backup system (Supabase)...', 'loading');
 
     var anonKey  = CONFIG.SUPABASE_ANON_KEY;
     var coinVal  = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
@@ -2486,18 +2448,18 @@ function runSupabaseEdgeBackup(txid, usdt, btn) {
     .then(function(data) {
         if (data.success) {
             intlVerified = true;
-            setVerifyStatus('�S& Recorded via Supabase backup. Admin will verify manually. Placing order...', 'success');
-            btn.textContent = '�S& Recorded � Placing Order...';
+            setVerifyStatus('✅ Recorded via Supabase backup. Admin will verify manually. Placing order...', 'success');
+            btn.textContent = '✅ Recorded — Placing Order...';
             setTimeout(function() { placeCryptoOrder(txid, usdt, true); }, 700);
         } else {
             var errMsg = data.message || 'Backup verification failed.';
-            setVerifyStatus('�R ' + errMsg, 'error');
-            btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+            setVerifyStatus('❌ ' + errMsg, 'error');
+            btn.disabled = false; btn.textContent = '✅ Verify & Pay';
         }
     })
     .catch(function(err) {
-        setVerifyStatus('�a�️ Both systems unavailable. Please check your internet and try again.', 'error');
-        btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+        setVerifyStatus('⚠️ Both systems unavailable. Please check your internet and try again.', 'error');
+        btn.disabled = false; btn.textContent = '✅ Verify & Pay';
     });
 }
 
@@ -2558,23 +2520,14 @@ function placeCryptoOrder(txid, usdt, isBackup) {
         insertOrderPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awCryptoOrder)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
-    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insertOrderPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderData: orderData })
-        }).then(function(res) { return res.json(); }).then(function(res) {
-            if (!res.success) throw new Error(res.error);
-            return { data: [{ id: orderId }], error: null };
-        }).catch(function(err) { return { data: null, error: err }; });
     } else {
         insertOrderPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
     }
     insertOrderPromise.then(function(r) {
         if (r.error) {
-            setVerifyStatus('�R Order save error: ' + r.error.message, 'error');
+            setVerifyStatus('❌ Order save error: ' + r.error.message, 'error');
             var btn = document.getElementById('verifyCryptoBtn');
-            btn.disabled = false; btn.textContent = '�S& Verify & Pay';
+            btn.disabled = false; btn.textContent = '✅ Verify & Pay';
             return;
         }
         // Update verified_payments with real order_id
@@ -2597,7 +2550,7 @@ function placeCryptoOrder(txid, usdt, isBackup) {
     });
 }
 
-// ���� Utils ����������������������������������������������������������������������������������������������������������
+// ── Utils ─────────────────────────────────────────────────────
 function copyElementText(elId) {
     var el = document.getElementById(elId);
     if (!el) return;
@@ -2637,7 +2590,6 @@ function copyElementText(elId) {
     <script src="assets/js/offline-handler.js"></script>
 </body>
 </html>
-
 
 
 
