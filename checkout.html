@@ -938,7 +938,7 @@ function buildPaymentOptions() {
         return allowed.some(function(pm){ return key.toLowerCase().includes(pm.toLowerCase()); });
     }
 
-    var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
+    var proxyUrl = settings.gateway_proxy_url || (typeof CONFIG !== 'undefined' && CONFIG.GATEWAY_PROXY_URL) || '/proxyv2.php';
     var hasGateway   = !!(proxyUrl && isAllowed('online'));
     var hasBkash     = !!(settings.bkash_number && isAllowed('bkash'));
     var hasNagad     = !!(settings.nagad_number && isAllowed('nagad'));
@@ -968,21 +968,21 @@ function buildPaymentOptions() {
 
         if (hasBkash) {
             subCards += buildSubCard(
-                'manual_bkash', '�xS', 'bKash',
+                'manual_bkash', '<i data-lucide="smartphone" class="lucide-icon" style="color:#e2136e; width:20px; height:20px;"></i>', 'bKash',
                 'Send to ' + settings.bkash_number,
                 buildManualDetail(settings.bkash_number, 'bKash', '৳' + Math.round(total), 'bkash')
             );
         }
         if (hasNagad) {
             subCards += buildSubCard(
-                'manual_nagad', '�x��', 'Nagad',
+                'manual_nagad', '<i data-lucide="smartphone" class="lucide-icon" style="color:#f7931e; width:20px; height:20px;"></i>', 'Nagad',
                 'Send to ' + settings.nagad_number,
                 buildManualDetail(settings.nagad_number, 'Nagad', '৳' + Math.round(total), 'nagad')
             );
         }
         if (hasBinanceM) {
             subCards += buildSubCard(
-                'manual_binance', '�xx�', 'Binance Manual',
+                'manual_binance', '<i data-lucide="bitcoin" class="lucide-icon" style="color:#f3ba2f; width:20px; height:20px;"></i>', 'Binance Manual',
                 'Send USDT to UID: ' + settings.binance_pay_uid,
                 buildBinanceManualDetail(settings.binance_pay_uid, total)
             );
@@ -990,7 +990,7 @@ function buildPaymentOptions() {
 
         html += buildPayCard(
             'manual_group',
-            '�x�',
+            '<i data-lucide="wallet" class="lucide-icon"></i>',
             'Manual Payment',
             'bKash / Nagad / Binance � send & enter TrxID',
             subCards
