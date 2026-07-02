@@ -39,13 +39,32 @@ export async function onRequestPost(context) {
         const { results } = await stmt.bind(...params.map(v => v === undefined ? null : v)).run();
 
         
-        // Auto-purge Cloudflare Cache in background if credentials exist
+        
+        // Auto-purge selective Cloudflare Cache
         if (env.CLOUDFLARE_ZONE_ID && env.CLOUDFLARE_API_TOKEN) {
+            const origin = new URL(request.url).origin;
+            const filesToPurge = [
+                origin + "/",
+                origin + "/index.html",
+                origin + "/shop",
+                origin + "/shop.html",
+                origin + "/api/public-data",
+                origin + "/api/get-products-list"
+            ];
+            
+            const pid = typeof p !== 'undefined' && p && p.id ? p.id : (typeof id !== 'undefined' ? id : null);
+            if (pid) {
+                filesToPurge.push(origin + "/product?id=" + pid);
+                filesToPurge.push(origin + "/product.html?id=" + pid);
+                filesToPurge.push(origin + "/api/get-single-product?id=" + pid);
+                filesToPurge.push(origin + "/api/public-reviews?product_id=" + pid);
+            }
+
             context.waitUntil(
                 fetch(`https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/purge_cache`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${env.CLOUDFLARE_API_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ purge_everything: true })
+                    body: JSON.stringify({ files: filesToPurge })
                 }).catch(() => {})
             );
         }
