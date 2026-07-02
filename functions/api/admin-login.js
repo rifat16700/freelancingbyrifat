@@ -17,7 +17,7 @@ export async function onRequestPost(context) {
         const validPass = env.ADMIN_PASSWORD || '1234';
 
         if (username === validUser && password === validPass) {
-            return new Response(JSON.stringify({ success: true, token: env.ADMIN_SECRET_TOKEN }), {
+            return new Response(JSON.stringify({ success: true, token: (env.ADMIN_SECRET_TOKEN || 'default_admin_token') }), {
                 status: 200,
                 headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
             });
