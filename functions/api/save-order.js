@@ -8,7 +8,9 @@ export async function onRequestPost(context) {
     };
 
     try {
-        const body = await request.json();
+        const rawBody = await request.json();
+        const body = rawBody.orderData || rawBody;
+        
         const { 
             id, customer_name, customer_phone, customer_email, division, district, upazila, address,
             items, addons, subtotal, addon_total, delivery_charge, promo_code, promo_discount,
