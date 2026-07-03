@@ -706,8 +706,11 @@ function selectColor(vi) {
     }
 
     // Render sizes
-    renderSizes(selectedColor.sizes || []);
-    updatePrice(null);
+    var sizes = selectedColor.sizes || [];
+    renderSizes(sizes);
+    if (!sizes.length) {
+        updatePrice(null);
+    }
 }
 
 function renderSizes(sizes) {
