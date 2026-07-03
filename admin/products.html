@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products â€” Admin Panel</title>
+    <title>Products — Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="../assets/js/config.js?v=1782024132023"></script>
@@ -65,7 +65,7 @@
     <main class="admin-main" id="adminMain" style="display:none;">
         <header class="admin-header">
             <div class="header-left">
-                <button class="hamburger-btn" onclick="openSidebar()">â˜°</button>
+                <button class="hamburger-btn" onclick="openSidebar()">☰</button>
                 <div>
                     <div class="page-title">Products</div>
                     <div class="page-subtitle" id="prodCountSub">Loading...</div>
@@ -127,7 +127,7 @@
         <div class="modal-box modal-box-lg" style="max-width:800px;">
             <div class="modal-header">
                 <div class="modal-title" id="productModalTitle">Add Product</div>
-                <button class="modal-close" onclick="closeModal('productModal')">âœ•</button>
+                <button class="modal-close" onclick="closeModal('productModal')">✖</button>
             </div>
 
             <div style="max-height:75vh;overflow-y:auto;padding-right:4px;">
@@ -233,7 +233,7 @@
             <div class="form-group">
                 <label class="form-label"><i data-lucide="film" class="lucide-icon"></i> Video URL (Optional)</label>
                 <input class="form-input" id="pVideoUrl" placeholder="YouTube / TikTok / Facebook / any video link">
-                <div class="form-hint">à¦¯à§‡à¦•à§‹à¦¨à§‹ à¦­à¦¿à¦¡à¦¿à¦“ à¦²à¦¿à¦™à§à¦• à¦¦à¦¾à¦“ â€” Auto-detect à¦•à¦°à¦¬à§‡à¥¤ à¦¨à¦¾ à¦¹à¦²à§‡ à¦¨à¦¿à¦š à¦¥à§‡à¦•à§‡ Platform à¦¸à¦¿à¦²à§‡à¦•à§à¦Ÿ à¦•à¦°à§‹à¥¤</div>
+                <div class="form-hint">যেকোনো ভিডিও লিঙ্ক দাও — Auto-detect করবে। না হলে নিচ থেকে Platform সিলেক্ট করো।</div>
             </div>
             <div class="form-group">
                 <label class="form-label">Video Platform</label>
@@ -350,7 +350,7 @@
         }
     }
 
-    // â”€â”€ Mobile Filter Panel helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Mobile Filter Panel helpers ──────────────────────────
     function toggleProdFilters() {
         var panel = document.getElementById('prodFilterPanel');
         panel.classList.toggle('open');
@@ -523,7 +523,7 @@
         });
     }
 
-    // â”€â”€ Product Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Product Modal ────────────────────────────────────────
     function openProductModal(product) {
         editingProductId = null;
         galleryUrls = [''];
@@ -607,7 +607,7 @@
         if (el.classList.contains('on')) el.classList.remove('on'); else el.classList.add('on');
     }
 
-    // â”€â”€ Gallery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Gallery ──────────────────────────────────────────────
     function renderGallery() {
         var wrap = document.getElementById('galleryWrap');
         wrap.innerHTML = '';
@@ -693,7 +693,7 @@
         return arr;
     }
 
-    // â”€â”€ Variants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Variants ────────────────────────────────────────────â”€
     function addVariant() {
         collectVariants();
         variants.push({ colorName: '', colorHex: '#007AFF', variantCode: '', imageUrl: '', sizes: [{ size: 'M', stock: 10, extraPrice: 0 }] });
@@ -747,7 +747,7 @@
                     '<input class="form-input" placeholder="Size" value="' + (s.size||'') + '" data-v="' + vi + '" data-s="' + si + '" data-f="size">' +
                     '<input class="form-input" placeholder="Stock" type="number" value="' + (s.stock||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="stock">' +
                     '<input class="form-input" placeholder="Extra à§³" type="number" value="' + (s.extraPrice||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="extraPrice">' +
-                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeSize(' + vi + ',' + si + ')">âœ•</button>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeSize(' + vi + ',' + si + ')">✖</button>' +
                 '</div>';
             }).join('');
 
@@ -845,7 +845,7 @@
 
 
 
-    // â”€â”€ parseImageInput â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── parseImageInput ──────────────────────────────────────
     // image-seyestem.md documented logic
     function parseImageInput(raw) {
         if (!raw) return { previewUrl: null, saveUrl: null };
@@ -905,7 +905,7 @@
                 : supabaseClient.from('products').insert([payload]).select();
 
             req.then(function(r) {
-                setBtnLoading(btn, false, 'ðŸ’¾ Save Product');
+                setBtnLoading(btn, false, '💾 Save Product');
                 if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
 
                 var productId = editingProductId || (r.data && r.data[0] && r.data[0].id);
@@ -946,13 +946,13 @@
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify(payload)
             }).then(function(r) { return r.json(); }).then(function(res) {
-                setBtnLoading(btn, false, 'ðŸ’¾ Save Product');
+                setBtnLoading(btn, false, '💾 Save Product');
                 if (!res.success) { showToast('Error: ' + res.error, 'error'); return; }
                 showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Product saved!', 'success');
                 closeModal('productModal');
                 loadProducts();
             }).catch(function(e) {
-                setBtnLoading(btn, false, 'ðŸ’¾ Save Product');
+                setBtnLoading(btn, false, '💾 Save Product');
                 showToast('Error: ' + e.message, 'error');
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
@@ -973,7 +973,7 @@
             };
 
             function finishSaveAW(productId) {
-                setBtnLoading(btn, false, 'ðŸ’¾ Save Product');
+                setBtnLoading(btn, false, '💾 Save Product');
                 // Delete old category mappings then insert new ones
                 appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
                     AppwriteQuery.equal('product_id', productId)
@@ -1006,7 +1006,7 @@
                 .then(function() {
                     finishSaveAW(editingProductId);
                 }).catch(function(err) {
-                    setBtnLoading(btn, false, 'ðŸ’¾ Save Product');
+                    setBtnLoading(btn, false, '💾 Save Product');
                     showToast('Error: ' + err.message, 'error');
                 });
             } else {
@@ -1014,7 +1014,7 @@
                 .then(function(doc) {
                     finishSaveAW(doc.$id);
                 }).catch(function(err) {
-                    setBtnLoading(btn, false, 'ðŸ’¾ Save Product');
+                    setBtnLoading(btn, false, '💾 Save Product');
                     showToast('Error: ' + err.message, 'error');
                 });
             }
@@ -1099,7 +1099,7 @@
     }
 
 
-    // â”€â”€ Rich Text Editor helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Rich Text Editor helpers ────────────────────────────â”€
     function rteCmd(cmd, val) {
         var ed = document.getElementById('pDesc');
         ed.focus();
@@ -1117,7 +1117,7 @@
         var cc = document.getElementById('rteCharCount');
         if (ed && cc) cc.textContent = (ed.innerText || '').trim().length + ' chars';
     }
-    // â”€â”€ Paste handler: sanitize & preserve basic formatting â”€â”€
+    // ── Paste handler: sanitize & preserve basic formatting ──
     (function() {
         function setupRtePaste() {
             var ed = document.getElementById('pDesc');

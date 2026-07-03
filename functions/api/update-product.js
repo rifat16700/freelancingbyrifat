@@ -20,13 +20,13 @@ export async function onRequestPost(context) {
         const p = await request.json();
         const sql = `
             UPDATE products SET
-                name=?, description=?, category_id=?, base_price=?, flash_sale_price=?,
+                name=?, description=?, base_price=?, flash_sale_price=?,
                 stock_status=?, gallery_images=?, video_url=?, variants=?,
                 is_active=?, is_featured=?, is_add_once=?, updated_at=CURRENT_TIMESTAMP
             WHERE id=?
         `;
         const params = [
-            p.name, p.description || '', p.category_id || '',
+            p.name, p.description || '',
             p.base_price || 0, p.flash_sale_price || 0, p.stock_status || 'In Stock',
             typeof p.gallery_images === 'string' ? p.gallery_images : JSON.stringify(p.gallery_images || []),
             p.video_url || '',
