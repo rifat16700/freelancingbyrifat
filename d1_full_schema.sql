@@ -169,6 +169,7 @@ CREATE TABLE home_sections (
     data TEXT,
     display_order INTEGER DEFAULT 0,
     is_active INTEGER DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -192,6 +193,7 @@ CREATE TABLE banners (
     image_url TEXT NOT NULL,
     link_url TEXT,
     is_active INTEGER DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
