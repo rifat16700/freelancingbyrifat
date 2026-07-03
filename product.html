@@ -253,7 +253,7 @@
 </footer>
 
 <script>
-var product = null, settings = {}, selectedColor = null, selectedSize = null, currentQty = 1;
+var product = null, settings = {}, selectedColor = null, selectedColorIndex = 0, selectedSize = null, currentQty = 1;
 var allProdsForRelated = [], relatedProducts = [], relatedPage = 1;
 var RELATED_PAGE_SIZE = 10;
 var reviewImgbbKey = '';
@@ -693,6 +693,7 @@ function selectColor(vi) {
     var variants = product.variants || [];
     if (vi >= variants.length) return;
     selectedColor = variants[vi];
+    selectedColorIndex = vi;
     selectedSize  = null;
 
     document.getElementById('selectedColorLabel').textContent = selectedColor.colorName;
@@ -802,7 +803,7 @@ function addToCart() {
 
     var allImgs = product.gallery_images || [];
     var img = (selectedColor && selectedColor.imageUrl) ? selectedColor.imageUrl : (allImgs.length ? allImgs[0] : '');
-    var color = selectedColor ? selectedColor.colorName : '';
+    var color = selectedColor ? (selectedColor.colorName || ("Color " + (selectedColorIndex + 1))) : '';
     var size  = selectedSize ? selectedSize.size : '';
     var key   = product.id + '-' + color + '-' + size;
 
@@ -827,7 +828,7 @@ function directOrder() {
 
     var allImgs = product.gallery_images || [];
     var img = (selectedColor && selectedColor.imageUrl) ? selectedColor.imageUrl : (allImgs.length ? allImgs[0] : '');
-    var color = selectedColor ? selectedColor.colorName : '';
+    var color = selectedColor ? (selectedColor.colorName || ("Color " + (selectedColorIndex + 1))) : '';
     var size  = selectedSize ? selectedSize.size : '';
     var key   = product.id + '-' + color + '-' + size;
 
@@ -859,7 +860,7 @@ function orderWhatsApp() {
 }
 
 function buildOrderMsg(customerName, customerPhone, customerAddress) {
-    var color = selectedColor ? selectedColor.colorName : '';
+    var color = selectedColor ? (selectedColor.colorName || ("Color " + (selectedColorIndex + 1))) : '';
     var size  = selectedSize ? selectedSize.size : '';
     var base = product.base_price;
     var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
@@ -931,7 +932,7 @@ function openMsgSheet() {
     addToCart();
 
     // Order summary preview
-    var color = selectedColor ? selectedColor.colorName : '';
+    var color = selectedColor ? (selectedColor.colorName || ("Color " + (selectedColorIndex + 1))) : '';
     var size  = selectedSize  ? selectedSize.size : '';
     var base = product.base_price;
     var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
