@@ -38,7 +38,6 @@ export async function onRequestPost(context) {
                 gallery_images, video_url, video_type, sku, variants,
                 is_active, is_featured, is_add_once, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            RETURNING id
         `;
         const params = [
             productId, 
@@ -58,13 +57,11 @@ export async function onRequestPost(context) {
         ];
 
         const stmt = env.DB.prepare(sql);
-        const resultRow = await stmt.bind(...params.map(v => v === undefined ? null : v)).first();
+        const result = await stmt.bind(...params.map(v => v === undefined ? null : v)).run();
         
-        if (!resultRow || !resultRow.id) {
-            throw new Error("Failed to insert product or retrieve generated ID.");
+        if (!result || !result.success) {
+            throw new Error("Failed to insert product.");
         }
-        
-        const productId = resultRow.id;
 
         // 2. Insert categories
         if (p.category_ids && p.category_ids.length > 0) {
