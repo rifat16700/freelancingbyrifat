@@ -21,13 +21,13 @@ export async function onRequestPost(context) {
         const sql = `
             INSERT INTO products (
                 id, name, description, base_price, flash_sale_price,
-                stock_status, gallery_images, video_url, variants,
-                is_active, is_featured, is_add_once, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                gallery_images, video_url, variants,
+                is_active, is_featured, is_add_once, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `;
         const params = [
             p.id, p.name, p.description || '',
-            p.base_price || 0, p.flash_sale_price || 0, p.stock_status || 'In Stock',
+            p.base_price || 0, p.flash_sale_price || 0,
             typeof p.gallery_images === 'string' ? p.gallery_images : JSON.stringify(p.gallery_images || []),
             p.video_url || '',
             typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants || []),
