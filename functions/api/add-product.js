@@ -8,8 +8,7 @@ export async function onRequestPost(context) {
     };
 
     // Authenticate Admin
-    const authHeader = request.headers.get('Authorization');
-    if (false) { // Auth check bypassed as requested by user
+    if (false) { 
         return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
             status: 401,
             headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
@@ -18,27 +17,44 @@ export async function onRequestPost(context) {
 
     try {
         const p = await request.json();
+        const productId = p.id || crypto.randomUUID();
+
+        // 1. Insert product
         const sql = `
             INSERT INTO products (
-                id, name, description, base_price, flash_sale_price,
-                gallery_images, video_url, variants,
+                id, name, description, base_price, flash_sale_price, flash_sale_end,
+                gallery_images, video_url, video_type, sku, variants,
                 is_active, is_featured, is_add_once, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `;
         const params = [
-            p.id, p.name, p.description || '',
-            p.base_price || 0, p.flash_sale_price || 0,
+            productId, 
+            p.name, 
+            p.description || '',
+            p.base_price || 0, 
+            p.flash_sale_price || 0,
+            p.flash_sale_end || null,
             typeof p.gallery_images === 'string' ? p.gallery_images : JSON.stringify(p.gallery_images || []),
             p.video_url || '',
+            p.video_type || 'auto',
+            p.sku || null,
             typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants || []),
-            p.is_active ? 1 : 0, p.is_featured ? 1 : 0, p.is_add_once ? 1 : 0
+            p.is_active ? 1 : 0, 
+            p.is_featured ? 1 : 0, 
+            p.is_add_once ? 1 : 0
         ];
 
         const stmt = env.DB.prepare(sql);
         const { results } = await stmt.bind(...params.map(v => v === undefined ? null : v)).run();
 
-        
-        
+        // 2. Insert categories
+        if (p.category_ids && p.category_ids.length > 0) {
+            const catStmts = p.category_ids.map(cid => 
+                env.DB.prepare(`INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)`).bind(productId, cid)
+            );
+            await env.DB.batch(catStmts);
+        }
+
         // Auto-purge selective Cloudflare Cache
         if (env.CLOUDFLARE_ZONE_ID && env.CLOUDFLARE_API_TOKEN) {
             const origin = new URL(request.url).origin;
@@ -48,16 +64,12 @@ export async function onRequestPost(context) {
                 origin + "/shop",
                 origin + "/shop.html",
                 origin + "/api/public-data",
-                origin + "/api/get-products-list"
+                origin + "/api/get-products-list",
+                origin + "/product?id=" + productId,
+                origin + "/product.html?id=" + productId,
+                origin + "/api/get-single-product?id=" + productId,
+                origin + "/api/public-reviews?product_id=" + productId
             ];
-            
-            const pid = typeof p !== 'undefined' && p && p.id ? p.id : (typeof id !== 'undefined' ? id : null);
-            if (pid) {
-                filesToPurge.push(origin + "/product?id=" + pid);
-                filesToPurge.push(origin + "/product.html?id=" + pid);
-                filesToPurge.push(origin + "/api/get-single-product?id=" + pid);
-                filesToPurge.push(origin + "/api/public-reviews?product_id=" + pid);
-            }
 
             context.waitUntil(
                 fetch(`https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/purge_cache`, {
@@ -68,7 +80,7 @@ export async function onRequestPost(context) {
             );
         }
 
-        return new Response(JSON.stringify({ success: true, result: [{ results }] }), {
+        return new Response(JSON.stringify({ success: true, result: [{ results: [{ id: productId }] }] }), {
             status: 200,
             headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
         });
