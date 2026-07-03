@@ -18,7 +18,19 @@ export async function onRequestPost(context) {
     try {
         const p = await request.json();
         
-        const productId = p.id || crypto.randomUUID();
+        let productId = p.id;
+        if (!productId) {
+            const maxRes = await env.DB.prepare("SELECT id FROM products WHERE id LIKE 'prod_%'").all();
+            let maxNum = 0;
+            if (maxRes && maxRes.results) {
+                maxRes.results.forEach(row => {
+                    const numStr = row.id.replace('prod_', '');
+                    const num = parseInt(numStr);
+                    if (!isNaN(num) && num > maxNum) maxNum = num;
+                });
+            }
+            productId = 'prod_' + (maxNum + 1);
+        }
         
         const sql = `
             INSERT INTO products (
