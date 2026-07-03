@@ -20,16 +20,21 @@ export async function onRequestPost(context) {
         
         let productId = p.id;
         if (!productId) {
-            const maxRes = await env.DB.prepare("SELECT id FROM products WHERE id LIKE 'prod_%'").all();
-            let maxNum = 0;
-            if (maxRes && maxRes.results) {
-                maxRes.results.forEach(row => {
-                    const numStr = row.id.replace('prod_', '');
-                    const num = parseInt(numStr);
-                    if (!isNaN(num) && num > maxNum) maxNum = num;
-                });
+            if (p.sku && p.sku.trim() !== '') {
+                // Clean the SKU to be URL-safe (e.g., lowercased, spaces to hyphens)
+                productId = p.sku.trim().replace(/\s+/g, '-').toLowerCase();
+            } else {
+                const maxRes = await env.DB.prepare("SELECT id FROM products WHERE id LIKE 'prod_%'").all();
+                let maxNum = 0;
+                if (maxRes && maxRes.results) {
+                    maxRes.results.forEach(row => {
+                        const numStr = row.id.replace('prod_', '');
+                        const num = parseInt(numStr);
+                        if (!isNaN(num) && num > maxNum) maxNum = num;
+                    });
+                }
+                productId = 'prod_' + (maxNum + 1);
             }
-            productId = 'prod_' + (maxNum + 1);
         }
         
         const sql = `
