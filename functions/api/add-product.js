@@ -17,35 +17,69 @@ export async function onRequestPost(context) {
 
     try {
         const p = await request.json();
-        const productId = p.id || crypto.randomUUID();
-
-        // 1. Insert product
-        const sql = `
-            INSERT INTO products (
-                id, name, description, base_price, flash_sale_price, flash_sale_end,
-                gallery_images, video_url, video_type, sku, variants,
-                is_active, is_featured, is_add_once, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `;
-        const params = [
-            productId, 
-            p.name, 
-            p.description || '',
-            p.base_price || 0, 
-            p.flash_sale_price || 0,
-            p.flash_sale_end || null,
-            typeof p.gallery_images === 'string' ? p.gallery_images : JSON.stringify(p.gallery_images || []),
-            p.video_url || '',
-            p.video_type || 'auto',
-            p.sku || null,
-            typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants || []),
-            p.is_active ? 1 : 0, 
-            p.is_featured ? 1 : 0, 
-            p.is_add_once ? 1 : 0
-        ];
+        
+        let sql;
+        let params;
+        
+        if (p.id) {
+            sql = `
+                INSERT INTO products (
+                    id, name, description, base_price, flash_sale_price, flash_sale_end,
+                    gallery_images, video_url, video_type, sku, variants,
+                    is_active, is_featured, is_add_once, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                RETURNING id
+            `;
+            params = [
+                p.id, 
+                p.name, 
+                p.description || '',
+                p.base_price || 0, 
+                p.flash_sale_price || 0,
+                p.flash_sale_end || null,
+                typeof p.gallery_images === 'string' ? p.gallery_images : JSON.stringify(p.gallery_images || []),
+                p.video_url || '',
+                p.video_type || 'auto',
+                p.sku || null,
+                typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants || []),
+                p.is_active ? 1 : 0, 
+                p.is_featured ? 1 : 0, 
+                p.is_add_once ? 1 : 0
+            ];
+        } else {
+            sql = `
+                INSERT INTO products (
+                    name, description, base_price, flash_sale_price, flash_sale_end,
+                    gallery_images, video_url, video_type, sku, variants,
+                    is_active, is_featured, is_add_once, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                RETURNING id
+            `;
+            params = [
+                p.name, 
+                p.description || '',
+                p.base_price || 0, 
+                p.flash_sale_price || 0,
+                p.flash_sale_end || null,
+                typeof p.gallery_images === 'string' ? p.gallery_images : JSON.stringify(p.gallery_images || []),
+                p.video_url || '',
+                p.video_type || 'auto',
+                p.sku || null,
+                typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants || []),
+                p.is_active ? 1 : 0, 
+                p.is_featured ? 1 : 0, 
+                p.is_add_once ? 1 : 0
+            ];
+        }
 
         const stmt = env.DB.prepare(sql);
-        const { results } = await stmt.bind(...params.map(v => v === undefined ? null : v)).run();
+        const resultRow = await stmt.bind(...params.map(v => v === undefined ? null : v)).first();
+        
+        if (!resultRow || !resultRow.id) {
+            throw new Error("Failed to insert product or retrieve generated ID.");
+        }
+        
+        const productId = resultRow.id;
 
         // 2. Insert categories
         if (p.category_ids && p.category_ids.length > 0) {
