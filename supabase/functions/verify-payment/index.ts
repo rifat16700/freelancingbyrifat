@@ -18,8 +18,12 @@
 // supabase functions deploy verify-payment
 // ============================================================
 
+// @ts-ignore
 import { serve }        from 'https://deno.land/std@0.177.0/http/server.ts';
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+declare const Deno: any;
 
 // ── CORS Headers ─────────────────────────────────────────────
 const CORS = {

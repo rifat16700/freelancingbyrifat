@@ -1146,6 +1146,10 @@ function submitReview() {
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         var awRv = Object.assign({}, rvData); awRv.created_at = awRv.created_at || new Date().toISOString(); delete awRv.id;
         insPromise = appwriteDatabases.createDocument(APP_DB, 'reviews', AppwriteID.unique(), awRv).then(function() { return { error: null }; }).catch(function(err) { return { error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        insPromise = window.cfDb.insert('reviews', rvData)
+            .then(function() { return { data: null, error: null }; })
+            .catch(function(err) { return { data: null, error: { message: err.message || 'CF DB error' } }; });
     } else {
         insPromise = Promise.resolve({ data: null, error: { message: 'Not implemented' } });
     }
