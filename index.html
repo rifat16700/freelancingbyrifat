@@ -219,7 +219,7 @@ function loadSiteData() {
                 const cachedStr = localStorage.getItem('__fbr_public_data');
                 if (cachedStr) {
                     const cachedObj = JSON.parse(cachedStr);
-                    if (Date.now() - cachedObj.time < 5 * 60 * 1000) {
+                    if (Date.now() - cachedObj.time < 60 * 60 * 1000) { // 60 min browser cache
                         return cachedObj.data;
                     }
                 }
@@ -240,7 +240,7 @@ function loadSiteData() {
         p4 = pubDataPromise.then(d => ({ data: d ? d.products.map(p => { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); return p; }) : [] }));
         p5 = pubDataPromise.then(d => ({ data: d ? d.home_sections : [] }));
         p6 = pubDataPromise.then(d => ({ data: d ? d.product_categories : [] }));
-        p7 = pubDataPromise.then(d => ({ data: d ? d.devtools : null }));
+        p7 = Promise.resolve({ data: null }); // devtools removed — maintenance mode uses CONFIG env var
     } else {
         p1 = Promise.resolve({ data: {} });
         p2 = Promise.resolve({ data: [] });
@@ -258,7 +258,6 @@ function loadSiteData() {
         allProducts     = results[3].data || [];
         var homeSects   = results[4].data || [];
         var prodCats    = results[5].data || [];
-        var devtools    = (results[6] && results[6].data) ? results[6].data : settings;
 
         // Attach category_ids to each product
         allProducts.forEach(function(p) {
@@ -268,9 +267,9 @@ function loadSiteData() {
 
         siteSettings = settings;
 
-        // ═ MAINTENANCE MODE CHECK ═
-        if (devtools.maintenance_mode === true || devtools.maintenance_mode == 1 || devtools.maintenance_mode === 'true') {
-            showMaintenancePage(devtools.maintenance_message || 'আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে।');
+        // ═ MAINTENANCE MODE CHECK — Cloudflare Env Var থেকে (build-time) ═
+        if (CONFIG.MAINTENANCE_MODE === true) {
+            showMaintenancePage(CONFIG.MAINTENANCE_MESSAGE || 'আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে।');
             return;
         }
 

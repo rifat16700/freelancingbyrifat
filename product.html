@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cachedStr = localStorage.getItem('__fbr_public_data');
                 if (cachedStr) {
                     const cachedObj = JSON.parse(cachedStr);
-                    if (Date.now() - cachedObj.time < 5 * 60 * 1000) {
+                    if (Date.now() - cachedObj.time < 60 * 60 * 1000) { // 60 min browser cache
                         return cachedObj.data;
                     }
                 }
@@ -318,7 +318,6 @@ document.addEventListener('DOMContentLoaded', function() {
         p4 = pubDataPromise.then(d => ({ data: d ? d.products.map(p => { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); return p; }) : [] }));
         p2 = p4.then(res => ({ data: res.data.find(x => String(x.id) === String(id)) || null }));
         p5 = pubDataPromise.then(d => ({ data: d ? d.product_categories : [] }));
-        p7 = pubDataPromise.then(d => ({ data: d ? d.devtools : null }));
         p3 = reviewsPromise.then(d => ({ data: d }));
         p6 = reviewsPromise.then(d => ({ data: d.slice(0, REVIEWS_PAGE_SIZE) }));
     } else {
@@ -328,17 +327,15 @@ document.addEventListener('DOMContentLoaded', function() {
         p4 = Promise.resolve({ data: [] });
         p5 = Promise.resolve({ data: [] });
         p6 = Promise.resolve({ data: [] });
-        p7 = Promise.resolve({ data: {} });
     }
 
-    Promise.all([p1, p2, p3, p4, p5, p6, p7]).then(function(results) {
+    Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
         settings = results[0].data || {};
         product  = results[1].data;
         var ratings = results[2].data || [];
         allProdsForRelated = results[3].data || [];
         var prodCats = results[4].data || [];
         var initialReviews = results[5].data || [];
-        var devtools = (results[6] && results[6].data) ? results[6].data : settings;
 
         // Attach category_ids to each product
         allProdsForRelated.forEach(function(p) {
@@ -357,10 +354,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get review upload key
         reviewImgbbKey = settings.review_imgbb_key || '';
 
-        // ═ MAINTENANCE MODE CHECK ═
-        if (devtools.maintenance_mode === true || devtools.maintenance_mode == 1 || devtools.maintenance_mode === 'true') {
+        // ═ MAINTENANCE MODE CHECK — Cloudflare Env Var থেকে (build-time) ═
+        if (CONFIG.MAINTENANCE_MODE === true || CONFIG.MAINTENANCE_MODE === 'true') {
             document.getElementById('pageLoader').style.display = 'none';
-            document.body.innerHTML = '<style>*{margin:0;padding:0;box-sizing:border-box;}body{background:#0a0a0f;color:#f0f0f0;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;text-align:center;padding:24px;}.icon{font-size:72px;margin-bottom:24px;animation:float 3s ease-in-out infinite;}@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}.title{font-size:28px;font-weight:800;margin-bottom:12px;}.msg{font-size:15px;color:#888;max-width:420px;line-height:1.8;margin-bottom:28px;}.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:30px;font-size:12px;font-weight:700;background:rgba(255,77,77,0.08);color:#ff6b6b;border:1px solid rgba(255,77,77,0.2);}.dot{width:8px;height:8px;border-radius:50%;background:#ff4d4d;animation:pulse 1.5s ease-in-out infinite;}@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.3;transform:scale(0.6);}}</style><div class="icon">\ud83d\udd27</div><div class="title">Site Under Maintenance</div><div class="msg">' + (devtools.maintenance_message || '\u0986\u09ae\u09b0\u09be \u09b6\u09c0\u0998\u09cd\u09b0\u0987 \u09ab\u09bf\u09b0\u09c7 \u0986\u09b8\u099b\u09bf\u0964') + '</div><div class="badge"><div class="dot"></div> Maintenance Mode Active</div>';
+            document.body.innerHTML = '<style>*{margin:0;padding:0;box-sizing:border-box;}body{background:#0a0a0f;color:#f0f0f0;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;text-align:center;padding:24px;}.icon{font-size:72px;margin-bottom:24px;animation:float 3s ease-in-out infinite;}@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}.title{font-size:28px;font-weight:800;margin-bottom:12px;}.msg{font-size:15px;color:#888;max-width:420px;line-height:1.8;margin-bottom:28px;}.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:30px;font-size:12px;font-weight:700;background:rgba(255,77,77,0.08);color:#ff6b6b;border:1px solid rgba(255,77,77,0.2);}.dot{width:8px;height:8px;border-radius:50%;background:#ff4d4d;animation:pulse 1.5s ease-in-out infinite;}@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.3;transform:scale(0.6);}}</style><div class="icon">🔧</div><div class="title">Site Under Maintenance</div><div class="msg">' + (CONFIG.MAINTENANCE_MESSAGE || 'আমরা শীঘ্রই ফিরে আসছি।') + '</div><div class="badge"><div class="dot"></div> Maintenance Mode Active</div>';
             return;
         }
 

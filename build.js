@@ -24,6 +24,10 @@ var CONFIG = {
 
     // (Tokens are securely hidden in the Hugging Face backend)
 
+    // ── Maintenance Mode (Cloudflare Env Var দিয়ে নিয়ন্ত্রণ) ──
+    MAINTENANCE_MODE:    ${process.env.MAINTENANCE_MODE === 'true' ? 'true' : 'false'},
+    MAINTENANCE_MESSAGE: '${s(process.env.MAINTENANCE_MESSAGE) || 'আমরা শীঘ্রই ফিরে আসছি। কিছু technical কাজ চলছে।'}',
+
     // ── Frontend Constants ───────────────────────────────────
     CART_KEY:         'fbr_cart',
     DIRECT_ORDER_KEY: 'fbr_direct_order',

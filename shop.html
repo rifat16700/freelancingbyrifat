@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cachedStr = localStorage.getItem('__fbr_public_data');
                 if (cachedStr) {
                     const cachedObj = JSON.parse(cachedStr);
-                    if (Date.now() - cachedObj.time < 5 * 60 * 1000) {
+                    if (Date.now() - cachedObj.time < 60 * 60 * 1000) { // 60 min browser cache
                         return cachedObj.data;
                     }
                 }
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         p2 = pubDataPromise.then(d => ({ data: d ? d.categories : [] }));
         p3 = pubDataPromise.then(d => ({ data: d ? d.products.map(p => { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); return p; }) : [] }));
         p4 = pubDataPromise.then(d => ({ data: d ? d.product_categories : [] }));
-        p5 = pubDataPromise.then(d => ({ data: d ? d.devtools : null }));
+        p5 = Promise.resolve({ data: null }); // devtools removed — maintenance mode uses CONFIG env var
     } else {
         p1 = Promise.resolve({ data: {} });
         p2 = Promise.resolve({ data: [] });
@@ -271,7 +271,6 @@ document.addEventListener('DOMContentLoaded', function() {
         allCategories = results[1].data || [];
         allProducts   = results[2].data || [];
         var pc = results[3].data || [];
-        var devtools = (results[4] && results[4].data) ? results[4].data : (r.data || {});
 
         allProducts.forEach(function(p) {
             p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
@@ -282,9 +281,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (r.data) {
             var s = r.data;
 
-            // ═ MAINTENANCE MODE CHECK ═
-            if (devtools.maintenance_mode === true || devtools.maintenance_mode == 1 || devtools.maintenance_mode === 'true') {
-                showMaintenancePage(devtools.maintenance_message || 'আমরা শীঘ্রই ফিরে আসছি।');
+            // ═ MAINTENANCE MODE CHECK — Cloudflare Env Var থেকে (build-time) ═
+            if (CONFIG.MAINTENANCE_MODE === true) {
+                showMaintenancePage(CONFIG.MAINTENANCE_MESSAGE || 'আমরা শীঘ্রই ফিরে আসছি।');
                 return;
             }
 
