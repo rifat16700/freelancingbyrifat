@@ -1,0 +1,18 @@
+# Planning files (optional — remove if you want to push)
+_planning/
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Mac
+.DS_Store
+
+# Node (just in case)
+node_modules/
+
+# Ignore kilo tool directory
+.kilo/
