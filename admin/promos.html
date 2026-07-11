@@ -463,11 +463,11 @@ function loadData() {
         });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         var h = { "Content-Type": "application/json" };
-        Promise.all([
-            fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order" }) }).then(r=>r.json()),
-            fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at" }) }).then(r=>r.json()),
-            fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM promos ORDER BY created_at DESC LIMIT 500" }) }).then(r=>r.json())
-        ]).then(function(results) {
+        cfDbBatchQuery([
+            { sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order" },
+            { sql: "SELECT * FROM products WHERE is_active = 1 ORDER BY created_at" },
+            { sql: "SELECT * FROM promos ORDER BY created_at DESC LIMIT 500" }
+        ], true).then(function(results) {
             document.getElementById('pageLoader').style.display = 'none';
             document.getElementById('adminMain').style.display  = 'flex';
             var safeData = function(res) { return (res.success && res.result && res.result[0].results) ? res.result[0].results : []; };

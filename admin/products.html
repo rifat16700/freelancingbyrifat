@@ -327,8 +327,7 @@
                 showToast('Category load error: ' + err.message, 'error');
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" }) })
-            .then(function(r) { return r.json(); })
+            cfDbBatchQuery([{ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" }], false)
             .then(function(d) {
                 allCategories = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
                 var catFilter  = document.getElementById('catFilter');
@@ -435,10 +434,10 @@
                 showToast('Load failed: ' + err.message, 'error');
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            Promise.all([
-                fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM products ORDER BY created_at DESC" }) }).then(function(r) { return r.json(); }),
-                fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM product_categories" }) }).then(function(r) { return r.json(); })
-            ]).then(function(results) {
+            cfDbBatchQuery([
+            { sql: "SELECT * FROM products ORDER BY created_at DESC" },
+            { sql: "SELECT * FROM product_categories" }
+        ], true).then(function(results) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';
                 

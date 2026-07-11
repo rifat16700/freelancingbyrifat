@@ -360,8 +360,7 @@ function loadAll() {
                 return { data: res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } } return doc; }) };
             });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        p1 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT s.*, c.name as category_name FROM home_sections s LEFT JOIN categories c ON s.category_id = c.id ORDER BY s.sort_order" }) })
-            .then(function(r) { return r.json(); })
+        p1 = cfDbBatchQuery([{ sql: "SELECT s.*, c.name as category_name FROM home_sections s LEFT JOIN categories c ON s.category_id = c.id ORDER BY s.sort_order" }], false)
             .then(function(d) {
                 var data = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
                 return { data: data.map(function(s) {
@@ -371,8 +370,7 @@ function loadAll() {
                     return s;
                 }) };
             });
-        p2 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT id, name FROM categories WHERE is_active = 1 ORDER BY sort_order" }) })
-            .then(function(r) { return r.json(); })
+        p2 = cfDbBatchQuery([{ sql: "SELECT id, name FROM categories WHERE is_active = 1 ORDER BY sort_order" }], false)
             .then(function(d) { return { data: (d.success && d.result && d.result[0].results) ? d.result[0].results : [] }; });
     }
     var p3 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });

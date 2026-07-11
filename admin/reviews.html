@@ -80,8 +80,7 @@ function loadReviews() {
             })
             .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT r.*, p.name as product_name FROM reviews r LEFT JOIN products p ON r.product_id = p.id ORDER BY r.created_at DESC" }) })
-            .then(function(r) { return r.json(); })
+        cfDbBatchQuery([{ sql: "SELECT r.*, p.name as product_name FROM reviews r LEFT JOIN products p ON r.product_id = p.id ORDER BY r.created_at DESC" }], false)
             .then(function(d) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';

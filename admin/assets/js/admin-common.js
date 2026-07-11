@@ -199,17 +199,40 @@ function loadSidebarStoreName() {
             }
         }).catch(function() {});
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT store_name FROM settings WHERE id = 1" }) })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            if (d.success && d.result && d.result[0].results && d.result[0].results[0]) {
-                var el = document.getElementById('sidebarStoreName');
-                if (el) el.textContent = d.result[0].results[0].store_name;
-            }
-        }).catch(function() {});
+        // Store name is now fetched implicitly via cfDbBatchQuery on each page.
     }
 }
 
+// ── CF DB Batch Query Helper (Optimized for 1 Function Call) ──
+window.cfDbBatchQuery = function(queries, isMultiple) {
+    // Append the store_name query at the end
+    queries.push({ sql: "SELECT store_name FROM settings WHERE id = 1" });
+    return fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ queries: queries })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success && d.result) {
+            // Extract the last result which is for store_name
+            var storeRes = d.result.pop();
+            if (storeRes && storeRes.results && storeRes.results.length) {
+                var el = document.getElementById('sidebarStoreName');
+                if (el) el.textContent = storeRes.results[0].store_name;
+            }
+            // Reconstruct backward-compatible response
+            if (isMultiple) {
+                // Mock Promise.all array of responses
+                return d.result.map(function(item) { return { success: true, result: [item] }; });
+            } else {
+                // Mock single fetch response
+                return { success: true, result: [d.result[0]] };
+            }
+        }
+        throw new Error(d.error || 'Batch query failed');
+    });
+}
 // ── D1 Admin Query Helper (For cf_db write operations) ──────────
 function d1AdminQuery(sql, params) {
     return fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/admin-query', {

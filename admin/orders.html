@@ -267,8 +267,7 @@
                     showToast('Failed to load orders: ' + err.message, 'error');
                 });
             } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-                fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM orders ORDER BY created_at DESC" }) })
-                .then(function(r) { return r.json(); })
+                cfDbBatchQuery([{ sql: "SELECT * FROM orders ORDER BY created_at DESC" }], false)
                 .then(function(d) {
                     document.getElementById('pageLoader').style.display = 'none';
                     document.getElementById('adminMain').style.display  = 'flex';
