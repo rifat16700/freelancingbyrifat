@@ -1,3 +1,5 @@
+import { purgeAndWarmup } from './cache-helper.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -22,6 +24,16 @@ export async function onRequestPost(context) {
 
         const stmt = env.DB.prepare(sql);
         const { results } = await stmt.bind(...params.map(v => v === undefined ? null : v)).all();
+
+        // Selective Cache Purging for Checkout Data
+        const sqlUpper = sql.toUpperCase();
+        if (sqlUpper.includes("INSERT ") || sqlUpper.includes("UPDATE ") || sqlUpper.includes("DELETE ")) {
+            if (sqlUpper.includes("PROMOS") || sqlUpper.includes("ADDONS") || sqlUpper.includes("DELIVERY_ZONES") || sqlUpper.includes("SETTINGS")) {
+                const origin = new URL(request.url).origin;
+                const filesToPurge = [ origin + "/api/checkout-data" ];
+                context.waitUntil(purgeAndWarmup(env, origin, filesToPurge));
+            }
+        }
 
         return new Response(JSON.stringify({ success: true, result: [{ results }] }), {
             status: 200,

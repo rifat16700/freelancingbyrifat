@@ -1,3 +1,5 @@
+import { purgeAndWarmup } from './cache-helper.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -59,29 +61,11 @@ export async function onRequestPost(context) {
         if (env.CLOUDFLARE_ZONE_ID && env.CLOUDFLARE_API_TOKEN) {
             const origin = new URL(request.url).origin;
             const filesToPurge = [
-                origin + "/",
-                origin + "/index.html",
-                origin + "/shop",
-                origin + "/shop.html",
                 origin + "/api/public-data",
-                origin + "/api/get-products-list"
+                origin + "/api/checkout-data"
             ];
             
-            const pid = typeof p !== 'undefined' && p && p.id ? p.id : (typeof id !== 'undefined' ? id : null);
-            if (pid) {
-                filesToPurge.push(origin + "/product?id=" + pid);
-                filesToPurge.push(origin + "/product.html?id=" + pid);
-                filesToPurge.push(origin + "/api/get-single-product?id=" + pid);
-                filesToPurge.push(origin + "/api/public-reviews?product_id=" + pid);
-            }
-
-            context.waitUntil(
-                fetch(`https://api.cloudflare.com/client/v4/zones/${env.CLOUDFLARE_ZONE_ID}/purge_cache`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${env.CLOUDFLARE_API_TOKEN}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ files: filesToPurge })
-                }).catch(() => {})
-            );
+            context.waitUntil(purgeAndWarmup(env, origin, filesToPurge));
         }
 
         return new Response(JSON.stringify({ success: true, result: [{ results }] }), {
