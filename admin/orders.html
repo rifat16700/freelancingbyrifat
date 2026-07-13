@@ -55,12 +55,12 @@
                 <!-- Inline filters (hidden on mobile, shown via panel) -->
                 <select class="form-select filter-inline" id="statusFilter" onchange="filterOrders();updateFilterCount()" style="width:auto;min-width:160px;">
                     <option value="">All Status</option>
-                    <option value="Pending">â› Pending</option>
+                    <option value="Pending">⏛ Pending</option>
                     <option value="Confirmed">✅ Confirmed</option>
                     <option value="Processing">🔄 Processing</option>
                     <option value="Shipped">🚚 Shipped</option>
                     <option value="Delivered">🎉 Delivered</option>
-                    <option value="Cancelled">âŒ Cancelled</option>
+                    <option value="Cancelled">❌ Cancelled</option>
                 </select>
                 <select class="form-select filter-inline" id="payFilter" onchange="filterOrders();updateFilterCount()" style="width:auto;min-width:150px;">
                     <option value="">All Payment</option>
@@ -89,12 +89,12 @@
                 <div class="filter-panel-row">
                     <select class="form-select" id="statusFilterM" onchange="syncMobileFilter('statusFilter','statusFilterM');filterOrders();updateFilterCount()">
                         <option value="">All Status</option>
-                        <option value="Pending">â› Pending</option>
+                        <option value="Pending">⏛ Pending</option>
                         <option value="Confirmed">✅ Confirmed</option>
                         <option value="Processing">🔄 Processing</option>
                         <option value="Shipped">🚚 Shipped</option>
                         <option value="Delivered">🎉 Delivered</option>
-                        <option value="Cancelled">âŒ Cancelled</option>
+                        <option value="Cancelled">❌ Cancelled</option>
                     </select>
                     <select class="form-select" id="payFilterM" onchange="syncMobileFilter('payFilter','payFilterM');filterOrders();updateFilterCount()">
                         <option value="">All Payment</option>
@@ -474,7 +474,7 @@
 
             '<div class="order-items-list">' + itemsHtml + '</div>' +
 
-            (o.addons && o.addons !== 'None' ? '<div style="background:rgba(255,149,0,0.08);border:1.5px solid rgba(255,149,0,0.25);border-radius:12px;padding:12px;margin-top:12px;font-size:13px;"><b style="color:#FF9500;">ðŸŽ Selected Add-ons & Add-Once:</b><div style="font-weight:600;margin-top:4px;color:#eee;">' + o.addons + '</div></div>' : '') +
+            (o.addons && o.addons !== 'None' ? '<div style="background:rgba(255,149,0,0.08);border:1.5px solid rgba(255,149,0,0.25);border-radius:12px;padding:12px;margin-top:12px;font-size:13px;"><b style="color:#FF9500;">🎁 Selected Add-ons & Add-Once:</b><div style="font-weight:600;margin-top:4px;color:#eee;">' + o.addons + '</div></div>' : '') +
 
             '<div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:14px;margin-top:12px;">' +
                 '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>Subtotal</span><span>' + formatMoney(o.subtotal) + '</span></div>' +

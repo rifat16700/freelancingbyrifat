@@ -172,7 +172,7 @@
                         <div class="rte-sep"></div>
                         <button type="button" class="rte-btn" title="Clear formatting" onclick="rteCmd('removeFormat')" style="font-size:11px;">&#10005; fmt</button>
                     </div>
-                    <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="Product description à¦²à¦¿à¦–à§‹..." oninput="document.getElementById('rteCharCount').textContent=this.innerText.trim().length+' chars'"></div>
+                    <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="Product description লিখো..." oninput="document.getElementById('rteCharCount').textContent=this.innerText.trim().length+' chars'"></div>
                     <div class="rte-char-count" id="rteCharCount">0 chars</div>
                 </div>
             </div>
@@ -213,7 +213,7 @@
             <div class="form-row">
                 <div class="toggle-wrap" onclick="toggleProductField('pAddOnce')" style="border-color:rgba(98,126,234,0.4);background:rgba(98,126,234,0.04);">
                     <div>
-                        <div class="toggle-label">ðŸ›ï¸ Add-Once Product</div>
+                        <div class="toggle-label">🛍️ Add-Once Product</div>
                         <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">ON করলে checkout-এ Add-Once popup-এ দেখাবে</div>
                     </div>
                     <button class="toggle-switch" id="pAddOnce" type="button"></button>
@@ -225,7 +225,7 @@
             <!-- Gallery Images -->
             <div class="form-group">
                 <label class="form-label"><i data-lucide="image" class="lucide-icon icon-hover-pulse"></i> Gallery Images</label>
-                <div class="form-hint" style="margin-bottom:8px;">à¦›বি à¦†à¦ªà¦²à§‹ড à¦•à¦°à§‹ à¦…থবা direct URL à¦¦à¦¾à¦“à¥¤ <b>ImgBB à¦¤à§‡ à¦†à¦ªà¦²à§‹ড করলে best</b>à¥¤</div>
+                <div class="form-hint" style="margin-bottom:8px;">ছবি আপলোড করো অথবা direct URL দাও। <b>ImgBB তে আপলোড করলে best</b>।</div>
                 <div id="galleryWrap"></div>
                 <button type="button" class="btn btn-ghost btn-sm" onclick="addGalleryUrl()" style="margin-top:8px;">+ Add Image</button>
             </div>
@@ -238,20 +238,20 @@
             <div class="form-group">
                 <label class="form-label">Video Platform</label>
                 <select class="form-select" id="pVideoType">
-                    <option value="auto">ðŸ” Auto Detect</option>
-                    <option value="youtube">â–¶ï¸ YouTube</option>
+                    <option value="auto">🔍 Auto Detect</option>
+                    <option value="youtube">▶️ YouTube</option>
                     <option value="facebook">📘 Facebook</option>
                     <option value="tiktok">🎵 TikTok</option>
                     <option value="instagram">📸 Instagram</option>
                     <option value="vimeo">🎬 Vimeo</option>
                     <option value="dailymotion">📺 Dailymotion</option>
-                    <option value="twitter">ðŸ¦ Twitter / X</option>
+                    <option value="twitter">🐦 Twitter / X</option>
                     <option value="loom">🔴 Loom</option>
                     <option value="streamable">📡 Streamable</option>
-                    <option value="direct">ðŸŽžï¸ Direct File (mp4/webm)</option>
-                    <option value="other">ðŸŒ Other (iframe embed)</option>
+                    <option value="direct">🎞️ Direct File (mp4/webm)</option>
+                    <option value="other">🌐 Other (iframe embed)</option>
                 </select>
-                <div class="form-hint">Auto Detect à¦•à¦¾à¦œ না করলে manually platform select à¦•à¦°à§‹à¥¤</div>
+                <div class="form-hint">Auto Detect কাজ না করলে manually platform select করো।</div>
             </div>
 
             <hr class="section-divider">
@@ -509,8 +509,8 @@
                     '</div>' +
                     '<div style="margin-top:6px;font-size:12px;color:#8E8E93;">' +
                         variants.length + ' color(s) | ' +
-                        (p.is_active ? '<span style="color:#34C759;">â—  Active</span>' : '<span style="color:#FF3B30;">â— Inactive</span>') +
-                        (p.is_add_once ? ' | <span style="color:#627EEA;font-weight:700;">ðŸ›ï¸ Add-Once</span>' : '') +
+                        (p.is_active ? '<span style="color:#34C759;">●  Active</span>' : '<span style="color:#FF3B30;">● Inactive</span>') +
+                        (p.is_add_once ? ' | <span style="color:#627EEA;font-weight:700;">🛍️ Add-Once</span>' : '') +
                     '</div>' +
                 '</div>' +
                 '<div class="product-card-footer">' +
@@ -636,7 +636,7 @@
             btn.addEventListener('click', function() {
                 var idx = parseInt(btn.dataset.gupload);
                 var apiKey = getImgbbKey();
-                if (!apiKey) { showToast('&#9888; ImgBB API Key à¦¸à§‡à¦Ÿ à¦•à¦°à§‹! Settings à¦¥à§‡à¦•à§‡ à¦¦à¦¾à¦“à¥¤', 'warning'); return; }
+                if (!apiKey) { showToast('&#9888; ImgBB API Key সেট করো! Settings থেকে দাও।', 'warning'); return; }
                 var fileInput = document.createElement('input');
                 fileInput.type = 'file'; fileInput.accept = 'image/*';
                 fileInput.onchange = function() {
@@ -888,7 +888,7 @@
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),
             is_add_once:      document.getElementById('pAddOnce').classList.contains('on'),
-            // gallery_images à¦“ variants JSON à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦¸à§‡ভ à¦¹à¦¬à§‡
+            // gallery_images ও variants JSON হিসেবে সেভ হবে
             gallery_images:   collectGallery()
                                 .map(function(s) { return parseImageInput(s).saveUrl || s.trim(); })
                                 .filter(Boolean),
@@ -968,7 +968,7 @@
                 is_featured:      payload.is_featured,
                 is_add_once:      payload.is_add_once,
                 gallery_images:   payload.gallery_images,
-                variants:         JSON.stringify(payload.variants) // Complex object à¦¹à¦²à§‡ JSON string
+                variants:         JSON.stringify(payload.variants) // Complex object হলে JSON string
             };
 
             function finishSaveAW(productId) {
@@ -1022,7 +1022,7 @@
 
 
     function deleteProduct(id) {
-        if (!adminConfirm('à¦à¦‡ product à¦®à§à¦›à¦¬à§‡ন? à¦à¦‡ à¦•à¦¾à¦œ undo à¦•রা à¦¯à¦¾à¦¬à§‡ না।')) return;
+        if (!adminConfirm('এই product মুছবেন? এই কাজ undo করা যাবে না।')) return;
         if (CONFIG.DB_PROVIDER === 'supabase') {
             supabaseClient.from('products').delete().eq('id', id).then(function(r) {
                 if (r.error) { showToast('Delete failed', 'error'); return; }
