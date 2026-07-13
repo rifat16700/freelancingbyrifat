@@ -419,38 +419,12 @@ function safeJson(str, fallback) {
     try { return JSON.parse(str); } catch(e) { return fallback; }
 }
 
-// Auto-render Lucide icons on DOM changes (infinite loop প্রতিরোধ করা হয়েছে)
+// ── Lucide Icon Render (একবার load এ, MutationObserver নেই) ──────
+// MutationObserver সরানো হয়েছে কারণ এটা infinite loop করছিল।
+// পেজ load হলে একবার render করবে, তারপর modals/popups এর জন্য
+// প্রতিটি পেজ নিজে lucide.createIcons() call করবে।
 document.addEventListener('DOMContentLoaded', function() {
-    var lucideTimer = null;
-    var isRunningLucide = false;
-
-    var observer = new MutationObserver(function(mutations) {
-        // lucide চলাকালীন নিজের DOM change ignore করো
-        if (isRunningLucide) return;
-
-        var hasNewNodes = false;
-        for (var i = 0; i < mutations.length; i++) {
-            if (mutations[i].addedNodes.length > 0) { hasNewNodes = true; break; }
-        }
-        if (!hasNewNodes || typeof lucide === 'undefined') return;
-
-        // Debounce: একসাথে অনেক DOM change হলে শুধু একবারই চলবে
-        clearTimeout(lucideTimer);
-        lucideTimer = setTimeout(function() {
-            isRunningLucide = true;
-            observer.disconnect(); // পর্যবেক্ষণ বন্ধ করো
-            try {
-                lucide.createIcons();
-            } catch(e) {}
-            isRunningLucide = false;
-            // পুনরায় পর্যবেক্ষণ শুরু করো
-            observer.observe(document.body, { childList: true, subtree: true });
-        }, 100);
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    // ── Global Safety Net: 12s পর আটকে থাকলে force-show করবে ──
+    // ── Global Safety Net: 12s পর লোডার আটকে থাকলে force-show করবে ──
     setTimeout(function() {
         var loader = document.getElementById('pageLoader');
         var main   = document.getElementById('adminMain');
@@ -458,9 +432,15 @@ document.addEventListener('DOMContentLoaded', function() {
             loader.style.display = 'none';
             if (main) main.style.display = 'flex';
             if (typeof showToast === 'function') {
-                showToast('⚠️ Loading timeout! DB বা Network সমস্যা। Browser Console চেক করো।', 'warning');
+                showToast('⚠️ Loading timeout! DB বা Network সমস্যা।', 'warning');
             }
         }
     }, 12000);
 });
 
+// Global helper: যেকোনো জায়গা থেকে lucide icons refresh করতে পারবে
+window.refreshIcons = function() {
+    if (typeof lucide !== 'undefined') {
+        try { lucide.createIcons(); } catch(e) {}
+    }
+};
