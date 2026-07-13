@@ -205,9 +205,14 @@ function loadSidebarStoreName() {
 
 // ── CF DB Batch Query Helper (Optimized for 1 Function Call) ──
 window.cfDbBatchQuery = function(queries, isMultiple) {
-    // Append the store_name query at the end
     queries.push({ sql: "SELECT store_name FROM settings WHERE id = 1" });
-    return fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", {
+
+    // 10s timeout — network hang হলে reject হবে, admin infinite loading এ আটকাবে না
+    var timeoutPromise = new Promise(function(_, reject) {
+        setTimeout(function() { reject(new Error('Request timeout (10s). Check Cloudflare Functions.')); }, 10000);
+    });
+
+    var fetchPromise = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ queries: queries })
@@ -215,23 +220,21 @@ window.cfDbBatchQuery = function(queries, isMultiple) {
     .then(function(r) { return r.json(); })
     .then(function(d) {
         if (d.success && d.result) {
-            // Extract the last result which is for store_name
             var storeRes = d.result.pop();
             if (storeRes && storeRes.results && storeRes.results.length) {
                 var el = document.getElementById('sidebarStoreName');
                 if (el) el.textContent = storeRes.results[0].store_name;
             }
-            // Reconstruct backward-compatible response
             if (isMultiple) {
-                // Mock Promise.all array of responses
                 return d.result.map(function(item) { return { success: true, result: [item] }; });
             } else {
-                // Mock single fetch response
                 return { success: true, result: [d.result[0]] };
             }
         }
         throw new Error(d.error || 'Batch query failed');
     });
+
+    return Promise.race([fetchPromise, timeoutPromise]);
 }
 // ── D1 Admin Query Helper (For cf_db write operations) ──────────
 function d1AdminQuery(sql, params) {
@@ -428,4 +431,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    // ── Global Safety Net: 12s পর আটকে থাকলে force-show করবে ──
+    setTimeout(function() {
+        var loader = document.getElementById('pageLoader');
+        var main   = document.getElementById('adminMain');
+        if (loader && loader.style.display !== 'none') {
+            loader.style.display = 'none';
+            if (main) main.style.display = 'flex';
+            if (typeof showToast === 'function') {
+                showToast('⚠️ Loading timeout! DB বা Network সমস্যা। Browser Console চেক করো।', 'warning');
+            }
+        }
+    }, 12000);
 });
