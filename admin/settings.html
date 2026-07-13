@@ -13,6 +13,7 @@
     <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <script src="../assets/js/imgbb-uploader.js"></script>
+    <script src="../assets/js/r2-uploader.js"></script>
     <style>
         .settings-section { margin-bottom: 28px; }
         .settings-section-title {
@@ -550,25 +551,24 @@
         loadImgbbKey();
         updateGatewayUrlDisplay();
 
-        // Logo upload button
+        // Logo upload button (R2 → ImgBB fallback)
         var logoBtn = document.getElementById('logoUploadBtn');
         if (logoBtn) {
             logoBtn.addEventListener('click', function() {
-                var apiKey = getImgbbKey();
-                if (!apiKey) { showToast('⚠️ ImgBB API Key সেট করো আগে!', 'warning'); return; }
                 var input = document.createElement('input');
                 input.type = 'file'; input.accept = 'image/*';
                 input.onchange = function() {
                     if (!input.files[0]) return;
                     logoBtn.textContent = '⏳ Uploading...';
                     logoBtn.disabled = true;
-                    imgbbUpload(input.files[0], apiKey)
+                    smartUpload(input.files[0], 'auto', getImgbbKey())
                         .then(function(r) {
                             document.getElementById('logoUrl').value = r.url;
                             previewSettingImg('logoUrl','logoPreview');
+                            var via = r.via === 'r2' ? '☁️ R2' : '🖼️ ImgBB';
                             logoBtn.textContent = '✅ Done';
                             setTimeout(function(){ logoBtn.textContent='📤 Upload'; logoBtn.disabled=false; }, 1500);
-                            showToast('Logo আপলোড সফল! Save করতে ভুলো না।', 'success');
+                            showToast('Logo uploaded via ' + via + '! Save করতে ভুলো না।', 'success');
                         })
                         .catch(function(e) { showToast('❌ ' + e.message, 'error'); logoBtn.textContent='📤 Upload'; logoBtn.disabled=false; });
                 };
@@ -576,25 +576,24 @@
             });
         }
 
-        // Favicon upload button
+        // Favicon upload button (R2 → ImgBB fallback)
         var faviconBtn = document.getElementById('faviconUploadBtn');
         if (faviconBtn) {
             faviconBtn.addEventListener('click', function() {
-                var apiKey = getImgbbKey();
-                if (!apiKey) { showToast('⚠️ ImgBB API Key সেট করো আগে!', 'warning'); return; }
                 var input = document.createElement('input');
                 input.type = 'file'; input.accept = 'image/*';
                 input.onchange = function() {
                     if (!input.files[0]) return;
                     faviconBtn.textContent = '⏳ Uploading...';
                     faviconBtn.disabled = true;
-                    imgbbUpload(input.files[0], apiKey)
+                    smartUpload(input.files[0], 'auto', getImgbbKey())
                         .then(function(r) {
                             document.getElementById('faviconUrl').value = r.url;
                             previewSettingImg('faviconUrl','faviconPreview');
+                            var via = r.via === 'r2' ? '☁️ R2' : '🖼️ ImgBB';
                             faviconBtn.textContent = '✅ Done';
                             setTimeout(function(){ faviconBtn.textContent='📤 Upload'; faviconBtn.disabled=false; }, 1500);
-                            showToast('Favicon আপলোড সফল! Save করতে ভুলো না।', 'success');
+                            showToast('Favicon uploaded via ' + via + '! Save করতে ভুলো না।', 'success');
                         })
                         .catch(function(e) { showToast('❌ ' + e.message, 'error'); faviconBtn.textContent='📤 Upload'; faviconBtn.disabled=false; });
                 };

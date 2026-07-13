@@ -13,6 +13,7 @@
     <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <script src="../assets/js/imgbb-uploader.js"></script>
+    <script src="../assets/js/r2-uploader.js"></script>
     <style>
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
         .product-card {
@@ -225,7 +226,7 @@
             <!-- Gallery Images -->
             <div class="form-group">
                 <label class="form-label"><i data-lucide="image" class="lucide-icon icon-hover-pulse"></i> Gallery Images</label>
-                <div class="form-hint" style="margin-bottom:8px;">ছবি আপলোড করো অথবা direct URL দাও। <b>ImgBB তে আপলোড করলে best</b>।</div>
+                <div class="form-hint" style="margin-bottom:8px;">ছবি আপলোড করো অথবা direct URL দাও। <b>Upload বাটনে ক্লিক করলে R2 (নিজের সার্ভার) এ আপলোড হবে</b> — ImgBB fallback হিসেবে থাকবে।</div>
                 <div id="galleryWrap"></div>
                 <button type="button" class="btn btn-ghost btn-sm" onclick="addGalleryUrl()" style="margin-top:8px;">+ Add Image</button>
             </div>
@@ -631,26 +632,27 @@
             wrap.appendChild(row);
         });
 
-        // Upload buttons bind
+        // Upload buttons bind (R2 first → ImgBB fallback)
         wrap.querySelectorAll('[data-gupload]').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var idx = parseInt(btn.dataset.gupload);
-                var apiKey = getImgbbKey();
-                if (!apiKey) { showToast('&#9888; ImgBB API Key সেট করো! Settings থেকে দাও।', 'warning'); return; }
                 var fileInput = document.createElement('input');
                 fileInput.type = 'file'; fileInput.accept = 'image/*';
                 fileInput.onchange = function() {
                     if (!fileInput.files[0]) return;
                     var origText = btn.innerHTML;
                     btn.innerHTML = '&#9203; Uploading...'; btn.disabled = true;
-                    imgbbUpload(fileInput.files[0], apiKey)
+                    // R2 তে আপলোড করো, fail হলে ImgBB তে
+                    var imgbbKey = getImgbbKey();
+                    smartUpload(fileInput.files[0], 'auto', imgbbKey)
                         .then(function(r) {
                             galleryUrls = collectGallery();
                             galleryUrls[idx] = r.url;
                             renderGallery();
-                            showToast('&#10003; Gallery image uploaded!', 'success');
+                            var via = r.via === 'r2' ? '☁️ R2' : '🖼️ ImgBB';
+                            showToast('✅ Uploaded via ' + via + '!', 'success');
                         })
-                        .catch(function(e) { showToast('&#10008; ' + e.message, 'error'); btn.innerHTML=origText; btn.disabled=false; });
+                        .catch(function(e) { showToast('❌ ' + e.message, 'error'); btn.innerHTML=origText; btn.disabled=false; });
                 };
                 fileInput.click();
             });
@@ -778,26 +780,26 @@
             wrap.appendChild(div);
         });
 
-        // Variant upload buttons bind
+        // Variant upload buttons bind (R2 first → ImgBB fallback)
         wrap.querySelectorAll('[data-vupload]').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var vi = parseInt(btn.dataset.vupload);
-                var apiKey = getImgbbKey();
-                if (!apiKey) { showToast('\u26A0\uFE0F ImgBB API Key \u09B8\u09C7\u099F \u0995\u09B0\u09CB! Settings \u09A5\u09C7\u0995\u09C7 \u09A6\u09BE\u0993\u0964', 'warning'); return; }
                 var fileInput = document.createElement('input');
                 fileInput.type = 'file'; fileInput.accept = 'image/*';
                 fileInput.onchange = function() {
                     if (!fileInput.files[0]) return;
                     var origText = btn.innerHTML;
-                    btn.innerHTML = '\u23F3 Uploading...'; btn.disabled = true;
-                    imgbbUpload(fileInput.files[0], apiKey)
+                    btn.innerHTML = '⏳ Uploading...'; btn.disabled = true;
+                    var imgbbKey = getImgbbKey();
+                    smartUpload(fileInput.files[0], 'auto', imgbbKey)
                         .then(function(r) {
                             collectVariants();
                             variants[vi].imageUrl = r.url;
                             renderVariants();
-                            showToast('\u2705 Variant image uploaded!', 'success');
+                            var via = r.via === 'r2' ? '☁️ R2' : '🖼️ ImgBB';
+                            showToast('✅ Variant uploaded via ' + via + '!', 'success');
                         })
-                        .catch(function(e) { showToast('\u274C ' + e.message, 'error'); btn.innerHTML=origText; btn.disabled=false; });
+                        .catch(function(e) { showToast('❌ ' + e.message, 'error'); btn.innerHTML=origText; btn.disabled=false; });
                 };
                 fileInput.click();
             });
