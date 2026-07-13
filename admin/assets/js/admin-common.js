@@ -419,17 +419,35 @@ function safeJson(str, fallback) {
     try { return JSON.parse(str); } catch(e) { return fallback; }
 }
 
-// Auto-render Lucide icons on DOM changes
+// Auto-render Lucide icons on DOM changes (infinite loop প্রতিরোধ করা হয়েছে)
 document.addEventListener('DOMContentLoaded', function() {
-    const observer = new MutationObserver(function(mutations) {
-        let shouldRecreate = false;
-        for (let m of mutations) {
-            if (m.addedNodes.length > 0) { shouldRecreate = true; break; }
+    var lucideTimer = null;
+    var isRunningLucide = false;
+
+    var observer = new MutationObserver(function(mutations) {
+        // lucide চলাকালীন নিজের DOM change ignore করো
+        if (isRunningLucide) return;
+
+        var hasNewNodes = false;
+        for (var i = 0; i < mutations.length; i++) {
+            if (mutations[i].addedNodes.length > 0) { hasNewNodes = true; break; }
         }
-        if (shouldRecreate && typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+        if (!hasNewNodes || typeof lucide === 'undefined') return;
+
+        // Debounce: একসাথে অনেক DOM change হলে শুধু একবারই চলবে
+        clearTimeout(lucideTimer);
+        lucideTimer = setTimeout(function() {
+            isRunningLucide = true;
+            observer.disconnect(); // পর্যবেক্ষণ বন্ধ করো
+            try {
+                lucide.createIcons();
+            } catch(e) {}
+            isRunningLucide = false;
+            // পুনরায় পর্যবেক্ষণ শুরু করো
+            observer.observe(document.body, { childList: true, subtree: true });
+        }, 100);
     });
+
     observer.observe(document.body, { childList: true, subtree: true });
 
     // ── Global Safety Net: 12s পর আটকে থাকলে force-show করবে ──
@@ -445,3 +463,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 12000);
 });
+
