@@ -1,131 +1,157 @@
 # ☁️ Cloudflare R2 Image Storage — Setup Guide
 **Project: Freelancing By Rifat E-Commerce**
 
-এই গাইড অনুসরণ করলে আপনার e-commerce সাইটে নিজের Cloudflare R2 সার্ভারে ছবি আপলোড হবে — সম্পূর্ণ ফ্রি (Free Tier), ফাস্ট, এবং নিজের ডোমেইনে।
+## আপনার Situation
+
+```
+Account A (Domain Account):
+  ✅ Domain: freelancingbyrifat.top
+  ✅ R2 Bucket: (আপনার bucket)
+  ✅ Custom Domain on R2: images.freelancingbyrifat.top
+
+Account B (Pages Account):
+  ✅ Cloudflare Pages (আপনার সাইট)
+  ✅ Cloudflare Functions (/api/*)
+```
+
+**সমাধান:** R2 Binding ব্যবহার না করে **S3-Compatible API + API Token** দিয়ে সরাসরি Account B থেকে Account A এর R2 তে আপলোড করা হবে।
 
 ---
 
 ## কীভাবে কাজ করে
 
 ```
-Admin Panel → Upload বাটন
+Admin Panel (Account B এর Pages)
        ↓
-  /api/r2-upload  (Cloudflare Function)
+  /api/r2-upload Function
+       ↓  (S3 API + API Token দিয়ে সই করা request)
+  Account A এর R2 Bucket
        ↓
-  R2 Bucket এ সেভ হয়
-       ↓
-  images.yoursite.com/products/file.jpg  (CDN cached URL)
-       ↓
-  Database এ URL সেভ হয়
+  images.freelancingbyrifat.top/products/file.jpg (CDN cached)
 ```
 
-- **ImgBB এখনো কাজ করবে** — R2 ফেইল করলে ImgBB তে fallback হবে।
-- **ImgBB থাকা পুরনো ছবি** আগের মতোই দেখাবে — কোনো পরিবর্তন নেই।
-- **নতুন ছবি** Upload বাটনে ক্লিক করলে R2 তে যাবে।
+---
+
+## আপনাকে যা করতে হবে
+
+### Step 1: Account A তে R2 API Token তৈরি করুন
+
+1. **Account A** এর Cloudflare Dashboard এ লগিন করুন
+2. **My Profile** → **API Tokens** এ যান (উপরে ডানদিকে Avatar এ ক্লিক)
+3. **Create Token** → **Create Custom Token**
+4. নিচের settings দিন:
+   - **Token name:** `R2 Upload Token` (যেকোনো নাম)
+   - **Permissions:**
+     - `Account` → `Cloudflare R2 Storage:Admin` (অথবা `Edit`)
+   - **Account Resources:** Include → আপনার Account
+5. **Continue to Summary** → **Create Token**
+6. Token দেখাবে — **এখনই কপি করুন, পরে আর দেখাবে না!**
+
+> **⚠️ এটা API Token, R2 API Token আলাদা।** R2 বাকেটের ভেতর থেকে না, My Profile থেকে করতে হবে।
 
 ---
 
-## আপনি যা করেছেন (ধরে নেওয়া হচ্ছে)
+### Step 2: Account A এর Account ID বের করুন
 
-- [x] Cloudflare একাউন্টে R2 বাকেট তৈরি করেছেন
-- [x] বাকেটে একটি Custom Domain (যেমন `images.freelancingbyrifat.top`) কানেক্ট করেছেন
-
----
-
-## এখন আপনাকে যা করতে হবে (Step-by-Step)
-
-### Step 1: R2 Bucket Public Access নিশ্চিত করুন
-
-1. Cloudflare Dashboard (dash.cloudflare.com) → **R2 Object Storage**
-2. আপনার বাকেটে ক্লিক করুন
-3. **Settings** ট্যাবে যান
-4. **Public Access** সেকশনে Custom Domain কানেক্ট আছে কিনা নিশ্চিত করুন
-5. Custom Domain টি নোট করুন (যেমন: `https://images.freelancingbyrifat.top`)
-
-> **গুরুত্বপূর্ণ:** R2 বাকেটে Custom Domain না থাকলে ছবি পাবলিকলি দেখানো যাবে না।
+1. Account A এর Dashboard এ যান
+2. যেকোনো পেজের ডানদিকে **Account ID** দেখতে পাবেন (32 অক্ষরের hex string)
+3. কপি করুন
 
 ---
 
-### Step 2: Cloudflare Pages এ R2 Binding যোগ করুন
+### Step 3: R2 API Keys তৈরি করুন (Access Key ID + Secret)
 
-1. Cloudflare Dashboard → **Workers & Pages**
-2. আপনার Pages প্রজেক্টে ক্লিক করুন
-3. **Settings** → **Functions** ট্যাবে যান
-4. **R2 Bucket Bindings** সেকশনে → **Add binding**:
-   - **Variable name:** `R2_BUCKET`  (হুবহু এভাবে)
-   - **R2 Bucket:** আপনার বাকেট সিলেক্ট করুন
-5. **Save** করুন
+> API Token আলাদা, R2 তে S3-compatible access এর জন্য আলাদা **Access Key** লাগে।
 
----
-
-### Step 3: Environment Variable যোগ করুন
-
-1. একই **Settings** পেজে **Environment Variables** → **Add variable**:
-   - **Variable name:** `R2_PUBLIC_URL`
-   - **Value:** `https://images.freelancingbyrifat.top`  (আপনার Custom Domain, trailing slash ছাড়া)
-2. **Production** এবং **Preview** দুটোতেই সেট করুন
-3. **Save** করুন
+1. Account A → **R2 Object Storage**
+2. পেজের উপরে ডানদিকে **Manage R2 API Tokens** ক্লিক করুন
+3. **Create API token** ক্লিক করুন:
+   - **Token Name:** `Pages Upload Key`
+   - **Permissions:** `Object Read & Write`
+   - **Specify bucket:** আপনার বাকেটটি সিলেক্ট করুন
+4. **Create API Token** ক্লিক করুন
+5. এখন দেখাবে:
+   - ✅ **Access Key ID** — কপি করুন
+   - ✅ **Secret Access Key** — কপি করুন (একবারই দেখায়!)
 
 ---
 
-### Step 4: Redeploy
+### Step 4: Account B এর Cloudflare Pages এ Environment Variables সেট করুন
 
-Settings পরিবর্তনের পর নতুন commit push করুন অথবা Deployments থেকে Retry করুন।
+1. **Account B** এর Dashboard → **Workers & Pages** → আপনার Pages প্রজেক্ট
+2. **Settings** → **Environment Variables** → **Add variable** (একে একে সব যোগ করুন):
+
+| Variable Name | Value |
+|--------------|-------|
+| `R2_ACCOUNT_ID` | Account A এর Account ID (Step 2 থেকে) |
+| `R2_BUCKET_NAME` | আপনার R2 Bucket এর নাম |
+| `R2_ACCESS_KEY_ID` | Step 3 এর Access Key ID |
+| `R2_SECRET_ACCESS_KEY` | Step 3 এর Secret Access Key |
+| `R2_PUBLIC_URL` | `https://images.freelancingbyrifat.top` |
+
+3. **Production** এবং **Preview** — দুটোতেই সেট করুন
+4. **Save** করুন
+
+> **Secret Access Key** কে `Encrypt` (🔒) করে রাখুন — Security এর জন্য।
+
+---
+
+### Step 5: Redeploy
+
+নতুন commit push করুন অথবা Deployments → Retry deployment।
 
 ---
 
 ## Test করার পদ্ধতি
 
-1. Admin Panel → **Products**
-2. যেকোনো product **Edit** করুন
-3. Gallery এর **Upload** বাটনে ক্লিক করুন
-4. ছবি সিলেক্ট করুন
-5. Toast এ `Uploaded via R2!` দেখালে সফল!
+1. Admin Panel → **Products** → Edit
+2. Gallery এ **Upload** বাটন ক্লিক করুন
+3. ছবি সিলেক্ট করুন
+4. Toast এ `✅ Uploaded via ☁️ R2!` দেখালে সফল!
 
----
-
-## ফাইল স্ট্রাকচার (কোড পরিবর্তন)
-
-```
-e-commarce/
-├── functions/api/
-│   └── r2-upload.js          [NEW] R2 আপলোড Cloudflare Function
-├── assets/js/
-│   ├── imgbb-uploader.js     [UNCHANGED] ImgBB fallback
-│   └── r2-uploader.js        [NEW] R2 JS Library + smartUpload()
-└── admin/
-    ├── products.html          [UPDATED] smartUpload() ব্যবহার করছে
-    └── settings.html          [UPDATED] smartUpload() ব্যবহার করছে
+Browser Console এ test করুন:
+```javascript
+const fd = new FormData();
+// fd.append('file', yourFile);
+fetch('/api/r2-upload', { method: 'POST', body: fd })
+  .then(r => r.json())
+  .then(console.log);
 ```
 
 ---
 
-## Environment Variables Summary
+## ফাইল Structure
 
-| Variable Name | Value | কোথায় |
-|--------------|-------|--------|
-| `R2_PUBLIC_URL` | `https://images.yoursite.top` | Pages → Env Variables |
+```
+functions/api/
+  r2-upload.js     ← S3-Compatible API দিয়ে upload (Account আলাদা হলেও কাজ করে)
 
-| Binding Name | Type | কোথায় |
-|-------------|------|--------|
-| `R2_BUCKET` | R2 Bucket | Pages → Functions → R2 Bindings |
+assets/js/
+  imgbb-uploader.js  ← ImgBB (fallback)
+  r2-uploader.js     ← R2 JS client + smartUpload()
 
----
-
-## R2 Free Tier সীমা
-
-| Resource | Free Limit |
-|----------|-----------|
-| Storage | 10 GB/মাস |
-| Write ops | 1 Million/মাস |
-| Read ops | 10 Million/মাস |
-| **Bandwidth** | **সম্পূর্ণ ফ্রি!** |
+admin/
+  products.html      ← smartUpload() ব্যবহার করছে
+  settings.html      ← smartUpload() ব্যবহার করছে
+```
 
 ---
 
 ## সমস্যা হলে
 
-- **"R2_BUCKET binding নেই"** → Step 2 করুন, Variable name হুবহু `R2_BUCKET`
-- **"R2_PUBLIC_URL নেই"** → Step 3 করুন
-- **ছবি upload হয় কিন্তু দেখায় না** → Custom Domain সঠিক কিনা চেক করুন
-- **R2 fail, ImgBB তে যাচ্ছে** → Console এ error দেখুন। ImgBB API Key থাকলে fallback কাজ করবে।
+### "Environment variables নেই" error
+→ Step 4 সম্পূর্ণ করুন। সব 5টি variable সেট করুন।
+
+### "R2 upload failed (403)" error
+→ Access Key ID / Secret Access Key ভুল, অথবা bucket permission নেই।
+→ Step 3 আবার করুন এবং bucket সিলেক্ট করতে ভুলবেন না।
+
+### "R2 upload failed (404)" error
+→ Bucket Name ভুল। `R2_BUCKET_NAME` exact bucket নাম দিন।
+
+### ছবি upload হয় কিন্তু দেখায় না (broken image)
+→ `R2_PUBLIC_URL` ভুল, অথবা Custom Domain R2 বাকেটে ঠিকমতো connected নেই।
+
+### R2 fail হয়ে ImgBB তে যাচ্ছে
+→ Console এ error message দেখুন এবং উপরের সমাধান ফলো করুন।
+→ ImgBB API Key থাকলে ছবি upload হবে (fallback কাজ করবে)।
