@@ -179,11 +179,11 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Base Price (à§³) *</label>
+                    <label class="form-label">Base Price (৳) *</label>
                     <input class="form-input" id="pBasePrice" type="number" placeholder="0">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Flash Sale Discount (à§³)</label>
+                    <label class="form-label">Flash Sale Discount (৳)</label>
                     <input class="form-input" id="pFlashPrice" type="number" placeholder="0">
                     <div class="form-hint">Final = Base Price - this amount</div>
                 </div>
@@ -214,7 +214,7 @@
                 <div class="toggle-wrap" onclick="toggleProductField('pAddOnce')" style="border-color:rgba(98,126,234,0.4);background:rgba(98,126,234,0.04);">
                     <div>
                         <div class="toggle-label">ðŸ›ï¸ Add-Once Product</div>
-                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">ON à¦•à¦°à¦²à§‡ checkout-à¦ Add-Once popup-à¦ à¦¦à§‡à¦–à¦¾à¦¬à§‡</div>
+                        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">ON করলে checkout-এ Add-Once popup-এ দেখাবে</div>
                     </div>
                     <button class="toggle-switch" id="pAddOnce" type="button"></button>
                 </div>
@@ -225,7 +225,7 @@
             <!-- Gallery Images -->
             <div class="form-group">
                 <label class="form-label"><i data-lucide="image" class="lucide-icon icon-hover-pulse"></i> Gallery Images</label>
-                <div class="form-hint" style="margin-bottom:8px;">à¦›à¦¬à¦¿ à¦†à¦ªà¦²à§‹à¦¡ à¦•à¦°à§‹ à¦…à¦¥à¦¬à¦¾ direct URL à¦¦à¦¾à¦“à¥¤ <b>ImgBB à¦¤à§‡ à¦†à¦ªà¦²à§‹à¦¡ à¦•à¦°à¦²à§‡ best</b>à¥¤</div>
+                <div class="form-hint" style="margin-bottom:8px;">à¦›বি à¦†à¦ªà¦²à§‹ড à¦•à¦°à§‹ à¦…থবা direct URL à¦¦à¦¾à¦“à¥¤ <b>ImgBB à¦¤à§‡ à¦†à¦ªà¦²à§‹ড করলে best</b>à¥¤</div>
                 <div id="galleryWrap"></div>
                 <button type="button" class="btn btn-ghost btn-sm" onclick="addGalleryUrl()" style="margin-top:8px;">+ Add Image</button>
             </div>
@@ -240,18 +240,18 @@
                 <select class="form-select" id="pVideoType">
                     <option value="auto">ðŸ” Auto Detect</option>
                     <option value="youtube">â–¶ï¸ YouTube</option>
-                    <option value="facebook">ðŸ“˜ Facebook</option>
-                    <option value="tiktok">ðŸŽµ TikTok</option>
-                    <option value="instagram">ðŸ“¸ Instagram</option>
-                    <option value="vimeo">ðŸŽ¬ Vimeo</option>
-                    <option value="dailymotion">ðŸ“º Dailymotion</option>
+                    <option value="facebook">📘 Facebook</option>
+                    <option value="tiktok">🎵 TikTok</option>
+                    <option value="instagram">📸 Instagram</option>
+                    <option value="vimeo">🎬 Vimeo</option>
+                    <option value="dailymotion">📺 Dailymotion</option>
                     <option value="twitter">ðŸ¦ Twitter / X</option>
-                    <option value="loom">ðŸ”´ Loom</option>
-                    <option value="streamable">ðŸ“¡ Streamable</option>
+                    <option value="loom">🔴 Loom</option>
+                    <option value="streamable">📡 Streamable</option>
                     <option value="direct">ðŸŽžï¸ Direct File (mp4/webm)</option>
                     <option value="other">ðŸŒ Other (iframe embed)</option>
                 </select>
-                <div class="form-hint">Auto Detect à¦•à¦¾à¦œ à¦¨à¦¾ à¦•à¦°à¦²à§‡ manually platform select à¦•à¦°à§‹à¥¤</div>
+                <div class="form-hint">Auto Detect à¦•à¦¾à¦œ না করলে manually platform select à¦•à¦°à§‹à¥¤</div>
             </div>
 
             <hr class="section-divider">
@@ -279,7 +279,7 @@
     var variants = [];
 
     document.addEventListener('DOMContentLoaded', function() {
-        // adminInit auth guard â€” à¦¤à¦¾à¦°à¦ªà¦° data load
+        // adminInit auth guard — তারপর data load
         adminInit('products', function() {
             loadCategories();
             loadProducts();
@@ -495,7 +495,7 @@
             var saleHtml = '';
             if (p.flash_sale_price > 0) {
                 finalPrice = p.base_price - p.flash_sale_price;
-                saleHtml = '<span class="product-old-price">à§³' + p.base_price + '</span> <span class="badge badge-pending" style="font-size:10px;">SALE</span>';
+                saleHtml = '<span class="product-old-price">৳' + p.base_price + '</span> <span class="badge badge-pending" style="font-size:10px;">SALE</span>';
             }
 
             var card = document.createElement('div');
@@ -505,7 +505,7 @@
                 '<div class="product-card-body">' +
                     '<div class="product-name">' + p.name + '</div>' +
                     '<div>' +
-                        '<span class="product-price">à§³' + finalPrice + '</span>' + saleHtml +
+                        '<span class="product-price">৳' + finalPrice + '</span>' + saleHtml +
                     '</div>' +
                     '<div style="margin-top:6px;font-size:12px;color:#8E8E93;">' +
                         variants.length + ' color(s) | ' +
@@ -692,7 +692,7 @@
         return arr;
     }
 
-    // ── Variants ────────────────────────────────────────────â”€
+    // ── Variants ─────────────────────────────────────────────
     function addVariant() {
         collectVariants();
         variants.push({ colorName: '', colorHex: '#007AFF', variantCode: '', imageUrl: '', sizes: [{ size: 'M', stock: 10, extraPrice: 0 }] });
@@ -745,7 +745,7 @@
                 return '<div class="size-item">' +
                     '<input class="form-input" placeholder="Size" value="' + (s.size||'') + '" data-v="' + vi + '" data-s="' + si + '" data-f="size">' +
                     '<input class="form-input" placeholder="Stock" type="number" value="' + (s.stock||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="stock">' +
-                    '<input class="form-input" placeholder="Extra à§³" type="number" value="' + (s.extraPrice||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="extraPrice">' +
+                    '<input class="form-input" placeholder="Extra ৳" type="number" value="' + (s.extraPrice||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="extraPrice">' +
                     '<button type="button" class="btn btn-danger btn-sm" onclick="removeSize(' + vi + ',' + si + ')">✖</button>' +
                 '</div>';
             }).join('');
@@ -771,7 +771,7 @@
                         (v.imageUrl ? '<img class="imgbb-img-preview" src="' + v.imageUrl + '" onerror="document.getElementById(\'vprev-' + vi + '\').style.display=\'none\'">' : '<div class="imgbb-preview-placeholder"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>No image</span></div>') +
                     '</div>' +
                 '</div>' +
-                '<label class="form-label">Sizes (Name | Stock | Extra Price à§³)</label>' +
+                '<label class="form-label">Sizes (Name | Stock | Extra Price ৳)</label>' +
                 sizesHtml +
                 '<button type="button" class="btn btn-ghost btn-sm" onclick="addSize(' + vi + ')" style="margin-top:6px;">+ Add Size</button>';
 
@@ -888,7 +888,7 @@
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),
             is_add_once:      document.getElementById('pAddOnce').classList.contains('on'),
-            // gallery_images à¦“ variants JSON à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦¸à§‡à¦­ à¦¹à¦¬à§‡
+            // gallery_images à¦“ variants JSON à¦¹à¦¿à¦¸à§‡à¦¬à§‡ à¦¸à§‡ভ à¦¹à¦¬à§‡
             gallery_images:   collectGallery()
                                 .map(function(s) { return parseImageInput(s).saveUrl || s.trim(); })
                                 .filter(Boolean),
@@ -1022,7 +1022,7 @@
 
 
     function deleteProduct(id) {
-        if (!adminConfirm('à¦à¦‡ product à¦®à§à¦›à¦¬à§‡à¦¨? à¦à¦‡ à¦•à¦¾à¦œ undo à¦•à¦°à¦¾ à¦¯à¦¾à¦¬à§‡ à¦¨à¦¾à¥¤')) return;
+        if (!adminConfirm('à¦à¦‡ product à¦®à§à¦›à¦¬à§‡ন? à¦à¦‡ à¦•à¦¾à¦œ undo à¦•রা à¦¯à¦¾à¦¬à§‡ না।')) return;
         if (CONFIG.DB_PROVIDER === 'supabase') {
             supabaseClient.from('products').delete().eq('id', id).then(function(r) {
                 if (r.error) { showToast('Delete failed', 'error'); return; }
@@ -1098,7 +1098,7 @@
     }
 
 
-    // ── Rich Text Editor helpers ────────────────────────────â”€
+    // ── Rich Text Editor helpers ─────────────────────────────
     function rteCmd(cmd, val) {
         var ed = document.getElementById('pDesc');
         ed.focus();

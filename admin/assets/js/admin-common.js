@@ -415,3 +415,17 @@ function safeJson(str, fallback) {
     if (fallback === undefined) fallback = [];
     try { return JSON.parse(str); } catch(e) { return fallback; }
 }
+
+// Auto-render Lucide icons on DOM changes
+document.addEventListener('DOMContentLoaded', function() {
+    const observer = new MutationObserver(function(mutations) {
+        let shouldRecreate = false;
+        for (let m of mutations) {
+            if (m.addedNodes.length > 0) { shouldRecreate = true; break; }
+        }
+        if (shouldRecreate && typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+});
