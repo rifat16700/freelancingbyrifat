@@ -1,26 +1,7 @@
 {
   "version": 1,
   "include": [
-    "/api/public-data",
-    "/api/save-order",
-    "/api/update-order",
-    "/api/update-payment-status",
-    "/api/add-product",
-    "/api/update-product",
-    "/api/delete-product",
-    "/api/update-settings",
-    "/api/admin-login",
-    "/api/admin-query",
-    "/api/clear-cache",
-    "/api/save-review",
-    "/api/public-reviews",
-    "/api/delete-order",
-    "/api/clean-nulls",
-    "/api/dev-query",
-    "/api/d1-query",
-    "/api/reset-db",
-    "/api/schema-dump",
-    "/api/get-single-product"
+    "/api/*"
   ],
   "exclude": []
 }
