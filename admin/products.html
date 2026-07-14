@@ -432,6 +432,9 @@
                 document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
                 renderProducts(allProducts);
             }).catch(function(err) {
+                var l = document.getElementById('pageLoader'), m = document.getElementById('adminMain');
+                if(l) l.style.display='none';
+                if(m) m.style.display='flex';
                 showToast('Load failed: ' + err.message, 'error');
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
@@ -457,6 +460,9 @@
                 document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
                 renderProducts(allProducts);
             }).catch(function(err) {
+                var l = document.getElementById('pageLoader'), m = document.getElementById('adminMain');
+                if(l) l.style.display='none';
+                if(m) m.style.display='flex';
                 showToast('Load failed: ' + err.message, 'error');
             });
         }

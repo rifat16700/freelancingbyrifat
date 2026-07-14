@@ -101,7 +101,10 @@ function loadAddons() {
             });
             renderAddons();
         }).catch(function(err) {
-            showToast('Load failed: ' + err.message, 'error');
+            var l = document.getElementById('pageLoader'), m = document.getElementById('adminMain');
+                if(l) l.style.display='none';
+                if(m) m.style.display='flex';
+                showToast('Load failed: ' + err.message, 'error');
         });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         cfDbBatchQuery([{ sql: "SELECT * FROM addons ORDER BY created_at" }], false)

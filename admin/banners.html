@@ -129,7 +129,10 @@ function loadBanners() {
             allBanners = res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } } return doc; });
             renderBanners();
         }).catch(function(err) {
-            showToast('Load failed: ' + err.message, 'error');
+            var l = document.getElementById('pageLoader'), m = document.getElementById('adminMain');
+                if(l) l.style.display='none';
+                if(m) m.style.display='flex';
+                showToast('Load failed: ' + err.message, 'error');
         });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         cfDbBatchQuery([{ sql: "SELECT * FROM banners ORDER BY sort_order" }], false)
@@ -140,7 +143,10 @@ function loadBanners() {
             allBanners = allBanners.map(function(b) { b.is_active = b.is_active === 1; return b; });
             renderBanners();
         }).catch(function(err) {
-            showToast('Load failed: ' + err.message, 'error');
+            var l = document.getElementById('pageLoader'), m = document.getElementById('adminMain');
+                if(l) l.style.display='none';
+                if(m) m.style.display='flex';
+                showToast('Load failed: ' + err.message, 'error');
         });
     }
 }
