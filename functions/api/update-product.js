@@ -62,14 +62,7 @@ export async function onRequestPost(context) {
         // Auto-purge selective Cloudflare Cache
         if (env.CLOUDFLARE_ZONE_ID && env.CLOUDFLARE_API_TOKEN) {
             const origin = new URL(request.url).origin;
-            const filesToPurge = [
-                origin + "/api/get-products-list",
-                origin + "/api/get-single-product?id=" + p.id
-            ];
-            
-            if (p.is_add_once) {
-                filesToPurge.push(origin + "/api/checkout-data");
-            }
+            const filesToPurge = [ origin + "/api/public-data", origin + "/api/checkout-data", origin + "/api/get-single-product?id=" + p.id ];
 
             context.waitUntil(purgeAndWarmup(env, origin, filesToPurge));
         }
