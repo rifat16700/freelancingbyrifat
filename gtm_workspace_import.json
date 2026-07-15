@@ -32,7 +32,7 @@
         "type": "c",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "value",
             "value": "123456789"
           }
@@ -46,12 +46,12 @@
         "type": "v",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "name",
             "value": "content_ids"
           },
           {
-            "type": "integer",
+            "type": "INTEGER",
             "key": "dataLayerVersion",
             "value": "2"
           }
@@ -65,12 +65,12 @@
         "type": "v",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "name",
             "value": "content_name"
           },
           {
-            "type": "integer",
+            "type": "INTEGER",
             "key": "dataLayerVersion",
             "value": "2"
           }
@@ -84,12 +84,12 @@
         "type": "v",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "name",
             "value": "currency"
           },
           {
-            "type": "integer",
+            "type": "INTEGER",
             "key": "dataLayerVersion",
             "value": "2"
           }
@@ -103,12 +103,12 @@
         "type": "v",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "name",
             "value": "value"
           },
           {
-            "type": "integer",
+            "type": "INTEGER",
             "key": "dataLayerVersion",
             "value": "2"
           }
@@ -122,12 +122,12 @@
         "type": "v",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "name",
             "value": "num_items"
           },
           {
-            "type": "integer",
+            "type": "INTEGER",
             "key": "dataLayerVersion",
             "value": "2"
           }
@@ -141,12 +141,12 @@
         "type": "v",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "name",
             "value": "transaction_id"
           },
           {
-            "type": "integer",
+            "type": "INTEGER",
             "key": "dataLayerVersion",
             "value": "2"
           }
@@ -160,12 +160,12 @@
         "type": "v",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "name",
             "value": "event_id"
           },
           {
-            "type": "integer",
+            "type": "INTEGER",
             "key": "dataLayerVersion",
             "value": "2"
           }
@@ -182,7 +182,7 @@
         "customEventFilter": [],
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "eventName",
             "value": "PageView"
           }
@@ -197,7 +197,7 @@
         "customEventFilter": [],
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "eventName",
             "value": "ViewContent"
           }
@@ -212,7 +212,7 @@
         "customEventFilter": [],
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "eventName",
             "value": "AddToCart"
           }
@@ -227,7 +227,7 @@
         "customEventFilter": [],
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "eventName",
             "value": "InitiateCheckout"
           }
@@ -242,7 +242,7 @@
         "customEventFilter": [],
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "eventName",
             "value": "Purchase"
           }
@@ -258,12 +258,12 @@
         "type": "html",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "html",
             "value": "<script>\n  fbq('init', '{{Facebook Pixel ID}}');\n  fbq('track', 'PageView', {}, { eventID: '{{dlv - event_id}}' });\n</script>"
           },
           {
-            "type": "boolean",
+            "type": "BOOLEAN",
             "key": "supportDocumentWrite",
             "value": "false"
           }
@@ -281,12 +281,12 @@
         "type": "html",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "html",
             "value": "<script>\n  fbq('init', '{{Facebook Pixel ID}}');\n  fbq('track', 'ViewContent', {\n    content_ids: '{{dlv - content_ids}}'.split(','),\n    content_name: '{{dlv - content_name}}',\n    currency: '{{dlv - currency}}',\n    value: parseFloat('{{dlv - value}}') || 0\n  }, { eventID: '{{dlv - event_id}}' });\n</script>"
           },
           {
-            "type": "boolean",
+            "type": "BOOLEAN",
             "key": "supportDocumentWrite",
             "value": "false"
           }
@@ -304,12 +304,12 @@
         "type": "html",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "html",
             "value": "<script>\n  fbq('init', '{{Facebook Pixel ID}}');\n  fbq('track', 'AddToCart', {\n    content_ids: '{{dlv - content_ids}}'.split(','),\n    content_name: '{{dlv - content_name}}',\n    currency: '{{dlv - currency}}',\n    value: parseFloat('{{dlv - value}}') || 0\n  }, { eventID: '{{dlv - event_id}}' });\n</script>"
           },
           {
-            "type": "boolean",
+            "type": "BOOLEAN",
             "key": "supportDocumentWrite",
             "value": "false"
           }
@@ -327,12 +327,12 @@
         "type": "html",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "html",
             "value": "<script>\n  fbq('init', '{{Facebook Pixel ID}}');\n  fbq('track', 'InitiateCheckout', {\n    currency: '{{dlv - currency}}',\n    num_items: parseInt('{{dlv - num_items}}') || 0,\n    value: parseFloat('{{dlv - value}}') || 0\n  }, { eventID: '{{dlv - event_id}}' });\n</script>"
           },
           {
-            "type": "boolean",
+            "type": "BOOLEAN",
             "key": "supportDocumentWrite",
             "value": "false"
           }
@@ -350,12 +350,12 @@
         "type": "html",
         "parameter": [
           {
-            "type": "template",
+            "type": "TEMPLATE",
             "key": "html",
             "value": "<script>\n  fbq('init', '{{Facebook Pixel ID}}');\n  fbq('track', 'Purchase', {\n    transaction_id: '{{dlv - transaction_id}}',\n    currency: '{{dlv - currency}}',\n    value: parseFloat('{{dlv - value}}') || 0\n  }, { eventID: '{{dlv - event_id}}' });\n</script>"
           },
           {
-            "type": "boolean",
+            "type": "BOOLEAN",
             "key": "supportDocumentWrite",
             "value": "false"
           }
