@@ -1,0 +1,21 @@
+    var insertPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        insertPromise = supabaseClient.from('orders').insert([orderData]);
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        var awOrderData = Object.assign({}, orderData);
+        awOrderData.items  = JSON.stringify(awOrderData.items  || []);
+        awOrderData.addons = JSON.stringify(awOrderData.addons || []);
+        delete awOrderData.id;
+        insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awOrderData)
+            .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
+            .catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        insertPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderData: orderData })
+        }).then(function(res) { return res.json(); }).then(function(res) {
+            if (!res.success) throw new Error(res.error);
+            return { data: [{ id: orderId }], error: null };
+        }).catch(function(err) { return { data: null, error: err }; });
+    }

@@ -1,0 +1,896 @@
+
+    var allProducts = [], allCategories = [];
+    var editingProductId = null;
+    var galleryUrls = [];
+    var variants = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // adminInit auth guard — তারপর data load
+        adminInit('products', function() {
+            loadCategories();
+            loadProducts();
+        });
+    });
+
+    function loadCategories() {
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('categories').select('*').eq('is_active', true).order('sort_order').then(function(r) {
+                allCategories = r.data || [];
+                var catFilter  = document.getElementById('catFilter');
+                var catFilterM = document.getElementById('catFilterM');
+                var pCatList   = document.getElementById('pCategoryList');
+                allCategories.forEach(function(c) {
+                    var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                    catFilter.innerHTML  += opt;
+                    if (catFilterM) catFilterM.innerHTML += opt;
+                    pCatList.innerHTML +=
+                        '<label class="category-checkbox-item">' +
+                            '<input type="checkbox" name="pCat" value="' + c.id + '">' +
+                            '<span>' + c.name + '</span>' +
+                        '</label>';
+                });
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            appwriteDatabases.listDocuments(APP_DB, 'categories', [
+                AppwriteQuery.equal('is_active', true),
+                AppwriteQuery.orderAsc('sort_order')
+            ]).then(function(res) {
+                allCategories = res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; });
+                var catFilter  = document.getElementById('catFilter');
+                var catFilterM = document.getElementById('catFilterM');
+                var pCatList   = document.getElementById('pCategoryList');
+                allCategories.forEach(function(c) {
+                    var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                    catFilter.innerHTML  += opt;
+                    if (catFilterM) catFilterM.innerHTML += opt;
+                    pCatList.innerHTML +=
+                        '<label class="category-checkbox-item">' +
+                            '<input type="checkbox" name="pCat" value="' + c.id + '">' +
+                            '<span>' + c.name + '</span>' +
+                        '</label>';
+                });
+            }).catch(function(err) {
+                showToast('Category load error: ' + err.message, 'error');
+            });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            cfDbBatchQuery([{ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" }], false)
+            .then(function(d) {
+                allCategories = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
+                var catFilter  = document.getElementById('catFilter');
+                var catFilterM = document.getElementById('catFilterM');
+                var pCatList   = document.getElementById('pCategoryList');
+                allCategories.forEach(function(c) {
+                    var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                    catFilter.innerHTML  += opt;
+                    if (catFilterM) catFilterM.innerHTML += opt;
+                    pCatList.innerHTML +=
+                        '<label class="category-checkbox-item">' +
+                            '<input type="checkbox" name="pCat" value="' + c.id + '">' +
+                            '<span>' + c.name + '</span>' +
+                        '</label>';
+                });
+            }).catch(function(err) {
+                showToast('Category load error: ' + err.message, 'error');
+            });
+        }
+    }
+
+    // ── Mobile Filter Panel helpers ──────────────────────────
+    function toggleProdFilters() {
+        var panel = document.getElementById('prodFilterPanel');
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+            var catFilterM  = document.getElementById('catFilterM');
+            var activeFilterM = document.getElementById('activeFilterM');
+            if (catFilterM)    catFilterM.value    = document.getElementById('catFilter').value;
+            if (activeFilterM) activeFilterM.value = document.getElementById('activeFilter').value;
+        }
+    }
+
+    function syncProdFilter(mainId, mobileId) {
+        document.getElementById(mainId).value = document.getElementById(mobileId).value;
+    }
+
+    function updateProdFilterCount() {
+        var count = 0;
+        if (document.getElementById('catFilter').value)    count++;
+        if (document.getElementById('activeFilter').value) count++;
+        var badge = document.getElementById('prodFilterCount');
+        if (badge) {
+            badge.textContent = count;
+            if (count > 0) badge.classList.add('has-filters');
+            else badge.classList.remove('has-filters');
+        }
+    }
+
+    function resetProdFilters() {
+        document.getElementById('catFilter').value    = '';
+        document.getElementById('activeFilter').value = '';
+        var m1 = document.getElementById('catFilterM');    if (m1) m1.value = '';
+        var m2 = document.getElementById('activeFilterM'); if (m2) m2.value = '';
+        filterProducts();
+        updateProdFilterCount();
+        document.getElementById('prodFilterPanel').classList.remove('open');
+    }
+
+    function loadProducts() {
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            Promise.all([
+                supabaseClient.from('products').select('*').order('created_at', { ascending: false }),
+                supabaseClient.from('product_categories').select('*')
+            ]).then(function(results) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                allProducts = results[0].data || [];
+                var pc = results[1].data || [];
+                
+                allProducts.forEach(function(p) {
+                    p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
+                    if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+                });
+                
+                document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
+                renderProducts(allProducts);
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            Promise.all([
+                appwriteDatabases.listDocuments(APP_DB, 'products',           [AppwriteQuery.orderDesc('$createdAt'), AppwriteQuery.limit(500)]),
+                appwriteDatabases.listDocuments(APP_DB, 'product_categories', [AppwriteQuery.limit(5000)])
+            ]).then(function(results) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                var pc = results[1].documents;
+                allProducts = results[0].documents.map(function(doc) {
+                    doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
+                    // variants stored as JSON string
+                    if (typeof doc.variants === 'string') {
+                        try { doc.variants = JSON.parse(doc.variants); } catch(e) { doc.variants = []; }
+                    }
+                    doc.variants = doc.variants || [];
+                    if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
+                    else { doc.gallery_images = doc.gallery_images || []; }
+                    doc.category_ids = pc
+                        .filter(function(x) { return x.product_id === doc.id; })
+                        .map(function(x) { return x.category_id; });
+                    return doc;
+                });
+                document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Load failed: ' + err.message, 'error');
+            });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            cfDbBatchQuery([
+            { sql: "SELECT * FROM products ORDER BY created_at DESC" },
+            { sql: "SELECT * FROM product_categories" }
+        ], true).then(function(results) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                
+                allProducts = (results[0].success && results[0].result && results[0].result[0].results) ? results[0].result[0].results : [];
+                var pc = (results[1].success && results[1].result && results[1].result[0].results) ? results[1].result[0].results : [];
+                
+                allProducts = allProducts.map(function(doc) {
+                    if (typeof doc.variants === 'string') { try { doc.variants = JSON.parse(doc.variants); } catch(e) { doc.variants = []; } }
+                    doc.variants = doc.variants || [];
+                    if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
+                    else { doc.gallery_images = doc.gallery_images || []; }
+                    doc.category_ids = pc.filter(function(x) { return x.product_id === doc.id; }).map(function(x) { return x.category_id; });
+                    return doc;
+                });
+                
+                document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Load failed: ' + err.message, 'error');
+            });
+        }
+    }
+
+    function filterProducts() {
+        var q   = document.getElementById('prodSearch').value.toLowerCase();
+        var cat = document.getElementById('catFilter').value;
+        var act = document.getElementById('activeFilter').value;
+
+        var filtered = allProducts.filter(function(p) {
+            var nameMatch = (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
+            return (!q   || nameMatch) &&
+                   (!cat || (p.category_ids && p.category_ids.includes(cat))) &&
+                   (!act || (act === 'active' ? p.is_active : !p.is_active));
+        });
+        renderProducts(filtered);
+    }
+
+    function renderProducts(products) {
+        var grid = document.getElementById('productGrid');
+        if (!products.length) {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#8E8E93;"><div style="font-size:40px;margin-bottom:12px;"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i></div><div>No products found</div></div>';
+            return;
+        }
+        grid.innerHTML = '';
+        products.forEach(function(p) {
+            var img = '';
+            var variants = p.variants || [];
+            if (variants.length && variants[0].imageUrl) {
+                img = variants[0].imageUrl;
+            } else if (p.gallery_images && p.gallery_images.length) {
+                img = p.gallery_images[0];
+            }
+
+            var finalPrice = p.base_price;
+            var saleHtml = '';
+            if (p.flash_sale_price > 0) {
+                finalPrice = p.base_price - p.flash_sale_price;
+                saleHtml = '<span class="product-old-price">৳' + p.base_price + '</span> <span class="badge badge-pending" style="font-size:10px;">SALE</span>';
+            }
+
+            var card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML =
+                '<img src="' + img + '" class="product-img" onerror="this.src=\'\';this.style.minHeight=\'60px\'">' +
+                '<div class="product-card-body">' +
+                    '<div class="product-name">' + p.name + '</div>' +
+                    '<div>' +
+                        '<span class="product-price">৳' + finalPrice + '</span>' + saleHtml +
+                    '</div>' +
+                    '<div style="margin-top:6px;font-size:12px;color:#8E8E93;">' +
+                        variants.length + ' color(s) | ' +
+                        (p.is_active ? '<span style="color:#34C759;">●  Active</span>' : '<span style="color:#FF3B30;">● Inactive</span>') +
+                        (p.is_add_once ? ' | <span style="color:#627EEA;font-weight:700;">🛍️ Add-Once</span>' : '') +
+                    '</div>' +
+                '</div>' +
+                '<div class="product-card-footer">' +
+                    '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick="editProduct(\'' + p.id + '\')"><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i> Edit</button>' +
+                    '<button class="btn btn-danger btn-sm" onclick="deleteProduct(\'' + p.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
+                    '<button class="btn btn-ghost btn-sm" onclick="toggleActive(\'' + p.id + '\',' + p.is_active + ')">' + (p.is_active ? '<i data-lucide="circle-dot" class="lucide-icon icon-danger"></i> Hide' : '<i data-lucide="check-circle" class="lucide-icon icon-success"></i> Show') + '</button>' +
+                '</div>';
+            grid.appendChild(card);
+        });
+    }
+
+    // ── Product Modal ────────────────────────────────────────
+    function openProductModal(product) {
+        editingProductId = null;
+        galleryUrls = [''];
+        variants    = [];
+        document.getElementById('productModalTitle').textContent = 'Add New Product';
+        document.getElementById('pName').value      = '';
+        document.getElementById('pSku').value       = '';
+        document.getElementById('pDesc').innerHTML  = ''; document.getElementById('rteCharCount').textContent = '0 chars';
+        document.getElementById('pBasePrice').value = '';
+        document.getElementById('pFlashPrice').value= '';
+        document.getElementById('pFlashEnd').value  = '';
+        document.getElementById('pVideoUrl').value  = '';
+        document.getElementById('pVideoType').value = 'auto';
+        document.querySelectorAll('input[name="pCat"]').forEach(function(cb) { cb.checked = false; });
+        setToggle('pActive', true);
+        setToggle('pFeatured', false);
+        setToggle('pAddOnce', false);
+        renderGallery();
+        renderVariants();
+        document.getElementById('productModal').classList.add('show');
+    }
+
+    function editProduct(id) {
+        var p = allProducts.find(function(x) { return x.id === id; });
+        if (!p) return;
+
+        editingProductId = p.id;
+        galleryUrls = (p.gallery_images && p.gallery_images.length) ? p.gallery_images : [''];
+        variants    = p.variants ? JSON.parse(JSON.stringify(p.variants)) : [];
+
+        document.getElementById('productModalTitle').textContent = 'Edit Product';
+        document.getElementById('pName').value       = p.name || '';
+        document.getElementById('pSku').value        = p.sku || '';
+        document.getElementById('pDesc').innerHTML  = p.description || '';
+        document.getElementById('rteCharCount').textContent = (document.getElementById('pDesc').innerText.length) + ' chars';
+        document.getElementById('pBasePrice').value  = p.base_price || '';
+        document.getElementById('pFlashPrice').value = p.flash_sale_price || '';
+        document.getElementById('pFlashEnd').value   = p.flash_sale_end ? p.flash_sale_end.substring(0,16) : '';
+        document.getElementById('pVideoUrl').value   = p.video_url || '';
+        document.getElementById('pVideoType').value  = p.video_type || 'auto';
+        
+        // Fetch categories for this product
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('product_categories').select('category_id').eq('product_id', p.id).then(function(catRes) {
+                var selectedIds = (catRes.data || []).map(function(c) { return c.category_id; });
+                if (p.category_id && !selectedIds.includes(p.category_id)) selectedIds.push(p.category_id);
+
+                document.querySelectorAll('input[name="pCat"]').forEach(function(cb) {
+                    cb.checked = selectedIds.includes(cb.value);
+                });
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
+                AppwriteQuery.equal('product_id', p.id)
+            ]).then(function(catRes) {
+                var selectedIds = catRes.documents.map(function(c) { return c.category_id; });
+                document.querySelectorAll('input[name="pCat"]').forEach(function(cb) {
+                    cb.checked = selectedIds.includes(cb.value);
+                });
+            }).catch(function(err) {
+                console.error('Category fetch error:', err.message);
+            });
+        }
+
+        setToggle('pActive',   p.is_active);
+        setToggle('pFeatured', p.is_featured);
+        setToggle('pAddOnce',  p.is_add_once);
+        renderGallery();
+        renderVariants();
+        document.getElementById('productModal').classList.add('show');
+    }
+
+    function setToggle(id, state) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (state) el.classList.add('on'); else el.classList.remove('on');
+    }
+
+    function toggleProductField(id) {
+        var el = document.getElementById(id);
+        if (el.classList.contains('on')) el.classList.remove('on'); else el.classList.add('on');
+    }
+
+    // ── Gallery ──────────────────────────────────────────────
+    function renderGallery() {
+        var wrap = document.getElementById('galleryWrap');
+        wrap.innerHTML = '';
+        galleryUrls.forEach(function(url, i) {
+            var parsed = parseImageInput(url);
+            var previewSrc = parsed.previewUrl || '';
+
+            var row = document.createElement('div');
+            row.style.cssText = 'margin-bottom:10px;';
+            row.innerHTML =
+                '<div class="imgbb-upload-row">' +
+                    '<input class="form-input" placeholder="https://...image.jpg" value="' + (url||'') + '" data-gidx="' + i + '" oninput="onGalleryInput(this,' + i + ')">' +
+                    '<button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" data-gupload="' + i + '">&#128228; Upload</button>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeGallery(' + i + ')">&#10005;</button>' +
+                '</div>' +
+                '<div id="gprev-' + i + '" class="imgbb-preview-wrap" style="height:70px;margin-top:6px;' + (previewSrc ? '' : 'display:none;') + '">' +
+                    (previewSrc ?
+                        '<img class="imgbb-img-preview" src="' + previewSrc + '" onerror="document.getElementById(\'gprev-' + i + '\').style.display=\'none\'">' :
+                        '<div class="imgbb-preview-placeholder"><span>&#128247; No image</span></div>'
+                    ) +
+                '</div>';
+            wrap.appendChild(row);
+        });
+
+        // Upload buttons bind (R2 first → ImgBB fallback)
+        wrap.querySelectorAll('[data-gupload]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(btn.dataset.gupload);
+                var fileInput = document.createElement('input');
+                fileInput.type = 'file'; fileInput.accept = 'image/*';
+                fileInput.onchange = function() {
+                    if (!fileInput.files[0]) return;
+                    var origText = btn.innerHTML;
+                    btn.innerHTML = '&#9203; Uploading...'; btn.disabled = true;
+                    // R2 তে আপলোড করো, fail হলে ImgBB তে
+                    var imgbbKey = getImgbbKey();
+                    smartUpload(fileInput.files[0], 'auto', imgbbKey)
+                        .then(function(r) {
+                            galleryUrls = collectGallery();
+                            galleryUrls[idx] = r.url;
+                            renderGallery();
+                            var via = r.via === 'r2' ? '☁️ R2' : '🖼️ ImgBB';
+                            showToast('✅ Uploaded via ' + via + '!', 'success');
+                        })
+                        .catch(function(e) { showToast('❌ ' + e.message, 'error'); btn.innerHTML=origText; btn.disabled=false; });
+                };
+                fileInput.click();
+            });
+        });
+    }
+
+    function onGalleryInput(input, i) {
+        var parsed = parseImageInput(input.value.trim());
+        var prev = document.getElementById('gprev-' + i);
+        if (!prev) return;
+        if (parsed.previewUrl) {
+            prev.style.display = 'flex';
+            var img = prev.querySelector('img');
+            if (img) { img.src = parsed.previewUrl; }
+            else { prev.innerHTML = '<img class="imgbb-img-preview" src="' + parsed.previewUrl + '" onerror="this.parentElement.style.display=\'none\'">';}
+        } else {
+            prev.style.display = 'none';
+        }
+    }
+
+
+    function addGalleryUrl() { 
+        galleryUrls = collectGallery();
+        galleryUrls.push(''); 
+        renderGallery(); 
+    }
+    
+    function removeGallery(i) { 
+        galleryUrls = collectGallery();
+        galleryUrls.splice(i, 1); 
+        if (!galleryUrls.length) galleryUrls = ['']; 
+        renderGallery(); 
+    }
+
+    function collectGallery() {
+        var inputs = document.querySelectorAll('[data-gidx]');
+        var arr = [];
+        inputs.forEach(function(inp) { arr.push(inp.value.trim()); });
+        return arr;
+    }
+
+    // ── Variants ─────────────────────────────────────────────
+    function addVariant() {
+        collectVariants();
+        variants.push({ colorName: '', colorHex: '#007AFF', variantCode: '', imageUrl: '', sizes: [{ size: 'M', stock: 10, extraPrice: 0 }] });
+        renderVariants();
+    }
+
+    function addSize(vi) {
+        collectVariants();
+        variants[vi].sizes.push({ size: '', stock: 0, extraPrice: 0 });
+        renderVariants();
+    }
+
+    function removeVariant(vi) { 
+        collectVariants();
+        variants.splice(vi, 1); 
+        renderVariants(); 
+    }
+    
+    function removeSize(vi, si) { 
+        collectVariants();
+        variants[vi].sizes.splice(si, 1); 
+        renderVariants(); 
+    }
+
+    function applyVariantToAll(vi) {
+        collectVariants();
+        if (variants.length <= 1) {
+            showToast('No other variants to apply to!', 'warning');
+            return;
+        }
+        var sourceVariant = variants[vi];
+        for (var i = 0; i < variants.length; i++) {
+            if (i !== vi) {
+                // Copy all data EXCEPT colorName and colorHex
+                variants[i].imageUrl = sourceVariant.imageUrl;
+                // Deep copy the sizes array
+                variants[i].sizes = JSON.parse(JSON.stringify(sourceVariant.sizes));
+            }
+        }
+        renderVariants();
+        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Copied image and sizes to all other variants!', 'success');
+    }
+
+    function renderVariants() {
+        var wrap = document.getElementById('variantsWrap');
+        wrap.innerHTML = '';
+
+        variants.forEach(function(v, vi) {
+            var sizesHtml = (v.sizes || []).map(function(s, si) {
+                return '<div class="size-item">' +
+                    '<input class="form-input" placeholder="Size" value="' + (s.size||'') + '" data-v="' + vi + '" data-s="' + si + '" data-f="size">' +
+                    '<input class="form-input" placeholder="Stock" type="number" value="' + (s.stock||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="stock">' +
+                    '<input class="form-input" placeholder="Extra ৳" type="number" value="' + (s.extraPrice||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="extraPrice">' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeSize(' + vi + ',' + si + ')">✖</button>' +
+                '</div>';
+            }).join('');
+
+            var div = document.createElement('div');
+            div.className = 'variant-item';
+            div.innerHTML =
+                '<div class="variant-header">' +
+                    '<div class="color-preview" id="cprev-' + vi + '" style="background:' + (v.colorHex||'#888') + ';"></div>' +
+                    '<input class="form-input" placeholder="Color Name" value="' + (v.colorName||'') + '" data-vf="' + vi + '" data-ff="colorName" style="flex:1;">' +
+                    '<input class="form-input" placeholder="Code (A1)" value="' + (v.variantCode||'') + '" data-vf="' + vi + '" data-ff="variantCode" style="width:100px;" title="Variant Code on Image">' +
+                    '<input type="color" value="' + (v.colorHex||'#007AFF') + '" data-vf="' + vi + '" data-ff="colorHex" title="Color Hex" style="width:44px;height:38px;border-radius:8px;border:none;cursor:pointer;background:none;" oninput="document.getElementById(\'cprev-' + vi + '\').style.background=this.value">' +
+                    '<button type="button" class="btn btn-ghost btn-sm" onclick="applyVariantToAll(' + vi + ')" title="Copy image &amp; sizes to all other colors" style="padding:0 8px;font-size:12.5px;"><i data-lucide="clipboard-list" class="lucide-icon"></i> Apply to All</button>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(' + vi + ')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:6px;">' +
+                    '<label class="form-label">Color Image</label>' +
+                    '<div class="imgbb-upload-row">' +
+                        '<input class="form-input" placeholder="https://...color-image.jpg" value="' + (v.imageUrl||'') + '" data-vf="' + vi + '" data-ff="imageUrl" oninput="onVariantImgInput(this,' + vi + ')">' +
+                        '<button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" data-vupload="' + vi + '">\uD83D\uDCE4 Upload</button>' +
+                    '</div>' +
+                    '<div id="vprev-' + vi + '" class="imgbb-preview-wrap" style="height:65px;margin-top:6px;' + (v.imageUrl ? '' : 'display:none;') + '">' +
+                        (v.imageUrl ? '<img class="imgbb-img-preview" src="' + v.imageUrl + '" onerror="document.getElementById(\'vprev-' + vi + '\').style.display=\'none\'">' : '<div class="imgbb-preview-placeholder"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>No image</span></div>') +
+                    '</div>' +
+                '</div>' +
+                '<label class="form-label">Sizes (Name | Stock | Extra Price ৳)</label>' +
+                sizesHtml +
+                '<button type="button" class="btn btn-ghost btn-sm" onclick="addSize(' + vi + ')" style="margin-top:6px;">+ Add Size</button>';
+
+            wrap.appendChild(div);
+        });
+
+        // Variant upload buttons bind (R2 first → ImgBB fallback)
+        wrap.querySelectorAll('[data-vupload]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var vi = parseInt(btn.dataset.vupload);
+                var fileInput = document.createElement('input');
+                fileInput.type = 'file'; fileInput.accept = 'image/*';
+                fileInput.onchange = function() {
+                    if (!fileInput.files[0]) return;
+                    var origText = btn.innerHTML;
+                    btn.innerHTML = '⏳ Uploading...'; btn.disabled = true;
+                    var imgbbKey = getImgbbKey();
+                    smartUpload(fileInput.files[0], 'auto', imgbbKey)
+                        .then(function(r) {
+                            collectVariants();
+                            variants[vi].imageUrl = r.url;
+                            renderVariants();
+                            var via = r.via === 'r2' ? '☁️ R2' : '🖼️ ImgBB';
+                            showToast('✅ Variant uploaded via ' + via + '!', 'success');
+                        })
+                        .catch(function(e) { showToast('❌ ' + e.message, 'error'); btn.innerHTML=origText; btn.disabled=false; });
+                };
+                fileInput.click();
+            });
+        });
+    }
+
+    function onVariantImgInput(input, vi) {
+        var parsed = parseImageInput(input.value.trim());
+        var prev = document.getElementById('vprev-' + vi);
+        if (!prev) return;
+        if (parsed.previewUrl) {
+            prev.style.display = 'flex';
+            var img = prev.querySelector('img');
+            if (img) { img.src = parsed.previewUrl; }
+            else { prev.innerHTML = '<img class="imgbb-img-preview" src="' + parsed.previewUrl + '" onerror="this.parentElement.style.display=\'none\'">';}
+        } else {
+            prev.style.display = 'none';
+        }
+    }
+
+    function collectVariants() {
+        // Collect variant field values from DOM
+        var vfInputs = document.querySelectorAll('[data-vf]');
+        vfInputs.forEach(function(inp) {
+            var vi = parseInt(inp.dataset.vf);
+            var ff = inp.dataset.ff;
+            if (variants[vi] !== undefined) variants[vi][ff] = inp.value;
+        });
+
+        var sfInputs = document.querySelectorAll('[data-v][data-s]');
+        sfInputs.forEach(function(inp) {
+            var vi = parseInt(inp.dataset.v);
+            var si = parseInt(inp.dataset.s);
+            var ff = inp.dataset.f;
+            if (variants[vi] && variants[vi].sizes[si] !== undefined) {
+                var val = inp.value;
+                if (ff === 'stock' || ff === 'extraPrice') val = parseInt(val) || 0;
+                variants[vi].sizes[si][ff] = val;
+            }
+        });
+
+        return variants;
+    }
+
+
+
+    // ── parseImageInput ──────────────────────────────────────
+    // image-seyestem.md documented logic
+    function parseImageInput(raw) {
+        if (!raw) return { previewUrl: null, saveUrl: null };
+        raw = (raw || '').trim();
+        // HTML <img> tag
+        var imgTagMatch = raw.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgTagMatch) return { previewUrl: imgTagMatch[1], saveUrl: imgTagMatch[1] };
+        // BBCode [img]
+        var bbMatch = raw.match(/\[img\](.+?)\[\/img\]/i);
+        if (bbMatch) return { previewUrl: bbMatch[1], saveUrl: bbMatch[1] };
+        // Direct image link (i.ibb.co or common extension)
+        if (/i\.ibb\.co|\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(raw)) {
+            return { previewUrl: raw, saveUrl: raw };
+        }
+        // Viewer link (ibb.co/... not i.ibb.co)
+        if (/^https?:\/\/(www\.)?ibb\.co\//.test(raw)) {
+            return { previewUrl: null, saveUrl: raw };
+        }
+        // Try as direct
+        return { previewUrl: raw, saveUrl: raw };
+    }
+
+    function saveProduct() {
+        var name = document.getElementById('pName').value.trim();
+        if (!name) { showToast('Product name required', 'error'); return; }
+
+        var selectedCats = [];
+        document.querySelectorAll('input[name="pCat"]:checked').forEach(function(cb) {
+            selectedCats.push(cb.value);
+        });
+
+        var payload = {
+            name:             name,
+            sku:              document.getElementById('pSku').value.trim() || null,
+            description:      document.getElementById('pDesc').innerHTML.trim(),
+            base_price:       parseInt(document.getElementById('pBasePrice').value) || 0,
+            flash_sale_price: parseInt(document.getElementById('pFlashPrice').value) || 0,
+            flash_sale_end:   document.getElementById('pFlashEnd').value || null,
+            video_url:        document.getElementById('pVideoUrl').value.trim() || null,
+            video_type:       document.getElementById('pVideoType').value,
+            is_active:        document.getElementById('pActive').classList.contains('on'),
+            is_featured:      document.getElementById('pFeatured').classList.contains('on'),
+            is_add_once:      document.getElementById('pAddOnce').classList.contains('on'),
+            // gallery_images ও variants JSON হিসেবে সেভ হবে
+            gallery_images:   collectGallery()
+                                .map(function(s) { return parseImageInput(s).saveUrl || s.trim(); })
+                                .filter(Boolean),
+            variants:         collectVariants(),
+        };
+
+        var btn = document.getElementById('saveProductBtn');
+        setBtnLoading(btn, true);
+
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            var req = editingProductId
+                ? supabaseClient.from('products').update(payload).eq('id', editingProductId)
+                : supabaseClient.from('products').insert([payload]).select();
+
+            req.then(function(r) {
+                setBtnLoading(btn, false, '💾 Save Product');
+                if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+
+                var productId = editingProductId || (r.data && r.data[0] && r.data[0].id);
+
+                // Categories sync
+                function finishSave() {
+                    showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Product saved!', 'success');
+                    closeModal('productModal');
+                    loadProducts();
+                }
+
+                if (productId) {
+                    supabaseClient.from('product_categories').delete().eq('product_id', productId).then(function() {
+                        if (selectedCats.length) {
+                            var rows = selectedCats.map(function(cid) { return { product_id: productId, category_id: cid }; });
+                            supabaseClient.from('product_categories').insert(rows).then(function() {
+                                finishSave();
+                            }).catch(function() {
+                                finishSave();
+                            });
+                        } else {
+                            finishSave();
+                        }
+                    }).catch(function() {
+                        finishSave();
+                    });
+                } else {
+                    finishSave();
+                }
+            });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            var reqUrl = (CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + (editingProductId ? '/api/update-product' : '/api/add-product');
+            if (editingProductId) payload.id = editingProductId;
+            payload.category_ids = selectedCats;
+            
+            fetch(reqUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
+                body: JSON.stringify(payload)
+            }).then(function(r) { return r.json(); }).then(function(res) {
+                setBtnLoading(btn, false, '💾 Save Product');
+                if (!res.success) { showToast('Error: ' + res.error, 'error'); return; }
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Product saved!', 'success');
+                closeModal('productModal');
+                loadProducts();
+            }).catch(function(e) {
+                setBtnLoading(btn, false, '💾 Save Product');
+                showToast('Error: ' + e.message, 'error');
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            var awProductPayload = {
+                name:             payload.name,
+                sku:              payload.sku,
+                description:      payload.description,
+                base_price:       payload.base_price,
+                flash_sale_price: payload.flash_sale_price,
+                flash_sale_end:   payload.flash_sale_end,
+                video_url:        payload.video_url,
+                video_type:       payload.video_type,
+                is_active:        payload.is_active,
+                is_featured:      payload.is_featured,
+                is_add_once:      payload.is_add_once,
+                gallery_images:   payload.gallery_images,
+                variants:         JSON.stringify(payload.variants) // Complex object হলে JSON string
+            };
+
+            function finishSaveAW(productId) {
+                setBtnLoading(btn, false, '💾 Save Product');
+                // Delete old category mappings then insert new ones
+                appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
+                    AppwriteQuery.equal('product_id', productId)
+                ]).then(function(oldCats) {
+                    var deletePromises = oldCats.documents.map(function(doc) {
+                        return appwriteDatabases.deleteDocument(APP_DB, 'product_categories', doc.$id);
+                    });
+                    return Promise.all(deletePromises);
+                }).then(function() {
+                    if (!selectedCats.length) return Promise.resolve();
+                    var insertPromises = selectedCats.map(function(cid) {
+                        return appwriteDatabases.createDocument(APP_DB, 'product_categories', AppwriteID.unique(), {
+                            product_id: productId,
+                            category_id: cid
+                        });
+                    });
+                    return Promise.all(insertPromises);
+                }).then(function() {
+                    showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Product saved!', 'success');
+                    closeModal('productModal');
+                    loadProducts();
+                }).catch(function(err) {
+                    showToast('Category sync error: ' + err.message, 'error');
+                    loadProducts();
+                });
+            }
+
+            if (editingProductId) {
+                appwriteDatabases.updateDocument(APP_DB, 'products', editingProductId, awProductPayload)
+                .then(function() {
+                    finishSaveAW(editingProductId);
+                }).catch(function(err) {
+                    setBtnLoading(btn, false, '💾 Save Product');
+                    showToast('Error: ' + err.message, 'error');
+                });
+            } else {
+                appwriteDatabases.createDocument(APP_DB, 'products', AppwriteID.unique(), awProductPayload)
+                .then(function(doc) {
+                    finishSaveAW(doc.$id);
+                }).catch(function(err) {
+                    setBtnLoading(btn, false, '💾 Save Product');
+                    showToast('Error: ' + err.message, 'error');
+                });
+            }
+        }
+    }
+
+
+    function deleteProduct(id) {
+        if (!adminConfirm('এই product মুছবেন? এই কাজ undo করা যাবে না।')) return;
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('products').delete().eq('id', id).then(function(r) {
+                if (r.error) { showToast('Delete failed', 'error'); return; }
+                showToast('Deleted!', 'success');
+                allProducts = allProducts.filter(function(p) { return p.id !== id; });
+                renderProducts(allProducts);
+            });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-product', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
+                body: JSON.stringify({ id: id })
+            }).then(function(r) { return r.json(); }).then(function(res) {
+                if (!res.success) { showToast('Delete failed: ' + res.error, 'error'); return; }
+                showToast('Deleted!', 'success');
+                allProducts = allProducts.filter(function(p) { return p.id !== id; });
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Delete failed: ' + err.message, 'error');
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            // Delete product_categories first, then the product
+            appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
+                AppwriteQuery.equal('product_id', id)
+            ]).then(function(catRes) {
+                var delCatPromises = catRes.documents.map(function(doc) {
+                    return appwriteDatabases.deleteDocument(APP_DB, 'product_categories', doc.$id);
+                });
+                return Promise.all(delCatPromises);
+            }).then(function() {
+                return appwriteDatabases.deleteDocument(APP_DB, 'products', id);
+            }).then(function() {
+                showToast('Deleted!', 'success');
+                allProducts = allProducts.filter(function(p) { return p.id !== id; });
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Delete failed: ' + err.message, 'error');
+            });
+        }
+    }
+
+    function toggleActive(id, current) {
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('products').update({ is_active: !current }).eq('id', id).then(function(r) {
+                if (r.error) { showToast('Update failed', 'error'); return; }
+                var idx = allProducts.findIndex(function(p) { return p.id === id; });
+                if (idx > -1) allProducts[idx].is_active = !current;
+                renderProducts(allProducts);
+            });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/update-product', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
+                body: JSON.stringify({ id: id, is_active: !current })
+            }).then(function(r) { return r.json(); }).then(function(res) {
+                if (!res.success) { showToast('Update failed: ' + res.error, 'error'); return; }
+                var idx = allProducts.findIndex(function(p) { return p.id === id; });
+                if (idx > -1) allProducts[idx].is_active = !current;
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Update failed: ' + err.message, 'error');
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            appwriteDatabases.updateDocument(APP_DB, 'products', id, { is_active: !current })
+            .then(function() {
+                var idx = allProducts.findIndex(function(p) { return p.id === id; });
+                if (idx > -1) allProducts[idx].is_active = !current;
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Update failed: ' + err.message, 'error');
+            });
+        }
+    }
+
+
+    // ── Rich Text Editor helpers ─────────────────────────────
+    function rteCmd(cmd, val) {
+        var ed = document.getElementById('pDesc');
+        ed.focus();
+        document.execCommand(cmd, false, val || null);
+        updateRteCharCount();
+    }
+    function rteBlock(tag) {
+        var ed = document.getElementById('pDesc');
+        ed.focus();
+        document.execCommand('formatBlock', false, '<' + tag + '>');
+        updateRteCharCount();
+    }
+    function updateRteCharCount() {
+        var ed = document.getElementById('pDesc');
+        var cc = document.getElementById('rteCharCount');
+        if (ed && cc) cc.textContent = (ed.innerText || '').trim().length + ' chars';
+    }
+    // ── Paste handler: sanitize & preserve basic formatting ──
+    (function() {
+        function setupRtePaste() {
+            var ed = document.getElementById('pDesc');
+            if (!ed) return;
+            ed.addEventListener('paste', function(e) {
+                e.preventDefault();
+                var cd = e.clipboardData || window.clipboardData;
+                var html = cd.getData('text/html');
+                var text = cd.getData('text/plain');
+                if (html) {
+                    var tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    // Remove dangerous elements
+                    tmp.querySelectorAll('script,style,meta,link,head,form,iframe,object,embed').forEach(function(el){ el.remove(); });
+                    var SAFE = ['b','strong','i','em','u','s','strike','h1','h2','h3','ul','ol','li','br','p','blockquote','span'];
+                    // Walk all elements and flatten unsafe ones
+                    var els = Array.from(tmp.querySelectorAll('*'));
+                    els.forEach(function(el) {
+                        var tag = el.tagName ? el.tagName.toLowerCase() : '';
+                        if (SAFE.indexOf(tag) === -1) {
+                            var frag = document.createDocumentFragment();
+                            while (el.firstChild) frag.appendChild(el.firstChild);
+                            el.parentNode && el.parentNode.replaceChild(frag, el);
+                        } else {
+                            // Keep only color/background-color inline styles
+                            var st = el.getAttribute('style') || '';
+                            var keepSt = [];
+                            var colMatch = st.match(/(?:background-)?color\s*:[^;]+/g);
+                            if (colMatch) keepSt = keepSt.concat(colMatch);
+                            if (keepSt.length) el.setAttribute('style', keepSt.join(';'));
+                            else el.removeAttribute('style');
+                            el.removeAttribute('class');
+                            el.removeAttribute('id');
+                        }
+                    });
+                    document.execCommand('insertHTML', false, tmp.innerHTML);
+                } else if (text) {
+                    // Plain text: preserve line breaks
+                    var esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    var br = esc.replace(/\n/g, '<br>');
+                    document.execCommand('insertHTML', false, br);
+                }
+                updateRteCharCount();
+            });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupRtePaste);
+        else setupRtePaste();
+    })();
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    

@@ -371,6 +371,16 @@ document.addEventListener('DOMContentLoaded', function() {
         document.title = product.name + ' — ' + (settings.store_name || CONFIG.STORE_NAME);
         document.getElementById('navBrand').textContent = settings.store_name || CONFIG.STORE_NAME;
         document.getElementById('footerCopy').textContent = '© ' + new Date().getFullYear() + ' ' + (settings.store_name || CONFIG.STORE_NAME);
+
+        // Tracking: ViewContent
+        if (typeof window.fireTrackingEvent === 'function') {
+            window.fireTrackingEvent('ViewContent', {
+                content_ids: [product.id],
+                content_name: product.name,
+                currency: 'BDT',
+                value: product.base_price - (product.flash_sale_price || 0)
+            });
+        }
         
         if (settings.store_map_link) {
             document.getElementById('footerStoreLink').href = settings.store_map_link;
@@ -815,6 +825,16 @@ function addToCart() {
 
     saveCart(cart);
     updateCartBadge();
+
+    // Tracking: AddToCart
+    if (typeof window.fireTrackingEvent === 'function') {
+        window.fireTrackingEvent('AddToCart', {
+            content_ids: [product.id],
+            content_name: product.name,
+            currency: 'BDT',
+            value: finalPrice
+        });
+    }
 }
 
 function directOrder() {
@@ -847,6 +867,16 @@ function directOrder() {
 
     // Main cart untouched — direct order goes to its own temp key
     localStorage.setItem(CONFIG.DIRECT_ORDER_KEY || 'fbr_direct_order', JSON.stringify(directItem));
+
+    // Tracking: AddToCart (Direct Order)
+    if (typeof window.fireTrackingEvent === 'function') {
+        window.fireTrackingEvent('AddToCart', {
+            content_ids: [product.id],
+            content_name: product.name,
+            currency: 'BDT',
+            value: finalPrice
+        });
+    }
     
     // সরাসরি Checkout এ যাও — direct=1 flag দিয়ে
     window.location.href = 'checkout.html?direct=1';
@@ -1213,6 +1243,7 @@ document.addEventListener('scroll', function() {
     <script src="assets/js/offline-handler.js"></script>
     <!-- Shared Custom Right Click / Long-Press Menu -->
     <script src="assets/js/context-menu.js"></script>
+<script src="assets/js/tracking.js"></script>
 </body>
 </html>
 

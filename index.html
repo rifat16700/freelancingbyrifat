@@ -628,6 +628,16 @@ function quickAddToCart(e, productId) {
     saveCart(cart);
     updateCartBadge();
     showCartToast(product.name);
+
+    // Tracking: AddToCart
+    if (typeof window.fireTrackingEvent === 'function') {
+        window.fireTrackingEvent('AddToCart', {
+            content_ids: [product.id],
+            content_name: product.name,
+            currency: 'BDT',
+            value: finalPrice
+        });
+    }
 }
 
 // ── Cart Helpers ──────────────────────────────────────────────
@@ -675,6 +685,8 @@ function closeMobileMenu() {
     <script src="assets/js/offline-handler.js"></script>
     <!-- Shared Custom Right Click / Long-Press Menu -->
     <script src="assets/js/context-menu.js"></script>
+
+<script src="assets/js/tracking.js"></script>
 </body>
 </html>
 

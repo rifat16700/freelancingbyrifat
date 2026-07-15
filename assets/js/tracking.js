@@ -14,6 +14,8 @@
             if (res.ok) {
                 config = await res.json();
                 initializeTracking();
+                // Automatically fire PageView on every page load
+                window.fireTrackingEvent('PageView');
             }
         } catch (e) {
             console.error('Tracking config failed to load:', e);
@@ -45,7 +47,7 @@
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
             fbq('init', config.meta_pixel_id);
-            fbq('track', 'PageView');
+            // PageView is fired globally via fireTrackingEvent
         }
 
         // GA4 Init

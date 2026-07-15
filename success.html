@@ -163,6 +163,16 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         renderOrder(rOrder.data, settings);
+
+        // Tracking: Purchase
+        if (typeof window.fireTrackingEvent === 'function' && !window._purchaseTracked) {
+            window._purchaseTracked = true; // Prevent duplicate firing
+            window.fireTrackingEvent('Purchase', {
+                transaction_id: rOrder.data.id,
+                currency: 'BDT',
+                value: rOrder.data.grand_total
+            });
+        }
     });
 });
 
@@ -307,7 +317,9 @@ function downloadPDF() {
 
     <script src="assets/js/offline-handler.js"></script>
     <!-- Shared Custom Right Click / Long-Press Menu -->
-    <script src="assets/js/context-menu.js"></script></body>
+    <script src="assets/js/context-menu.js"></script>
+    <script src="assets/js/tracking.js"></script>
+</body>
 </html>
 
 

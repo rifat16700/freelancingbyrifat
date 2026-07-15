@@ -1,0 +1,21 @@
+    var insertPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        insertPromise = supabaseClient.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]);
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        var awOrderData2 = Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' });
+        awOrderData2.items  = JSON.stringify(awOrderData2.items  || []);
+        awOrderData2.addons = JSON.stringify(awOrderData2.addons || []);
+        delete awOrderData2.id;
+        insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awOrderData2)
+            .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
+            .catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        insertPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderData: Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' }) })
+        }).then(function(res) { return res.json(); }).then(function(res) {
+            if (!res.success) throw new Error(res.error);
+            return { data: [{ id: orderId }], error: null };
+        }).catch(function(err) { return { data: null, error: err }; });
+    }

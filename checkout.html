@@ -526,6 +526,16 @@ document.addEventListener('DOMContentLoaded', function() {
         renderAddOnce();
         loadBdDivisions();
 
+        // Tracking: InitiateCheckout
+        var initialTotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
+        if (typeof window.fireTrackingEvent === 'function') {
+            window.fireTrackingEvent('InitiateCheckout', {
+                currency: 'BDT',
+                value: initialTotal,
+                num_items: cart.length
+            });
+        }
+
         var checkStatus = (status || '').toLowerCase();
         if ((checkStatus === 'completed' || checkStatus === 'success') && orderId) {
             verifyGatewayPayment(orderId, trxId);
@@ -2619,6 +2629,7 @@ function copyElementText(elId) {
     </script>
 
     <script src="assets/js/offline-handler.js"></script>
+<script src="assets/js/tracking.js"></script>
 </body>
 </html>
 

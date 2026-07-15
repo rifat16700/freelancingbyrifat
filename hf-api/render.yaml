@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: e-commerce-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 7860
+      - key: CF_ACCOUNT_ID
+        sync: false
+      - key: CF_DB_ID
+        sync: false
+      - key: CF_READ_TOKEN
+        sync: false
+      - key: CF_WRITE_TOKEN
+        sync: false

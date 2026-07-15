@@ -1,0 +1,23 @@
+    var insertOrderPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        insertOrderPromise = supabaseClient.from('orders').insert([orderData]);
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        var awCryptoOrder = Object.assign({}, orderData);
+        awCryptoOrder.items  = JSON.stringify(awCryptoOrder.items  || []);
+        awCryptoOrder.addons = JSON.stringify(awCryptoOrder.addons || []);
+        delete awCryptoOrder.id;
+        insertOrderPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awCryptoOrder)
+            .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
+            .catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        insertOrderPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderData: orderData })
+        }).then(function(res) { return res.json(); }).then(function(res) {
+            if (!res.success) throw new Error(res.error);
+            return { data: [{ id: orderId }], error: null };
+        }).catch(function(err) { return { data: null, error: err }; });
+    } else {
+        insertOrderPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
+    }
