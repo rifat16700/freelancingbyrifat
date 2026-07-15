@@ -179,12 +179,21 @@
         "triggerId": "201",
         "name": "Trigger - PageView",
         "type": "CUSTOM_EVENT",
-        "customEventFilter": [],
-        "parameter": [
+        "customEventFilter": [
           {
-            "type": "TEMPLATE",
-            "key": "eventName",
-            "value": "PageView"
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "PageView"
+              }
+            ]
           }
         ]
       },
@@ -194,12 +203,21 @@
         "triggerId": "202",
         "name": "Trigger - ViewContent",
         "type": "CUSTOM_EVENT",
-        "customEventFilter": [],
-        "parameter": [
+        "customEventFilter": [
           {
-            "type": "TEMPLATE",
-            "key": "eventName",
-            "value": "ViewContent"
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "ViewContent"
+              }
+            ]
           }
         ]
       },
@@ -209,12 +227,21 @@
         "triggerId": "203",
         "name": "Trigger - AddToCart",
         "type": "CUSTOM_EVENT",
-        "customEventFilter": [],
-        "parameter": [
+        "customEventFilter": [
           {
-            "type": "TEMPLATE",
-            "key": "eventName",
-            "value": "AddToCart"
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "AddToCart"
+              }
+            ]
           }
         ]
       },
@@ -224,12 +251,21 @@
         "triggerId": "204",
         "name": "Trigger - InitiateCheckout",
         "type": "CUSTOM_EVENT",
-        "customEventFilter": [],
-        "parameter": [
+        "customEventFilter": [
           {
-            "type": "TEMPLATE",
-            "key": "eventName",
-            "value": "InitiateCheckout"
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "InitiateCheckout"
+              }
+            ]
           }
         ]
       },
@@ -239,12 +275,21 @@
         "triggerId": "205",
         "name": "Trigger - Purchase",
         "type": "CUSTOM_EVENT",
-        "customEventFilter": [],
-        "parameter": [
+        "customEventFilter": [
           {
-            "type": "TEMPLATE",
-            "key": "eventName",
-            "value": "Purchase"
+            "type": "EQUALS",
+            "parameter": [
+              {
+                "type": "TEMPLATE",
+                "key": "arg0",
+                "value": "{{_event}}"
+              },
+              {
+                "type": "TEMPLATE",
+                "key": "arg1",
+                "value": "Purchase"
+              }
+            ]
           }
         ]
       }
