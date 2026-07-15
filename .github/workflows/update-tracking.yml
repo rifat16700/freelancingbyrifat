@@ -1,0 +1,30 @@
+name: Update Tracking Config
+
+on:
+  workflow_dispatch:
+    inputs:
+      config_payload:
+        description: 'JSON payload containing new tracking configuration'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  update-tracking:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Update tracking-config.json
+        run: |
+          echo '${{ github.event.inputs.config_payload }}' > tracking-config.json
+          
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add tracking-config.json
+          git commit -m "chore: update tracking config from admin panel" || echo "No changes to commit"
+          git push
