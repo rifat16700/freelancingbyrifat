@@ -72,6 +72,10 @@ var SIDEBAR_HTML = `
             <span class="nav-icon">⚙️</span>
             <span>Settings</span>
         </a>
+        <a href="tracking.html" class="nav-item" data-page="tracking">
+            <span class="nav-icon">📈</span>
+            <span>Tracking</span>
+        </a>
     </nav>
 
     <div class="sidebar-footer">
