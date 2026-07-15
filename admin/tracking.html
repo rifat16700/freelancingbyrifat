@@ -3,139 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracking Management</title>
+    <title>Tracking Management — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <script src="../assets/js/config.js?v=1782024132023"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
+    <script src="assets/js/admin-common.js?v=4"></script>
     <style>
-        body { font-family: sans-serif; margin: 2rem; background: #f4f4f5; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { font-size: 1.5rem; margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
-        input[type="text"], select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #007bff; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-        button:hover { background: #0056b3; }
-        .success-msg, .error-msg { margin-top: 1rem; padding: 1rem; border-radius: 4px; display: none; }
-        .success-msg { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error-msg { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .settings-section-title {
+            font-size: 13px; font-weight: 700; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.6px;
+            margin-bottom: 14px; padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 8px;
+        }
     </style>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Tracking Management</h1>
-        <p>Update your tracking settings. Changes will trigger a GitHub Action to rebuild the site.</p>
-        
-        <form id="trackingForm">
-            <div class="form-group">
-                <label for="tracking_mode">Tracking Mode</label>
-                <select id="tracking_mode" name="tracking_mode">
-                    <option value="browser_only">Browser Only (Standard)</option>
-                    <option value="built_in_server_side">Built-in Server-Side (No browser scripts)</option>
-                    <option value="smart_fallback">Smart Fallback (Browser first, fallback if blocked)</option>
-                    <option value="custom_external">Custom External Server</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="meta_pixel_id">Meta Pixel ID</label>
-                <input type="text" id="meta_pixel_id" name="meta_pixel_id" placeholder="e.g. 123456789012345">
-            </div>
-
-            <div class="form-group">
-                <label for="ga4_id">GA4 Measurement ID</label>
-                <input type="text" id="ga4_id" name="ga4_id" placeholder="e.g. G-ABC123XYZ">
-            </div>
-
-            <div class="form-group">
-                <label for="gtm_id">GTM Container ID</label>
-                <input type="text" id="gtm_id" name="gtm_id" placeholder="e.g. GTM-XXXXXXX">
-            </div>
-
-            <div class="form-group">
-                <label for="clarity_id">Microsoft Clarity ID</label>
-                <input type="text" id="clarity_id" name="clarity_id" placeholder="e.g. abcdefghij">
-            </div>
-
-            <div class="form-group" id="custom_external_group" style="display: none;">
-                <label for="custom_external_url">Custom External URL (e.g. Stape.io)</label>
-                <input type="text" id="custom_external_url" name="custom_external_url" placeholder="https://...">
-            </div>
-
-            <button type="submit" id="saveBtn">Save & Deploy Changes</button>
-        </form>
-
-        <div id="successMsg" class="success-msg">Changes saved successfully! The site is rebuilding.</div>
-        <div id="errorMsg" class="error-msg">An error occurred while saving. Please check the logs.</div>
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
     </div>
 
+    <main class="admin-main" id="adminMain" style="display:none;">
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="hamburger-btn" onclick="openSidebar()">☰</button>
+                <div>
+                    <div class="page-title">Tracking Management</div>
+                    <div class="page-subtitle">Configure Universal Tracking Architecture</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-primary" id="saveBtnTop" onclick="document.getElementById('saveBtn').click()">🚀 Save & Deploy Changes</button>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+                <div class="settings-section-title"><i data-lucide="activity" class="lucide-icon"></i> Tracking Settings</div>
+                <p style="margin-bottom: 20px; color: var(--text-secondary); font-size: 13.5px;">Update your tracking settings below. Changes will trigger a GitHub Action to rebuild the site automatically.</p>
+                
+                <form id="trackingForm">
+                    <div class="form-group">
+                        <label class="form-label" for="tracking_mode">Tracking Mode</label>
+                        <select class="form-input" id="tracking_mode" name="tracking_mode">
+                            <option value="browser_only">Browser Only (Standard)</option>
+                            <option value="built_in_server_side">Built-in Server-Side (No browser scripts)</option>
+                            <option value="smart_fallback">Smart Fallback (Browser first, fallback if blocked)</option>
+                            <option value="custom_external">Custom External Server (e.g. Stape.io)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="meta_pixel_id">Meta Pixel ID</label>
+                        <input class="form-input" type="text" id="meta_pixel_id" name="meta_pixel_id" placeholder="e.g. 123456789012345">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ga4_id">GA4 Measurement ID</label>
+                        <input class="form-input" type="text" id="ga4_id" name="ga4_id" placeholder="e.g. G-ABC123XYZ">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="gtm_id">GTM Container ID</label>
+                        <input class="form-input" type="text" id="gtm_id" name="gtm_id" placeholder="e.g. GTM-XXXXXXX">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="clarity_id">Microsoft Clarity ID</label>
+                        <input class="form-input" type="text" id="clarity_id" name="clarity_id" placeholder="e.g. abcdefghij">
+                    </div>
+
+                    <div class="form-group" id="custom_external_group" style="display: none;">
+                        <label class="form-label" for="custom_external_url">Custom External URL</label>
+                        <input class="form-input" type="text" id="custom_external_url" name="custom_external_url" placeholder="https://...">
+                    </div>
+
+                    <button type="submit" id="saveBtn" style="display:none;">Save</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
     <script>
-        // Toggle external URL field
-        document.getElementById('tracking_mode').addEventListener('change', function() {
-            const externalGroup = document.getElementById('custom_external_group');
-            if (this.value === 'custom_external') {
-                externalGroup.style.display = 'block';
-            } else {
-                externalGroup.style.display = 'none';
-            }
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize admin sidebar & layout
+            adminInit('tracking', function() {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                
+                // Load existing config
+                fetch('/tracking-config.json')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.tracking_mode) {
+                            document.getElementById('tracking_mode').value = data.tracking_mode;
+                            document.getElementById('tracking_mode').dispatchEvent(new Event('change'));
+                        }
+                        document.getElementById('meta_pixel_id').value = data.meta_pixel_id || '';
+                        document.getElementById('ga4_id').value = data.ga4_id || '';
+                        document.getElementById('gtm_id').value = data.gtm_id || '';
+                        document.getElementById('clarity_id').value = data.clarity_id || '';
+                        document.getElementById('custom_external_url').value = data.custom_external_url || '';
+                    })
+                    .catch(err => {
+                        console.error('Error loading config:', err);
+                        showToast('Failed to load tracking config', 'error');
+                    });
+            });
 
-        // Load existing config
-        fetch('/tracking-config.json')
-            .then(res => res.json())
-            .then(data => {
-                if (data.tracking_mode) {
-                    document.getElementById('tracking_mode').value = data.tracking_mode;
-                    document.getElementById('tracking_mode').dispatchEvent(new Event('change'));
-                }
-                document.getElementById('meta_pixel_id').value = data.meta_pixel_id || '';
-                document.getElementById('ga4_id').value = data.ga4_id || '';
-                document.getElementById('gtm_id').value = data.gtm_id || '';
-                document.getElementById('clarity_id').value = data.clarity_id || '';
-                document.getElementById('custom_external_url').value = data.custom_external_url || '';
-            })
-            .catch(err => console.error('Error loading config:', err));
-
-        // Submit form
-        document.getElementById('trackingForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('saveBtn');
-            const successMsg = document.getElementById('successMsg');
-            const errorMsg = document.getElementById('errorMsg');
-            
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
-            successMsg.style.display = 'none';
-            errorMsg.style.display = 'none';
-
-            const payload = {
-                tracking_mode: document.getElementById('tracking_mode').value,
-                meta_pixel_id: document.getElementById('meta_pixel_id').value,
-                ga4_id: document.getElementById('ga4_id').value,
-                gtm_id: document.getElementById('gtm_id').value,
-                clarity_id: document.getElementById('clarity_id').value,
-                custom_external_url: document.getElementById('custom_external_url').value,
-            };
-
-            try {
-                const response = await fetch('/api/admin/update-tracking', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    successMsg.style.display = 'block';
+            // Toggle external URL field
+            document.getElementById('tracking_mode').addEventListener('change', function() {
+                const externalGroup = document.getElementById('custom_external_group');
+                if (this.value === 'custom_external') {
+                    externalGroup.style.display = 'block';
                 } else {
-                    const data = await response.json();
-                    errorMsg.textContent = data.error || 'An error occurred';
-                    errorMsg.style.display = 'block';
+                    externalGroup.style.display = 'none';
                 }
-            } catch (err) {
-                console.error(err);
-                errorMsg.textContent = 'Network error occurred.';
-                errorMsg.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Save & Deploy Changes';
-            }
+            });
+
+            // Submit form
+            document.getElementById('trackingForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const btnTop = document.getElementById('saveBtnTop');
+                
+                btnTop.disabled = true;
+                btnTop.textContent = 'Saving...';
+
+                const payload = {
+                    tracking_mode: document.getElementById('tracking_mode').value,
+                    meta_pixel_id: document.getElementById('meta_pixel_id').value,
+                    ga4_id: document.getElementById('ga4_id').value,
+                    gtm_id: document.getElementById('gtm_id').value,
+                    clarity_id: document.getElementById('clarity_id').value,
+                    custom_external_url: document.getElementById('custom_external_url').value,
+                };
+
+                try {
+                    const response = await fetch('/api/admin/update-tracking', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        showToast('Changes saved! Rebuilding site...', 'success');
+                    } else {
+                        const data = await response.json();
+                        showToast(data.error || 'An error occurred', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Network error occurred.', 'error');
+                } finally {
+                    btnTop.disabled = false;
+                    btnTop.textContent = '🚀 Save & Deploy Changes';
+                }
+            });
         });
     </script>
 </body>
