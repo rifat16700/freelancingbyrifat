@@ -54,11 +54,11 @@
         if (config.ga4_id) {
             const script = document.createElement('script');
             script.async = true;
-            script.src = `https://www.googletagmanager.com/gtag/js?id=${config.ga4_id}`;
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${config.ga4_id}&l=ga4DataLayer`;
             document.head.appendChild(script);
 
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
+            window.ga4DataLayer = window.ga4DataLayer || [];
+            function gtag(){ga4DataLayer.push(arguments);}
             window.gtag = gtag;
             gtag('js', new Date());
             gtag('config', config.ga4_id);
