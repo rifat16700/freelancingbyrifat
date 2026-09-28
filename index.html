@@ -15,6 +15,13 @@
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
     <script src="assets/js/appwrite-init.js"></script>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <script>
+        if (window.THEME_LAYOUT && window.THEME_LAYOUT.hero === 'v2') {
+            document.write('<script src="https://cdn.tailwindcss.com"><\\/script>');
+            document.write('<script>tailwind.config = { corePlugins: { preflight: false }, theme: { extend: { colors: { primary: "var(--primary)", secondary: "var(--text-dark)", "top-bar": "var(--primary-dark)", "bg-light": "var(--bg-light)", "hover-blue": "#2F1AC4" }, fontFamily: { josefin: ["Josefin Sans", "sans-serif"], lato: ["Lato", "sans-serif"] } } } }<\\/script>');
+            document.write('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">');
+        }
+    </script>
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
@@ -292,17 +299,8 @@ function loadSiteData() {
         }
 
         applySettings(settings);
+        
         if (window.THEME_LAYOUT && window.THEME_LAYOUT.hero === 'v2') {
-            // Load Tailwind & FontAwesome dynamically for V2 Template without breaking V1!
-            if (!document.getElementById('tailwindScript')) {
-                var tw = document.createElement('script'); tw.id = 'tailwindScript'; tw.src = 'https://cdn.tailwindcss.com';
-                document.head.appendChild(tw);
-                var twConf = document.createElement('script');
-                twConf.innerHTML = `tailwind.config = { corePlugins: { preflight: false }, theme: { extend: { colors: { primary: 'var(--primary)', secondary: 'var(--text-dark)', 'top-bar': 'var(--primary-dark)', 'bg-light': 'var(--bg-light)', 'hover-blue': '#2F1AC4' }, fontFamily: { josefin: ['"Josefin Sans"', 'sans-serif'], lato: ['Lato', 'sans-serif'] } } } }`;
-                document.head.appendChild(twConf);
-                var fa = document.createElement('link'); fa.rel = 'stylesheet'; fa.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-                document.head.appendChild(fa);
-            }
             initV2Theme();
         } else {
             renderHero(banners);
