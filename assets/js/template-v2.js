@@ -76,22 +76,22 @@ function renderFullV2Page(container) {
             '<span class="w-2 h-1 md:w-3 md:h-1 bg-[#05E6B7] rounded"></span><span class="w-2 h-1 md:w-3 md:h-1 bg-primary rounded"></span><span class="w-2 h-1 md:w-3 md:h-1 bg-white rounded"></span>' : 
             '<span class="w-2 h-1 md:w-3 md:h-1 bg-[#05E6B7] rounded"></span><span class="w-2 h-1 md:w-3 md:h-1 bg-primary rounded"></span><span class="w-2 h-1 md:w-3 md:h-1 bg-blue-700 rounded"></span>';
 
-        return \`
-        <a href="product.html?id=\${p.id}" class="product-card-hover group shadow-[0_0_15px_rgba(0,0,0,0.1)] rounded transition-all duration-300 relative block bg-white">
+        return `
+        <a href="product.html?id=${p.id}" class="product-card-hover group shadow-[0_0_15px_rgba(0,0,0,0.1)] rounded transition-all duration-300 relative block bg-white">
             <div class="bg-gray-100 relative h-[150px] md:h-[250px] flex justify-center items-center overflow-hidden p-2 md:p-4">
-                <img src="\${img}" alt="\${p.name}" class="h-4/5 object-contain group-hover:scale-110 transition duration-300 mix-blend-multiply">
+                <img src="${img}" alt="${p.name}" class="h-4/5 object-contain group-hover:scale-110 transition duration-300 mix-blend-multiply">
                 <div class="hover-icons absolute top-2 left-2 md:top-3 md:left-3 flex md:flex-row flex-col gap-1 md:gap-2">
-                    <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white text-blue-900 flex justify-center items-center hover:bg-gray-200" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '\${p.id}')"><i class="fa-solid fa-cart-shopping text-[10px] md:text-sm"></i></div>
+                    <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white text-blue-900 flex justify-center items-center hover:bg-gray-200" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')"><i class="fa-solid fa-cart-shopping text-[10px] md:text-sm"></i></div>
                 </div>
                 <div class="hover-icons absolute bottom-2 md:bottom-4 bg-green-500 text-white text-[10px] md:text-xs font-josefin py-1 md:py-2 px-2 md:px-4 rounded w-[90%] md:w-[120px] text-center">View Details</div>
             </div>
-            <div class="card-bottom p-3 md:p-5 text-center transition-colors duration-300 \${activeClass}">
-                <h3 class="font-josefin font-bold text-[12px] md:text-lg \${titleColor} mb-1 md:mb-2 truncate">\${p.name}</h3>
-                <div class="flex justify-center gap-1 mb-1 md:mb-3">\${dots}</div>
-                <p class="text-[10px] md:text-sm \${codeColor} font-josefin mb-1 md:mb-2">Code - \${p.id.substring(0,6)}</p>
-                <span class="\${priceColor} font-lato text-[12px] md:text-base">৳\${price}</span>
+            <div class="card-bottom p-3 md:p-5 text-center transition-colors duration-300 ${activeClass}">
+                <h3 class="font-josefin font-bold text-[12px] md:text-lg ${titleColor} mb-1 md:mb-2 truncate">${p.name}</h3>
+                <div class="flex justify-center gap-1 mb-1 md:mb-3">${dots}</div>
+                <p class="text-[10px] md:text-sm ${codeColor} font-josefin mb-1 md:mb-2">Code - ${p.id.substring(0,6)}</p>
+                <span class="${priceColor} font-lato text-[12px] md:text-base">৳${price}</span>
             </div>
-        </a>\`;
+        </a>`;
     }
 
     var featuredProdsHtml = activeProds.slice(0, 4).map((p, i) => makeCard(p, i === 1)).join('');
@@ -100,40 +100,40 @@ function renderFullV2Page(container) {
     var latestProdsHtml = activeProds.slice(4, 10).map(p => {
         var img = (p.gallery_images && p.gallery_images[0]) ? p.gallery_images[0] : 'assets/images/placeholder.jpg';
         var price = parseFloat(p.price || p.base_price || 0).toFixed(2);
-        var strike = (p.compare_price > p.price) ? \`<span class="text-primary font-lato line-through hidden sm:inline">৳\${parseFloat(p.compare_price).toFixed(2)}</span>\` : '';
-        return \`
-        <a href="product.html?id=\${p.id}" class="group block">
+        var strike = (p.compare_price > p.price) ? `<span class="text-primary font-lato line-through hidden sm:inline">৳${parseFloat(p.compare_price).toFixed(2)}</span>` : '';
+        return `
+        <a href="product.html?id=${p.id}" class="group block">
             <div class="bg-gray-50 h-[150px] md:h-[300px] relative flex justify-center items-center transition hover:bg-white hover:shadow-lg rounded overflow-hidden">
-                <img src="\${img}" alt="\${p.name}" class="h-3/4 object-contain mix-blend-multiply">
+                <img src="${img}" alt="${p.name}" class="h-3/4 object-contain mix-blend-multiply">
                 <div class="absolute bottom-2 left-2 flex flex-col gap-1 md:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white shadow text-secondary hover:bg-gray-100 flex items-center justify-center" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '\${p.id}')"><i class="fa-solid fa-cart-shopping text-[10px] md:text-sm"></i></div>
+                    <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-white shadow text-secondary hover:bg-gray-100 flex items-center justify-center" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')"><i class="fa-solid fa-cart-shopping text-[10px] md:text-sm"></i></div>
                 </div>
             </div>
             <div class="flex justify-between items-center mt-2 md:mt-4 px-1">
-                <h3 class="font-josefin text-secondary font-semibold text-[11px] md:text-lg border-b-2 border-white group-hover:border-primary transition-colors truncate w-[60%]">\${p.name}</h3>
+                <h3 class="font-josefin text-secondary font-semibold text-[11px] md:text-lg border-b-2 border-white group-hover:border-primary transition-colors truncate w-[60%]">${p.name}</h3>
                 <div class="flex gap-1 md:gap-2 text-[10px] md:text-sm">
-                    <span class="text-secondary font-lato">৳\${price}</span>
-                    \${strike}
+                    <span class="text-secondary font-lato">৳${price}</span>
+                    ${strike}
                 </div>
             </div>
-        </a>\`;
+        </a>`;
     }).join('');
 
-    container.innerHTML = \`
+    container.innerHTML = `
         <!-- Top Bar -->
         <div class="bg-top-bar text-white py-2 text-sm font-josefin hidden md:block">
             <div class="container mx-auto px-4 lg:px-24 flex justify-between items-center">
                 <div class="flex gap-6">
-                    <a href="mailto:\${email}" class="flex items-center gap-2 hover:text-gray-200">
-                        <i class="fa-regular fa-envelope"></i> \${email}
+                    <a href="mailto:${email}" class="flex items-center gap-2 hover:text-gray-200">
+                        <i class="fa-regular fa-envelope"></i> ${email}
                     </a>
-                    \${phone ? \`<a href="tel:\${phone}" class="flex items-center gap-2 hover:text-gray-200"><i class="fa-solid fa-phone-volume"></i> \${phone}</a>\` : ''}
+                    ${phone ? `<a href="tel:${phone}" class="flex items-center gap-2 hover:text-gray-200"><i class="fa-solid fa-phone-volume"></i> ${phone}</a>` : ''}
                 </div>
                 <div class="flex gap-4 items-center">
                     <select class="bg-transparent border-none outline-none cursor-pointer text-white"><option class="text-black">English</option></select>
                     <select class="bg-transparent border-none outline-none cursor-pointer text-white"><option class="text-black">BDT</option></select>
                     <a href="login.html" class="flex items-center gap-1 hover:text-gray-200">Login <i class="fa-regular fa-user"></i></a>
-                    <a href="cart.html" class="hover:text-gray-200 relative"><i class="fa-solid fa-cart-shopping"></i> <span class="absolute -top-2 -right-2 bg-primary text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">\${cartCount}</span></a>
+                    <a href="cart.html" class="hover:text-gray-200 relative"><i class="fa-solid fa-cart-shopping"></i> <span class="absolute -top-2 -right-2 bg-primary text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">${cartCount}</span></a>
                 </div>
             </div>
         </div>
@@ -142,7 +142,7 @@ function renderFullV2Page(container) {
         <header class="bg-white py-4 md:py-6 sticky top-0 z-50 shadow-sm">
             <div class="container mx-auto px-4 lg:px-24">
                 <div class="flex justify-between items-center">
-                    <a href="index.html" class="text-3xl font-bold font-josefin text-secondary">\${storeName}</a>
+                    <a href="index.html" class="text-3xl font-bold font-josefin text-secondary">${storeName}</a>
                     <nav class="hidden md:flex gap-4 lg:gap-8 font-lato text-sm lg:text-base items-center">
                         <a href="index.html" class="text-primary font-bold">Home</a>
                         <a href="shop.html" class="hover:text-primary transition-colors">Products</a>
@@ -159,9 +159,9 @@ function renderFullV2Page(container) {
         <!-- Hero Slider -->
         <section class="relative w-full h-[220px] sm:h-[350px] md:h-[450px] lg:h-[550px] overflow-hidden group select-none bg-gray-50">
             <div id="sliderTrackV2" class="flex transition-transform duration-500 ease-in-out h-full w-full cursor-grab active:cursor-grabbing">
-                \${slidesHtml}
+                ${slidesHtml}
             </div>
-            \${sliderBanners.length > 1 ? \`
+            ${sliderBanners.length > 1 ? `
             <button onclick="prevSlideV2()" class="absolute left-2 md:left-8 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-primary w-8 h-8 md:w-12 md:h-12 rounded-full flex justify-center items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 shadow-md z-20 cursor-pointer">
                 <i class="fa-solid fa-chevron-left text-sm md:text-xl"></i>
             </button>
@@ -169,8 +169,8 @@ function renderFullV2Page(container) {
                 <i class="fa-solid fa-chevron-right text-sm md:text-xl"></i>
             </button>
             <div class="absolute bottom-4 md:bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 md:gap-3 z-20">
-                \${dotsHtml}
-            </div>\` : ''}
+                ${dotsHtml}
+            </div>` : ''}
         </section>
 
         <!-- Featured Products -->
@@ -178,13 +178,13 @@ function renderFullV2Page(container) {
             <div class="container mx-auto px-4 lg:px-24">
                 <h2 class="text-xl md:text-4xl font-bold font-josefin text-center mb-6 md:mb-12 text-secondary">Featured Products</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-8">
-                    \${featuredProdsHtml}
+                    ${featuredProdsHtml}
                 </div>
             </div>
         </section>
 
         <!-- Latest Products -->
-        \${latestProdsHtml ? \`
+        ${latestProdsHtml ? `
         <section class="py-10 md:py-16">
             <div class="container mx-auto px-4 lg:px-24">
                 <h2 class="text-xl md:text-4xl font-bold font-josefin text-center mb-4 md:mb-6 text-secondary">Latest Products</h2>
@@ -193,15 +193,15 @@ function renderFullV2Page(container) {
                     <li class="cursor-pointer hover:text-primary transition"><a href="shop.html">Best Seller</a></li>
                 </ul>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-8">
-                    \${latestProdsHtml}
+                    ${latestProdsHtml}
                 </div>
             </div>
-        </section>\` : ''}
+        </section>` : ''}
 
         <!-- What Shopex Offer -->
         <section class="py-10 md:py-16 bg-white">
             <div class="container mx-auto px-4 lg:px-24">
-                <h2 class="text-xl md:text-4xl font-bold font-josefin text-center mb-6 md:mb-12 text-secondary">What \${storeName} Offers!</h2>
+                <h2 class="text-xl md:text-4xl font-bold font-josefin text-center mb-6 md:mb-12 text-secondary">What ${storeName} Offers!</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-8">
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
                         <img src="https://cdn-icons-png.flaticon.com/512/411/411776.png" alt="Delivery" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
@@ -230,17 +230,17 @@ function renderFullV2Page(container) {
         <!-- Minimal Footer for V2 -->
         <footer class="bg-gray-100 py-10 mt-10">
             <div class="container mx-auto px-4 lg:px-24 text-center">
-                <h3 class="text-2xl font-josefin font-bold text-secondary mb-4">\${storeName}</h3>
+                <h3 class="text-2xl font-josefin font-bold text-secondary mb-4">${storeName}</h3>
                 <p class="text-gray-500 text-sm mb-4">Your trusted shopping destination.</p>
                 <div class="flex justify-center gap-4 text-gray-400">
                     <a href="#" class="hover:text-primary"><i class="fa-brands fa-facebook"></i></a>
                     <a href="#" class="hover:text-primary"><i class="fa-brands fa-instagram"></i></a>
                     <a href="#" class="hover:text-primary"><i class="fa-brands fa-youtube"></i></a>
                 </div>
-                <div class="mt-8 text-xs text-gray-400">© ${new Date().getFullYear()} \${storeName}. All rights reserved.</div>
+                <div class="mt-8 text-xs text-gray-400">© ${new Date().getFullYear()} ${storeName}. All rights reserved.</div>
             </div>
         </footer>
-    \`;
+    `;
 
     if (sliderBanners.length > 1) {
         window.slideIdxV2 = 0;
