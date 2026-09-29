@@ -8,13 +8,13 @@ function toggleFavorite(e, id) {
     let idx = favs.indexOf(id);
     if (idx > -1) {
         favs.splice(idx, 1);
-        e.currentTarget.innerHTML = '<i class="fa-regular fa-heart"></i>';
+        e.currentTarget.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>';
         e.currentTarget.classList.remove('text-red-500');
-        e.currentTarget.classList.add('text-secondary');
+        e.currentTarget.classList.add('text-gray-500');
     } else {
         favs.push(id);
-        e.currentTarget.innerHTML = '<i class="fa-solid fa-heart"></i>';
-        e.currentTarget.classList.remove('text-secondary');
+        e.currentTarget.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>';
+        e.currentTarget.classList.remove('text-gray-500');
         e.currentTarget.classList.add('text-red-500');
     }
     localStorage.setItem('wishlist', JSON.stringify(favs));
@@ -43,7 +43,7 @@ function initV2Theme(banners, cats, homeSects) {
     if (!v2Wrap) {
         v2Wrap = document.createElement('div');
         v2Wrap.id = 'v2-theme-wrapper';
-        v2Wrap.className = 'w-full bg-white transition-all duration-500 ease-in-out mx-auto relative shadow-sm min-h-screen text-secondary font-lato pb-16 md:pb-0';
+        v2Wrap.className = 'w-full bg-white transition-all duration-500 ease-in-out mx-auto relative shadow-sm min-h-screen text-secondary font-lato';
         document.body.appendChild(v2Wrap);
     }
     
@@ -105,49 +105,42 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         if (hasDiscount) finalPrice = finalPrice - parseFloat(p.flash_sale_price);
         
         var isFav = favs.includes(p.id);
-        var favIcon = isFav ? '<i class="fa-solid fa-heart"></i>' : '<i class="fa-regular fa-heart"></i>';
-        var favColor = isFav ? 'text-red-500' : 'text-secondary';
+        var favIcon = isFav ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>';
+        var favColor = isFav ? 'text-red-500' : 'text-gray-500';
 
         var activeClass = isActive ? 'bg-hover-blue text-white' : 'bg-white';
         var titleColor = isActive ? 'text-white' : 'text-primary';
         var priceColor = isActive ? 'text-white' : 'text-secondary';
         var codeColor = isActive ? 'text-white' : 'text-secondary';
-        var dots = isActive ? 
-            '<span class="w-2 h-1 md:w-3 md:h-1 bg-[#05E6B7] rounded"></span><span class="w-2 h-1 md:w-3 md:h-1 bg-primary rounded"></span><span class="w-2 h-1 md:w-3 md:h-1 bg-white rounded"></span>' : 
-            '<span class="w-2 h-1 md:w-3 md:h-1 bg-[#05E6B7] rounded"></span><span class="w-2 h-1 md:w-3 md:h-1 bg-primary rounded"></span><span class="w-2 h-1 md:w-3 md:h-1 bg-blue-700 rounded"></span>';
 
         return `
-        <a href="product.html?id=${p.id}" class="product-card-hover group shadow-[0_0_15px_rgba(0,0,0,0.08)] rounded-lg transition-all duration-300 relative block bg-white overflow-hidden flex flex-col h-full">
-            <div class="bg-gray-50 relative h-[180px] md:h-[280px] flex justify-center items-center overflow-hidden p-4 shrink-0">
-                <img src="${img}" alt="${p.name}" class="max-h-full max-w-full object-contain group-hover:scale-110 transition duration-300 mix-blend-multiply">
+        <a href="product.html?id=${p.id}" class="product-card-hover group shadow-md hover:shadow-lg rounded-lg transition-all duration-300 relative block bg-white overflow-hidden flex flex-col h-full border border-gray-100">
+            <div class="relative h-[160px] md:h-[250px] w-full overflow-hidden shrink-0">
+                <img src="${img}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                 
                 <!-- Top Right Favorite -->
-                <button class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/80 backdrop-blur shadow flex items-center justify-center hover:bg-white transition ${favColor} z-10" onclick="toggleFavorite(event, '${p.id}')">
+                <button class="absolute top-2 right-2 w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/90 backdrop-blur shadow flex items-center justify-center hover:bg-white transition ${favColor} z-10" onclick="toggleFavorite(event, '${p.id}')">
                     ${favIcon}
                 </button>
                 
-                ${hasDiscount ? `<div class="absolute top-2 left-2 bg-red-500 text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded">Sale</div>` : ''}
+                ${hasDiscount ? `<div class="absolute top-2 left-2 bg-red-500 text-white text-[9px] md:text-xs font-bold px-2 py-1 rounded shadow">Sale</div>` : ''}
+
+                <!-- Add to Cart (Permanent Mobile, Hover PC) -->
+                <button class="absolute bottom-2 right-2 w-8 h-8 md:w-10 md:h-10 bg-primary hover:bg-pink-600 text-white rounded-full shadow-lg flex items-center justify-center z-10 transform md:translate-y-10 md:group-hover:translate-y-0 transition-transform duration-300" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                </button>
             </div>
             
-            <div class="card-bottom p-3 md:p-5 text-center transition-colors duration-300 ${activeClass} flex-grow flex flex-col justify-between">
+            <div class="p-3 md:p-4 text-left transition-colors duration-300 ${activeClass} flex-grow flex flex-col justify-between">
                 <div>
-                    <h3 class="font-josefin font-bold text-[13px] md:text-lg ${titleColor} mb-2 line-clamp-2 leading-tight">${p.name}</h3>
-                    <div class="flex justify-center gap-1 mb-3">${dots}</div>
+                    <h3 class="font-josefin font-bold text-[12px] md:text-base ${titleColor} mb-1 line-clamp-2 leading-snug">${p.name}</h3>
+                    <p class="text-[9px] md:text-xs ${codeColor} font-josefin mb-2 opacity-60">Code: ${p.id.substring(0,6)}</p>
                 </div>
                 
-                <div>
-                    <p class="text-[10px] md:text-sm ${codeColor} font-josefin mb-2 opacity-70">Code: ${p.id.substring(0,6)}</p>
-                    <div class="flex justify-center items-center gap-2">
-                        <span class="${priceColor} font-bold font-lato text-[14px] md:text-lg">৳${finalPrice.toFixed(2)}</span>
-                        ${hasDiscount ? `<span class="text-[10px] md:text-sm text-gray-400 line-through">৳${price}</span>` : ''}
-                    </div>
+                <div class="flex items-center gap-2 mt-auto">
+                    <span class="${priceColor} font-bold font-lato text-[14px] md:text-lg">৳${finalPrice.toFixed(2)}</span>
+                    ${hasDiscount ? `<span class="text-[10px] md:text-xs text-gray-400 line-through">৳${price}</span>` : ''}
                 </div>
-            </div>
-            
-            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
-                <button class="bg-primary hover:bg-pink-600 text-white font-bold py-2 px-4 rounded shadow-lg flex items-center gap-2 pointer-events-auto transform translate-y-4 group-hover:translate-y-0 transition-all" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')">
-                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
-                </button>
             </div>
         </a>`;
     }
@@ -176,32 +169,59 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         </div>
 
         <!-- Navbar -->
-        <header class="bg-white py-4 md:py-6 sticky top-0 z-50 shadow-sm">
+        <header class="bg-white py-3 md:py-4 sticky top-0 z-50 shadow-sm">
             <div class="container mx-auto px-4 lg:px-24">
-                <div class="flex justify-between items-center">
-                    <a href="index.html" class="text-2xl md:text-3xl font-bold font-josefin text-secondary flex items-center gap-2">
-                        <i class="fa-solid fa-bag-shopping text-primary"></i> ${storeName}
+                <!-- Mobile: Row 1 (Logo/Name + Icons), Row 2 (Search) -->
+                <!-- Desktop: Logo/Name + Nav Links + Search + Icons -->
+                <div class="flex flex-wrap items-center justify-between gap-y-3">
+                    
+                    <!-- Logo & Store Name -->
+                    <a href="index.html" class="flex items-center gap-2 text-xl md:text-2xl font-bold font-josefin text-secondary shrink-0">
+                        ${(window.globalSettings && window.globalSettings.store_logo) ? `<img src="${window.globalSettings.store_logo}" alt="Logo" class="h-6 md:h-8 object-contain">` : `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>`}
+                        <span class="truncate max-w-[120px] md:max-w-[200px]">${storeName}</span>
                     </a>
+
+                    <!-- Desktop Nav Links -->
                     <nav class="hidden md:flex gap-4 lg:gap-8 font-lato text-sm lg:text-base items-center">
                         <a href="index.html" class="text-primary font-bold">Home</a>
                         <a href="shop.html" class="hover:text-primary transition-colors">Products</a>
                         <a href="track.html" class="hover:text-primary transition-colors">Track Order</a>
                     </nav>
-                    <div class="hidden md:flex w-[200px] lg:w-[300px] border border-gray-300 rounded-md overflow-hidden">
-                        <input type="text" id="v2Search" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search...">
-                        <button class="bg-primary text-white px-4 py-1.5 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2Search').value) window.location.href='shop.html?q='+document.getElementById('v2Search').value"><i class="fa-solid fa-magnifying-glass"></i></button>
+
+                    <!-- Desktop Icons & Search -->
+                    <div class="hidden md:flex items-center gap-6">
+                        <div class="flex w-[200px] lg:w-[300px] border border-gray-300 rounded-md overflow-hidden">
+                            <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search...">
+                            <button class="bg-primary text-white px-4 py-1.5 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><i class="fa-solid fa-magnifying-glass"></i></button>
+                        </div>
                     </div>
-                    <!-- Mobile Cart Icon -->
-                    <a href="cart.html" class="md:hidden text-secondary hover:text-primary relative text-xl">
-                        <i class="fa-solid fa-cart-shopping"></i> 
-                        <span class="absolute -top-2 -right-2 bg-primary text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">${cartCount}</span>
-                    </a>
+
+                    <!-- Mobile Icons (Profile, Track, Cart) -->
+                    <div class="flex items-center gap-4 md:hidden">
+                        <a href="profile.html" class="text-secondary hover:text-primary text-lg">
+                            <i class="fa-regular fa-user"></i>
+                        </a>
+                        <a href="track.html" class="text-secondary hover:text-primary text-lg">
+                            <i class="fa-solid fa-truck-fast"></i>
+                        </a>
+                        <a href="cart.html" class="text-secondary hover:text-primary relative text-lg">
+                            <i class="fa-solid fa-cart-shopping"></i> 
+                            <span class="absolute -top-2 -right-2 bg-primary text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">${cartCount}</span>
+                        </a>
+                    </div>
+
+                    <!-- Mobile Search Bar (Row 2) -->
+                    <div class="w-full md:hidden flex border border-gray-300 rounded-md overflow-hidden mt-1">
+                        <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products...">
+                        <button class="bg-primary text-white px-4 py-2 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+
                 </div>
             </div>
         </header>
 
         <!-- Hero Slider -->
-        <section class="relative w-full h-[220px] sm:h-[350px] md:h-[450px] lg:h-[550px] overflow-hidden group select-none bg-gray-50">
+        <section class="relative w-full h-[180px] sm:h-[280px] md:h-[350px] lg:h-[400px] overflow-hidden group select-none bg-gray-50">
             <div id="sliderTrackV2" class="flex transition-transform duration-500 ease-in-out h-full w-full cursor-grab active:cursor-grabbing">
                 ${slidesHtml}
             </div>
@@ -306,26 +326,6 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
             </div>
         </footer>
 
-        <!-- Mobile Bottom Nav (V2 Custom) -->
-        <div class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50 flex justify-around items-center py-2 px-1 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-            <a href="index.html" class="flex flex-col items-center text-primary w-1/4">
-                <i class="fa-solid fa-house text-lg mb-1"></i>
-                <span class="text-[10px] font-bold">Home</span>
-            </a>
-            <a href="shop.html" class="flex flex-col items-center text-gray-400 hover:text-primary w-1/4 transition-colors">
-                <i class="fa-solid fa-store text-lg mb-1"></i>
-                <span class="text-[10px] font-bold">Shop</span>
-            </a>
-            <a href="cart.html" class="flex flex-col items-center text-gray-400 hover:text-primary w-1/4 transition-colors relative">
-                <i class="fa-solid fa-cart-shopping text-lg mb-1"></i>
-                <span class="text-[10px] font-bold">Cart</span>
-                <span class="absolute top-0 right-3 bg-primary text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center">${cartCount}</span>
-            </a>
-            <a href="profile.html" class="flex flex-col items-center text-gray-400 hover:text-primary w-1/4 transition-colors">
-                <i class="fa-regular fa-user text-lg mb-1"></i>
-                <span class="text-[10px] font-bold">Profile</span>
-            </a>
-        </div>
     `;
 
     if (sliderBanners.length > 1) {

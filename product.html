@@ -245,6 +245,25 @@
 .msg-app-btn span { font-size:13px;font-weight:600; }
 </style>
 
+<!-- Cart Toast -->
+<div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--text-dark);color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,0.2);transition:0.4s cubic-bezier(.68,-.55,.27,1.55);z-index:9999;display:flex;align-items:center;gap:10px;white-space:nowrap;" id="cartToast">
+    <span><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i></span> <span id="cartToastMsg">Added to cart!</span>
+</div>
+
+<script>
+window.toastTimer = null;
+function showCartToast(name) {
+    var toast = document.getElementById('cartToast');
+    if (!toast) return;
+    document.getElementById('cartToastMsg').textContent = '"' + name.substring(0,30) + '" added!';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(function() {
+        toast.style.transform = 'translateX(-50%) translateY(100px)';
+    }, 4000);
+}
+</script>
+
 <footer class="footer">
     <div id="footerStoreLoc" style="display:none; text-align:center; padding: 20px 20px 0; max-width:400px; margin:0 auto;">
         <a id="footerStoreLink" href="#" target="_blank" class="btn btn-outline btn-full btn-sm" style="border-color:#ddd; color:#555; background:#fff;"><i data-lucide="map-pin" class="lucide-icon text-primary"></i> <span style="font-weight:700;">Visit Our Store</span></a>
@@ -826,6 +845,7 @@ function addToCart() {
 
     saveCart(cart);
     updateCartBadge();
+    showCartToast(product.name);
 
     // Tracking: AddToCart
     if (typeof window.fireTrackingEvent === 'function') {

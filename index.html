@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/theme.css?v=2">
     <script src="assets/js/layout-config.js?v=2"></script>
-    <script src="assets/js/template-v2.js?v=4"></script>
+    <script src="assets/js/template-v2.js?v=5"></script>
     <script src="assets/js/config.js?v=1782024132023"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-init.js"></script>
@@ -664,12 +664,13 @@ function updateCartBadge() {
 
 function showCartToast(name) {
     var toast = document.getElementById('cartToast');
+    if (!toast) return; // If V2, it might not exist or be different
     document.getElementById('cartToastMsg').textContent = '"' + name.substring(0,30) + '" added!';
     toast.style.transform = 'translateX(-50%) translateY(0)';
     clearTimeout(window.toastTimer);
     window.toastTimer = setTimeout(function() {
         toast.style.transform = 'translateX(-50%) translateY(100px)';
-    }, 2500);
+    }, 4000);
 }
 
 // ── Mobile Menu ───────────────────────────────────────────────
