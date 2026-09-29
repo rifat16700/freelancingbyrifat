@@ -334,10 +334,11 @@ input, select, textarea { font-family: inherit; }
 
 .btn-primary {
     background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-    color: #fff;
+    color: var(--primary-contrast, #fff);
 }
 .btn-primary:hover {
     background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: var(--primary-contrast, #fff);
     box-shadow: 0 6px 20px var(--primary-glow);
     transform: translateY(-1px);
 }

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/theme.css?v=2">
     <script src="assets/js/layout-config.js?v=2"></script>
-    <script src="assets/js/template-v2.js?v=9"></script>
+    <script src="assets/js/template-v2.js?v=10"></script>
     <script src="assets/js/config.js?v=1782024132023"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-init.js"></script>
@@ -242,9 +242,12 @@ function loadSiteData() {
         const fetchPublicData = async () => {
             try {
                 const cachedStr = localStorage.getItem('__fbr_public_data');
+                // Force clear cache if old structure or version changed
                 if (cachedStr) {
                     const cachedObj = JSON.parse(cachedStr);
-                    if (Date.now() - cachedObj.time < 60 * 60 * 1000) { // 60 min browser cache
+                    if (cachedObj.version !== 2 || Date.now() - cachedObj.time > 2 * 60 * 1000) { 
+                        localStorage.removeItem('__fbr_public_data');
+                    } else {
                         return cachedObj.data;
                     }
                 }
@@ -252,7 +255,7 @@ function loadSiteData() {
             try {
                 const res = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-data").then(r => r.json());
                 if (res.success) {
-                    localStorage.setItem('__fbr_public_data', JSON.stringify({ time: Date.now(), data: res.data }));
+                    localStorage.setItem('__fbr_public_data', JSON.stringify({ version: 2, time: Date.now(), data: res.data }));
                     return res.data;
                 }
             } catch(e) {}
@@ -380,6 +383,24 @@ function applySettings(s) {
         document.getElementsByTagName('head')[0].appendChild(link);
     }
     link.href = s.favicon_url || s.logo_url || 'assets/images/favicon.ico';
+    
+    // Set dynamic contrast for primary color
+    var primary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+    if (primary) {
+        var r = 0, g = 0, b = 0;
+        if (primary.startsWith('#')) {
+            var hex = primary.replace('#','');
+            if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+            r = parseInt(hex.substring(0,2), 16) || 0;
+            g = parseInt(hex.substring(2,4), 16) || 0;
+            b = parseInt(hex.substring(4,6), 16) || 0;
+        } else if (primary.startsWith('rgb')) {
+            var parts = primary.match(/\d+/g);
+            if(parts && parts.length >= 3) { r = parseInt(parts[0]); g = parseInt(parts[1]); b = parseInt(parts[2]); }
+        }
+        var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        document.documentElement.style.setProperty('--primary-contrast', luminance > 0.5 ? '#1A1A1A' : '#FFFFFF');
+    }
     
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }

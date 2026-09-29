@@ -106,7 +106,7 @@ var STATUS_ICONS = {
 };
 
 function trackOrder() {
-    var orderId = document.getElementById('trackOrderId').value.trim().toUpperCase().replace(/-/g, '');
+    var orderId = document.getElementById('trackOrderId').value.trim().toUpperCase().replace(/-/g, '').replace(/#/g, '');
     var phone   = document.getElementById('trackPhone').value.trim();
     var errEl   = document.getElementById('trackError');
     var btn     = document.getElementById('trackBtn');
@@ -123,10 +123,19 @@ function trackOrder() {
         trackPromise = appwriteDatabases.listDocuments(APP_DB, 'orders', [AppwriteQuery.equal('$id', orderId), AppwriteQuery.equal('customer_phone', phone), AppwriteQuery.limit(1)]).then(function(res) { var doc = res.documents[0]; if (doc) { doc.id=doc.$id; if (typeof doc.items==='string') { try{doc.items=JSON.parse(doc.items);}catch(e){doc.items=[];} } return { data: doc }; } return { data: null }; }).catch(function() { return { data: null }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         var apiBase = (CONFIG.HF_API_BASE || CONFIG.API_BASE || '');
-        trackPromise = fetch(apiBase + '/api/track-order?id=' + orderId + '&phone=' + phone)
-            .then(res => res.json())
-            .then(data => { if (data.success && data.order) return { data: data.order }; return { data: null }; })
-            .catch(() => { return { data: null }; });
+        trackPromise = fetch(apiBase + '/api/d1-query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sql: 'SELECT * FROM orders WHERE id = ? AND customer_phone = ?', params: [orderId, phone] })
+        })
+        .then(res => res.json())
+        .then(data => { 
+            if (data.success && data.result && data.result[0] && data.result[0].results && data.result[0].results.length > 0) {
+                return { data: data.result[0].results[0] }; 
+            }
+            return { data: null }; 
+        })
+        .catch(() => { return { data: null }; });
     } else {
         trackPromise = Promise.resolve({ data: null });
     }

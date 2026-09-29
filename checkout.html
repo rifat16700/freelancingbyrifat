@@ -1523,6 +1523,11 @@ function placeOrder() {
     var upa   = isPickup ? 'Pickup' : document.getElementById('upaSelect').value;
     var addr  = isPickup ? (settings.store_address || 'Store Pickup') : document.getElementById('custAddress').value.trim();
 
+    // Save Address locally for Profile page
+    if (!isPickup) {
+        localStorage.setItem('fbr_address', JSON.stringify({ name: name, phone: phone, email: email, division: div, district: dist, upazila: upa, address: addr }));
+    }
+
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
     // Re-calculate effective delivery (after coupon discount)
     var delDiscPO = 0;

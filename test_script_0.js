@@ -1158,6 +1158,15 @@ function placeOrder() {
     }
     insertPromise.then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
+        
+        try {
+            var localOrders = JSON.parse(localStorage.getItem('my_orders') || '[]');
+            orderData.created_at = new Date().toISOString();
+            localOrders.unshift(orderData);
+            if (localOrders.length > 10) localOrders = localOrders.slice(0, 10);
+            localStorage.setItem('my_orders', JSON.stringify(localOrders));
+        } catch(e){}
+
         sendOrderNotification(orderData);
         // Direct Order হলে শুধু direct key clear করো — main cart অক্ষত থাকবে
         if (isDirectOrder) {

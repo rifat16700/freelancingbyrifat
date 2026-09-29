@@ -237,9 +237,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const fetchPublicData = async () => {
             try {
                 const cachedStr = localStorage.getItem('__fbr_public_data');
+                // Force clear cache if old structure or version changed
                 if (cachedStr) {
                     const cachedObj = JSON.parse(cachedStr);
-                    if (Date.now() - cachedObj.time < 60 * 60 * 1000) { // 60 min browser cache
+                    if (cachedObj.version !== 2 || Date.now() - cachedObj.time > 2 * 60 * 1000) { 
+                        localStorage.removeItem('__fbr_public_data');
+                    } else {
                         return cachedObj.data;
                     }
                 }
@@ -247,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const res = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-data").then(r => r.json());
                 if (res.success) {
-                    localStorage.setItem('__fbr_public_data', JSON.stringify({ time: Date.now(), data: res.data }));
+                    localStorage.setItem('__fbr_public_data', JSON.stringify({ version: 2, time: Date.now(), data: res.data }));
                     return res.data;
                 }
             } catch(e) {}

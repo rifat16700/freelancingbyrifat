@@ -119,7 +119,12 @@
 
             <!-- Buttons -->
             <div id="mainOrderButtons" style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border-light);">
-                <button class="btn btn-primary btn-full btn-lg" id="addToCartBtn" onclick="addToCart()"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Add to Cart</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-primary btn-full btn-lg" id="addToCartBtn" style="flex:1;" onclick="addToCart()"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Add to Cart</button>
+                    <button class="btn" id="favBtn" style="width:52px;min-width:52px;height:52px;padding:0;display:flex;align-items:center;justify-content:center;border:2px solid var(--border-light);border-radius:12px;background:#fff;color:#888;" onclick="toggleFavoriteCurrent(event)">
+                        <i data-lucide="heart" id="favIcon"></i>
+                    </button>
+                </div>
                 <button class="btn btn-outline btn-full" onclick="directOrder()">⚡ Buy Now</button>
                 <button class="btn btn-full" id="msgOrderBtn" style="display:none;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;font-weight:700;border:none;" onclick="openMsgSheet()">
                     💬 Order by Message
@@ -715,6 +720,46 @@ function renderProduct(p) {
         document.getElementById('colorSection').style.display = 'none';
         document.getElementById('sizeSection').style.display  = 'none';
     }
+    initFavBtn();
+}
+
+function initFavBtn() {
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem('wishlist') || '[]'); } catch(e){}
+    let isFav = favs.findIndex(f => (typeof f === 'string' ? f === product.id : f.id === product.id)) > -1;
+    let favIcon = document.getElementById('favIcon');
+    let favBtn = document.getElementById('favBtn');
+    if (isFav) {
+        favIcon.style.fill = 'currentColor';
+        favBtn.style.color = '#EF4444';
+        favBtn.style.borderColor = '#EF4444';
+    } else {
+        favIcon.style.fill = 'none';
+        favBtn.style.color = '#888';
+        favBtn.style.borderColor = 'var(--border-light)';
+    }
+}
+
+function toggleFavoriteCurrent(e) {
+    e.preventDefault();
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem('wishlist') || '[]'); } catch(e){}
+    
+    let idx = favs.findIndex(f => (typeof f === 'string' ? f === product.id : f.id === product.id));
+    if (idx > -1) {
+        favs.splice(idx, 1);
+        if(typeof showToast === 'function') showToast('Removed from favorites');
+    } else {
+        var base = product.base_price;
+        var flashDiscount = product.flash_sale_price || 0;
+        var finalPrice = base - flashDiscount;
+        var allImgs = product.gallery_images || [];
+        var img = allImgs.length ? allImgs[0] : '';
+        favs.push({id: product.id, name: product.name, price: finalPrice, image: img});
+        if(typeof showToast === 'function') showToast('Added to favorites');
+    }
+    localStorage.setItem('wishlist', JSON.stringify(favs));
+    initFavBtn();
 }
 
 function selectColor(vi) {

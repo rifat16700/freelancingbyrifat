@@ -367,7 +367,7 @@
             var dayRevenue = orders
                 .filter(function(o) {
                     var od = new Date(o.created_at);
-                    return od >= d && od < nextD && o.status !== 'Cancelled';
+                    return od >= d && od < nextD && o.status !== 'Cancelled' && o.status !== 'Pending';
                 })
                 .reduce(function(sum, o) { return sum + (o.grand_total || 0); }, 0);
 

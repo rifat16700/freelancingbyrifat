@@ -1,18 +1,21 @@
 // Template V2 Full Page Engine (Tailwind Based)
 
-function toggleFavorite(e, id) {
+function toggleFavorite(e, id, name, price, image) {
     e.preventDefault();
     e.stopPropagation();
     let favs = [];
     try { favs = JSON.parse(localStorage.getItem('wishlist')) || []; } catch(e){}
-    let idx = favs.indexOf(id);
+    
+    // Check if favs contains string IDs (old format) or objects (new format)
+    let idx = favs.findIndex(f => (typeof f === 'string' ? f === id : f.id === id));
+    
     if (idx > -1) {
         favs.splice(idx, 1);
         e.currentTarget.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>';
         e.currentTarget.classList.remove('text-red-500');
         e.currentTarget.classList.add('text-gray-500');
     } else {
-        favs.push(id);
+        favs.push({id: id, name: name, price: price, image: image});
         e.currentTarget.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" /></svg>';
         e.currentTarget.classList.remove('text-gray-500');
         e.currentTarget.classList.add('text-red-500');
@@ -21,7 +24,32 @@ function toggleFavorite(e, id) {
     if(typeof showToast === 'function') showToast(idx > -1 ? 'Removed from favorites' : 'Added to favorites');
 }
 
+function setDynamicContrast() {
+    var primary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#8B1A1A';
+    var r = 0, g = 0, b = 0;
+    if (primary.startsWith('#')) {
+        var hex = primary.replace('#','');
+        if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        r = parseInt(hex.substring(0,2), 16) || 0;
+        g = parseInt(hex.substring(2,4), 16) || 0;
+        b = parseInt(hex.substring(4,6), 16) || 0;
+    } else if (primary.startsWith('rgb')) {
+        var parts = primary.match(/\d+/g);
+        if(parts && parts.length >= 3) { r = parseInt(parts[0]); g = parseInt(parts[1]); b = parseInt(parts[2]); }
+    }
+    var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    var contrastColor = luminance > 0.5 ? '#1A1A1A' : '#FFFFFF';
+    document.documentElement.style.setProperty('--primary-contrast', contrastColor);
+    if (!document.getElementById('dynamic-contrast-style')) {
+        var s = document.createElement('style');
+        s.id = 'dynamic-contrast-style';
+        s.innerHTML = '.hover-dynamic-text:hover { color: var(--primary-contrast) !important; } .text-dynamic { color: var(--primary-contrast) !important; }';
+        document.head.appendChild(s);
+    }
+}
+
 function initV2Theme(banners, cats, homeSects) {
+    setDynamicContrast();
     // Hide V1 Elements
     var nav = document.getElementById('mainNavbar');
     if (nav) nav.style.display = 'none';
@@ -120,14 +148,14 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                 <img src="${img}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                 
                 <!-- Top Right Favorite -->
-                <button class="absolute top-2 right-2 w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/90 backdrop-blur shadow flex items-center justify-center hover:bg-white transition ${favColor} z-10" onclick="toggleFavorite(event, '${p.id}')">
+                <button class="absolute top-2 right-2 w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/90 backdrop-blur shadow flex items-center justify-center hover:bg-white transition ${favColor} z-10" onclick="toggleFavorite(event, '${p.id}', '${p.name.replace(/'/g, "\\'")}', '${p.sale_price || p.price}', '${img}')">
                     ${favIcon}
                 </button>
                 
                 ${hasDiscount ? `<div class="absolute top-2 left-2 bg-red-500 text-white text-[9px] md:text-xs font-bold px-2 py-1 rounded shadow">Sale</div>` : ''}
 
                 <!-- Add to Cart (Permanent Mobile & PC) -->
-                <button class="absolute bottom-2 right-2 w-8 h-8 md:w-10 md:h-10 text-white rounded-full shadow-lg flex items-center justify-center z-10 transition-transform duration-300 hover:scale-110" style="background: var(--primary);" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')">
+                <button class="absolute bottom-2 right-2 w-8 h-8 md:w-10 md:h-10 text-dynamic rounded-full shadow-lg flex items-center justify-center z-10 transition-transform duration-300 hover:scale-110" style="background: var(--primary);" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                 </button>
             </div>
@@ -213,7 +241,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     <div class="hidden md:flex flex-grow justify-center px-4">
                         <div class="flex w-full max-w-[400px] border border-gray-300 rounded-md overflow-hidden">
                             <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search...">
-                            <button class="text-white px-4 py-1.5 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                            <button class="text-dynamic px-4 py-1.5 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                         </div>
                     </div>
 
@@ -227,14 +255,14 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                         </a>
                         <a href="cart.html" class="text-secondary relative text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
                             <i data-lucide="shopping-cart" class="lucide-icon icon-bounce group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
-                            <span class="cart-badge-v2 absolute -top-2 -right-2 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center" style="background: var(--primary); display:${cartCount > 0 ? 'flex' : 'none'}">${cartCount}</span>
+                            <span class="cart-badge-v2 absolute -top-2 -right-2 text-dynamic text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center" style="background: var(--primary); display:${cartCount > 0 ? 'flex' : 'none'}">${cartCount}</span>
                         </a>
                     </div>
 
                     <!-- Mobile Search Bar (Row 2) -->
                     <div class="w-full md:hidden flex border border-gray-300 rounded-md overflow-hidden mt-1">
                         <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products...">
-                        <button class="text-white px-4 py-2 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                        <button class="text-dynamic px-4 py-2 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                     </div>
 
                 </div>
@@ -301,7 +329,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     ${allProdsHtml}
                 </div>
                 <div class="text-center mt-10">
-                    <a href="shop.html" class="inline-block bg-white font-bold py-3 px-8 rounded transition duration-300" style="color: var(--primary); border: 2px solid var(--primary);" onmouseover="this.style.backgroundColor='var(--primary)'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor='white'; this.style.color='var(--primary)';">Browse All Products</a>
+                    <a href="shop.html" class="inline-block bg-white font-bold py-3 px-8 rounded transition duration-300" style="color: var(--primary); border: 2px solid var(--primary);" onmouseover="this.style.backgroundColor='var(--primary)'; this.style.color='var(--primary-contrast)';" onmouseout="this.style.backgroundColor='white'; this.style.color='var(--primary)';">Browse All Products</a>
                 </div>
             </div>
         </section>` : ''}
