@@ -301,7 +301,7 @@ function loadSiteData() {
         applySettings(settings);
         
         if (window.THEME_LAYOUT && window.THEME_LAYOUT.hero === 'v2') {
-            initV2Theme();
+            initV2Theme(banners, cats, homeSects);
         } else {
             renderHero(banners);
             renderCategories(cats);
