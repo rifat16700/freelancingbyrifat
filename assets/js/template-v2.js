@@ -51,9 +51,10 @@ function initV2Theme(banners, cats, homeSects) {
 }
 
 function renderFullV2Page(container, paramBanners, cats, homeSects) {
-    var storeName = window.globalSettings ? (window.globalSettings.store_name || 'My Store') : 'My Store';
-    var email = window.globalSettings ? (window.globalSettings.contact_email || 'contact@store.com') : 'contact@store.com';
-    var phone = window.globalSettings ? (window.globalSettings.contact_phone || '') : '';
+    var sSettings = window.siteSettings || window.globalSettings || {};
+    var storeName = sSettings.store_name || (typeof CONFIG !== 'undefined' ? CONFIG.STORE_NAME : 'My Store');
+    var email = sSettings.contact_email || 'contact@store.com';
+    var phone = sSettings.contact_phone || '';
 
     var cartCount = 0;
     if (typeof getCart === 'function') {
@@ -82,11 +83,11 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         if (fullUrl) {
             inner += '<a href="' + fullUrl + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;"></a>';
         }
-        return '<div class="min-w-full relative flex-shrink-0 flex items-center justify-center slide-v2 bg-[#F2F0FF]">' + inner + '</div>';
+        return '<div class="min-w-full relative flex-shrink-0 flex items-center justify-center slide-v2 bg-transparent">' + inner + '</div>';
     }).join('');
 
     var dotsHtml = sliderBanners.map(function(b, i) {
-        return '<button class="slider-dot-v2 w-2 h-2 md:w-3 md:h-3 rounded-full ' + (i===0 ? 'bg-primary' : 'bg-transparent') + ' border-2 border-primary transition-colors cursor-pointer" data-index="'+i+'"></button>';
+        return '<button class="slider-dot-v2 w-2 h-2 md:w-3 md:h-3 rounded-full transition-colors cursor-pointer" data-index="'+i+'" style="border: 2px solid var(--primary); background: ' + (i===0 ? 'var(--primary)' : 'transparent') + '"></button>';
     }).join('');
 
     // --- Products ---
@@ -125,8 +126,8 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                 
                 ${hasDiscount ? `<div class="absolute top-2 left-2 bg-red-500 text-white text-[9px] md:text-xs font-bold px-2 py-1 rounded shadow">Sale</div>` : ''}
 
-                <!-- Add to Cart (Permanent Mobile, Hover PC) -->
-                <button class="absolute bottom-2 right-2 w-8 h-8 md:w-10 md:h-10 bg-primary hover:bg-pink-600 text-white rounded-full shadow-lg flex items-center justify-center z-10 transform md:translate-y-10 md:group-hover:translate-y-0 transition-transform duration-300" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')">
+                <!-- Add to Cart (Permanent Mobile & PC) -->
+                <button class="absolute bottom-2 right-2 w-8 h-8 md:w-10 md:h-10 text-white rounded-full shadow-lg flex items-center justify-center z-10 transition-transform duration-300 hover:scale-110" style="background: var(--primary);" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                 </button>
             </div>
@@ -212,28 +213,28 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     <div class="hidden md:flex flex-grow justify-center px-4">
                         <div class="flex w-full max-w-[400px] border border-gray-300 rounded-md overflow-hidden">
                             <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search...">
-                            <button class="bg-primary text-white px-4 py-1.5 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                            <button class="text-white px-4 py-1.5 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                         </div>
                     </div>
 
                     <!-- Desktop & Mobile Icons (Profile, Track, Cart) -->
                     <div class="flex items-center gap-4 md:gap-6">
-                        <a href="profile.html" class="text-secondary hover:text-primary text-lg flex flex-col items-center group">
+                        <a href="profile.html" class="text-secondary text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
                             <i data-lucide="user" class="lucide-icon group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
                         </a>
-                        <a href="track.html" class="text-secondary hover:text-primary text-lg flex flex-col items-center group">
+                        <a href="track.html" class="text-secondary text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
                             <i data-lucide="package" class="lucide-icon icon-bounce group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
                         </a>
-                        <a href="cart.html" class="text-secondary hover:text-primary relative text-lg flex flex-col items-center group">
+                        <a href="cart.html" class="text-secondary relative text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
                             <i data-lucide="shopping-cart" class="lucide-icon icon-bounce group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
-                            <span class="cart-badge-v2 absolute -top-2 -right-2 bg-primary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center" style="display:${cartCount > 0 ? 'flex' : 'none'}">${cartCount}</span>
+                            <span class="cart-badge-v2 absolute -top-2 -right-2 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center" style="background: var(--primary); display:${cartCount > 0 ? 'flex' : 'none'}">${cartCount}</span>
                         </a>
                     </div>
 
                     <!-- Mobile Search Bar (Row 2) -->
                     <div class="w-full md:hidden flex border border-gray-300 rounded-md overflow-hidden mt-1">
                         <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products...">
-                        <button class="bg-primary text-white px-4 py-2 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                        <button class="text-white px-4 py-2 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                     </div>
 
                 </div>
@@ -300,7 +301,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     ${allProdsHtml}
                 </div>
                 <div class="text-center mt-10">
-                    <a href="shop.html" class="inline-block bg-white text-primary border-2 border-primary font-bold py-3 px-8 rounded hover:bg-primary hover:text-white transition duration-300">Browse All Products</a>
+                    <a href="shop.html" class="inline-block bg-white font-bold py-3 px-8 rounded transition duration-300 hover:opacity-90 hover:text-white" style="color: var(--primary); border: 2px solid var(--primary);" onmouseover="this.style.backgroundColor='var(--primary)'" onmouseout="this.style.backgroundColor='white'">Browse All Products</a>
                 </div>
             </div>
         </section>` : ''}
@@ -371,11 +372,9 @@ function updateSliderV2() {
     if (track) track.style.transform = 'translateX(-' + (window.slideIdxV2 * 100) + '%)';
     document.querySelectorAll('.slider-dot-v2').forEach(function(d, i) {
         if (i === window.slideIdxV2) {
-            d.classList.add('bg-primary');
-            d.classList.remove('bg-transparent');
+            d.style.background = 'var(--primary)';
         } else {
-            d.classList.remove('bg-primary');
-            d.classList.add('bg-transparent');
+            d.style.background = 'transparent';
         }
     });
 }
