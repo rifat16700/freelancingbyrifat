@@ -1227,8 +1227,10 @@ function getCart()  { try { return JSON.parse(localStorage.getItem(CONFIG.CART_K
 function saveCart(c){ localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(c)); }
 function updateCartBadge() {
     var cart = getCart(), count = cart.reduce(function(s,i){return s+(i.quantity||1);},0);
-    var b = document.getElementById('cartBadge');
-    if (b) { b.textContent = count; b.style.display = count > 0 ? 'flex' : 'none'; }
+    document.querySelectorAll('#cartBadge, .cart-badge-v2').forEach(function(b) {
+        b.textContent = count;
+        b.style.display = count > 0 ? 'flex' : 'none';
+    });
 }
 
 function scrollToOrder() {

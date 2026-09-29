@@ -219,14 +219,14 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     <!-- Desktop & Mobile Icons (Profile, Track, Cart) -->
                     <div class="flex items-center gap-4 md:gap-6">
                         <a href="profile.html" class="text-secondary hover:text-primary text-lg flex flex-col items-center group">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            <i data-lucide="user" class="lucide-icon group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
                         </a>
                         <a href="track.html" class="text-secondary hover:text-primary text-lg flex flex-col items-center group">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
+                            <i data-lucide="package" class="lucide-icon icon-bounce group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
                         </a>
                         <a href="cart.html" class="text-secondary hover:text-primary relative text-lg flex flex-col items-center group">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                            <span class="absolute -top-2 -right-2 bg-primary text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">${cartCount}</span>
+                            <i data-lucide="shopping-cart" class="lucide-icon icon-bounce group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
+                            <span class="cart-badge-v2 absolute -top-2 -right-2 bg-primary text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center" style="display:${cartCount > 0 ? 'flex' : 'none'}">${cartCount}</span>
                         </a>
                     </div>
 
@@ -354,6 +354,10 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         window.slideIdxV2 = 0;
         window.slideTotalV2 = sliderBanners.length;
         window.startSliderV2();
+    }
+
+    if (window.lucide) {
+        window.lucide.createIcons();
     }
 }
 

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/theme.css?v=2">
     <script src="assets/js/layout-config.js?v=2"></script>
-    <script src="assets/js/template-v2.js?v=6"></script>
+    <script src="assets/js/template-v2.js?v=7"></script>
     <script src="assets/js/config.js?v=1782024132023"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-init.js"></script>
@@ -658,8 +658,10 @@ function saveCart(cart) { localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(c
 function updateCartBadge() {
     var cart = getCart();
     var count = cart.reduce(function(s, i) { return s + (i.quantity || 1); }, 0);
-    var badge = document.getElementById('cartBadge');
-    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+    document.querySelectorAll('#cartBadge, .cart-badge-v2').forEach(function(badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'flex' : 'none';
+    });
 }
 
 function showCartToast(name) {
