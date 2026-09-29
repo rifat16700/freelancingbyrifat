@@ -1632,8 +1632,17 @@ function placeOrder() {
     if (!insertPromise) { alert('Configuration Error: Unknown DB_PROVIDER'); var btn = document.getElementById('placeOrderBtn'); if(btn){btn.disabled=false; btn.innerHTML='<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order';} return; }
     insertPromise.then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
+        
+        // Save locally for Guest/Main Profile history (max 10)
+        try {
+            var localOrders = JSON.parse(localStorage.getItem('my_orders') || '[]');
+            orderData.created_at = new Date().toISOString();
+            localOrders.unshift(orderData); // Add to beginning
+            if (localOrders.length > 10) localOrders = localOrders.slice(0, 10);
+            localStorage.setItem('my_orders', JSON.stringify(localOrders));
+        } catch(e){}
+
         sendOrderNotification(orderData);
-        // Direct Order হলে শুধু direct key clear করো — main cart অক্ষত থাকবে
         if (isDirectOrder) {
             localStorage.removeItem(DIRECT_KEY);
         } else {

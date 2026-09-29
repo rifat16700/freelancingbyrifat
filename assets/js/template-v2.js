@@ -301,7 +301,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     ${allProdsHtml}
                 </div>
                 <div class="text-center mt-10">
-                    <a href="shop.html" class="inline-block bg-white font-bold py-3 px-8 rounded transition duration-300 hover:opacity-90 hover:text-white" style="color: var(--primary); border: 2px solid var(--primary);" onmouseover="this.style.backgroundColor='var(--primary)'" onmouseout="this.style.backgroundColor='white'">Browse All Products</a>
+                    <a href="shop.html" class="inline-block bg-white font-bold py-3 px-8 rounded transition duration-300" style="color: var(--primary); border: 2px solid var(--primary);" onmouseover="this.style.backgroundColor='var(--primary)'; this.style.color='#ffffff';" onmouseout="this.style.backgroundColor='white'; this.style.color='var(--primary)';">Browse All Products</a>
                 </div>
             </div>
         </section>` : ''}

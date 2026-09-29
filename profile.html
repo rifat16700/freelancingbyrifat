@@ -103,16 +103,37 @@
     document.addEventListener('DOMContentLoaded', async () => {
         lucide.createIcons();
         if (!token) {
-            window.location.href = 'login.html';
-            return;
+            // Guest Mode
+            document.getElementById('userName').textContent = 'Guest User';
+            document.getElementById('userEmail').textContent = 'Login to sync data';
+            document.getElementById('userInitial').textContent = 'G';
+            
+            // Add Login button instead of Sign Out
+            const signOutBtn = document.querySelector('.profile-menu-item.danger');
+            if (signOutBtn) {
+                signOutBtn.innerHTML = '<i data-lucide="log-in"></i> Login Now';
+                signOutBtn.classList.remove('danger');
+                signOutBtn.style.color = 'var(--primary)';
+                signOutBtn.style.background = 'rgba(255,77,77,0.1)';
+                signOutBtn.onclick = function() { window.location.href = 'login.html'; };
+            }
+            lucide.createIcons();
+            
+            // Fetch Local Orders
+            let localOrders = [];
+            try { localOrders = JSON.parse(localStorage.getItem('my_orders') || '[]'); } catch(e){}
+            renderOrders(localOrders);
+        } else {
+            await fetchProfile();
+            await fetchOrders();
         }
-        await fetchProfile();
-        await fetchOrders();
     });
 
     function logout() {
         localStorage.removeItem('user_token');
-        window.location.href = 'login.html';
+        localStorage.removeItem('user_profile');
+        localStorage.removeItem('user_orders');
+        window.location.href = 'index.html';
     }
 
     const CACHE_TTL = 3600 * 1000; // 1 hour
@@ -226,7 +247,7 @@
                 let itemsHtml = '';
                 try {
                     const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-                    itemsHtml = items.map(i => `${i.quantity}x ${i.name}`).join('<br>');
+                    itemsHtml = items.map(i => `${i.quantity}x ${i.name || i.product_name || 'Product'}`).join('<br>');
                 } catch(e) {}
 
                 html += `
@@ -236,13 +257,13 @@
                                 <div class="order-id">#${order.id}</div>
                                 <div class="order-date">${date}</div>
                             </div>
-                            <div class="order-status ${statusClass}">${order.status}</div>
+                            <div class="order-status ${statusClass}">${order.status || 'Pending'}</div>
                         </div>
                         <div class="order-items">
                             ${itemsHtml || 'Order Items'}
                         </div>
                         <div class="order-footer">
-                            <div class="order-total">৳${order.final_total}</div>
+                            <div class="order-total">৳${order.grand_total || order.final_total || 0}</div>
                             <a href="track.html?id=${order.id}" class="btn-track">Track Order</a>
                         </div>
                     </div>

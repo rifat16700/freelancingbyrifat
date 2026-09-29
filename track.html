@@ -121,21 +121,38 @@ function trackOrder() {
         trackPromise = supabaseClient.from('orders').select('*').eq('id', orderId).eq('customer_phone', phone).single();
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         trackPromise = appwriteDatabases.listDocuments(APP_DB, 'orders', [AppwriteQuery.equal('$id', orderId), AppwriteQuery.equal('customer_phone', phone), AppwriteQuery.limit(1)]).then(function(res) { var doc = res.documents[0]; if (doc) { doc.id=doc.$id; if (typeof doc.items==='string') { try{doc.items=JSON.parse(doc.items);}catch(e){doc.items=[];} } return { data: doc }; } return { data: null }; }).catch(function() { return { data: null }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var apiBase = (CONFIG.HF_API_BASE || CONFIG.API_BASE || '');
+        trackPromise = fetch(apiBase + '/api/track-order?id=' + orderId + '&phone=' + phone)
+            .then(res => res.json())
+            .then(data => { if (data.success && data.order) return { data: data.order }; return { data: null }; })
+            .catch(() => { return { data: null }; });
     } else {
-        trackPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
+        trackPromise = Promise.resolve({ data: null });
     }
+
     trackPromise.then(function(r) {
         btn.disabled = false; btn.innerHTML = '<i data-lucide="search" class="lucide-icon"></i> Track Order';
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
-        if (r.error || !r.data) {
+        let order = r && r.data;
+        if (!order) {
+            // Fallback to local storage for guests
+            try {
+                let localOrders = JSON.parse(localStorage.getItem('my_orders') || '[]');
+                let localMatch = localOrders.find(o => o.id === orderId && o.customer_phone === phone);
+                if (localMatch) order = localMatch;
+            } catch(e) {}
+        }
+
+        if (!order) {
             errEl.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Order not found. Please check your Order ID and phone number.';
             errEl.style.display = 'block';
             if (typeof lucide !== 'undefined') lucide.createIcons();
             return;
         }
 
-        renderTrackResult(r.data);
+        renderTrackResult(order);
     });
 }
 
