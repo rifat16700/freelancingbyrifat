@@ -78,11 +78,11 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         var fullUrl = linkData ? linkData.url : rawLink;
         if (fullUrl && !fullUrl.startsWith('http') && !fullUrl.startsWith('/') && !fullUrl.startsWith('.')) fullUrl = 'https://' + fullUrl;
         
-        var inner = '<img src="' + b.image_url + '" alt="' + (b.title||'') + '" class="w-full h-full object-cover pointer-events-none">';
+        var inner = '<img src="' + b.image_url + '" alt="' + (b.title||'') + '" class="w-full h-auto max-h-[500px] object-contain pointer-events-none" style="margin: 0 auto; display: block;">';
         if (fullUrl) {
             inner += '<a href="' + fullUrl + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;"></a>';
         }
-        return '<div class="min-w-full h-full relative flex-shrink-0 slide-v2">' + inner + '</div>';
+        return '<div class="min-w-full relative flex-shrink-0 flex items-center justify-center slide-v2 bg-[#F2F0FF]">' + inner + '</div>';
     }).join('');
 
     var dotsHtml = sliderBanners.map(function(b, i) {
@@ -149,6 +149,33 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
     var featuredProdsHtml = otherProds.slice(0, 4).map((p, i) => makeCard(p, i === 1)).join('');
     var allProdsHtml = activeProds.slice(0, 20).map(p => makeCard(p, false)).join('');
 
+    // --- Categories ---
+    var catsHtml = '';
+    if (cats && cats.length) {
+        var catItems = cats.map(function(c) {
+            var catImg = c.image_url ? `<img src="${c.image_url}" alt="${c.name}" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">` : `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shadow-sm mb-2 group-hover:scale-110 transition-transform"><i class="fa-solid fa-list"></i></div>`;
+            return `
+            <a href="shop.html?category=${c.id}" class="flex flex-col items-center min-w-[70px] md:min-w-[100px] group flex-shrink-0">
+                ${catImg}
+                <span class="text-[10px] md:text-sm font-bold text-center text-secondary group-hover:text-primary line-clamp-1">${c.name}</span>
+            </a>
+            `;
+        }).join('');
+        
+        catsHtml = `
+        <section class="py-6 md:py-10 bg-white border-b border-gray-100">
+            <div class="container mx-auto px-4 lg:px-24">
+                <div class="flex justify-between items-center mb-4 md:mb-6">
+                    <h2 class="text-lg md:text-2xl font-bold font-josefin text-secondary">Categories</h2>
+                </div>
+                <div class="flex overflow-x-auto gap-4 md:gap-8 pb-4 hide-scrollbar cursor-grab active:cursor-grabbing" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    ${catItems}
+                </div>
+            </div>
+        </section>
+        `;
+    }
+
     container.innerHTML = `
         <!-- Top Bar -->
         <div class="bg-top-bar text-white py-2 text-sm font-josefin hidden md:block">
@@ -172,7 +199,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         <header class="bg-white py-3 md:py-4 sticky top-0 z-50 shadow-sm">
             <div class="container mx-auto px-4 lg:px-24">
                 <!-- Mobile: Row 1 (Logo/Name + Icons), Row 2 (Search) -->
-                <!-- Desktop: Logo/Name + Nav Links + Search + Icons -->
+                <!-- Desktop: Logo/Name + Search + Icons -->
                 <div class="flex flex-wrap items-center justify-between gap-y-3">
                     
                     <!-- Logo & Store Name -->
@@ -181,31 +208,24 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                         <span class="truncate max-w-[120px] md:max-w-[200px]">${storeName}</span>
                     </a>
 
-                    <!-- Desktop Nav Links -->
-                    <nav class="hidden md:flex gap-4 lg:gap-8 font-lato text-sm lg:text-base items-center">
-                        <a href="index.html" class="text-primary font-bold">Home</a>
-                        <a href="shop.html" class="hover:text-primary transition-colors">Products</a>
-                        <a href="track.html" class="hover:text-primary transition-colors">Track Order</a>
-                    </nav>
-
-                    <!-- Desktop Icons & Search -->
-                    <div class="hidden md:flex items-center gap-6">
-                        <div class="flex w-[200px] lg:w-[300px] border border-gray-300 rounded-md overflow-hidden">
+                    <!-- Desktop Search -->
+                    <div class="hidden md:flex flex-grow justify-center px-4">
+                        <div class="flex w-full max-w-[400px] border border-gray-300 rounded-md overflow-hidden">
                             <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search...">
-                            <button class="bg-primary text-white px-4 py-1.5 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><i class="fa-solid fa-magnifying-glass"></i></button>
+                            <button class="bg-primary text-white px-4 py-1.5 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                         </div>
                     </div>
 
-                    <!-- Mobile Icons (Profile, Track, Cart) -->
-                    <div class="flex items-center gap-4 md:hidden">
-                        <a href="profile.html" class="text-secondary hover:text-primary text-lg">
-                            <i class="fa-regular fa-user"></i>
+                    <!-- Desktop & Mobile Icons (Profile, Track, Cart) -->
+                    <div class="flex items-center gap-4 md:gap-6">
+                        <a href="profile.html" class="text-secondary hover:text-primary text-lg flex flex-col items-center group">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                         </a>
-                        <a href="track.html" class="text-secondary hover:text-primary text-lg">
-                            <i class="fa-solid fa-truck-fast"></i>
+                        <a href="track.html" class="text-secondary hover:text-primary text-lg flex flex-col items-center group">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
                         </a>
-                        <a href="cart.html" class="text-secondary hover:text-primary relative text-lg">
-                            <i class="fa-solid fa-cart-shopping"></i> 
+                        <a href="cart.html" class="text-secondary hover:text-primary relative text-lg flex flex-col items-center group">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-6 md:w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                             <span class="absolute -top-2 -right-2 bg-primary text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center">${cartCount}</span>
                         </a>
                     </div>
@@ -213,29 +233,31 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     <!-- Mobile Search Bar (Row 2) -->
                     <div class="w-full md:hidden flex border border-gray-300 rounded-md overflow-hidden mt-1">
                         <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products...">
-                        <button class="bg-primary text-white px-4 py-2 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><i class="fa-solid fa-magnifying-glass"></i></button>
+                        <button class="bg-primary text-white px-4 py-2 hover:bg-pink-600 transition" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                     </div>
 
                 </div>
             </div>
         </header>
 
-        <!-- Hero Slider -->
-        <section class="relative w-full h-[180px] sm:h-[280px] md:h-[350px] lg:h-[400px] overflow-hidden group select-none bg-gray-50">
+        <!-- Hero Slider (No Fixed Height) -->
+        <section class="relative w-full overflow-hidden group select-none bg-gray-50 flex items-center justify-center">
             <div id="sliderTrackV2" class="flex transition-transform duration-500 ease-in-out h-full w-full cursor-grab active:cursor-grabbing">
                 ${slidesHtml}
             </div>
             ${sliderBanners.length > 1 ? `
             <button onclick="prevSlideV2()" class="absolute left-2 md:left-8 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-primary w-8 h-8 md:w-12 md:h-12 rounded-full flex justify-center items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 shadow-md z-20 cursor-pointer">
-                <i class="fa-solid fa-chevron-left text-sm md:text-xl"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
             </button>
             <button onclick="nextSlideV2()" class="absolute right-2 md:right-8 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-primary w-8 h-8 md:w-12 md:h-12 rounded-full flex justify-center items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 shadow-md z-20 cursor-pointer">
-                <i class="fa-solid fa-chevron-right text-sm md:text-xl"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
             </button>
             <div class="absolute bottom-4 md:bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 md:gap-3 z-20">
                 ${dotsHtml}
             </div>` : ''}
         </section>
+
+        ${catsHtml}
 
         <!-- Flash Deals -->
         ${flashProdsHtml ? `
