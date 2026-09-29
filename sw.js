@@ -11,7 +11,7 @@
 //      Product prices, stock, orders must always be fresh.
 // ============================================================
 
-const CACHE_NAME = 'fbr-offline-v5';
+const CACHE_NAME = 'fbr-offline-v6';
 
 // Static assets to precache
 const PRECACHE_ASSETS = [
