@@ -151,5 +151,14 @@
         }
     };
 
-    loadConfig();
+    let configLoaded = false;
+    function initOnInteraction() {
+        if (configLoaded) return;
+        configLoaded = true;
+        loadConfig();
+        ['scroll', 'mousemove', 'touchstart', 'keydown'].forEach(e => window.removeEventListener(e, initOnInteraction));
+    }
+    
+    setTimeout(initOnInteraction, 3500);
+    ['scroll', 'mousemove', 'touchstart', 'keydown'].forEach(e => window.addEventListener(e, initOnInteraction, { once: true, passive: true }));
 })();
