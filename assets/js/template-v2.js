@@ -107,7 +107,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         var fullUrl = linkData ? linkData.url : rawLink;
         if (fullUrl && !fullUrl.startsWith('http') && !fullUrl.startsWith('/') && !fullUrl.startsWith('.')) fullUrl = 'https://' + fullUrl;
         
-        var inner = '<img src="' + b.image_url + '" alt="' + (b.title||'') + '" class="w-full h-auto max-h-[500px] object-contain pointer-events-none" style="margin: 0 auto; display: block;">';
+        var inner = '<img src="' + b.image_url + '" alt="' + (b.title||'') + '" width="1200" height="500" class="w-full h-auto max-h-[500px] object-contain pointer-events-none" style="margin: 0 auto; display: block;">';
         if (fullUrl) {
             inner += '<a href="' + fullUrl + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;"></a>';
         }
@@ -145,17 +145,17 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         return `
         <a href="product.html?id=${p.id}" class="product-card-hover group shadow-md hover:shadow-lg rounded-lg transition-all duration-300 relative block bg-white overflow-hidden flex flex-col h-full border border-gray-100">
             <div class="relative h-[160px] md:h-[250px] w-full overflow-hidden shrink-0">
-                <img src="${img}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                <img src="${img}" alt="${p.name}" width="300" height="300" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                 
                 <!-- Top Right Favorite -->
-                <button class="absolute top-2 right-2 w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/90 backdrop-blur shadow flex items-center justify-center hover:bg-white transition ${favColor} z-10" onclick="toggleFavorite(event, '${p.id}', '${p.name.replace(/'/g, "\\'")}', '${p.sale_price || p.price}', '${img}')">
+                <button aria-label="Add to Wishlist" class="absolute top-2 right-2 w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/90 backdrop-blur shadow flex items-center justify-center hover:bg-white transition ${favColor} z-10" onclick="toggleFavorite(event, '${p.id}', '${p.name.replace(/'/g, "\\'")}', '${p.sale_price || p.price}', '${img}')">
                     ${favIcon}
                 </button>
                 
-                ${hasDiscount ? `<div class="absolute top-2 left-2 bg-red-500 text-white text-[9px] md:text-xs font-bold px-2 py-1 rounded shadow">Sale</div>` : ''}
+                ${hasDiscount ? `<div class="absolute top-2 left-2 bg-red-700 text-white text-[9px] md:text-xs font-bold px-2 py-1 rounded shadow">Sale</div>` : ''}
 
                 <!-- Add to Cart (Permanent Mobile & PC) -->
-                <button class="absolute bottom-2 right-2 w-8 h-8 md:w-10 md:h-10 text-dynamic rounded-full shadow-lg flex items-center justify-center z-10 transition-transform duration-300 hover:scale-110" style="background: var(--primary);" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')">
+                <button aria-label="Add to Cart" class="absolute bottom-2 right-2 w-8 h-8 md:w-10 md:h-10 text-dynamic rounded-full shadow-lg flex items-center justify-center z-10 transition-transform duration-300 hover:scale-110" style="background: var(--primary);" onclick="event.preventDefault(); if(typeof quickAddToCart === 'function') quickAddToCart(event, '${p.id}')">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                 </button>
             </div>
@@ -163,12 +163,12 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
             <div class="p-3 md:p-4 text-left transition-colors duration-300 ${activeClass} flex-grow flex flex-col justify-between">
                 <div>
                     <h3 class="font-josefin font-bold text-[12px] md:text-base ${titleColor} mb-1 line-clamp-2 leading-snug">${p.name}</h3>
-                    <p class="text-[9px] md:text-xs ${codeColor} font-josefin mb-2 opacity-60">Code: ${p.id.substring(0,6)}</p>
+                    <p class="text-[9px] md:text-xs ${codeColor} font-josefin mb-2 opacity-80">Code: ${p.id.substring(0,6)}</p>
                 </div>
                 
                 <div class="flex items-center gap-2 mt-auto">
                     <span class="${priceColor} font-bold font-lato text-[14px] md:text-lg">৳${finalPrice.toFixed(2)}</span>
-                    ${hasDiscount ? `<span class="text-[10px] md:text-xs text-gray-400 line-through">৳${price}</span>` : ''}
+                    ${hasDiscount ? `<span class="text-[10px] md:text-xs text-gray-500 line-through">৳${price}</span>` : ''}
                 </div>
             </div>
         </a>`;
@@ -182,7 +182,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
     var catsHtml = '';
     if (cats && cats.length) {
         var catItems = cats.map(function(c) {
-            var catImg = c.image_url ? `<img src="${c.image_url}" alt="${c.name}" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">` : `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shadow-sm mb-2 group-hover:scale-110 transition-transform"><i class="fa-solid fa-list"></i></div>`;
+            var catImg = c.image_url ? `<img src="${c.image_url}" alt="${c.name}" width="64" height="64" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">` : `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shadow-sm mb-2 group-hover:scale-110 transition-transform"><i class="fa-solid fa-list"></i></div>`;
             return `
             <a href="shop.html?category=${c.id}" class="flex flex-col items-center min-w-[70px] md:min-w-[100px] group flex-shrink-0">
                 ${catImg}
@@ -216,8 +216,8 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     ${phone ? `<a href="tel:${phone}" class="flex items-center gap-2 hover:text-gray-200"><i class="fa-solid fa-phone-volume"></i> ${phone}</a>` : ''}
                 </div>
                 <div class="flex gap-4 items-center">
-                    <select class="bg-transparent border-none outline-none cursor-pointer text-white"><option class="text-black">English</option></select>
-                    <select class="bg-transparent border-none outline-none cursor-pointer text-white"><option class="text-black">BDT</option></select>
+                    <select aria-label="Language" class="bg-transparent border-none outline-none cursor-pointer text-white"><option class="text-black">English</option></select>
+                    <select aria-label="Currency" class="bg-transparent border-none outline-none cursor-pointer text-white"><option class="text-black">BDT</option></select>
                     <a href="login.html" class="flex items-center gap-1 hover:text-gray-200">Login <i class="fa-regular fa-user"></i></a>
                     <a href="cart.html" class="hover:text-gray-200 relative"><i class="fa-solid fa-cart-shopping"></i> <span class="absolute -top-2 -right-2 bg-primary text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">${cartCount}</span></a>
                 </div>
@@ -241,19 +241,19 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     <div class="hidden md:flex flex-grow justify-center px-4">
                         <div class="flex w-full max-w-[400px] border border-gray-300 rounded-md overflow-hidden">
                             <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search...">
-                            <button class="text-dynamic px-4 py-1.5 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                            <button aria-label="Search" class="text-dynamic px-4 py-1.5 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                         </div>
                     </div>
 
                     <!-- Desktop & Mobile Icons (Profile, Track, Cart) -->
                     <div class="flex items-center gap-4 md:gap-6">
-                        <a href="profile.html" class="text-secondary text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
+                        <a href="profile.html" aria-label="Profile" class="text-secondary text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
                             <i data-lucide="user" class="lucide-icon group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
                         </a>
-                        <a href="track.html" class="text-secondary text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
+                        <a href="track.html" aria-label="Track Order" class="text-secondary text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
                             <i data-lucide="package" class="lucide-icon icon-bounce group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
                         </a>
-                        <a href="cart.html" class="text-secondary relative text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
+                        <a href="cart.html" aria-label="Cart" class="text-secondary relative text-lg flex flex-col items-center group transition-colors" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color=''">
                             <i data-lucide="shopping-cart" class="lucide-icon icon-bounce group-hover:scale-110 transition-transform" style="width:24px;height:24px;"></i>
                             <span class="cart-badge-v2 absolute -top-2 -right-2 text-dynamic text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center" style="background: var(--primary); display:${cartCount > 0 ? 'flex' : 'none'}">${cartCount}</span>
                         </a>
@@ -262,12 +262,14 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     <!-- Mobile Search Bar (Row 2) -->
                     <div class="w-full md:hidden flex border border-gray-300 rounded-md overflow-hidden mt-1">
                         <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products...">
-                        <button class="text-dynamic px-4 py-2 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                        <button aria-label="Search" class="text-dynamic px-4 py-2 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                     </div>
 
                 </div>
             </div>
         </header>
+
+        <main>
 
         <!-- Hero Slider (No Fixed Height) -->
         <section class="relative w-full overflow-hidden group select-none bg-gray-50 flex items-center justify-center">
@@ -340,40 +342,42 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                 <h2 class="text-xl md:text-4xl font-bold font-josefin text-center mb-6 md:mb-12 text-secondary">What ${storeName} Offers!</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-8">
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
-                        <img src="https://cdn-icons-png.flaticon.com/512/411/411776.png" alt="Delivery" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
+                        <img src="https://cdn-icons-png.flaticon.com/512/411/411776.png" alt="Delivery" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
                         <h3 class="text-[12px] md:text-xl font-josefin font-bold text-secondary mb-1 md:mb-4">24/7 Support</h3>
-                        <p class="text-gray-400 text-[9px] md:text-sm leading-relaxed font-lato">We are here for you 24/7. Quality support guaranteed.</p>
+                        <p class="text-gray-500 text-[9px] md:text-sm leading-relaxed font-lato">We are here for you 24/7. Quality support guaranteed.</p>
                     </div>
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
-                        <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Cashback" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Cashback" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
                         <h3 class="text-[12px] md:text-xl font-josefin font-bold text-secondary mb-1 md:mb-4">Cashback</h3>
-                        <p class="text-gray-400 text-[9px] md:text-sm leading-relaxed font-lato">Get exclusive cashbacks on your purchases.</p>
+                        <p class="text-gray-500 text-[9px] md:text-sm leading-relaxed font-lato">Get exclusive cashbacks on your purchases.</p>
                     </div>
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
-                        <img src="https://cdn-icons-png.flaticon.com/512/1067/1067566.png" alt="Quality" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
+                        <img src="https://cdn-icons-png.flaticon.com/512/1067/1067566.png" alt="Quality" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
                         <h3 class="text-[12px] md:text-xl font-josefin font-bold text-secondary mb-1 md:mb-4">Premium Quality</h3>
-                        <p class="text-gray-400 text-[9px] md:text-sm leading-relaxed font-lato">We ensure the best quality products for our customers.</p>
+                        <p class="text-gray-500 text-[9px] md:text-sm leading-relaxed font-lato">We ensure the best quality products for our customers.</p>
                     </div>
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
-                        <img src="https://cdn-icons-png.flaticon.com/512/3358/3358864.png" alt="Hours" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3358/3358864.png" alt="Hours" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
                         <h3 class="text-[12px] md:text-xl font-josefin font-bold text-secondary mb-1 md:mb-4">Fast Delivery</h3>
-                        <p class="text-gray-400 text-[9px] md:text-sm leading-relaxed font-lato">Super fast delivery inside and outside Dhaka.</p>
+                        <p class="text-gray-500 text-[9px] md:text-sm leading-relaxed font-lato">Super fast delivery inside and outside Dhaka.</p>
                     </div>
                 </div>
             </div>
         </section>
+
+        </main>
 
         <!-- Minimal Footer for V2 -->
         <footer class="bg-gray-100 py-10">
             <div class="container mx-auto px-4 lg:px-24 text-center">
                 <h3 class="text-2xl font-josefin font-bold text-secondary mb-4">${storeName}</h3>
                 <p class="text-gray-500 text-sm mb-4">Your trusted shopping destination.</p>
-                <div class="flex justify-center gap-4 text-gray-400">
+                <div class="flex justify-center gap-4 text-gray-500">
                     <a href="#" class="hover:text-primary"><i class="fa-brands fa-facebook"></i></a>
                     <a href="#" class="hover:text-primary"><i class="fa-brands fa-instagram"></i></a>
                     <a href="#" class="hover:text-primary"><i class="fa-brands fa-youtube"></i></a>
                 </div>
-                <div class="mt-8 text-xs text-gray-400 mb-6 md:mb-0">© ${new Date().getFullYear()} ${storeName}. All rights reserved.</div>
+                <div class="mt-8 text-xs text-gray-500 mb-6 md:mb-0">© ${new Date().getFullYear()} ${storeName}. All rights reserved.</div>
             </div>
         </footer>
 
