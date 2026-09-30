@@ -3,6 +3,9 @@ module.exports = {
     "./*.html",
     "./assets/js/**/*.js"
   ],
+  corePlugins: {
+    preflight: false,
+  },
   theme: {
     extend: {
       colors: {
