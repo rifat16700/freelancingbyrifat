@@ -107,7 +107,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         var fullUrl = linkData ? linkData.url : rawLink;
         if (fullUrl && !fullUrl.startsWith('http') && !fullUrl.startsWith('/') && !fullUrl.startsWith('.')) fullUrl = 'https://' + fullUrl;
         
-        var inner = '<div class="w-full relative flex items-center justify-center bg-[#f5f5f5] overflow-hidden"><img src="' + b.image_url + '" alt="' + (b.title||'') + '" class="w-full h-auto max-h-[55vh] object-contain pointer-events-none"></div>';
+        var inner = '<div class="w-full relative flex items-center justify-center bg-[#f5f5f5] overflow-hidden" style="width:100%;"><img src="' + b.image_url + '" alt="' + (b.title||'') + '" style="width: 100% !important; height: auto !important; max-height: 55vh !important; object-fit: contain !important; object-position: center !important; pointer-events: none;" class="w-full h-auto max-h-[55vh] object-contain pointer-events-none"></div>';
         if (fullUrl) {
             inner += '<a href="' + fullUrl + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;"></a>';
         }
