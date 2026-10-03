@@ -6,10 +6,10 @@
     <title>Freelancing By Rifat — Home</title>
     <meta name="description" content="Best quality products at the best prices. Shop now at Freelancing By Rifat.">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/theme.css?v=1791057702929">`n    <link rel="stylesheet" href="assets/css/tailwind.css">
-    <script src="assets/js/layout-config.js?v=1791057702929"></script>
-    <script src="assets/js/template-v2.js?v=1791057702929"></script>
-    <script src="assets/js/config.js?v=1791057702929"></script>
+    <link rel="stylesheet" href="assets/css/theme.css?v=1791058031676">`n    <link rel="stylesheet" href="assets/css/tailwind.css">
+    <script src="assets/js/layout-config.js?v=1791058031676"></script>
+    <script src="assets/js/template-v2.js?v=1791058031676"></script>
+    <script src="assets/js/config.js?v=1791058031676"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
@@ -346,6 +346,14 @@ function applySettings(s) {
     
     var name = s.store_name || CONFIG.STORE_NAME;
     document.title = name + ' — Home';
+    
+    try {
+        var colors = s.theme_colors ? (typeof s.theme_colors === 'string' ? JSON.parse(s.theme_colors) : s.theme_colors) : null;
+        if (colors && colors.primary) {
+            document.documentElement.style.setProperty('--primary', colors.primary);
+        }
+    } catch(e){}
+
     document.getElementById('navBrand').textContent    = name;
     document.getElementById('footerBrand').textContent = name;
     document.getElementById('storeName').textContent   = name;
