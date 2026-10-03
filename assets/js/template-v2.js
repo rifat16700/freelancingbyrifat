@@ -58,7 +58,6 @@ function initV2Theme(banners, cats, homeSects) {
     if (main) main.style.display = 'none';
     
     var footer = document.getElementById('mainFooter');
-    if (footer) footer.style.display = 'none';
     
     var mobileMenu = document.getElementById('mobileMenu');
     if (mobileMenu) mobileMenu.style.display = 'none';
@@ -76,6 +75,13 @@ function initV2Theme(banners, cats, homeSects) {
     }
     
     renderFullV2Page(v2Wrap, banners, cats, homeSects);
+
+    // Show the real site footer at the bottom of the V2 page
+    if (footer) {
+        footer.style.display = '';
+        footer.style.marginTop = '0';
+        v2Wrap.appendChild(footer);
+    }
 }
 
 function renderFullV2Page(container, paramBanners, cats, homeSects) {
@@ -376,20 +382,6 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         </section>
 
         </main>
-
-        <!-- Minimal Footer for V2 -->
-        <footer class="bg-gray-100 py-10">
-            <div class="container mx-auto px-4 lg:px-24 text-center">
-                <h3 class="text-2xl font-josefin font-bold text-secondary mb-4">${storeName}</h3>
-                <p class="text-gray-500 text-sm mb-4">Your trusted shopping destination.</p>
-                <div class="flex justify-center gap-4 text-gray-500">
-                    <a href="#" class="hover:text-primary"><i class="fa-brands fa-facebook"></i></a>
-                    <a href="#" class="hover:text-primary"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="#" class="hover:text-primary"><i class="fa-brands fa-youtube"></i></a>
-                </div>
-                <div class="mt-8 text-xs text-gray-500 mb-6 md:mb-0">© ${new Date().getFullYear()} ${storeName}. All rights reserved.</div>
-            </div>
-        </footer>
 
     `;
 
