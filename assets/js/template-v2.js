@@ -94,11 +94,21 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
     try { favs = JSON.parse(localStorage.getItem('wishlist')) || []; } catch(e){}
 
     // --- Banners ---
-    var sliderBanners = (paramBanners && paramBanners.length) ? paramBanners : [{
-        image_url: 'https://images.unsplash.com/photo-1618220179428-22790b46a0eb?auto=format&fit=crop&w=1920&q=80',
-        title: 'Demo Banner',
-        link_url: ''
-    }];
+    var useHardcodedTestBanners = true; // Set to false to use DB banners
+    var sliderBanners = [];
+
+    if (useHardcodedTestBanners) {
+        sliderBanners = [
+            { image_url: 'https://img.freelancingbyrifat.top/IMLda2WunoL4s.png', title: 'Test 1', link_url: '' },
+            { image_url: 'https://img.freelancingbyrifat.top/IMJ7Q9Qgc737Q.png', title: 'Test 2', link_url: '' }
+        ];
+    } else {
+        sliderBanners = (paramBanners && paramBanners.length) ? paramBanners : [{
+            image_url: 'https://images.unsplash.com/photo-1618220179428-22790b46a0eb?auto=format&fit=crop&w=1920&q=80',
+            title: 'Demo Banner',
+            link_url: ''
+        }];
+    }
 
     var slidesHtml = sliderBanners.map(function(b) {
         var rawLink = (b.link_url || '').trim();
@@ -107,7 +117,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         var fullUrl = linkData ? linkData.url : rawLink;
         if (fullUrl && !fullUrl.startsWith('http') && !fullUrl.startsWith('/') && !fullUrl.startsWith('.')) fullUrl = 'https://' + fullUrl;
         
-        var inner = '<div class="w-full relative flex items-center justify-center bg-[#f5f5f5] overflow-hidden" style="width:100%;"><img src="' + b.image_url + '" alt="' + (b.title||'') + '" style="width: 100% !important; height: auto !important; max-height: 55vh !important; object-fit: contain !important; object-position: center !important; pointer-events: none;" class="w-full h-auto max-h-[55vh] object-contain pointer-events-none"></div>';
+        var inner = '<div class="w-full relative bg-[#f5f5f5]" style="width:100%;"><img src="' + b.image_url + '" alt="' + (b.title||'') + '" style="width: 100% !important; height: auto !important; display: block !important; pointer-events: none;" class="w-full h-auto pointer-events-none"></div>';
         if (fullUrl) {
             inner += '<a href="' + fullUrl + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;"></a>';
         }
