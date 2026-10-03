@@ -1,1 +1,1 @@
-window.THEME_LAYOUT = { hero: v2 };
+window.THEME_LAYOUT = { hero: 'v2' };
