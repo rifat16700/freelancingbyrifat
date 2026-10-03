@@ -214,7 +214,10 @@
                     </div>
                 </div>
 
-                <button type="button" class="btn btn-primary" style="width:100%;" onclick="saveThemeToGithub()">🚀 Push Theme & Rebuild Site</button>
+                <div style="display:flex; gap:12px; margin-top:20px;">
+                    <button type="button" class="btn btn-outline" style="width:50%; border-color:#FF4D4D; color:#FF4D4D;" onclick="resetThemeToDefault()">Reset to Default</button>
+                    <button type="button" class="btn btn-primary" style="width:50%;" onclick="saveThemeToGithub()">🚀 Push Theme & Rebuild Site</button>
+                </div>
             </div>
 
             </div>
@@ -442,6 +445,37 @@
             window.ontouchend = function() { isDragging = false; };
         };
         img.src = uploadedImageSrc;
+    }
+
+    // 4.5 Reset to Default
+    function resetThemeToDefault() {
+        if(!confirm("Are you sure you want to reset all colors to the default maroon theme?")) return;
+        
+        var defaults = {
+            'themePrimary': '#8b1a1a',
+            'themePrimaryLight': '#b03535',
+            'themePrimaryDark': '#680000',
+            'themeBg': '#ffffff',
+            'themeBgLight': '#fbf8f7',
+            'themeBgCard': '#ffffff',
+            'themeBgSubtle': '#f7f2f2',
+            'themeFooterBg': '#1a0808',
+            'themeBorder': '#e4d8d8',
+            'themeBorderLight': '#f0eaea',
+            'themeTextDark': '#1a0808',
+            'themeTextBody': '#3d2a2a',
+            'themeTextMuted': '#9e7070'
+        };
+        
+        for(var id in defaults) {
+            var el = document.getElementById(id);
+            var elHex = document.getElementById(id + 'Hex');
+            if(el) el.value = defaults[id];
+            if(elHex) elHex.value = defaults[id].toUpperCase();
+        }
+        updateThemePreview();
+        if(typeof showToast === 'function') showToast("✅ Reset to defaults! Click Push Theme to save.", "success");
+        else alert("✅ Reset to defaults! Click Push Theme to save.");
     }
 
     // 5. Save to Github
