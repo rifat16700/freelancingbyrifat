@@ -390,15 +390,32 @@
                 </button>
             </div>
 
-            <!-- ImgBB API Key (Admin) -->
-            <div class="card" style="margin-bottom:20px;">
-                <div class="settings-section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ImgBB Image Upload (Admin)</div>
-                <div class="form-group">
-                    <label class="form-label">Admin ImgBB API Key</label>
-                    <input class="form-input" id="imgbbApiKey" type="password" placeholder="আপনার imgbb.com API Key দাও">
-                    <div class="form-hint">এই Key শুধু এই browser এ সেভ থাকে (localStorage)। Admin নিজে product/banner ছবি upload করার জন্য।</div>
+            <!-- Image Upload Provider (Admin) -->
+            <div class="card" style="margin-bottom:20px;border:1px solid rgba(255,149,0,0.2);">
+                <div class="settings-section-title" style="color:#FF9500;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Admin Image Upload Provider</div>
+                <div style="font-size:12px;background:rgba(255,149,0,0.06);border:1px solid rgba(255,149,0,0.12);border-radius:10px;padding:10px 12px;margin-bottom:12px;color:#FF9500;">
+                    💡 <strong>ImgBB</strong> or <strong>Cloudflare R2 Bucket</strong> for Admin photo uploads (Products, Banners, Categories). User reviews will always use ImgBB.
                 </div>
-                <a href="https://api.imgbb.com/" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:4px;">🔗 imgbb.com/api থেকে Key নাও</a>
+                <div class="form-group">
+                    <label class="form-label">Provider</label>
+                    <select class="form-input" id="adminImageProvider" onchange="toggleImageProvider()">
+                        <option value="imgbb">ImgBB (Default)</option>
+                        <option value="r2">Cloudflare R2 Bucket</option>
+                    </select>
+                </div>
+
+                <div id="imgbbSettingsBlock">
+                    <div class="form-group">
+                        <label class="form-label">Admin ImgBB API Key</label>
+                        <input class="form-input" id="imgbbApiKey" type="password" placeholder="আপনার imgbb.com API Key দাও">
+                        <div class="form-hint">Admin নিজে product/banner ছবি upload করার জন্য (এই browser এ সেভ থাকে)।</div>
+                    </div>
+                    <a href="https://api.imgbb.com/" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:4px;">🔗 imgbb.com/api থেকে Key নাও</a>
+                </div>
+
+                <div id="r2SettingsBlock" style="display:none;margin-top:10px;font-size:12px;color:#666;">
+                    ✅ R2 Upload সিলেক্ট করা হয়েছে! ছবিগুলো <code>/api/r2-upload</code> এন্ডপয়েন্ট দিয়ে Cloudflare R2 বাকেটে সেভ হবে। <br>(Cloudflare Pages-এর Settings থেকে R2 Environment Variables ঠিকমতো সেট করা থাকতে হবে)।
+                </div>
             </div>
 
             <!-- Review Image Upload API Key -->
@@ -444,12 +461,33 @@
     var settingsData = {};
     var mainChatIds = [];
 
-    // ImgBB Key — localStorage থেকে পড়ো
+    // Image Provider — localStorage থেকে পড়ো
     function loadImgbbKey() {
+        var provider = localStorage.getItem('admin_image_provider') || 'imgbb';
+        var sel = document.getElementById('adminImageProvider');
+        if (sel) sel.value = provider;
+        
         var k = localStorage.getItem('imgbb_api_key') || (typeof CONFIG !== 'undefined' ? CONFIG.IMGBB_API_KEY : '') || '';
         document.getElementById('imgbbApiKey').value = k;
+        
+        toggleImageProvider();
     }
+    
+    function toggleImageProvider() {
+        var provider = document.getElementById('adminImageProvider').value;
+        if (provider === 'r2') {
+            document.getElementById('imgbbSettingsBlock').style.display = 'none';
+            document.getElementById('r2SettingsBlock').style.display = 'block';
+        } else {
+            document.getElementById('imgbbSettingsBlock').style.display = 'block';
+            document.getElementById('r2SettingsBlock').style.display = 'none';
+        }
+    }
+    
     function saveImgbbKey() {
+        var provider = document.getElementById('adminImageProvider').value;
+        localStorage.setItem('admin_image_provider', provider);
+        
         var k = document.getElementById('imgbbApiKey').value.trim();
         if (k) localStorage.setItem('imgbb_api_key', k);
         else localStorage.removeItem('imgbb_api_key');

@@ -12,12 +12,48 @@
  */
 function imgbbUpload(file, apiKey) {
     return new Promise(function(resolve, reject) {
-        if (!apiKey) {
-            reject(new Error('ImgBB API Key সেট করা নেই। Settings → ImgBB API Key দাও।'));
-            return;
-        }
         if (!file) {
             reject(new Error('কোনো ফাইল সিলেক্ট করা হয়নি।'));
+            return;
+        }
+
+        var provider = localStorage.getItem('admin_image_provider') || 'imgbb';
+
+        if (provider === 'r2') {
+            var r2FormData = new FormData();
+            r2FormData.append('file', file);
+
+            var apiBase = (typeof CONFIG !== 'undefined' && CONFIG.HF_API_BASE) ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '';
+            var r2Url = apiBase + '/api/r2-upload';
+
+            fetch(r2Url, {
+                method: 'POST',
+                body: r2FormData
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    resolve({
+                        url: data.url,
+                        display_url: data.display_url,
+                        thumb: data.thumb,
+                        delete_url: '',
+                        viewer_url: data.url,
+                        via: 'r2'
+                    });
+                } else {
+                    reject(new Error(data.error || 'R2 upload failed'));
+                }
+            })
+            .catch(function(err) {
+                reject(new Error('R2 Network error: ' + err.message));
+            });
+            return; // R2 flow done
+        }
+
+        // --- Original ImgBB Flow ---
+        if (!apiKey) {
+            reject(new Error('ImgBB API Key সেট করা নেই। Settings → Provider check করো।'));
             return;
         }
 
@@ -43,7 +79,8 @@ function imgbbUpload(file, apiKey) {
                         display_url: data.data.display_url,
                         thumb:      data.data.thumb ? data.data.thumb.url : data.data.url,
                         delete_url: data.data.delete_url,
-                        viewer_url: data.data.url_viewer  // imgbb viewer page
+                        viewer_url: data.data.url_viewer,  // imgbb viewer page
+                        via: 'imgbb'
                     });
                 } else {
                     reject(new Error(data.error ? data.error.message : 'ImgBB upload failed'));
@@ -85,8 +122,10 @@ function createImgbbBtn(onSuccess, opts) {
     btn.innerHTML = opts.btnText || '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload';
 
     btn.addEventListener('click', function() {
+        var provider = localStorage.getItem('admin_image_provider') || 'imgbb';
         var apiKey = getImgbbKey();
-        if (!apiKey) {
+        
+        if (provider === 'imgbb' && !apiKey) {
             // Key নেই — জানাও
             if (typeof showToast === 'function') {
                 showToast('⚠️ ImgBB API Key সেট করা নেই! Settings থেকে দাও।', 'warning');
