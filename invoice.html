@@ -126,14 +126,19 @@
             html += '<h3>Receiver (To):</h3>';
             html += '<p><strong>' + (o.customer_name || 'N/A') + '</strong></p>';
             html += '<p>Phone: ' + (o.customer_phone || 'N/A') + '</p>';
-            if (o.customer_address) html += '<p>' + o.customer_address.replace(/\\n/g, '<br>') + '</p>';
+            var customerAddr = o.address || o.customer_address || '';
+            if (customerAddr) html += '<p>' + customerAddr.replace(/\\n/g, '<br>') + '</p>';
             html += '</div>';
             html += '<div style="clear:both;"></div>'; // clear floats
             html += '</div>'; // end address-container
 
-            var codAmount = parseFloat(o.grand_total).toFixed(2);
-            if (o.payment_method === 'COD' && o.payment_status !== 'Paid') {
-                html += '<div class="cod-amount">Amount to Collect (COD): ৳' + codAmount + '</div>';
+            var grandTotal = parseFloat(o.grand_total || 0);
+            var advanceAmt = parseFloat(o.advance_payable || 0);
+            var codAmount = (grandTotal - advanceAmt).toFixed(2);
+            
+            if (o.payment_method === 'COD' && (o.payment_status || '').toLowerCase() !== 'paid') {
+                var advText = advanceAmt > 0 ? ' <small style="font-weight:normal;color:#555;">(After ৳' + advanceAmt.toFixed(2) + ' Advance)</small>' : '';
+                html += '<div class="cod-amount">Amount to Collect (COD): ৳' + codAmount + advText + '</div>';
             } else {
                 html += '<div class="cod-amount" style="border-color:#ccc; color:#555;">Payment Status: ' + (o.payment_status || 'Paid').toUpperCase() + ' (' + (o.payment_method || 'Online') + ')</div>';
             }
@@ -157,6 +162,10 @@
         html += '<table style="width:100%;">';
         html += '<tr><td class="meta-label">Customer:</td><td>' + (o.customer_name || 'N/A') + '</td></tr>';
         html += '<tr><td class="meta-label">Phone:</td><td>' + (o.customer_phone || 'N/A') + '</td></tr>';
+        var customerAddr = o.address || o.customer_address || '';
+        if (customerAddr) {
+            html += '<tr><td class="meta-label">Address:</td><td>' + customerAddr.replace(/\\n/g, ', ') + '</td></tr>';
+        }
         html += '<tr><td class="meta-label">Payment:</td><td>' + (o.payment_method || 'COD') + ' (' + (o.payment_status || 'Unpaid') + ')</td></tr>';
         html += '</table>';
         html += '</td>';
@@ -194,6 +203,7 @@
         var dc = parseFloat(o.delivery_charge || 0);
         var grand = parseFloat(o.grand_total || 0);
         var discount = parseFloat(o.discount_amount || 0);
+        var advanceAmt = parseFloat(o.advance_payable || 0);
 
         html += '<div class="totals-container">';
         html += '<table class="totals-table">';
@@ -204,7 +214,12 @@
         if (discount > 0) {
             html += '<tr><td style="color:green;">Discount:</td><td style="text-align:right;color:green;">- ৳' + discount.toFixed(2) + '</td></tr>';
         }
-        html += '<tr><td>Total Amount:</td><td style="text-align:right;">৳' + grand.toFixed(2) + '</td></tr>';
+        html += '<tr style="border-top: 2px solid #000; font-weight: bold;"><td>Total Amount:</td><td style="text-align:right;">৳' + grand.toFixed(2) + '</td></tr>';
+        
+        if (advanceAmt > 0) {
+            html += '<tr><td>Advance Paid:</td><td style="text-align:right; color:green;">- ৳' + advanceAmt.toFixed(2) + '</td></tr>';
+            html += '<tr style="font-size:16px;"><td>Due Amount (COD):</td><td style="text-align:right; font-weight:bold; font-size:18px;">৳' + (grand - advanceAmt).toFixed(2) + '</td></tr>';
+        }
         html += '</table>';
         html += '</div>';
 
