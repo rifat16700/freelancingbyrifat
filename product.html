@@ -383,6 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
         settings = results[0].data || {};
+        try { if (typeof settings.messaging_apps === 'string') settings.messaging_apps = JSON.parse(settings.messaging_apps); } catch(e){}
         product  = results[1].data;
         var ratings = results[2].data || [];
         allProdsForRelated = results[3].data || [];
