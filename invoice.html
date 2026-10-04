@@ -4,53 +4,65 @@
     <meta charset="UTF-8">
     <title>Invoice</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; color: #111; background: #fff; }
-        .invoice-box { max-width: 800px; margin: auto; padding: 30px; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
-        .logo-wrap img { max-height: 60px; max-width: 150px; }
-        .company-details { text-align: right; font-size: 14px; color: #555; }
-        .company-details strong { color: #111; font-size: 18px; display: block; margin-bottom: 4px; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 0; color: #000; background: #fff; }
+        .invoice-box { max-width: 800px; margin: 0 auto; padding: 30px; font-size: 14px; line-height: 20px; }
         
-        .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; gap: 20px; }
-        .info-block { flex: 1; background: #f9f9fa; padding: 15px; border-radius: 8px; font-size: 14px; line-height: 1.5; color: #333; }
-        .info-block h3 { margin-top: 0; margin-bottom: 10px; font-size: 12px; text-transform: uppercase; color: #777; letter-spacing: 1px; }
-        .info-block strong { color: #111; }
+        .no-print { text-align: center; padding: 15px; background: #f0f0f0; margin-bottom: 20px; border-bottom: 1px solid #ddd; }
+        .no-print button { padding: 10px 20px; font-size: 14px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-print { background: #000; color: #fff; margin-right: 10px; }
+        .btn-close { background: #ddd; color: #000; }
+
+        /* Store Header - Center Aligned */
+        .store-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+        .store-header img { max-height: 80px; max-width: 200px; margin-bottom: 10px; }
+        .store-header h1 { margin: 0 0 5px 0; font-size: 26px; font-weight: bold; text-transform: uppercase; }
+        .store-header p { margin: 2px 0; color: #333; font-size: 14px; }
+
+        /* Delivery Slip Block */
+        .delivery-slip { border: 2px dashed #000; padding: 20px; margin-bottom: 30px; border-radius: 8px; }
+        .delivery-slip-title { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; text-decoration: underline; }
         
-        .order-meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px; }
-        .order-meta div { text-align: right; }
-        
-        table { width: 100%; line-height: inherit; text-align: left; border-collapse: collapse; margin-bottom: 30px; font-size: 14px; }
-        table th { background: #111; color: #fff; padding: 12px; font-weight: 600; white-space: nowrap; }
-        table td { padding: 12px; border-bottom: 1px solid #eee; }
-        table th:last-child, table td:last-child { text-align: right; }
-        
-        .totals { width: 300px; margin-left: auto; font-size: 14px; }
-        .totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
-        .totals-row.grand-total { font-weight: 700; font-size: 18px; border-bottom: none; border-top: 2px solid #111; padding-top: 12px; margin-top: 4px; }
-        
-        .footer { text-align: center; margin-top: 50px; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
-        
-        /* Delivery specific */
-        .delivery-slip { border: 2px dashed #ccc; padding: 20px; margin-bottom: 40px; page-break-after: always; display: none; }
-        .slip-header { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 20px; letter-spacing: 2px; }
-        .slip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .slip-box { border: 1px solid #000; padding: 15px; border-radius: 8px; }
-        .slip-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .slip-footer { margin-top: 20px; text-align: center; font-size: 16px; font-weight: bold; border: 1px solid #000; padding: 10px; border-radius: 8px; }
+        .address-container { width: 100%; margin-bottom: 20px; }
+        .address-box { width: 48%; display: inline-block; vertical-align: top; }
+        .address-box h3 { margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; color: #555; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .address-box p { margin: 4px 0; font-size: 15px; }
+        .address-box strong { font-size: 16px; }
+
+        .cod-amount { text-align: center; font-size: 18px; font-weight: bold; border: 2px solid #000; padding: 10px; border-radius: 6px; margin-top: 15px; background: #f9f9f9; }
+
+        /* Order Meta Info */
+        .order-meta-table { width: 100%; margin-bottom: 25px; }
+        .order-meta-table td { padding: 5px 0; }
+        .meta-label { font-weight: bold; width: 120px; }
+
+        /* Items Table */
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .items-table th, .items-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .items-table th { background: #f5f5f5; font-weight: bold; text-transform: uppercase; font-size: 13px; }
+        .items-table td.money { text-align: right; }
+        .items-table th.money { text-align: right; }
+
+        /* Totals */
+        .totals-container { width: 100%; text-align: right; }
+        .totals-table { width: 350px; display: inline-table; border-collapse: collapse; }
+        .totals-table td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        .totals-table tr:last-child td { border-bottom: none; border-top: 2px solid #000; font-weight: bold; font-size: 18px; padding-top: 12px; }
+
+        .footer-note { text-align: center; margin-top: 40px; font-size: 13px; color: #666; border-top: 1px solid #ddd; padding-top: 15px; }
 
         @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
-            .invoice-box { padding: 0; box-shadow: none; max-width: 100%; }
+            body, .invoice-box { background: #fff; margin: 0; padding: 10px; width: 100%; max-width: 100%; }
+            .delivery-slip { page-break-inside: avoid; margin-bottom: 40px; }
+            .store-header { padding-top: 0; }
         }
     </style>
 </head>
 <body>
 
-<div class="no-print" style="text-align:center; padding: 20px; background: #f0f0f0; margin-bottom: 20px;">
-    <button onclick="window.print()" style="padding: 10px 20px; background: #111; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">Print / Save as PDF</button>
-    <button onclick="window.close()" style="padding: 10px 20px; background: #ccc; color: #111; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-left: 10px;">Close</button>
+<div class="no-print">
+    <button class="btn-print" onclick="window.print()">Print Invoice</button>
+    <button class="btn-close" onclick="window.close()">Close</button>
 </div>
 
 <div class="invoice-box" id="invoiceContainer">
@@ -63,7 +75,7 @@
         var orderDataStr = localStorage.getItem('print_order');
         var printType = localStorage.getItem('print_type'); // 'bill' or 'full'
         if (!orderDataStr) {
-            document.getElementById('invoiceContainer').innerHTML = '<p>No order data found.</p>';
+            document.getElementById('invoiceContainer').innerHTML = '<p style="text-align:center;">No order data found.</p>';
             return;
         }
         
@@ -76,125 +88,135 @@
             }
         } catch(e) {}
 
-        var storeName = s.store_name || CONFIG.STORE_NAME || 'Our Store';
-        var storeAddress = s.store_address || 'Dhaka, Bangladesh';
+        var storeName = s.store_name || CONFIG.STORE_NAME || 'Store Name';
+        var storeAddress = s.store_address || '';
         var storePhone = s.contact_phone || s.whatsapp_number || '';
         var storeEmail = s.contact_email || '';
         var logoUrl = s.logo_url || '';
 
         var html = '';
 
-        // Delivery Slip (Only for 'full' type)
-        if (printType === 'full') {
-            html += '<div class="delivery-slip" style="display:block;">';
-            html += '<div class="slip-header">DELIVERY SLIP</div>';
-            html += '<div class="slip-grid">';
-            html += '<div class="slip-box">';
-            html += '<h3>FROM (SENDER)</h3>';
-            html += '<strong>' + storeName + '</strong><br>';
-            if (storeAddress) html += storeAddress.replace(/\\n/g, '<br>') + '<br>';
-            if (storePhone) html += 'Phone: ' + storePhone + '<br>';
-            html += '</div>';
-            html += '<div class="slip-box">';
-            html += '<h3>TO (RECEIVER)</h3>';
-            html += '<strong>' + (o.customer_name || 'N/A') + '</strong><br>';
-            if (o.customer_address) html += o.customer_address.replace(/\\n/g, '<br>') + '<br>';
-            html += 'Phone: ' + (o.customer_phone || 'N/A') + '<br>';
-            html += '</div>';
-            html += '</div>';
-            html += '<div class="slip-footer">Amount to Collect (COD): ৳' + parseFloat(o.grand_total).toFixed(2) + '</div>';
-            html += '</div>';
-        }
-
-        // Invoice Header
-        html += '<div class="header">';
-        html += '<div class="logo-wrap">';
+        // --- STORE HEADER ---
+        html += '<div class="store-header">';
         if (logoUrl) {
-            html += '<img src="' + logoUrl + '" alt="Logo">';
+            html += '<img src="' + logoUrl + '" alt="Store Logo">';
         } else {
-            html += '<h2>' + storeName + '</h2>';
+            html += '<h1>' + storeName + '</h1>';
         }
-        html += '</div>';
-        html += '<div class="company-details">';
-        html += '<strong>' + storeName + '</strong>';
-        if (storeAddress) html += storeAddress.replace(/\\n/g, '<br>') + '<br>';
-        if (storePhone) html += storePhone + '<br>';
-        if (storeEmail) html += storeEmail + '<br>';
-        html += '</div>';
+        if (storeAddress) html += '<p>' + storeAddress.replace(/\\n/g, ', ') + '</p>';
+        if (storePhone) html += '<p>Phone: ' + storePhone + '</p>';
+        if (storeEmail) html += '<p>Email: ' + storeEmail + '</p>';
         html += '</div>';
 
-        html += '<div class="order-meta">';
-        html += '<div><h1 style="margin:0;font-size:28px;color:#111;">INVOICE</h1></div>';
-        html += '<div>';
-        html += '<strong>Invoice No:</strong> #' + o.id + '<br>';
-        html += '<strong>Date:</strong> ' + new Date(o.created_at).toLocaleDateString() + '<br>';
-        html += '<strong>Payment:</strong> ' + (o.payment_method || 'Cash on Delivery') + '<br>';
-        html += '</div>';
-        html += '</div>';
+        // --- DELIVERY SLIP (Only for 'full' type) ---
+        if (printType === 'full') {
+            html += '<div class="delivery-slip">';
+            html += '<div class="delivery-slip-title">Delivery Slip</div>';
+            
+            html += '<div class="address-container">';
+            // SENDER INFO
+            html += '<div class="address-box">';
+            html += '<h3>Sender (From):</h3>';
+            html += '<p><strong>' + storeName + '</strong></p>';
+            if (storePhone) html += '<p>Phone: ' + storePhone + '</p>';
+            html += '</div>';
 
-        html += '<div class="info-section">';
-        html += '<div class="info-block">';
-        html += '<h3>Billed To / Receiver Details</h3>';
-        html += '<strong>' + (o.customer_name || 'N/A') + '</strong><br>';
-        html += (o.customer_address || '').replace(/\\n/g, '<br>') + '<br>';
-        html += 'Phone: ' + (o.customer_phone || 'N/A');
-        html += '</div>';
-        html += '<div class="info-block">';
-        html += '<h3>Order Details</h3>';
-        html += 'Order Type: <strong>' + (o.order_type === 'pickup' ? 'Store Pickup' : 'Home Delivery') + '</strong><br>';
-        html += 'Status: <strong>' + (o.status || 'Pending').toUpperCase() + '</strong><br>';
-        html += 'Payment Status: <strong>' + (o.payment_status || 'Unpaid').toUpperCase() + '</strong>';
-        html += '</div>';
-        html += '</div>';
+            // RECEIVER INFO
+            html += '<div class="address-box" style="float: right;">';
+            html += '<h3>Receiver (To):</h3>';
+            html += '<p><strong>' + (o.customer_name || 'N/A') + '</strong></p>';
+            html += '<p>Phone: ' + (o.customer_phone || 'N/A') + '</p>';
+            if (o.customer_address) html += '<p>' + o.customer_address.replace(/\\n/g, '<br>') + '</p>';
+            html += '</div>';
+            html += '<div style="clear:both;"></div>'; // clear floats
+            html += '</div>'; // end address-container
 
-        html += '<table>';
-        html += '<thead><tr><th>Item Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>';
+            var codAmount = parseFloat(o.grand_total).toFixed(2);
+            if (o.payment_method === 'COD' && o.payment_status !== 'Paid') {
+                html += '<div class="cod-amount">Amount to Collect (COD): ৳' + codAmount + '</div>';
+            } else {
+                html += '<div class="cod-amount" style="border-color:#ccc; color:#555;">Payment Status: ' + (o.payment_status || 'Paid').toUpperCase() + ' (' + (o.payment_method || 'Online') + ')</div>';
+            }
+            html += '</div>'; // end delivery-slip
+        }
+
+        // --- INVOICE BILL ---
+        html += '<h2 style="text-align:center; margin-bottom: 20px; text-transform:uppercase; letter-spacing: 1px;">Customer Invoice</h2>';
+
+        // Order Meta Data
+        html += '<table class="order-meta-table">';
+        html += '<tr>';
+        html += '<td style="vertical-align:top; width: 50%;">';
+        html += '<table style="width:100%;">';
+        html += '<tr><td class="meta-label">Invoice No:</td><td>#' + o.id + '</td></tr>';
+        html += '<tr><td class="meta-label">Date:</td><td>' + new Date(o.created_at).toLocaleDateString() + '</td></tr>';
+        html += '<tr><td class="meta-label">Order Type:</td><td>' + (o.order_type === 'pickup' ? 'Store Pickup' : 'Home Delivery') + '</td></tr>';
+        html += '</table>';
+        html += '</td>';
+        html += '<td style="vertical-align:top; width: 50%;">';
+        html += '<table style="width:100%;">';
+        html += '<tr><td class="meta-label">Customer:</td><td>' + (o.customer_name || 'N/A') + '</td></tr>';
+        html += '<tr><td class="meta-label">Phone:</td><td>' + (o.customer_phone || 'N/A') + '</td></tr>';
+        html += '<tr><td class="meta-label">Payment:</td><td>' + (o.payment_method || 'COD') + ' (' + (o.payment_status || 'Unpaid') + ')</td></tr>';
+        html += '</table>';
+        html += '</td>';
+        html += '</tr>';
+        html += '</table>';
+
+        // Items Table
+        html += '<table class="items-table">';
+        html += '<thead><tr><th>Item Description</th><th style="width:60px;text-align:center;">Qty</th><th class="money" style="width:100px;">Unit Price</th><th class="money" style="width:100px;">Total</th></tr></thead>';
         html += '<tbody>';
         var items = o.items || [];
-        items.forEach(function(item) {
-            var varText = [];
-            if (item.color) varText.push('Color: ' + item.color);
-            if (item.size) varText.push('Size: ' + item.size);
-            var varStr = varText.length ? ' <span style="color:#777;font-size:12px;">(' + varText.join(', ') + ')</span>' : '';
-            var price = parseFloat(item.price || 0);
-            var qty = parseInt(item.quantity || 1);
-            html += '<tr>';
-            html += '<td><strong>' + (item.productName || 'Product') + '</strong>' + varStr + '</td>';
-            html += '<td>' + qty + '</td>';
-            html += '<td>৳' + price.toFixed(2) + '</td>';
-            html += '<td>৳' + (price * qty).toFixed(2) + '</td>';
-            html += '</tr>';
-        });
+        if(items.length === 0) {
+             html += '<tr><td colspan="4" style="text-align:center;">No items found</td></tr>';
+        } else {
+            items.forEach(function(item) {
+                var varText = [];
+                if (item.color) varText.push('Color: ' + item.color);
+                if (item.size) varText.push('Size: ' + item.size);
+                var varStr = varText.length ? ' <br><small style="color:#666;">(' + varText.join(', ') + ')</small>' : '';
+                var price = parseFloat(item.price || 0);
+                var qty = parseInt(item.quantity || 1);
+                html += '<tr>';
+                html += '<td><strong>' + (item.productName || 'Product') + '</strong>' + varStr + '</td>';
+                html += '<td style="text-align:center;">' + qty + '</td>';
+                html += '<td class="money">৳' + price.toFixed(2) + '</td>';
+                html += '<td class="money">৳' + (price * qty).toFixed(2) + '</td>';
+                html += '</tr>';
+            });
+        }
         html += '</tbody>';
         html += '</table>';
 
-        html += '<div class="totals">';
+        // Totals
         var sub = parseFloat(o.subtotal || o.grand_total - (o.delivery_charge || 0));
         var dc = parseFloat(o.delivery_charge || 0);
         var grand = parseFloat(o.grand_total || 0);
         var discount = parseFloat(o.discount_amount || 0);
 
-        html += '<div class="totals-row"><span>Subtotal:</span><span>৳' + sub.toFixed(2) + '</span></div>';
+        html += '<div class="totals-container">';
+        html += '<table class="totals-table">';
+        html += '<tr><td>Subtotal:</td><td style="text-align:right;">৳' + sub.toFixed(2) + '</td></tr>';
         if (dc > 0) {
-            html += '<div class="totals-row"><span>Delivery Charge:</span><span>৳' + dc.toFixed(2) + '</span></div>';
+            html += '<tr><td>Delivery Charge:</td><td style="text-align:right;">৳' + dc.toFixed(2) + '</td></tr>';
         }
         if (discount > 0) {
-            html += '<div class="totals-row" style="color:green;"><span>Discount:</span><span>- ৳' + discount.toFixed(2) + '</span></div>';
+            html += '<tr><td style="color:green;">Discount:</td><td style="text-align:right;color:green;">- ৳' + discount.toFixed(2) + '</td></tr>';
         }
-        html += '<div class="totals-row grand-total"><span>Total Amount:</span><span>৳' + grand.toFixed(2) + '</span></div>';
+        html += '<tr><td>Total Amount:</td><td style="text-align:right;">৳' + grand.toFixed(2) + '</td></tr>';
+        html += '</table>';
         html += '</div>';
 
-        html += '<div class="footer">';
-        html += 'Thank you for your purchase!<br>';
-        html += 'If you have any questions about this invoice, please contact us.';
+        // Footer Note
+        html += '<div class="footer-note">';
+        html += '<strong>Thank you for shopping with us!</strong><br>';
+        html += 'If you have any questions about this invoice, please contact our support.';
         html += '</div>';
 
         document.getElementById('invoiceContainer').innerHTML = html;
         
-        // Auto print after a short delay to ensure images load
-        setTimeout(function() {
-            window.print();
-        }, 500);
+        // Removed auto print to let the user see the layout first and prevent blank screen issues in Chrome
     });
 </script>
 </body>
