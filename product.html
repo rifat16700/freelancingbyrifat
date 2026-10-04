@@ -270,12 +270,38 @@ function showCartToast(name) {
 }
 </script>
 
-<footer class="footer">
+<footer class="footer" id="mainFooter" style="margin-top:40px;">
+    <div class="footer-grid">
+        <div>
+            <div class="footer-brand" id="footerBrand">Freelancing By Rifat</div>
+            <div class="footer-desc" id="footerDesc">Your trusted shopping destination. Quality products at the best price.</div>
+        </div>
+        <div>
+            <div class="footer-title">Pages</div>
+            <a href="index.html">Home</a>
+            <a href="shop.html">Shop</a>
+            <a href="track.html">Track Order</a>
+            <a href="cart.html">Cart</a>
+        </div>
+        <div>
+            <div class="footer-title">Social</div>
+            <a href="#" id="footerFb">Facebook</a>
+            <a href="#" id="footerIg">Instagram</a>
+            <a href="#" id="footerYt">YouTube</a>
+        </div>
+        <div>
+            <div class="footer-title">Support</div>
+            <a href="#" id="footerWa">WhatsApp</a>
+            <a href="track.html">Track Order</a>
+            <a href="policies.html">Policies & Terms</a>
+            <a href="#" id="footerStoreLocBtn" target="_blank" style="color:#34C759;font-weight:600;"><i data-lucide="map-pin" class="lucide-icon icon-sm"></i> Store Location</a>
+        </div>
+    </div>
     <div id="footerStoreLoc" style="display:none; text-align:center; padding: 20px 20px 0; max-width:400px; margin:0 auto;">
         <a id="footerStoreLink" href="#" target="_blank" class="btn btn-outline btn-full btn-sm" style="border-color:#ddd; color:#555; background:#fff;"><i data-lucide="map-pin" class="lucide-icon text-primary"></i> <span style="font-weight:700;">Visit Our Store</span></a>
     </div>
     <div class="footer-bottom">
-        <span id="footerCopy">© 2025 Freelancing By Rifat</span>
+        <span id="footerCopyright">© 2025 Freelancing By Rifat. All rights reserved.</span>
     </div>
 </footer>
 
@@ -395,8 +421,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         document.title = product.name + ' — ' + (settings.store_name || CONFIG.STORE_NAME);
-        document.getElementById('navBrand').textContent = settings.store_name || CONFIG.STORE_NAME;
-        document.getElementById('footerCopy').textContent = '© ' + new Date().getFullYear() + ' ' + (settings.store_name || CONFIG.STORE_NAME);
+        var name = settings.store_name || CONFIG.STORE_NAME;
+        document.getElementById('navBrand').textContent = name;
+        var fb = document.getElementById('footerBrand'); if(fb) fb.textContent = name;
+        
+        var fc = document.getElementById('footerCopyright');
+        if(fc) fc.textContent = '© ' + new Date().getFullYear() + ' ' + name + '. All rights reserved.';
+        
+        if (settings.footer_text) { var fd = document.getElementById('footerDesc'); if(fd) fd.textContent = settings.footer_text; }
+        if (settings.facebook_url)  { var ffb = document.getElementById('footerFb'); if(ffb) ffb.href = settings.facebook_url; }
+        if (settings.instagram_url) { var fig = document.getElementById('footerIg'); if(fig) fig.href = settings.instagram_url; }
+        if (settings.youtube_url)   { var fyt = document.getElementById('footerYt'); if(fyt) fyt.href = settings.youtube_url; }
+        if (settings.whatsapp_number) {
+            var fwa = document.getElementById('footerWa');
+            if(fwa) fwa.href = 'https://wa.me/' + settings.whatsapp_number;
+        }
 
         // Tracking: ViewContent
         if (typeof window.fireTrackingEvent === 'function') {
@@ -408,12 +447,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        var storeBtn = document.getElementById('footerStoreLocBtn');
+        var footerStoreLoc = document.getElementById('footerStoreLoc');
+        var footerStoreLink = document.getElementById('footerStoreLink');
         if (settings.store_map_link) {
-            document.getElementById('footerStoreLink').href = settings.store_map_link;
-            document.getElementById('footerStoreLoc').style.display = 'block';
+            if(storeBtn) storeBtn.href = settings.store_map_link;
+            if(footerStoreLink) footerStoreLink.href = settings.store_map_link;
+            if(footerStoreLoc) footerStoreLoc.style.display = 'block';
         } else if (settings.store_address) {
-            document.getElementById('footerStoreLink').href = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(settings.store_address);
-            document.getElementById('footerStoreLoc').style.display = 'block';
+            var gMapLink = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(settings.store_address);
+            if(storeBtn) storeBtn.href = gMapLink;
+            if(footerStoreLink) footerStoreLink.href = gMapLink;
+            if(footerStoreLoc) footerStoreLoc.style.display = 'block';
+        } else {
+            if(storeBtn) storeBtn.style.display = 'none';
         }
 
         try { renderProduct(product); } catch(e) { console.error('renderProduct error:', e); }

@@ -216,6 +216,17 @@ function renderTrackResult(order) {
         '</div>';
     }
 
+    window.downloadInvoice = function(orderObj, type) {
+        localStorage.setItem('print_order', JSON.stringify(orderObj));
+        localStorage.setItem('print_type', type);
+        window.open('invoice.html', '_blank');
+    };
+
+    var invBtns = '<div style="display:flex;gap:10px;margin-top:14px;">' +
+        '<button class="btn btn-primary btn-full btn-sm" onclick="downloadInvoice(' + JSON.stringify(order).replace(/"/g,'&quot;') + ', \'bill\')"><i data-lucide="file-text" class="lucide-icon"></i> Download Bill</button>' +
+        '<button class="btn btn-outline btn-full btn-sm" onclick="downloadInvoice(' + JSON.stringify(order).replace(/"/g,'&quot;') + ', \'full\')"><i data-lucide="truck" class="lucide-icon"></i> Detailed Invoice</button>' +
+    '</div>';
+
     document.getElementById('trackResult').innerHTML =
         '<div class="track-card">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
@@ -238,7 +249,7 @@ function renderTrackResult(order) {
             '<div style="font-size:14px;font-weight:800;color:var(--text-dark);margin-bottom:14px;"><i data-lucide="map-pin" class="lucide-icon icon-bounce"></i> Delivery Timeline</div>' +
             '<div class="timeline">' + timelineHtml + '</div>' +
 
-            trackUrlHtml + payInfo +
+            trackUrlHtml + payInfo + invBtns +
 
             '<div style="display:flex;gap:10px;margin-top:20px;">' +
                 '<button class="btn btn-ghost btn-full btn-sm" onclick="resetTrack()">← Track Another</button>' +

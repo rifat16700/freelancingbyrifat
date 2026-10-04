@@ -438,13 +438,22 @@
                 '<td>' +
                     '<div style="display:flex;gap:6px;align-items:center;">' +
                         '<button class="btn btn-ghost btn-sm" onclick="openOrderModal(' + JSON.stringify(o).replace(/"/g,'&quot;') + ')">View</button>' +
+                        '<button class="btn btn-ghost btn-sm" onclick="downloadInvoice(' + JSON.stringify(o).replace(/"/g,'&quot;') + ', \'bill\')" title="Download Bill Invoice"><i data-lucide="file-text" class="lucide-icon" style="width:16px;height:16px;color:#007AFF;"></i></button>' +
+                        '<button class="btn btn-ghost btn-sm" onclick="downloadInvoice(' + JSON.stringify(o).replace(/"/g,'&quot;') + ', \'full\')" title="Download Detailed Delivery Invoice"><i data-lucide="truck" class="lucide-icon" style="width:16px;height:16px;color:#34C759;"></i></button>' +
                         '<button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:4px 8px;" onclick="deleteOrder(\'' + o.id + '\')" title="Delete Order"><i data-lucide="trash-2" class="lucide-icon" style="width:16px;height:16px;"></i></button>' +
                     '</div>' +
                 '</td>' +
             '</tr>';
         });
         tbody.innerHTML = html;
+        if(typeof lucide !== 'undefined') lucide.createIcons();
     }
+    
+    window.downloadInvoice = function(orderObj, type) {
+        localStorage.setItem('print_order', JSON.stringify(orderObj));
+        localStorage.setItem('print_type', type);
+        window.open('../invoice.html', '_blank');
+    };
 
     function openOrderModal(o) {
         document.getElementById('modalOrderId').textContent = 'ID: ' + o.id + ' | ' + formatDate(o.created_at);

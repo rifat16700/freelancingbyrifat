@@ -100,7 +100,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
     try { favs = JSON.parse(localStorage.getItem('wishlist')) || []; } catch(e){}
 
     // --- Banners ---
-    var useHardcodedTestBanners = true; // Set to false to use DB banners
+    var useHardcodedTestBanners = false; // Set to false to use DB banners
     var sliderBanners = [];
 
     if (useHardcodedTestBanners) {
@@ -257,14 +257,14 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     
                     <!-- Logo & Store Name -->
                     <a href="index.html" class="flex items-center gap-2 text-xl md:text-2xl font-bold font-josefin text-secondary shrink-0">
-                        ${(window.globalSettings && window.globalSettings.store_logo) ? `<img src="${window.globalSettings.store_logo}" alt="Logo" class="h-6 md:h-8 object-contain">` : `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>`}
+                        ${sSettings.logo_url ? `<img src="${sSettings.logo_url}" alt="Logo" class="h-6 md:h-8 object-contain">` : `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>`}
                         <span class="truncate max-w-[120px] md:max-w-[200px]">${storeName}</span>
                     </a>
 
                     <!-- Desktop Search -->
                     <div class="hidden md:flex flex-grow justify-center px-4">
                         <div class="flex w-full max-w-[400px] border border-gray-300 rounded-md overflow-hidden">
-                            <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search...">
+                            <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search..." onkeypress="if(event.key==='Enter' && this.value) window.location.href='shop.html?q='+this.value">
                             <button aria-label="Search" class="text-dynamic px-4 py-1.5 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchDesktop').value) window.location.href='shop.html?q='+document.getElementById('v2SearchDesktop').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                         </div>
                     </div>
@@ -285,7 +285,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
 
                     <!-- Mobile Search Bar (Row 2) -->
                     <div class="w-full md:hidden flex border border-gray-300 rounded-md overflow-hidden mt-1">
-                        <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products...">
+                        <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products..." onkeypress="if(event.key==='Enter' && this.value) window.location.href='shop.html?q='+this.value">
                         <button aria-label="Search" class="text-dynamic px-4 py-2 transition hover:opacity-90" style="background: var(--primary);" onclick="if(document.getElementById('v2SearchMobile').value) window.location.href='shop.html?q='+document.getElementById('v2SearchMobile').value"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                     </div>
 
