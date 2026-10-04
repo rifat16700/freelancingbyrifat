@@ -69,8 +69,14 @@ export async function onRequestPost(context) {
         });
 
         // পাবলিক URL তৈরি
-        // যদি R2_PUBLIC_URL env variable থাকে সেটা নিবে, না থাকলে ডিফল্ট ডোমেইন নিবে
-        const publicUrlBase = env.R2_PUBLIC_URL ? env.R2_PUBLIC_URL.replace(/\/$/, '') : 'https://img.freelancingbyrifat.top';
+        if (!env.R2_PUBLIC_URL) {
+            return new Response(JSON.stringify({
+                success: false,
+                error: "R2_PUBLIC_URL সেট করা নেই। Cloudflare Pages এর Settings -> Environment Variables এ গিয়ে 'R2_PUBLIC_URL' নামে ভেরিয়েবল অ্যাড করুন এবং সেখানে আপনার R2 বাকেটের Public URL (যেমন: https://pub-xxxx.r2.dev) দিন।"
+            }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
+        }
+
+        const publicUrlBase = env.R2_PUBLIC_URL.replace(/\/$/, '');
         const imageUrl = `${publicUrlBase}/${key}`;
 
         return new Response(JSON.stringify({
