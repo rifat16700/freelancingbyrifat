@@ -198,7 +198,15 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
     var catsHtml = '';
     if (cats && cats.length) {
         var catItems = cats.map(function(c) {
-            var catImg = c.image_url ? `<img src="${c.image_url}" alt="${c.name}" width="64" height="64" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">` : `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shadow-sm mb-2 group-hover:scale-110 transition-transform"><i class="fa-solid fa-list"></i></div>`;
+            var iconUrl = (c.icon_url || c.image_url || '').trim();
+            var catImg = '';
+            if (iconUrl.startsWith('<')) {
+                catImg = `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-100 flex items-center justify-center text-primary shadow-sm mb-2 group-hover:scale-110 transition-transform overflow-hidden [&>svg]:w-6 [&>svg]:h-6 md:[&>svg]:w-8 md:[&>svg]:h-8">${iconUrl}</div>`;
+            } else if (iconUrl) {
+                catImg = `<img src="${iconUrl}" alt="${c.name}" width="64" height="64" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">`;
+            } else {
+                catImg = `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shadow-sm mb-2 group-hover:scale-110 transition-transform"><i class="fa-solid fa-list"></i></div>`;
+            }
             return `
             <a href="shop.html?category=${c.id}" class="flex flex-col items-center min-w-[70px] md:min-w-[100px] group flex-shrink-0">
                 ${catImg}
