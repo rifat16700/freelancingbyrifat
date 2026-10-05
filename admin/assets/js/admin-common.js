@@ -344,11 +344,120 @@ function closeSidebar() {
     document.body.style.overflow = '';
 }
 
+// ── DB Error Helper HTML & Logic ─────────────────────────────
+var DB_ERROR_HTML = `
+<style>
+.db-err-tabs { display: flex; gap: 8px; margin: 15px 0 10px; flex-wrap: wrap; }
+.db-err-tab { padding: 6px 12px; font-size: 13px; background: #e0e0e0; border-radius: 6px; cursor: pointer; color: #333; font-weight: 600; transition: 0.2s; }
+.db-err-tab.active { background: var(--primary, #8B1A1A); color: #fff; }
+.db-err-content { display: none; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ddd; text-align: left; }
+.db-err-content.active { display: block; }
+.db-err-sql { display: block; padding: 10px; background: #1e1e1e; color: #4af626; border-radius: 6px; font-family: monospace; font-size: 13px; margin: 10px 0; overflow-x: auto; }
+</style>
+<div class="modal-overlay" id="dbErrorModal" style="z-index:99999;">
+    <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-header">
+            <div class="modal-title" style="color:#d93025; font-size: 18px;">⚠️ Database Column Missing</div>
+            <button class="modal-close" onclick="document.getElementById('dbErrorModal').classList.remove('show')">✕</button>
+        </div>
+        <p style="font-size:14px; color:#555; margin-bottom:10px; line-height:1.5;" id="dbErrorMsgText"></p>
+        
+        <div class="db-err-tabs">
+            <div class="db-err-tab active" onclick="switchDbErrTab('d1', event)">Cloudflare D1</div>
+            <div class="db-err-tab" onclick="switchDbErrTab('supabase', event)">Supabase</div>
+            <div class="db-err-tab" onclick="switchDbErrTab('appwrite', event)">Appwrite</div>
+        </div>
+        
+        <div id="dberr-d1" class="db-err-content active">
+            <p style="font-size:13px; margin:0;">Run this SQL in your Cloudflare D1 console to add the column:</p>
+            <code class="db-err-sql" id="sqlCodeD1"></code>
+            <button class="btn btn-primary btn-sm" onclick="copyDbErrSql('sqlCodeD1')">📋 Copy SQL</button>
+        </div>
+        
+        <div id="dberr-supabase" class="db-err-content">
+            <p style="font-size:13px; margin:0;">Run this SQL in your Supabase SQL Editor:</p>
+            <code class="db-err-sql" id="sqlCodeSupa"></code>
+            <button class="btn btn-primary btn-sm" onclick="copyDbErrSql('sqlCodeSupa')">📋 Copy SQL</button>
+        </div>
+        
+        <div id="dberr-appwrite" class="db-err-content">
+            <p style="font-size:13px; font-weight:600; margin-bottom:8px;">Manual Steps for Appwrite:</p>
+            <ol style="font-size:13px; padding-left:20px; line-height:1.6; margin:0;">
+                <li>Go to Appwrite Console → <b>Databases</b></li>
+                <li>Select your Database, then click on the relevant Collection.</li>
+                <li>Go to the <b>Attributes</b> tab.</li>
+                <li>Click <b>Create Attribute</b>.</li>
+                <li>Add an attribute named <code style="background:#eee;padding:2px 4px;border-radius:4px;color:#d93025;font-weight:bold;" id="awColName"></code> (Type: String or depending on usage).</li>
+            </ol>
+        </div>
+    </div>
+</div>
+`;
+
+window.switchDbErrTab = function(tab, e) {
+    document.querySelectorAll('.db-err-tab').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.db-err-content').forEach(function(el) { el.classList.remove('active'); });
+    if(e && e.currentTarget) e.currentTarget.classList.add('active');
+    var target = document.getElementById('dberr-' + tab);
+    if(target) target.classList.add('active');
+};
+
+window.copyDbErrSql = function(id) {
+    var txt = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(txt).then(function() {
+        showToast('SQL Copied to clipboard!', 'success');
+    });
+};
+
+function handleDbMissingColumnError(message) {
+    if (typeof message !== 'string') return false;
+    var colMatch = message.match(/no such column:\s*([a-zA-Z0-9_\.]+)/i) || 
+                   message.match(/column "([a-zA-Z0-9_\.]+)"/i) || 
+                   message.match(/find the '([a-zA-Z0-9_\.]+)' column/i);
+                   
+    if (!colMatch) return false;
+    var colName = colMatch[1];
+    if (colName.includes('.')) colName = colName.split('.')[1]; // e.g. "products.is_featured" -> "is_featured"
+    
+    var tableName = 'your_table_name';
+    var tableMatch = message.match(/table ([a-zA-Z0-9_]+)/i) || message.match(/relation "([a-zA-Z0-9_]+)"/i);
+    if (tableMatch) tableName = tableMatch[1];
+
+    var sql = "ALTER TABLE " + tableName + " ADD COLUMN " + colName + " TEXT;";
+    
+    if (!document.getElementById('dbErrorModal')) {
+        document.body.insertAdjacentHTML('beforeend', DB_ERROR_HTML);
+    }
+    
+    var msgText = document.getElementById('dbErrorMsgText');
+    if(msgText) msgText.innerText = "Error: " + message;
+    
+    var codeD1 = document.getElementById('sqlCodeD1');
+    if(codeD1) codeD1.innerText = sql;
+    
+    var codeSupa = document.getElementById('sqlCodeSupa');
+    if(codeSupa) codeSupa.innerText = sql;
+    
+    var awCol = document.getElementById('awColName');
+    if(awCol) awCol.innerText = colName;
+    
+    var modal = document.getElementById('dbErrorModal');
+    if(modal) modal.classList.add('show');
+    
+    return true;
+}
+
 // ── Toast Notifications ──────────────────────────────────────
 var TOAST_ICONS = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
 
 function showToast(message, type) {
     if (!type) type = 'info';
+    
+    // Intercept database missing column errors
+    if (type === 'error' && handleDbMissingColumnError(message)) {
+        // We still show the toast as a brief notification
+    }
+
     var container = document.getElementById('toastContainer');
     if (!container) return;
 
