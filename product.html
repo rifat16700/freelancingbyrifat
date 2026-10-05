@@ -20,12 +20,14 @@
         .gallery-btn:hover { background: #fff; box-shadow: 0 6px 16px rgba(0,0,0,0.15); color: var(--primary); }
         .prev-btn { left: 10px; }
         .next-btn { right: 10px; }
-        .gallery-thumbs { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        .gallery-thumb-wrap { position: relative; width: 70px; height: 70px; }
+        .gallery-thumbs { display: flex; gap: 10px; margin-top: 10px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 8px; scroll-behavior: smooth; -ms-overflow-style: none; scrollbar-width: none; }
+        .gallery-thumbs::-webkit-scrollbar { display: none; }
+        .gallery-thumb-wrap { position: relative; width: 70px; height: 70px; flex-shrink: 0; }
         .gallery-thumb { width: 100%; height: 100%; border-radius: 10px; object-fit: cover; cursor: pointer; border: 2px solid transparent; transition: var(--transition); }
         .gallery-thumb.active { border-color: var(--primary); }
-        .color-swatches { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-        .color-swatch { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: var(--transition); position: relative; }
+        .color-swatches { display: flex; gap: 10px; overflow-x: auto; flex-wrap: nowrap; margin-bottom: 16px; padding-bottom: 8px; scroll-behavior: smooth; -ms-overflow-style: none; scrollbar-width: none; }
+        .color-swatches::-webkit-scrollbar { display: none; }
+        .color-swatch { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: var(--transition); position: relative; flex-shrink: 0; margin-bottom: 20px; }
         .color-swatch.selected { border-color: var(--text-dark); box-shadow: 0 0 0 3px rgba(0,0,0,0.1); }
         .color-swatch-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 700; color: var(--text-dark); }
         .size-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -75,6 +77,14 @@
 
         <!-- Right: Info -->
         <div>
+            <!-- Color selector -->
+            <div id="colorSection" style="margin-bottom:16px;">
+                <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:14px;">
+                    Color: <span id="selectedColorLabel" style="color:var(--primary);">—</span>
+                </div>
+                <div class="color-swatches" id="colorSwatches"></div>
+            </div>
+
             <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;" id="breadcrumb">Home / Shop</div>
             <h1 style="font-size:22px;font-weight:900;color:var(--text-dark);margin-bottom:6px;" id="pName">Loading...</h1>
             <div id="pSkuWrap" style="font-size:11px;color:#888;margin-bottom:12px;display:none;background:var(--bg-subtle);padding:3px 8px;border-radius:6px;width:fit-content;border:1px solid var(--border-light);">SKU: <span id="pSkuVal" style="font-weight:700;color:var(--text-dark);"></span></div>
@@ -89,14 +99,6 @@
             <div id="reviewSummary" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:#888;cursor:pointer;" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">
                 <span id="reviewStars" style="color:#FF9500;font-size:16px;">★★★★★</span>
                 <span id="reviewCount">0 reviews</span>
-            </div>
-
-            <!-- Color selector -->
-            <div id="colorSection" style="margin-bottom:24px;">
-                <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:14px;">
-                    Color: <span id="selectedColorLabel" style="color:var(--primary);">—</span>
-                </div>
-                <div class="color-swatches" id="colorSwatches"></div>
             </div>
 
             <!-- Size selector -->
