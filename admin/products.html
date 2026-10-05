@@ -1082,10 +1082,15 @@
                 renderProducts(allProducts);
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            var pFull = allProducts.find(function(p) { return p.id === id; });
+            if (!pFull) return;
+            var payload = JSON.parse(JSON.stringify(pFull));
+            payload.is_active = !current;
+            
             fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/update-product', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
-                body: JSON.stringify({ id: id, is_active: !current })
+                body: JSON.stringify(payload)
             }).then(function(r) { return r.json(); }).then(function(res) {
                 if (!res.success) { showToast('Update failed: ' + res.error, 'error'); return; }
                 var idx = allProducts.findIndex(function(p) { return p.id === id; });
