@@ -173,6 +173,8 @@
                         <button type="button" class="rte-btn" title="Align right" onclick="rteCmd('justifyRight')">&#8800;</button>
                         <div class="rte-sep"></div>
                         <button type="button" class="rte-btn" title="Clear formatting" onclick="rteCmd('removeFormat')" style="font-size:11px;">&#10005; fmt</button>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" title="Edit HTML" onclick="toggleHtmlMode()" style="font-weight:900;color:var(--accent,#007AFF);">&lt;/&gt;</button>
                     </div>
                     <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="Product description লিখো..." oninput="document.getElementById('rteCharCount').textContent=this.innerText.trim().length+' chars'"></div>
                     <div class="rte-char-count" id="rteCharCount">0 chars</div>
@@ -1129,6 +1131,26 @@
         var ed = document.getElementById('pDesc');
         var cc = document.getElementById('rteCharCount');
         if (ed && cc) cc.textContent = (ed.innerText || '').trim().length + ' chars';
+    }
+    
+    function toggleHtmlMode() {
+        var ed = document.getElementById('pDesc');
+        var isHtml = ed.dataset.mode === 'html';
+        
+        if (isHtml) {
+            ed.innerHTML = ed.textContent;
+            ed.dataset.mode = 'visual';
+            ed.style.fontFamily = 'inherit';
+            ed.style.whiteSpace = 'normal';
+            ed.style.color = 'var(--text-primary,#fff)';
+        } else {
+            ed.textContent = ed.innerHTML;
+            ed.dataset.mode = 'html';
+            ed.style.fontFamily = 'monospace';
+            ed.style.whiteSpace = 'pre-wrap';
+            ed.style.color = '#FFD60A'; // Highlight code color
+        }
+        updateRteCharCount();
     }
     // ── Paste handler: sanitize & preserve basic formatting ──
     (function() {
