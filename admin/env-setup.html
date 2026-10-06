@@ -137,6 +137,86 @@
                         <td><button class="tooltip-btn" onclick="showInfo('GITHUB_REPO', 'GitHub Repository', 'The repository name (e.g., freelancingbyrifat).')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
                     </tr>
                     
+                    <!-- NEW ADDED VARS -->
+                    <tr>
+                        <td><span class="var-name">DB_PROVIDER</span><span class="badge-core">Core</span></td>
+                        <td><span class="var-example">cf_db</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('DB_PROVIDER', 'Database Provider', 'Which database system you are using. Usually `cf_db` for Cloudflare D1 or `appwrite` or `supabase`.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">CF_ACCOUNT_ID</span><span class="badge-core">Core</span></td>
+                        <td><span class="var-example">8e4b7...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('CF_ACCOUNT_ID', 'Cloudflare Account ID', 'Found in your Cloudflare dashboard URL or on the right side of the Overview page.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">CF_API_TOKEN</span><span class="badge-core">Core</span></td>
+                        <td><span class="var-example">abc123def456...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('CF_API_TOKEN', 'Cloudflare API Token', 'Same as CLOUDFLARE_API_TOKEN. Used for making API requests to Cloudflare.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">CF_ZONE_ID</span><span class="badge-core">Core</span></td>
+                        <td><span class="var-example">023e105f...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('CF_ZONE_ID', 'Cloudflare Zone ID', 'Same as CLOUDFLARE_ZONE_ID. Needed for caching.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">CF_DB_ID</span><span class="badge-core">Core</span></td>
+                        <td><span class="var-example">xxxx-xxxx-xxxx-xxxx</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('CF_DB_ID', 'Cloudflare D1 Database ID', 'The ID of your D1 Database. Found in the D1 settings.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">CF_D1_TOKEN</span><span class="badge-core">Core</span></td>
+                        <td><span class="var-example">xxxx...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('CF_D1_TOKEN', 'Cloudflare D1 Token', 'A token with read/write access to your D1 database.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">CF_D1_READ_TOKEN</span><span class="badge-core">Core</span></td>
+                        <td><span class="var-example">xxxx...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('CF_D1_READ_TOKEN', 'Cloudflare D1 Read Token', 'A token with read-only access to your D1 database.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    
+                    <tr>
+                        <td><span class="var-name">SUPABASE_URL</span></td>
+                        <td><span class="var-example">https://xyz.supabase.co</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('SUPABASE_URL', 'Supabase URL', 'Only if using Supabase as DB. Your Supabase project URL.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">SUPABASE_ANON_KEY</span></td>
+                        <td><span class="var-example">eyJh...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('SUPABASE_ANON_KEY', 'Supabase Anon Key', 'Only if using Supabase as DB. Your Supabase project anon/public key.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">SUPABASE_SERVICE_ROLE_KEY</span></td>
+                        <td><span class="var-example">eyJh...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('SUPABASE_SERVICE_ROLE_KEY', 'Supabase Service Role Key', 'Only if using Supabase as DB. Your Supabase service role key.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+
+                    <tr>
+                        <td><span class="var-name">R2_PUBLIC_URL</span></td>
+                        <td><span class="var-example">https://pub-xxxx.r2.dev</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('R2_PUBLIC_URL', 'R2 Public Custom Domain', 'The custom public domain for your Cloudflare R2 bucket. Used to serve product images.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+
+                    <tr>
+                        <td><span class="var-name">GA4_API_SECRET</span></td>
+                        <td><span class="var-example">xxxxxxxx</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('GA4_API_SECRET', 'Google Analytics 4 API Secret', 'Optional. For sending server-side events to GA4.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">META_API_TOKEN</span></td>
+                        <td><span class="var-example">EAAB...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('META_API_TOKEN', 'Meta Conversions API Token', 'Optional. For sending server-side events to Facebook Pixel.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">VERCEL_API_BASE</span></td>
+                        <td><span class="var-example">https://xyz.vercel.app</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('VERCEL_API_BASE', 'Vercel API Base URL', 'Optional. If parts of your backend/functions are hosted on Vercel.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">TAWK_WIDGET_URL</span></td>
+                        <td><span class="var-example">https://embed.tawk.to/ID/WIDGET</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('TAWK_WIDGET_URL', 'Tawk.to Widget URL', 'Optional. Provide the script URL to automatically enable Live Chat.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    
                     <!-- NEW EMAIL/AUTH VARS -->
                     <tr>
                         <td><span class="var-name">JWT_SECRET</span><span class="badge-new">Auth Addon</span></td>
