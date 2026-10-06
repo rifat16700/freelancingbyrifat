@@ -121,6 +121,17 @@
                 </div>
             </div>
 
+            <!-- AI Store Assistant -->
+            <div class="card ai-assistant-card" style="margin-bottom: 24px; border: 1px solid #FF9500; overflow: hidden;">
+                <div class="card-title" style="justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,149,0,0.2); padding-bottom:15px; margin-bottom:0;">
+                    <span style="display:flex;align-items:center;gap:8px;"><i data-lucide="sparkles" class="lucide-icon" style="color:#FF9500;"></i> AI Store Manager</span>
+                    <button class="btn btn-primary btn-sm" onclick="generateAIStoreReport()" id="btnGenAIReport" style="background: linear-gradient(45deg, #FF9500, #FF2D55); border:none;"><i data-lucide="bot" style="width:16px;height:16px;margin-right:5px;"></i> Get Smart Report</button>
+                </div>
+                <div id="aiReportOutput" style="padding: 20px; background: rgba(255, 149, 0, 0.05); font-size: 15px; line-height: 1.6; display:none; border-top: 1px solid rgba(255,149,0,0.2);">
+                    <!-- AI Content -->
+                </div>
+            </div>
+
             <!-- Charts + Best sellers -->
             <div class="dashboard-grid">
 
@@ -459,6 +470,65 @@
         }
 
         document.getElementById('bestSellersList').innerHTML = html;
+    }
+
+    async function generateAIStoreReport() {
+        const btn = document.getElementById('btnGenAIReport');
+        const output = document.getElementById('aiReportOutput');
+        
+        btn.innerHTML = '<i class="lucide-icon icon-spin" data-lucide="loader-2" style="width:16px;height:16px;margin-right:5px;"></i> Analyzing...';
+        btn.disabled = true;
+        output.style.display = 'block';
+        output.innerHTML = '<span style="color:#8E8E93;">AI is reading your store data and writing a summary... Please wait...</span>';
+        if(typeof lucide !== 'undefined') lucide.createIcons();
+
+        // Gather Context from Dashboard
+        const totalProducts = document.getElementById('statProducts').textContent;
+        const todayOrders = document.getElementById('statToday').textContent;
+        const pendingOrders = document.getElementById('statPending').textContent;
+        const totalRevenue = document.getElementById('statRevenue').textContent;
+        
+        let bestSellersTxt = "";
+        const bsItems = document.querySelectorAll('.best-prod-name');
+        if (bsItems.length > 0) {
+            bsItems.forEach((el, idx) => { bestSellersTxt += (idx+1) + ". " + el.textContent + ", "; });
+        } else {
+            bestSellersTxt = "No sales yet";
+        }
+
+        const prompt = `
+Please write a short, professional, and encouraging store manager report in Bengali.
+Here is today's data:
+- Today's Orders: ${todayOrders}
+- Pending Orders: ${pendingOrders} (These need to be processed)
+- Total Revenue: ${totalRevenue}
+- Total Active Products: ${totalProducts}
+- Best Selling Items: ${bestSellersTxt}
+
+Tell me how my business is doing today, give a quick summary of the numbers, and remind me to process the pending orders if there are any. Make it sound like a friendly business assistant. Keep it concise.
+        `;
+
+        try {
+            const token = localStorage.getItem('adminToken');
+            const response = await fetch('/api/ai-generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ prompt: prompt })
+            });
+            const data = await response.json();
+
+            if (data.success && data.result) {
+                output.innerHTML = data.result;
+            } else {
+                output.innerHTML = '<span style="color:#FF3B30;">❌ AI Error: ' + (data.error || 'Unknown error') + '</span>';
+            }
+        } catch (e) {
+            output.innerHTML = '<span style="color:#FF3B30;">❌ Connection Error: ' + e.message + '</span>';
+        }
+        
+        btn.innerHTML = '<i data-lucide="bot" style="width:16px;height:16px;margin-right:5px;"></i> Get Smart Report';
+        btn.disabled = false;
+        if(typeof lucide !== 'undefined') lucide.createIcons();
     }
     </script>
 
