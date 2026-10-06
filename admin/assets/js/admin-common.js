@@ -243,10 +243,70 @@ window.cfDbBatchQuery = function(queries, isMultiple) {
                 return { success: true, result: [d.result[0]] };
             }
         }
-        throw new Error(d.error || 'Batch query failed');
+        var errStr = d.error || 'Batch query failed';
+        if (errStr.includes('no such table')) {
+            showSchemaModal();
+        }
+        throw new Error(errStr);
     });
 
     return Promise.race([fetchPromise, timeoutPromise]);
+}
+
+function showSchemaModal() {
+    if (document.getElementById('schemaModal')) return;
+    var sql = `DROP TABLE IF EXISTS product_categories;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS addons;
+DROP TABLE IF EXISTS promos;
+DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS admins;
+DROP TABLE IF EXISTS delivery_zones;
+DROP TABLE IF EXISTS settings;
+DROP TABLE IF EXISTS home_sections;
+DROP TABLE IF EXISTS devtools;
+DROP TABLE IF EXISTS verified_payments;
+DROP TABLE IF EXISTS banners;
+
+CREATE TABLE products (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT, base_price REAL DEFAULT 0, flash_sale_price REAL DEFAULT 0, flash_sale_end TEXT, variants TEXT DEFAULT '[]', gallery_images TEXT DEFAULT '[]', video_url TEXT, video_type TEXT DEFAULT 'auto', sku TEXT, is_active INTEGER DEFAULT 1, is_featured INTEGER DEFAULT 0, is_add_once INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE categories (id TEXT PRIMARY KEY, name TEXT NOT NULL, icon_url TEXT, sort_order INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE product_categories (product_id TEXT, category_id TEXT, PRIMARY KEY (product_id, category_id));
+CREATE TABLE orders (id TEXT PRIMARY KEY, customer_name TEXT, customer_phone TEXT, customer_address TEXT, cart_total REAL, delivery_charge REAL, discount REAL, final_total REAL, status TEXT DEFAULT 'pending', items TEXT DEFAULT '[]', promo_code TEXT, transaction_id TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE addons (id TEXT PRIMARY KEY, name TEXT NOT NULL, price REAL DEFAULT 0, image TEXT, is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE promos (id TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, type TEXT DEFAULT 'public', disc_type TEXT DEFAULT 'flat', disc_val REAL DEFAULT 0, max_cap REAL, min_spend REAL, del_reward TEXT DEFAULT 'none', del_disc_amount REAL, del_disc_cap REAL, applicable_products TEXT DEFAULT '[]', applicable_categories TEXT DEFAULT '[]', is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE reviews (id TEXT PRIMARY KEY, product_id TEXT NOT NULL, user_name TEXT, rating INTEGER DEFAULT 5, review_text TEXT, image_url TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE admins (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE delivery_zones (id TEXT PRIMARY KEY, zone_name TEXT NOT NULL, charge REAL DEFAULT 0, is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE settings (id INTEGER PRIMARY KEY DEFAULT 1, store_name TEXT DEFAULT '', logo_url TEXT DEFAULT '', favicon_url TEXT DEFAULT '', footer_text TEXT DEFAULT '', whatsapp_number TEXT DEFAULT '', facebook_url TEXT DEFAULT '', instagram_url TEXT DEFAULT '', youtube_url TEXT DEFAULT '', bkash_number TEXT DEFAULT '', nagad_number TEXT DEFAULT '', binance_manual_uid TEXT DEFAULT '', gateway_api_key TEXT DEFAULT '', gateway_api_key_v2 TEXT DEFAULT '', gateway_version TEXT DEFAULT '', allow_cod INTEGER DEFAULT 1, enable_fun_checkbox INTEGER DEFAULT 1, allow_whatsapp_order INTEGER DEFAULT 1, allow_msg_order INTEGER DEFAULT 1, advance_amount REAL DEFAULT 0, advance_method TEXT DEFAULT '', telegram_main_bot TEXT DEFAULT '', telegram_main_chats TEXT DEFAULT '', telegram_draft_bot TEXT DEFAULT '', telegram_draft_chat TEXT DEFAULT '', messaging_apps TEXT DEFAULT '[]', allow_pickup INTEGER DEFAULT 0, store_address TEXT DEFAULT '', store_map_link TEXT DEFAULT '', pickup_bot_token TEXT DEFAULT '', pickup_chat_id TEXT DEFAULT '', binance_pay_uid TEXT DEFAULT '', binance_proxy_url TEXT DEFAULT '', binance_api_key TEXT DEFAULT '', binance_api_secret TEXT DEFAULT '', usd_to_bdt_rate REAL DEFAULT 120, verify_mode TEXT DEFAULT '', supabase_edge_url TEXT DEFAULT '', hf_api_url TEXT DEFAULT '', crypto_coins TEXT DEFAULT '[]', review_imgbb_key TEXT DEFAULT '', maintenance_mode INTEGER DEFAULT 0, maintenance_message TEXT DEFAULT '', currency TEXT DEFAULT '৳');
+CREATE TABLE home_sections (id TEXT PRIMARY KEY, title TEXT NOT NULL, type TEXT NOT NULL, data TEXT, display_order INTEGER DEFAULT 0, is_active INTEGER DEFAULT 1, sort_order INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE devtools (id TEXT PRIMARY KEY, key_name TEXT UNIQUE NOT NULL, value TEXT);
+CREATE TABLE verified_payments (id TEXT PRIMARY KEY, transaction_id TEXT UNIQUE NOT NULL, amount REAL, sender_number TEXT, status TEXT DEFAULT 'verified', created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE banners (id TEXT PRIMARY KEY, image_url TEXT NOT NULL, link_url TEXT, is_active INTEGER DEFAULT 1, sort_order INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+
+INSERT INTO admins (id, email, password_hash) VALUES ('admin_1', 'admin@example.com', 'admin123');
+INSERT INTO settings (id, store_name, currency) VALUES (1, 'Freelancing By Rifat', '৳');`;
+    
+    var div = document.createElement('div');
+    div.id = 'schemaModal';
+    div.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    div.innerHTML = '<div style="background:#fff;border-radius:12px;width:100%;max-width:700px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,0.5);">' +
+        '<div style="padding:20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">' +
+            '<h2 style="margin:0;color:#e74c3c;font-size:20px;"><i data-lucide="alert-circle" style="vertical-align:middle;margin-right:8px;"></i>Database Tables Missing!</h2>' +
+            '<button onclick="this.closest(\'#schemaModal\').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#999;">&times;</button>' +
+        '</div>' +
+        '<div style="padding:20px;overflow-y:auto;flex:1;">' +
+            '<p style="margin-top:0;color:#333;font-size:15px;">It looks like your D1 Database is empty. Please copy the SQL code below, go to your Cloudflare Dashboard -> D1 -> Console, paste it, and run it to create your tables.</p>' +
+            '<textarea id="schemaText" style="width:100%;height:250px;font-family:monospace;font-size:13px;padding:15px;border:1px solid #ddd;border-radius:8px;background:#f8f9fa;resize:none;" readonly>' + sql + '</textarea>' +
+        '</div>' +
+        '<div style="padding:20px;border-top:1px solid #eee;text-align:right;">' +
+            '<button onclick="navigator.clipboard.writeText(document.getElementById(\'schemaText\').value);this.textContent=\'Copied!\';setTimeout(()=>this.textContent=\'Copy SQL Schema\',2000);" style="background:#2ecc71;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:bold;cursor:pointer;margin-right:10px;"><i data-lucide="copy" style="width:16px;height:16px;vertical-align:middle;margin-right:5px;"></i>Copy SQL Schema</button>' +
+            '<button onclick="this.closest(\'#schemaModal\').remove()" style="background:#eee;color:#333;border:none;padding:10px 20px;border-radius:8px;font-weight:bold;cursor:pointer;">Close</button>' +
+        '</div>' +
+    '</div>';
+    document.body.appendChild(div);
+    if(typeof lucide !== 'undefined') lucide.createIcons();
 }
 // ── D1 Admin Query Helper (For cf_db write operations) ──────────
 function d1AdminQuery(sql, params) {
@@ -255,7 +315,13 @@ function d1AdminQuery(sql, params) {
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
         body: JSON.stringify({ sql: sql, params: params || [] })
     }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.success) throw new Error(d.error || 'D1 Admin Query Failed');
+        if (!d.success) {
+            var errStr = d.error || 'D1 Admin Query Failed';
+            if (errStr.includes('no such table')) {
+                showSchemaModal();
+            }
+            throw new Error(errStr);
+        }
         return d;
     });
 }
