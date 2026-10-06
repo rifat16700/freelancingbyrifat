@@ -1322,7 +1322,7 @@ function submitReview() {
             console.error('Review submit error:', r.error);
             var errStr = r.error.message || '';
             if (errStr.includes('no such table') || errStr.includes('has no column')) {
-                if (window.showSchemaModal) window.showSchemaModal();
+                if (window.showSchemaModal) window.showSchemaModal(errStr);
             } else {
                 alert('Failed to submit review.\nError: ' + errStr + '\n\nFix: Supabase SQL Editor এ reviews table এ public insert policy যোগ করো।');
             }
