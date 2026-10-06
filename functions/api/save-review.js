@@ -14,14 +14,16 @@ export async function onRequestPost(context) {
             product_id, customer_name, customer_phone, rating, review_text, review_image, is_approved
         } = body;
         
+        const reviewId = crypto.randomUUID();
+
         const sql = `
             INSERT INTO reviews (
-                product_id, customer_name, customer_phone, rating, review_text, review_image, is_approved
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                id, product_id, customer_name, customer_phone, rating, review_text, review_image, is_approved
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
         
         const params = [
-            product_id, customer_name, customer_phone || null, rating, review_text || null, review_image || null, is_approved ? 1 : 0
+            reviewId, product_id, customer_name, customer_phone || null, rating, review_text || null, review_image || null, is_approved ? 1 : 0
         ];
 
         const stmt = env.DB.prepare(sql);
