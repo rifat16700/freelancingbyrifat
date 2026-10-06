@@ -130,10 +130,10 @@
         if (document.getElementById('schemaModal')) return;
         errStr = errStr || '';
         var tableName = null;
-        var m1 = errStr.match(/no such table:\s*(\w+)/i);
+        var m1 = errStr.match(/no such table:\s*"?([a-zA-Z0-9_]+)"?/i);
         if (m1) tableName = m1[1];
         else {
-            var m2 = errStr.match(/table\s+(\w+)\s+has no column/i);
+            var m2 = errStr.match(/table\s+"?([a-zA-Z0-9_]+)"?\s+has no column/i);
             if (m2) tableName = m2[1];
         }
 
@@ -164,8 +164,6 @@
             msg = 'It looks like your D1 Database table "<b>' + tableName + '</b>" is empty or missing columns. Please copy the SQL code below, go to your Cloudflare Dashboard -> D1 -> Console, paste it, and run it to fix this table.';
         } else {
             // Fallback to all
-            for (var k in schemas) { sql += "DROP TABLE IF EXISTS " + k + ";\n"; }
-            sql += "\n";
             for (var k in schemas) { sql += schemas[k] + "\n"; }
             msg = 'It looks like your D1 Database is empty or missing columns. Please copy the SQL code below, go to your Cloudflare Dashboard -> D1 -> Console, paste it, and run it to create your tables.';
         }
