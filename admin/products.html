@@ -175,6 +175,8 @@
                         <button type="button" class="rte-btn" title="Clear formatting" onclick="rteCmd('removeFormat')" style="font-size:11px;">&#10005; fmt</button>
                         <div class="rte-sep"></div>
                         <button type="button" class="rte-btn" title="Edit HTML" onclick="toggleHtmlMode()" style="font-weight:900;color:var(--accent,#007AFF);">&lt;/&gt;</button>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" title="Generate description with AI using Product Name" onclick="generateAIDesc()" style="background: linear-gradient(45deg, #FF9500, #FF2D55); color: white; border-radius: 4px; padding: 2px 8px; display: flex; align-items: center; gap: 4px; font-weight: bold;"><i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> AI Write</button>
                     </div>
                     <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="Product description লিখো..." oninput="document.getElementById('rteCharCount').textContent=this.innerText.trim().length+' chars'"></div>
                     <div class="rte-char-count" id="rteCharCount">0 chars</div>
@@ -1202,6 +1204,45 @@
         else setupRtePaste();
     })();
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    
+    // AI Description Generator
+    async function generateAIDesc() {
+        const productName = document.getElementById('pName').value.trim();
+        if (!productName) {
+            alert('Please enter a Product Name first before generating a description.');
+            document.getElementById('pName').focus();
+            return;
+        }
+
+        const ed = document.getElementById('pDesc');
+        const oldContent = ed.innerHTML;
+        ed.innerHTML = '<span style="color:#8E8E93;"><i class="lucide-icon" data-lucide="loader-2"></i> AI is thinking... Please wait...</span>';
+        if(typeof lucide !== 'undefined') lucide.createIcons();
+
+        try {
+            const token = localStorage.getItem('adminToken');
+            const response = await fetch('/api/ai-generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ prompt: "Write an attractive product description for: " + productName })
+            });
+            const data = await response.json();
+
+            if (data.success && data.result) {
+                ed.innerHTML = data.result;
+                updateRteCharCount();
+            } else {
+                alert('AI Generation Failed: ' + (data.error || 'Unknown error'));
+                ed.innerHTML = oldContent;
+            }
+        } catch (e) {
+            alert('Error calling AI: ' + e.message);
+            ed.innerHTML = oldContent;
+        }
+    }
     </script>
 
     <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
