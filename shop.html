@@ -290,6 +290,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return null;
         };
         const pubDataPromise = fetchPublicData();
+        pubDataPromise.then(function(d) {
+            if (d && d.tawk_widget_url && window.initTawkTo) window.initTawkTo(d.tawk_widget_url);
+        });
         p1 = pubDataPromise.then(d => ({ data: d ? d.settings : null }));
         p2 = pubDataPromise.then(d => ({ data: d ? d.categories : [] }));
         p3 = pubDataPromise.then(d => ({ data: d ? d.products.map(p => { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); return p; }) : [] }));

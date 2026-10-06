@@ -19,6 +19,7 @@ export async function onRequestGet(context) {
             products: products.results || [],
             home_sections: home_sections.results || [],
             product_categories: product_categories.results || [],
+            tawk_widget_url: env.TAWK_WIDGET_URL || null,
         };
 
         return new Response(JSON.stringify({ success: true, data }), {
