@@ -12,6 +12,12 @@ export async function onRequestPost(context) {
         
         // Handle Batch Queries
         if (body.queries && Array.isArray(body.queries)) {
+            if (!env.DB) {
+                return new Response(JSON.stringify({ success: false, error: "Database binding missing! Please go to Cloudflare Settings -> Bindings and bind your D1 database to the variable name 'DB'." }), {
+                    status: 500,
+                    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+                });
+            }
             for (let q of body.queries) {
                 if (!q.sql || !q.sql.toUpperCase().trim().startsWith("SELECT")) {
                     return new Response(JSON.stringify({ success: false, error: "Only SELECT queries are allowed on this endpoint." }), {
@@ -38,6 +44,13 @@ export async function onRequestPost(context) {
         if (!sql || !sql.toUpperCase().trim().startsWith("SELECT")) {
             return new Response(JSON.stringify({ success: false, error: "Only SELECT queries are allowed on this endpoint." }), {
                 status: 403,
+                headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+            });
+        }
+
+        if (!env.DB) {
+            return new Response(JSON.stringify({ success: false, error: "Database binding missing! Please go to Cloudflare Settings -> Bindings and bind your D1 database to the variable name 'DB'." }), {
+                status: 500,
                 headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
             });
         }

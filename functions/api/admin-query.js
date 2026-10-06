@@ -22,6 +22,12 @@ export async function onRequestPost(context) {
         const body = await request.json();
         const { sql, params = [] } = body;
 
+        if (!env.DB) {
+            return new Response(JSON.stringify({ success: false, error: "Database binding missing! Please go to Cloudflare Settings -> Bindings and bind your D1 database to the variable name 'DB'." }), {
+                status: 500,
+                headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+            });
+        }
         const stmt = env.DB.prepare(sql);
         const { results } = await stmt.bind(...params.map(v => v === undefined ? null : v)).all();
 
