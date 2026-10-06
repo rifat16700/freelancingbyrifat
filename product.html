@@ -1320,7 +1320,12 @@ function submitReview() {
     insPromise.then(function(r) {
         if (r.error) {
             console.error('Review submit error:', r.error);
-            alert('Failed to submit review.\nError: ' + r.error.message + '\n\nFix: Supabase SQL Editor এ reviews table এ public insert policy যোগ করো।');
+            var errStr = r.error.message || '';
+            if (errStr.includes('no such table') || errStr.includes('has no column')) {
+                if (window.showSchemaModal) window.showSchemaModal();
+            } else {
+                alert('Failed to submit review.\nError: ' + errStr + '\n\nFix: Supabase SQL Editor এ reviews table এ public insert policy যোগ করো।');
+            }
             return;
         }
         document.getElementById('reviewForm').innerHTML = '<div style="text-align:center;padding:24px;color:#22C55E;font-size:15px;font-weight:700;"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Review submitted! It will appear after admin approval.</div>';

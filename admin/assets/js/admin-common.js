@@ -244,7 +244,7 @@ window.cfDbBatchQuery = function(queries, isMultiple) {
             }
         }
         var errStr = d.error || 'Batch query failed';
-        if (errStr.includes('no such table')) {
+        if (errStr.includes('no such table') || errStr.includes('has no column')) {
             showSchemaModal();
         }
         throw new Error(errStr);
@@ -317,7 +317,7 @@ function d1AdminQuery(sql, params) {
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (!d.success) {
             var errStr = d.error || 'D1 Admin Query Failed';
-            if (errStr.includes('no such table')) {
+            if (errStr.includes('no such table') || errStr.includes('has no column')) {
                 showSchemaModal();
             }
             throw new Error(errStr);
