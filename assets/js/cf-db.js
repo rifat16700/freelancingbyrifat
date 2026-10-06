@@ -130,11 +130,20 @@
         if (document.getElementById('schemaModal')) return;
         errStr = errStr || '';
         var tableName = null;
+        var missingColumn = null;
+        
         var m1 = errStr.match(/no such table:\s*"?([a-zA-Z0-9_]+)"?/i);
         if (m1) tableName = m1[1];
         else {
-            var m2 = errStr.match(/table\s+"?([a-zA-Z0-9_]+)"?\s+has no column/i);
-            if (m2) tableName = m2[1];
+            var m2 = errStr.match(/table\s+"?([a-zA-Z0-9_]+)"?\s+has no column named\s+"?([a-zA-Z0-9_]+)"?/i);
+            if (m2) {
+                tableName = m2[1];
+                missingColumn = m2[2];
+            } else {
+                // fallback for generic missing column without name
+                var m3 = errStr.match(/table\s+"?([a-zA-Z0-9_]+)"?\s+has no column/i);
+                if (m3) tableName = m3[1];
+            }
         }
 
         var schemas = {
@@ -156,10 +165,13 @@
 
         var sql = '';
         var msg = '';
-        var hasColumnMatch = errStr.match(/has no column/i);
-        var alertMsg = hasColumnMatch ? "\n\n-- NOTE: Since you are missing a column, CREATE TABLE IF NOT EXISTS will NOT add the column if the table already exists. You must manually DROP the table first or use ALTER TABLE to add the specific missing column." : "";
 
-        if (tableName && schemas[tableName]) {
+        if (tableName && missingColumn) {
+            sql = "ALTER TABLE " + tableName + " ADD COLUMN " + missingColumn + " TEXT;";
+            msg = 'It looks like your D1 Database table "<b>' + tableName + '</b>" is missing the "<b>' + missingColumn + '</b>" column. Please copy the SQL code below, go to your Cloudflare Dashboard -> D1 -> Console, paste it, and run it to fix this table.';
+        } else if (tableName && schemas[tableName]) {
+            var hasColumnMatch = errStr.match(/has no column/i);
+            var alertMsg = hasColumnMatch ? "\n\n-- NOTE: Since you are missing a column, CREATE TABLE IF NOT EXISTS will NOT add the column if the table already exists. You must manually DROP the table first or use ALTER TABLE to add the specific missing column." : "";
             sql = schemas[tableName] + alertMsg;
             msg = 'It looks like your D1 Database table "<b>' + tableName + '</b>" is empty or missing columns. Please copy the SQL code below, go to your Cloudflare Dashboard -> D1 -> Console, paste it, and run it to fix this table.';
         } else {
