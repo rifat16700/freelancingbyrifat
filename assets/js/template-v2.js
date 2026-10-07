@@ -116,14 +116,15 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         }];
     }
 
-    var slidesHtml = sliderBanners.map(function(b) {
+    var slidesHtml = sliderBanners.map(function(b, i) {
         var rawLink = (b.link_url || '').trim();
         var linkData = null;
         try { if(rawLink.startsWith('{')) linkData = JSON.parse(rawLink); } catch(e){}
         var fullUrl = linkData ? linkData.url : rawLink;
         if (fullUrl && !fullUrl.startsWith('http') && !fullUrl.startsWith('/') && !fullUrl.startsWith('.')) fullUrl = 'https://' + fullUrl;
         
-        var inner = '<div class="w-full h-[25vh] md:h-[35vh] lg:h-[40vh] relative bg-[#f5f5f5] overflow-hidden"><img src="' + b.image_url + '" alt="' + (b.title||'') + '" style="width: 100% !important; height: 100% !important; object-fit: contain !important; pointer-events: none;" class="w-full h-full pointer-events-none"></div>';
+        var loadAttr = (i === 0) ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
+        var inner = '<div class="w-full h-[25vh] md:h-[35vh] lg:h-[40vh] relative bg-[#f5f5f5] overflow-hidden"><img src="' + b.image_url + '" alt="' + (b.title||'') + '" ' + loadAttr + ' decoding="async" style="width: 100% !important; height: 100% !important; object-fit: contain !important; pointer-events: none;" class="w-full h-full pointer-events-none"></div>';
         if (fullUrl) {
             inner += '<a href="' + fullUrl + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;"></a>';
         }
@@ -161,7 +162,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         return `
         <a href="product.html?id=${p.id}" class="product-card-hover group shadow-md hover:shadow-lg rounded-lg transition-all duration-300 relative block bg-white overflow-hidden flex flex-col h-full border border-gray-100">
             <div class="relative h-[160px] md:h-[250px] w-full overflow-hidden shrink-0">
-                <img src="${img}" alt="${p.name}" width="300" height="300" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                <img src="${img}" alt="${p.name}" loading="lazy" decoding="async" width="300" height="300" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                 
                 <!-- Top Right Favorite -->
                 <button aria-label="Add to Wishlist" class="absolute top-2 right-2 w-7 h-7 md:w-8 md:h-8 rounded-full bg-white/90 backdrop-blur shadow flex items-center justify-center hover:bg-white transition ${favColor} z-10" onclick="toggleFavorite(event, '${p.id}', '${p.name.replace(/'/g, "\\'")}', '${p.sale_price || p.price}', '${img}')">
@@ -203,7 +204,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
             if (iconUrl.startsWith('<')) {
                 catImg = `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-100 flex items-center justify-center text-primary shadow-sm mb-2 group-hover:scale-110 transition-transform overflow-hidden [&>svg]:w-6 [&>svg]:h-6 md:[&>svg]:w-8 md:[&>svg]:h-8">${iconUrl}</div>`;
             } else if (iconUrl) {
-                catImg = `<img src="${iconUrl}" alt="${c.name}" width="64" height="64" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">`;
+                catImg = `<img src="${iconUrl}" alt="${c.name}" loading="lazy" decoding="async" width="64" height="64" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">`;
             } else {
                 catImg = `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shadow-sm mb-2 group-hover:scale-110 transition-transform"><i class="fa-solid fa-list"></i></div>`;
             }

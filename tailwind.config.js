@@ -1,23 +1,22 @@
 module.exports = {
   content: [
-    "./*.html",
+    "./**/*.html",
     "./assets/js/**/*.js"
   ],
-  corePlugins: {
-    preflight: false,
-  },
   theme: {
     extend: {
       colors: {
         primary: "var(--primary)",
-        secondary: "var(--secondary)",
-        "hover-blue": "var(--primary)",
+        secondary: "var(--text-dark)",
+        "top-bar": "var(--primary-dark)",
+        "bg-light": "var(--bg-light)",
+        "hover-blue": "#2F1AC4"
       },
       fontFamily: {
-        lato: ['Lato', 'sans-serif'],
-        josefin: ['Josefin Sans', 'sans-serif'],
+        josefin: ["Josefin Sans", "sans-serif"],
+        lato: ["Lato", "sans-serif"]
       }
-    },
+    }
   },
   plugins: [],
 }
