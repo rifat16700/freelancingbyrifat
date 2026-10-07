@@ -256,9 +256,9 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                 <div class="flex flex-wrap items-center justify-between gap-y-3">
                     
                     <!-- Logo & Store Name -->
-                    <a href="index.html" class="flex items-center gap-2 text-xl md:text-2xl font-bold font-josefin text-secondary shrink-0">
-                        ${sSettings.logo_url ? `<img src="${sSettings.logo_url}" alt="Logo" class="h-6 md:h-8 object-contain">` : `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>`}
-                        <span class="truncate max-w-[120px] md:max-w-[200px]">${storeName}</span>
+                    <a href="index.html" class="flex items-center gap-2 text-lg md:text-2xl font-bold font-josefin text-secondary shrink-0" style="max-width: 65%;">
+                        ${sSettings.logo_url ? `<img src="${sSettings.logo_url}" alt="Logo" class="h-10 md:h-12 max-w-[140px] object-contain rounded">` : `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 md:h-10 md:w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>`}
+                        <span class="whitespace-normal break-words leading-tight" style="font-size: clamp(14px, 4vw, 22px);">${storeName}</span>
                     </a>
 
                     <!-- Desktop Search -->
