@@ -221,7 +221,10 @@ app.post('/api/delete-product', authenticateAdmin, async (req, res) => {
 // ── 9. ADMIN UPDATE ORDER (/api/update-order) ──
 app.post('/api/update-order', authenticateAdmin, async (req, res) => {
     try {
-        const { id, status, payment_status, payment_trx_id } = req.body;
+        const { id, upData } = req.body;
+        const status = upData ? upData.status : req.body.status;
+        const payment_status = upData ? upData.payment_status : req.body.payment_status;
+        const payment_trx_id = upData ? upData.payment_trx_id : req.body.payment_trx_id;
         const sql = `UPDATE orders SET status=?, payment_status=?, payment_trx_id=? WHERE id=?`;
         const data = await queryD1(sql, [status, payment_status, payment_trx_id, id], true);
         res.json(data);

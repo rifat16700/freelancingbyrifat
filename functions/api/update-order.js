@@ -22,7 +22,10 @@ export async function onRequestPost(context) {
 
     try {
         const body = await request.json();
-        const { id, status, payment_status, payment_trx_id } = body;
+        const { id, upData } = body;
+        const status = upData ? upData.status : body.status;
+        const payment_status = upData ? upData.payment_status : body.payment_status;
+        const payment_trx_id = upData ? upData.payment_trx_id : body.payment_trx_id;
 
         if (!id) {
             return new Response(JSON.stringify({ success: false, error: 'order id দিন' }), {
