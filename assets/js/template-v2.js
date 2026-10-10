@@ -202,11 +202,11 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
             var iconUrl = (c.icon_url || c.image_url || '').trim();
             var catImg = '';
             if (iconUrl.startsWith('<')) {
-                catImg = `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-100 flex items-center justify-center text-primary shadow-sm mb-2 group-hover:scale-110 transition-transform overflow-hidden [&>svg]:w-6 [&>svg]:h-6 md:[&>svg]:w-8 md:[&>svg]:h-8">${iconUrl}</div>`;
+                catImg = `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-sm mb-2 group-hover:scale-110 transition-transform overflow-hidden [&>svg]:w-6 [&>svg]:h-6 md:[&>svg]:w-8 md:[&>svg]:h-8" style="background:var(--bg-subtle); color:var(--primary);">${iconUrl}</div>`;
             } else if (iconUrl) {
                 catImg = `<img src="${iconUrl}" alt="${c.name}" loading="lazy" decoding="async" width="64" height="64" class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">`;
             } else {
-                catImg = `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shadow-sm mb-2 group-hover:scale-110 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></div>`;
+                catImg = `<div class="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center shadow-sm mb-2 group-hover:scale-110 transition-transform" style="background:var(--bg-subtle); color:var(--primary);"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></div>`;
             }
             return `
             <a href="shop.html?category=${c.id}" class="flex flex-col items-center min-w-[70px] md:min-w-[100px] group flex-shrink-0">
