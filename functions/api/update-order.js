@@ -38,7 +38,7 @@ export async function onRequestPost(context) {
         if (payment_status !== undefined) { updates.push('payment_status=?');  params.push(payment_status); }
         if (payment_trx_id !== undefined) { updates.push('payment_trx_id=?'); params.push(payment_trx_id); }
 
-        updates.push('updated_at=CURRENT_TIMESTAMP');
+        // removed updated_at=CURRENT_TIMESTAMP since column doesn't exist
         params.push(id);
 
         await env.DB.prepare(

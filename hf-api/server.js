@@ -162,8 +162,8 @@ app.post('/api/add-product', authenticateAdmin, async (req, res) => {
             INSERT INTO products (
                 id, name, description, category_id, base_price, flash_sale_price,
                 stock_status, gallery_images, video_url, variants,
-                is_active, is_featured, is_add_once, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                is_active, is_featured, is_add_once, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `;
         const params = [
             p.id, p.name, p.description || '', p.category_id || '',
@@ -188,7 +188,7 @@ app.post('/api/update-product', authenticateAdmin, async (req, res) => {
             UPDATE products SET
                 name=?, description=?, category_id=?, base_price=?, flash_sale_price=?,
                 stock_status=?, gallery_images=?, video_url=?, variants=?,
-                is_active=?, is_featured=?, is_add_once=?, updated_at=CURRENT_TIMESTAMP
+                is_active=?, is_featured=?, is_add_once=?
             WHERE id=?
         `;
         const params = [
@@ -222,7 +222,7 @@ app.post('/api/delete-product', authenticateAdmin, async (req, res) => {
 app.post('/api/update-order', authenticateAdmin, async (req, res) => {
     try {
         const { id, status, payment_status, payment_trx_id } = req.body;
-        const sql = `UPDATE orders SET status=?, payment_status=?, payment_trx_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`;
+        const sql = `UPDATE orders SET status=?, payment_status=?, payment_trx_id=? WHERE id=?`;
         const data = await queryD1(sql, [status, payment_status, payment_trx_id, id], true);
         res.json(data);
     } catch (err) {
@@ -256,8 +256,7 @@ app.post('/api/update-settings', authenticateAdmin, async (req, res) => {
                 telegram_group_link=?, whatsapp_number=?, facebook_page_url=?, youtube_channel_url=?,
                 messaging_apps=?,
                 marquee_text=?, marquee_link=?, marquee_is_active=?,
-                crypto_coins=?, custom_admin_js=?, custom_admin_css=?, pwa_icon_url=?, external_link_handler=?,
-                updated_at=CURRENT_TIMESTAMP
+                crypto_coins=?, custom_admin_js=?, custom_admin_css=?, pwa_icon_url=?, external_link_handler=?
             WHERE id=1
         `;
         const params = [
