@@ -488,21 +488,37 @@ function renderCategories(cats) {
     if (!cats.length) { row.parentElement.style.display = 'none'; return; }
 
     var mmCats = document.getElementById('mMenuCats');
-    var html = '<a href="shop.html" class="cat-pill' + (!activeCatId ? ' active' : '') + '" data-cat="">🌟 All</a>';
+    var html = '<a href="shop.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:var(--text-dark);min-width:60px;flex-shrink:0;">' +
+               '<div style="width:50px;height:50px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--primary);box-shadow:0 2px 5px rgba(0,0,0,0.05);">' +
+               '🌟' +
+               '</div><span style="font-size:12px;font-weight:600;">All</span></a>';
+               
     var mmHtml = '<a href="shop.html" style="display:block;padding:10px;font-weight:600;color:#444;border-radius:10px;margin-bottom:4px;">🌟 All Products</a>';
 
     cats.forEach(function(c) {
         var iconHtml = '';
         var iconUrl = (c.icon_url || '').trim();
         if (iconUrl.startsWith('<')) {
-            iconHtml = '<span class="cat-icon-html">' + iconUrl + '</span>';
+            // It's an SVG
+            iconHtml = '<div style="width:50px;height:50px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;color:var(--primary);box-shadow:0 2px 5px rgba(0,0,0,0.05); overflow:hidden;">' + 
+                       '<div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;">' + iconUrl + '</div></div>';
         } else if (iconUrl) {
-            iconHtml = '<img src="' + iconUrl + '" style="width:20px;height:20px;object-fit:cover;border-radius:4px;">';
+            // It's an image URL
+            iconHtml = '<img src="' + iconUrl + '" style="width:50px;height:50px;object-fit:cover;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.05);">';
+        } else {
+            // Fallback list icon (SVG)
+            iconHtml = '<div style="width:50px;height:50px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;color:#666;box-shadow:0 2px 5px rgba(0,0,0,0.05);">' +
+                       '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>' +
+                       '</div>';
         }
-        html += '<a href="shop.html?cat=' + c.id + '" class="cat-pill" data-cat="' + c.id + '" style="display:inline-flex;align-items:center;gap:6px;">' +
-            iconHtml + c.name + '</a>';
-        mmHtml += '<a href="shop.html?cat=' + c.id + '" style="display:flex;align-items:center;gap:6px;padding:10px;font-weight:600;color:#444;border-radius:10px;margin-bottom:4px;">' +
-            iconHtml + c.name + '</a>';
+        
+        html += '<a href="shop.html?cat=' + c.id + '" style="display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:var(--text-dark);min-width:60px;flex-shrink:0; text-align:center;">' +
+            iconHtml + '<span style="font-size:12px;font-weight:600;line-height:1.2;">' + c.name + '</span></a>';
+            
+        // Keep mobile menu as is
+        var mmIcon = iconUrl.startsWith('<') ? '<span style="width:20px;height:20px;display:inline-block;">'+iconUrl+'</span>' : (iconUrl ? '<img src="'+iconUrl+'" style="width:20px;height:20px;object-fit:cover;border-radius:4px;">' : '📁');
+        mmHtml += '<a href="shop.html?cat=' + c.id + '" style="display:flex;align-items:center;gap:8px;padding:10px;font-weight:600;color:#444;border-radius:10px;margin-bottom:4px;">' +
+            mmIcon + c.name + '</a>';
     });
 
     row.innerHTML = html;
