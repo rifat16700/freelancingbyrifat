@@ -463,6 +463,26 @@ function renderHero(banners) {
     if (banners.length > 1) startSlider(banners.length);
 }
 
+var slideIdx = 0;
+var slideTimer;
+function startSlider(count) {
+    clearInterval(slideTimer);
+    slideTimer = setInterval(function() { nextSlide(count); }, 4000);
+}
+function goSlide(i) {
+    slideIdx = i;
+    document.getElementById('sliderTrack').style.transform = 'translateX(-' + (i * 100) + '%)';
+    document.querySelectorAll('.dot').forEach(function(d, j) { d.classList.toggle('active', j===i); });
+}
+function nextSlide(count) {
+    var total = count || document.querySelectorAll('.slide').length;
+    goSlide((slideIdx + 1) % total);
+}
+function prevSlide() {
+    var total = document.querySelectorAll('.slide').length;
+    goSlide((slideIdx - 1 + total) % total);
+}
+
 function renderCategories(cats) {
     var row = document.getElementById('catRow');
     if (!cats.length) { row.parentElement.style.display = 'none'; return; }
