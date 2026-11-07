@@ -7,6 +7,9 @@ import {
     escapeAttr,
     serveNotFoundPage
 } from '../_lib/brand.js';
+import { renderHomePage } from '../_lib/render-home.js';
+import { renderShopPage } from '../_lib/render-shop.js';
+import { renderProductPage } from '../_lib/render-product.js';
 
 const ALLOWED_BRAND_SUBPAGES = new Map([
     ['cart', { assetPath: '/cart', titlePrefix: 'Shopping Cart' }],
@@ -21,37 +24,75 @@ const ALLOWED_BRAND_SUBPAGES = new Map([
 export async function onRequestGet(context) {
     const { request, env, params } = context;
     const rawSlug = params?.brand || '';
-    const pathParts = Array.isArray(params?.path) ? params.path : (params?.path ? [params.path] : []);
+    const rawPath = Array.isArray(params?.path) ? params.path : (params?.path ? [params.path] : []);
+    // Filter out empty segments caused by trailing slashes (e.g. /gadgets/ -> [''])
+    const pathParts = rawPath.filter(p => p !== undefined && p !== null && String(p).trim() !== '');
 
     if (isReservedSlug(rawSlug)) {
         return context.next();
-    }
-
-    const subPageRaw = (pathParts[0] || '').toLowerCase().replace(/\.html$/, '');
-
-    // If someone requested /<brand>/index.html or /<brand>/shop.html or /<brand>/product.html, redirect to clean URL
-    if (subPageRaw === 'index') {
-        const u = new URL(request.url);
-        u.pathname = `/${rawSlug}/`;
-        return Response.redirect(u.toString(), 301);
-    }
-    if (subPageRaw === 'shop' || subPageRaw === 'product') {
-        const u = new URL(request.url);
-        u.pathname = `/${rawSlug}/${subPageRaw}`;
-        return Response.redirect(u.toString(), 301);
     }
 
     const { brand, redirectSlug } = await resolveBrand(env, rawSlug);
 
     if (redirectSlug) {
         const u = new URL(request.url);
-        u.pathname = `/${redirectSlug}/${pathParts.join('/')}`;
+        u.pathname = pathParts.length > 0
+            ? `/${redirectSlug}/${pathParts.join('/')}`
+            : `/${redirectSlug}/`;
         return Response.redirect(u.toString(), 301);
     }
 
+    // If the brand does not exist or is inactive -> show 404 with Continue Shopping -> /shop (Main Site)
+    if (!brand) {
+        return serveNotFoundPage(context, null);
+    }
+
+    // 1. Brand Homepage: /<brand> or /<brand>/ (when pathParts is empty)
+    if (pathParts.length === 0) {
+        const url = new URL(request.url);
+        if (!url.pathname.endsWith('/')) {
+            url.pathname = `/${brand.slug}/`;
+            return Response.redirect(url.toString(), 301);
+        }
+        return renderHomePage(context, brand);
+    }
+
+    const firstRaw = String(pathParts[0] || '').toLowerCase();
+    const subPageRaw = firstRaw.replace(/\.html$/, '');
+
+    // If someone requested /<brand>/index.html -> redirect to /<brand>/
+    if (subPageRaw === 'index' && pathParts.length === 1) {
+        const u = new URL(request.url);
+        u.pathname = `/${brand.slug}/`;
+        return Response.redirect(u.toString(), 301);
+    }
+
+    // 2. Brand Shop Page: /<brand>/shop
+    if (subPageRaw === 'shop' && pathParts.length === 1) {
+        if (firstRaw.endsWith('.html')) {
+            const u = new URL(request.url);
+            u.pathname = `/${brand.slug}/shop`;
+            return Response.redirect(u.toString(), 301);
+        }
+        return renderShopPage(context, brand);
+    }
+
+    // 3. Brand Product Page: /<brand>/product?id=...
+    if (subPageRaw === 'product' && pathParts.length === 1) {
+        if (firstRaw.endsWith('.html')) {
+            const u = new URL(request.url);
+            u.pathname = `/${brand.slug}/product`;
+            return Response.redirect(u.toString(), 301);
+        }
+        return renderProductPage(context, brand);
+    }
+
+    // 4. Other Allowed Brand Subpages (/cart, /checkout, /track, /policies, /team, /success, /invoice)
     const subPageConfig = ALLOWED_BRAND_SUBPAGES.get(subPageRaw);
-    if (!brand || !subPageConfig || pathParts.length > 1) {
-        return serveNotFoundPage(context);
+    if (!subPageConfig || pathParts.length > 1) {
+        // Brand is valid & active, but the path after /<brand>/ is wrong ->
+        // Show 404 where "Continue Shopping" leads to this brand's shop (/gadgets/shop)!
+        return serveNotFoundPage(context, brand);
     }
 
     const assetReq = new Request(new URL(subPageConfig.assetPath, request.url), request);
@@ -99,4 +140,3 @@ export async function onRequestGet(context) {
     headers.set('Content-Type', 'text/html; charset=utf-8');
     return new Response(transformed.body, { status: transformed.status, headers });
 }
-

@@ -31,26 +31,71 @@
         <dotlottie-wc src="https://lottie.host/80c2cf50-8b0d-42bc-a22d-304bfaeeb58d/FvLg6L4y0B.lottie" autoplay loop></dotlottie-wc>
     </div>
     <h1 class="error-title">Oops! Not Found</h1>
-    <p class="error-desc">The page or product you are looking for doesn't exist or has been removed.</p>
-    <a href="shop.html" class="btn-continue">
+    <p class="error-desc" id="errorDescText">The page or product you are looking for doesn't exist or has been removed.</p>
+    <a href="/shop" id="continueShopBtn" class="btn-continue" data-brand-explicit="1">
         <i data-lucide="shopping-bag" style="width:20px;height:20px;"></i>
-        Continue Shopping
+        <span id="continueShopLabel">Continue Shopping</span>
     </a>
 </div>
 
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    (function resolve404BrandTarget() {
+        var btn = document.getElementById('continueShopBtn');
+        var label = document.getElementById('continueShopLabel');
+        if (!btn) return;
+
+        // 1. Always default to root /shop (never relative shop.html)
+        btn.setAttribute('href', '/shop');
+
+        // 2. If server already resolved the exact shop URL (brand shop vs default /shop), apply it immediately
+        if (window.__404_SHOP_URL__) {
+            btn.setAttribute('href', window.__404_SHOP_URL__);
+            if (window.__404_BRAND_NAME__ && label) {
+                label.textContent = 'Continue Shopping (' + window.__404_BRAND_NAME__ + ')';
+            }
+            return;
+        }
+
+        // 3. Client-side check: inspect first URL segment against active brands
+        var rawPath = (window.location.pathname || '/').replace(/^\/+|\/+$/g, '');
+        if (!rawPath) return;
+        var firstSeg = rawPath.split('/')[0].toLowerCase().replace(/\.html$/, '');
+        if (!firstSeg || firstSeg.indexOf('.') !== -1) return;
+
+        fetch('/api/brands')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (!d || !Array.isArray(d.brands)) return;
+                var matched = d.brands.find(function(b) {
+                    return b && b.slug && b.slug.toLowerCase() === firstSeg && (b.is_active === 1 || b.is_active === true);
+                });
+                if (matched) {
+                    // Active brand found -> send customer to that brand's shop page
+                    btn.setAttribute('href', '/' + matched.slug + '/shop');
+                    if (label && matched.name) {
+                        label.textContent = 'Continue Shopping (' + matched.name + ')';
+                    }
+                } else {
+                    // Brand not created or inactive -> send customer to default Main Site shop page
+                    btn.setAttribute('href', '/shop');
+                }
+            })
+            .catch(function() {
+                btn.setAttribute('href', '/shop');
+            });
+    })();
+
     // Fallback if lottie fails to load
     setTimeout(function() {
         var lottieEl = document.querySelector('dotlottie-wc');
-        if (!lottieEl.shadowRoot && !lottieEl.innerHTML) {
-            document.querySelector('.error-anim').innerHTML = '<div style="font-size:80px;line-height:220px;">🕵️‍♂️</div>';
+        if (!lottieEl || (!lottieEl.shadowRoot && !lottieEl.innerHTML)) {
+            var anim = document.querySelector('.error-anim');
+            if (anim) anim.innerHTML = '<div style="font-size:80px;line-height:220px;">🕵️‍♂️</div>';
         }
     }, 3000);
 </script>
 </body>
 </html>
-
-
-

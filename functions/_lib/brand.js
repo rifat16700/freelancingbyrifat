@@ -406,14 +406,17 @@ export function escapeAttr(str) {
 
 /**
  * Serves the custom in-site 404.html page with HTTP 404 status.
- * Handles Cloudflare Pages Pretty URLs where /404.html 308-redirects to /404.
+ * - If `validBrand` is provided (user typed a wrong path under an active brand, e.g. /gadgets/wrong),
+ *   the "Continue Shopping" button directs to `/<brand>/shop`.
+ * - If `validBrand` is null (brand does not exist or is inactive),
+ *   the "Continue Shopping" button directs to `/shop` (default main site shop).
  */
-export async function serveNotFoundPage(context) {
+export async function serveNotFoundPage(context, validBrand = null) {
     const { request, env } = context;
+    const targetShopUrl = (validBrand && validBrand.slug) ? `/${validBrand.slug}/shop` : '/shop';
+    const targetLabel = (validBrand && validBrand.name) ? `Continue Shopping (${validBrand.name})` : 'Continue Shopping';
     try {
-        // 1. Try /404 (Cloudflare Pages Pretty URL asset route)
         let nfRes = await env.ASSETS.fetch(new Request(new URL('/404', request.url), { method: 'GET' }));
-        // 2. If redirected or empty, try /404.html directly
         if (!nfRes || nfRes.status === 301 || nfRes.status === 302 || nfRes.status === 307 || nfRes.status === 308 || !nfRes.body) {
             const loc = nfRes?.headers?.get('Location');
             if (loc) {
@@ -423,13 +426,26 @@ export async function serveNotFoundPage(context) {
             }
         }
         if (nfRes && nfRes.body) {
-            return new Response(nfRes.body, {
+            const rewriter = new HTMLRewriter()
+                .on('head', {
+                    element(e) {
+                        const script = `<script>window.__404_SHOP_URL__=${JSON.stringify(targetShopUrl)};window.__404_BRAND_NAME__=${JSON.stringify(validBrand?.name || '')};</script>`;
+                        e.prepend(script, { html: true });
+                    }
+                })
+                .on('a.btn-continue', {
+                    element(e) {
+                        e.setAttribute('href', targetShopUrl);
+                    }
+                });
+            const transformed = rewriter.transform(nfRes);
+            return new Response(transformed.body, {
                 status: 404,
                 headers: { 'Content-Type': 'text/html; charset=utf-8' }
             });
         }
     } catch (e) {}
-    return context.next();
+    return Response.redirect(new URL(targetShopUrl, request.url).toString(), 302);
 }
 
 
