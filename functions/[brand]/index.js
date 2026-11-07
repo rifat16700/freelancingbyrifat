@@ -1,4 +1,4 @@
-import { resolveBrand, isReservedSlug } from '../_lib/brand.js';
+import { resolveBrand, isReservedSlug, serveNotFoundPage } from '../_lib/brand.js';
 import { renderHomePage } from '../_lib/render-home.js';
 
 export async function onRequestGet(context) {
@@ -19,12 +19,7 @@ export async function onRequestGet(context) {
     }
 
     if (!brand) {
-        const notFoundReq = new Request(new URL('/404.html', request.url), request);
-        const nfRes = await env.ASSETS.fetch(notFoundReq);
-        return new Response(nfRes.body, {
-            status: 404,
-            headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        });
+        return serveNotFoundPage(context);
     }
 
     // Enforce trailing slash on brand home (/ranonexwatch -> /ranonexwatch/)

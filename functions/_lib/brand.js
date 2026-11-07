@@ -200,6 +200,23 @@ export function normalizeBrandRow(b) {
         ...b,
         slug: cleanSlug(b.slug),
         prefix: '/' + cleanSlug(b.slug),
+        meta_title: b.seo_title || '',
+        meta_description: b.seo_description || '',
+        meta_keywords: b.seo_keywords || '',
+        og_image: b.seo_og_image || '',
+        theme_primary_color: themeColors.primary || '',
+        theme_accent_color: themeColors.accent || '',
+        whatsapp_number: settingsOverride.whatsapp_number || '',
+        facebook_url: settingsOverride.facebook_url || '',
+        instagram_url: settingsOverride.instagram_url || '',
+        youtube_url: settingsOverride.youtube_url || '',
+        social_links: {
+            whatsapp: settingsOverride.whatsapp_number || '',
+            phone: settingsOverride.whatsapp_number || '',
+            facebook: settingsOverride.facebook_url || '',
+            instagram: settingsOverride.instagram_url || '',
+            youtube: settingsOverride.youtube_url || ''
+        },
         theme_colors_obj: themeColors,
         settings_override_obj: settingsOverride
     };
@@ -386,4 +403,33 @@ export function escapeAttr(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 }
+
+/**
+ * Serves the custom in-site 404.html page with HTTP 404 status.
+ * Handles Cloudflare Pages Pretty URLs where /404.html 308-redirects to /404.
+ */
+export async function serveNotFoundPage(context) {
+    const { request, env } = context;
+    try {
+        // 1. Try /404 (Cloudflare Pages Pretty URL asset route)
+        let nfRes = await env.ASSETS.fetch(new Request(new URL('/404', request.url), { method: 'GET' }));
+        // 2. If redirected or empty, try /404.html directly
+        if (!nfRes || nfRes.status === 301 || nfRes.status === 302 || nfRes.status === 307 || nfRes.status === 308 || !nfRes.body) {
+            const loc = nfRes?.headers?.get('Location');
+            if (loc) {
+                nfRes = await env.ASSETS.fetch(new Request(new URL(loc, request.url), { method: 'GET' }));
+            } else {
+                nfRes = await env.ASSETS.fetch(new Request(new URL('/404.html', request.url), { method: 'GET' }));
+            }
+        }
+        if (nfRes && nfRes.body) {
+            return new Response(nfRes.body, {
+                status: 404,
+                headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            });
+        }
+    } catch (e) {}
+    return context.next();
+}
+
 

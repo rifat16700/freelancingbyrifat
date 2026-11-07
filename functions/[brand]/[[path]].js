@@ -4,7 +4,8 @@ import {
     mergeSettingsWithBrand,
     buildBrandHeadInjection,
     rewriteAnchorHref,
-    escapeAttr
+    escapeAttr,
+    serveNotFoundPage
 } from '../_lib/brand.js';
 
 const ALLOWED_BRAND_SUBPAGES = new Map([
@@ -50,12 +51,7 @@ export async function onRequestGet(context) {
 
     const subPageConfig = ALLOWED_BRAND_SUBPAGES.get(subPageRaw);
     if (!brand || !subPageConfig || pathParts.length > 1) {
-        const notFoundReq = new Request(new URL('/404.html', request.url), request);
-        const nfRes = await env.ASSETS.fetch(notFoundReq);
-        return new Response(nfRes.body, {
-            status: 404,
-            headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        });
+        return serveNotFoundPage(context);
     }
 
     const assetReq = new Request(new URL(subPageConfig.assetPath, request.url), request);

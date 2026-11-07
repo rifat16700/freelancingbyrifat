@@ -58,21 +58,21 @@ export async function onRequestPost(context) {
         if (action === 'check_slug') {
             const slug = cleanSlug(body.slug || '');
             const excludeId = body.exclude_id || '';
-            if (!slug) return jsonRes({ success: true, valid: false, reason: "Slug খালি রাখা যাবে না।" });
-            if (isReservedSlug(slug)) return jsonRes({ success: true, valid: false, reason: `"${slug}" একটি সংরক্ষিত (reserved) সিস্টেম পাথ। অন্য নাম দিন।` });
-            if (!isValidBrandSlug(slug)) return jsonRes({ success: true, valid: false, reason: "শুধুমাত্র ইংরেজি ছোট হাতের অক্ষর (a-z), সংখ্যা (0-9) এবং হাইফেন (-) ব্যবহার করা যাবে (২-৪০ অক্ষর)।" });
+            if (!slug) return jsonRes({ success: true, valid: false, available: false, reason: "Slug খালি রাখা যাবে না।" });
+            if (isReservedSlug(slug)) return jsonRes({ success: true, valid: false, available: false, reason: `"${slug}" একটি সংরক্ষিত (reserved) সিস্টেম পাথ। অন্য নাম দিন।` });
+            if (!isValidBrandSlug(slug)) return jsonRes({ success: true, valid: false, available: false, reason: "শুধুমাত্র ইংরেজি ছোট হাতের অক্ষর (a-z), সংখ্যা (0-9) এবং হাইফেন (-) ব্যবহার করা যাবে (২-৪০ অক্ষর)।" });
 
             const existing = await env.DB.prepare("SELECT id FROM brands WHERE lower(slug) = ? LIMIT 1").bind(slug).first();
             if (existing && existing.id !== excludeId) {
-                return jsonRes({ success: true, valid: false, reason: `"${slug}" পাথটি ইতিমধ্যে অন্য ব্র্যান্ডে ব্যবহৃত হচ্ছে।` });
+                return jsonRes({ success: true, valid: false, available: false, reason: `"${slug}" পাথটি ইতিমধ্যে অন্য ব্র্যান্ডে ব্যবহৃত হচ্ছে।` });
             }
-            return jsonRes({ success: true, valid: true, slug });
+            return jsonRes({ success: true, valid: true, available: true, slug });
         }
 
         // 2. Delete brand
         if (action === 'delete') {
             const brandId = body.id;
-            const productMode = body.product_mode || 'move_to_main'; // 'move_to_main' | 'delete_products'
+            const productMode = (body.delete_products === true || body.product_mode === 'delete_products') ? 'delete_products' : 'move_to_main';
             if (!brandId) return jsonRes({ success: false, error: "Brand ID required" }, 400);
 
             const oldBrand = await env.DB.prepare("SELECT * FROM brands WHERE id = ?").bind(brandId).first();
@@ -123,8 +123,22 @@ export async function onRequestPost(context) {
             return jsonRes({ success: false, error: `"${slug}" পাথটি ইতিমধ্যে অন্য ব্র্যান্ডে ব্যবহৃত হচ্ছে।` }, 400);
         }
 
-        const themeColors = typeof body.theme_colors === 'string' ? body.theme_colors : JSON.stringify(body.theme_colors || {});
-        const settingsOverride = typeof body.settings_override === 'string' ? body.settings_override : JSON.stringify(body.settings_override || {});
+        const tcObj = (body.theme_colors && typeof body.theme_colors === 'object') ? { ...body.theme_colors } : {};
+        if (body.theme_primary_color !== undefined) tcObj.primary = body.theme_primary_color;
+        if (body.theme_accent_color !== undefined) tcObj.accent = body.theme_accent_color;
+        const themeColors = typeof body.theme_colors === 'string' ? body.theme_colors : JSON.stringify(tcObj);
+
+        const ovObj = (body.settings_override && typeof body.settings_override === 'object') ? { ...body.settings_override } : {};
+        if (body.whatsapp_number !== undefined) ovObj.whatsapp_number = body.whatsapp_number;
+        if (body.facebook_url !== undefined) ovObj.facebook_url = body.facebook_url;
+        if (body.instagram_url !== undefined) ovObj.instagram_url = body.instagram_url;
+        if (body.youtube_url !== undefined) ovObj.youtube_url = body.youtube_url;
+        const settingsOverride = typeof body.settings_override === 'string' ? body.settings_override : JSON.stringify(ovObj);
+
+        const seoTitle = body.seo_title || body.meta_title || '';
+        const seoDesc = body.seo_description || body.meta_description || '';
+        const seoKeywords = body.seo_keywords || body.meta_keywords || '';
+        const seoOgImage = body.seo_og_image || body.og_image || '';
         const isActive = body.is_active === undefined ? 1 : (body.is_active ? 1 : 0);
         const sortOrder = parseInt(body.sort_order, 10) || 0;
 
@@ -139,8 +153,8 @@ export async function onRequestPost(context) {
                 WHERE id = ?
             `).bind(
                 slug, name, body.tagline || '', body.logo_url || '', body.favicon_url || '',
-                themeColors, body.seo_title || '', body.seo_description || '', body.seo_keywords || '',
-                body.seo_og_image || '', body.footer_text || '', settingsOverride,
+                themeColors, seoTitle, seoDesc, seoKeywords,
+                seoOgImage, body.footer_text || '', settingsOverride,
                 isActive, sortOrder, brandId
             ).run();
 
@@ -164,8 +178,8 @@ export async function onRequestPost(context) {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `).bind(
                 brandId, slug, name, body.tagline || '', body.logo_url || '', body.favicon_url || '',
-                themeColors, body.seo_title || '', body.seo_description || '', body.seo_keywords || '',
-                body.seo_og_image || '', body.footer_text || '', settingsOverride,
+                themeColors, seoTitle, seoDesc, seoKeywords,
+                seoOgImage, body.footer_text || '', settingsOverride,
                 isActive, sortOrder
             ).run();
             await env.DB.prepare("DELETE FROM brand_slug_history WHERE lower(old_slug) = ?").bind(slug).run().catch(() => {});

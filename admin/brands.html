@@ -364,7 +364,7 @@ function triggerSlugCheck(slug) {
         })
         .then(function(r) { return r.json(); })
         .then(function(d) {
-            if (d.available) {
+            if (d.available || d.valid) {
                 statusEl.textContent = '✓ Available';
                 statusEl.className = 'slug-status ok';
                 lastSlugAvailable = true;
