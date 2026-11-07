@@ -2,7 +2,9 @@ import {
     ensureBrandSchema,
     resolveBrand,
     getAllActiveBrands,
-    mergeSettingsWithBrand
+    mergeSettingsWithBrand,
+    filterCatalogForBrandContext,
+    isCategoryVisibleOnBrand
 } from '../_lib/brand.js';
 
 export async function onRequestGet(context) {
@@ -26,17 +28,15 @@ export async function onRequestGet(context) {
 
         const pSettings = env.DB.prepare("SELECT * FROM settings WHERE id = 1");
         const pProductCategories = env.DB.prepare("SELECT * FROM product_categories");
+        const pCategories = env.DB.prepare("SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order");
+        const pProducts = env.DB.prepare("SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, created_at DESC");
 
-        let pBanners, pCategories, pProducts, pSections;
+        let pBanners, pSections;
         if (activeBrand) {
             pBanners = env.DB.prepare("SELECT * FROM banners WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order").bind(activeBrand.id);
-            pCategories = env.DB.prepare("SELECT * FROM categories WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order").bind(activeBrand.id);
-            pProducts = env.DB.prepare("SELECT * FROM products WHERE is_active = 1 AND brand_id = ? ORDER BY is_featured DESC, created_at DESC").bind(activeBrand.id);
             pSections = env.DB.prepare("SELECT * FROM home_sections WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order").bind(activeBrand.id);
         } else {
             pBanners = env.DB.prepare("SELECT * FROM banners WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '') ORDER BY sort_order");
-            pCategories = env.DB.prepare("SELECT * FROM categories WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '') ORDER BY sort_order");
-            pProducts = env.DB.prepare("SELECT * FROM products WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '' OR show_on_main = 1) ORDER BY is_featured DESC, created_at DESC");
             pSections = env.DB.prepare("SELECT * FROM home_sections WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '') ORDER BY sort_order");
         }
 
@@ -53,6 +53,7 @@ export async function onRequestGet(context) {
         const brandMap = new Map(allBrands.map(b => [b.id, b]));
         const rawSettings = (rawSettingsRes.results && rawSettingsRes.results.length) ? rawSettingsRes.results[0] : {};
         const mergedSettings = mergeSettingsWithBrand(rawSettings, activeBrand);
+        const mainStoreName = rawSettings.store_name || 'Ranonex';
 
         const rawVersion = (env.TEMPLATE_VERSION || env.VERSION || env.SITE_VERSION || env.THEME_VERSION || '').toString().trim().toLowerCase();
         const templateVersion = (rawVersion === 'v2' || rawVersion === '2') ? 'v2' : (rawVersion === 'v1' || rawVersion === '1' ? 'v1' : null);
@@ -62,16 +63,16 @@ export async function onRequestGet(context) {
             brandColors = activeBrand.theme_colors;
         }
 
-        // Enrich products with brand_slug & brand_name so frontend cards/cart know where each product belongs
-        const enrichProduct = (p) => {
-            if (!p) return p;
-            const pb = p.brand_id ? brandMap.get(p.brand_id) : null;
-            return {
-                ...p,
-                brand_slug: pb ? pb.slug : '',
-                brand_name: pb ? pb.name : (rawSettings.store_name || 'Ranonex')
-            };
-        };
+        const catalog = filterCatalogForBrandContext({
+            allCategories: categories.results || [],
+            allProducts: products.results || [],
+            productCategories: product_categories.results || [],
+            activeBrand,
+            brandMap,
+            mainStoreName
+        });
+
+        const enrichProduct = catalog.enrichProduct;
 
         // 1. Single product lookup (for product page direct access — looks across all active products)
         if (singlePid) {
@@ -87,14 +88,14 @@ export async function onRequestGet(context) {
                 ).bind(String(singlePid).trim(), sPidLower, sPidLower).first().catch(() => null);
             }
             const enrichedFound = found ? enrichProduct(found) : null;
-            const prodBrand = (found && found.brand_id) ? brandMap.get(found.brand_id) : activeBrand;
+            const prodBrand = (enrichedFound && enrichedFound.brand_slug)
+                ? (allBrands.find(b => b.slug === enrichedFound.brand_slug) || activeBrand)
+                : activeBrand;
             const prodSettings = mergeSettingsWithBrand(rawSettings, prodBrand || null);
 
-            let prodCategories = categories.results || [];
-            if (prodBrand && (!activeBrand || activeBrand.id !== prodBrand.id)) {
-                const bcRes = await env.DB.prepare("SELECT * FROM categories WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order").bind(prodBrand.id).all().catch(() => ({ results: [] }));
-                prodCategories = bcRes.results || [];
-            }
+            const prodCategories = (categories.results || []).filter(c =>
+                isCategoryVisibleOnBrand(c, prodBrand ? prodBrand.id : null)
+            );
 
             return new Response(JSON.stringify({
                 success: true,
@@ -112,10 +113,8 @@ export async function onRequestGet(context) {
             });
         }
 
-        // Filter out products of inactive brands when on main site, then enrich
-        const allProducts = (products.results || [])
-            .filter(p => !p.brand_id || brandMap.has(p.brand_id))
-            .map(enrichProduct);
+        const allProducts = catalog.products;
+        const filteredCategories = catalog.categories;
 
         const INITIAL_LIMIT = 200;
         const CHUNK_SIZE = 200;
@@ -159,7 +158,7 @@ export async function onRequestGet(context) {
             brand: activeBrand || null,
             brands: allBrands,
             banners: banners.results || [],
-            categories: categories.results || [],
+            categories: filteredCategories,
             products: initialProducts,
             has_more: hasMore,
             next_chunk: hasMore ? 1 : null,

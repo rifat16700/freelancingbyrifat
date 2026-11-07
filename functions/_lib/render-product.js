@@ -1,11 +1,13 @@
 import {
     ensureBrandSchema,
     resolveBrand,
+    getAllActiveBrands,
     mergeSettingsWithBrand,
     mergeBrandKeywords,
     buildBrandHeadInjection,
     rewriteAnchorHref,
-    escapeAttr
+    escapeAttr,
+    resolveProductCanonicalBrand
 } from './brand.js';
 
 export async function renderProductPage(context, brand = null) {
@@ -49,12 +51,20 @@ export async function renderProductPage(context, brand = null) {
             });
         }
 
-        // R1: Determine canonical brand for this product and redirect if accessed via wrong URL
-        let productBrand = null;
-        if (product.brand_id) {
-            const resolved = await resolveBrand(env, product.brand_id, true);
-            productBrand = resolved.brand;
-        }
+        // R1 & Category URL Mode: Determine canonical brand for this product and redirect if accessed via wrong URL
+        const [allBrands, prodCatsRes] = await Promise.all([
+            getAllActiveBrands(env),
+            env.DB.prepare(`
+                SELECT c.*
+                FROM categories c
+                INNER JOIN product_categories pc ON c.id = pc.category_id
+                WHERE pc.product_id = ? AND c.is_active = 1
+            `).bind(product.id).all().catch(() => ({ results: [] }))
+        ]);
+
+        const brandMap = new Map(allBrands.map(b => [b.id, b]));
+        const prodCategories = prodCatsRes?.results || [];
+        const { canonicalBrand: productBrand } = resolveProductCanonicalBrand(product, prodCategories, brandMap, brand);
 
         if (productBrand && (!brand || brand.id !== productBrand.id)) {
             const targetUrl = new URL(request.url);
@@ -62,7 +72,7 @@ export async function renderProductPage(context, brand = null) {
             return Response.redirect(targetUrl.toString(), 301);
         }
         if (!productBrand && brand) {
-            // Main site product accessed under a brand path -> redirect to main /product
+            // Canonical URL is Main Site (/product) -> redirect to main /product
             const targetUrl = new URL(request.url);
             targetUrl.pathname = `/product`;
             return Response.redirect(targetUrl.toString(), 301);

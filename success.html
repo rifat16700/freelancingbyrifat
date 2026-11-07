@@ -134,14 +134,16 @@ document.addEventListener('DOMContentLoaded', function() {
         var settings = results[0].data || {};
         var rOrder = results[1];
         
-        if (settings.store_name) {
-            document.getElementById('navBrand').textContent = settings.store_name;
+        var activeStoreTitle = (rOrder && rOrder.data && rOrder.data.brand_name) || (window.BRAND && BRAND.slug && BRAND.name) || settings.store_name;
+        if (activeStoreTitle) {
+            document.getElementById('navBrand').textContent = activeStoreTitle;
         }
 
         if (rOrder.error || !rOrder.data) {
             document.getElementById('orderDetails').innerHTML = '<div style="text-align:center;padding:30px;color:#999;">Could not load order details.</div>';
             return;
         }
+        rOrder.data._storeSettings = settings;
         renderOrder(rOrder.data, settings);
 
         // Tracking: Purchase
@@ -230,7 +232,7 @@ function downloadPDF() {
     if (!currentOrderData) return;
     localStorage.setItem('print_order', JSON.stringify(currentOrderData));
     localStorage.setItem('print_type', 'bill');
-    window.open('invoice.html', '_blank');
+    window.open('/invoice', '_blank');
 }
 </script>
 

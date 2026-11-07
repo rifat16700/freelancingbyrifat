@@ -226,7 +226,7 @@ function renderTrackResult(order) {
     window.downloadInvoice = function(orderObj, type) {
         localStorage.setItem('print_order', JSON.stringify(orderObj));
         localStorage.setItem('print_type', type);
-        window.open('invoice.html', '_blank');
+        window.open('/invoice', '_blank');
     };
 
     var invBtns = '<div style="display:flex;gap:10px;margin-top:14px;">' +

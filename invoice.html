@@ -214,11 +214,13 @@ function buildSingleInvoiceHtml(o, printType, opts) {
     var brandInfo = o._brandInfo || {};
 
     // Determine Store / Brand Header Identity
-    var headerName = (!isMaster && brandInfo && brandInfo.name) ? brandInfo.name : (storeSettings.store_name || 'Ranonex');
-    var headerLogo = (!isMaster && brandInfo && brandInfo.logo_url) ? brandInfo.logo_url : (storeSettings.logo_url || '');
-    var headerPhone = (!isMaster && brandInfo && brandInfo.phone) ? brandInfo.phone : (storeSettings.whatsapp_number || '');
-    var headerAddr = (!isMaster && brandInfo && brandInfo.address) ? brandInfo.address : (storeSettings.store_address || '');
-    var parentStoreName = storeSettings.store_name || 'Ranonex';
+    var parentStoreName = (storeSettings.main_store_name || storeSettings.store_name || 'Ranonex').trim();
+    var mainSiteHeaderName = /\b(shop|store)\b/i.test(parentStoreName) ? parentStoreName : (parentStoreName + ' Shop');
+    var hasCustomBrand = (!isMaster && brandInfo && !brandInfo.is_main && brandInfo.name && !/^brand_\d+$/i.test(String(brandInfo.name).trim()));
+    var headerName = hasCustomBrand ? String(brandInfo.name).trim() : mainSiteHeaderName;
+    var headerLogo = (hasCustomBrand && brandInfo.logo_url) ? brandInfo.logo_url : (storeSettings.logo_url || '');
+    var headerPhone = (hasCustomBrand && brandInfo.phone) ? brandInfo.phone : (storeSettings.whatsapp_number || '');
+    var headerAddr = (hasCustomBrand && brandInfo.address) ? brandInfo.address : (storeSettings.store_address || '');
 
     var bannerHtml = '';
     if (isMaster && Array.isArray(o._subOrderSummaries) && o._subOrderSummaries.length > 1) {
@@ -319,7 +321,7 @@ function buildSingleInvoiceHtml(o, printType, opts) {
             '<div class="store-info">' +
                 (headerLogo ? '<img src="' + esc(headerLogo) + '" style="max-height:48px;margin-bottom:8px;display:block;object-fit:contain;">' : '') +
                 '<h1>' + esc(headerName) + '</h1>' +
-                (!isMaster && brandInfo && !brandInfo.is_main && parentStoreName ? '<p style="font-weight:700;color:#0f172a;">An Official Brand of ' + esc(parentStoreName) + '</p>' : '') +
+                (parentStoreName ? '<p style="font-weight:700;color:#0f172a;">An Official Brand of ' + esc(parentStoreName) + '</p>' : '') +
                 (headerAddr ? '<p>📍 ' + esc(headerAddr) + '</p>' : '') +
                 (headerPhone ? '<p>📞 ' + esc(headerPhone) + '</p>' : '') +
             '</div>' +
@@ -428,6 +430,132 @@ function renderAllInvoices() {
     root.innerHTML = htmlParts.join('');
 }
 
+function isRawBrandIdString(val) {
+    if (!val) return true;
+    return /^brand_\d+$/i.test(String(val).trim());
+}
+
+function hydrateInvoiceData(o, brandsMap, globalSettings) {
+    if (!o || typeof o !== 'object') return;
+    brandsMap = brandsMap || {};
+    var gs = Object.assign({}, o._storeSettings || {}, globalSettings || {});
+    if (gs.main_store_name) {
+        gs.store_name = gs.main_store_name;
+    }
+    o._storeSettings = gs;
+
+    var parentName = (gs.store_name || 'Ranonex').trim();
+    var mainShopLabel = /\b(shop|store)\b/i.test(parentName) ? parentName : (parentName + ' Shop');
+
+    function resolveBrandForOrder(ord) {
+        var bId = ord.brand_id || (ord._brandInfo && ord._brandInfo.id) || null;
+        if (!bId && Array.isArray(ord.items) && ord.items.length > 0) {
+            var firstItemBrand = ord.items[0].brand_id || null;
+            var allSame = ord.items.every(function(it) { return (it.brand_id || null) === firstItemBrand; });
+            if (allSame && firstItemBrand) bId = firstItemBrand;
+        }
+
+        if (bId && brandsMap[bId]) {
+            var b = brandsMap[bId];
+            var ov = {};
+            var sl = {};
+            try { ov = typeof b.settings_override === 'string' ? JSON.parse(b.settings_override || '{}') : (b.settings_override || {}); } catch(e){}
+            try { sl = typeof b.social_links === 'string' ? JSON.parse(b.social_links || '{}') : (b.social_links || {}); } catch(e){}
+            return {
+                id: b.id,
+                name: b.name,
+                slug: b.slug || '',
+                logo_url: b.logo_url || gs.logo_url || '',
+                phone: (ov && ov.whatsapp_number) || (sl && (sl.whatsapp || sl.phone)) || gs.whatsapp_number || '',
+                address: (sl && sl.address) || gs.store_address || '',
+                is_main: false
+            };
+        }
+
+        // Check existing _brandInfo or ord.brand_name or item.brand_name (as long as it is not a raw brand_179... ID)
+        var candidateName = '';
+        if (ord._brandInfo && ord._brandInfo.name && !isRawBrandIdString(ord._brandInfo.name) && !ord._brandInfo.is_main) {
+            candidateName = ord._brandInfo.name;
+        } else if (ord.brand_name && !isRawBrandIdString(ord.brand_name) && ord.brand_name !== 'Main Store') {
+            candidateName = ord.brand_name;
+        } else if (bId && Array.isArray(ord.items) && ord.items[0]) {
+            var itName = ord.items[0]._brandLabel || ord.items[0].brand_name || '';
+            if (itName && !isRawBrandIdString(itName) && itName !== 'Main Store') {
+                candidateName = itName;
+            }
+        }
+
+        if (candidateName && bId) {
+            return {
+                id: bId,
+                name: candidateName,
+                slug: (ord._brandInfo && ord._brandInfo.slug) || '',
+                logo_url: (ord._brandInfo && ord._brandInfo.logo_url) || gs.logo_url || '',
+                phone: (ord._brandInfo && ord._brandInfo.phone) || gs.whatsapp_number || '',
+                address: (ord._brandInfo && ord._brandInfo.address) || gs.store_address || '',
+                is_main: false
+            };
+        }
+
+        return {
+            id: null,
+            name: mainShopLabel,
+            slug: '',
+            logo_url: gs.logo_url || '',
+            phone: gs.whatsapp_number || '',
+            address: gs.store_address || '',
+            is_main: true
+        };
+    }
+
+    function cleanItemsArray(items, fallbackBrandInfo) {
+        if (!Array.isArray(items)) return [];
+        return items.map(function(it) {
+            if (!it || typeof it !== 'object') return it;
+            var ibId = it.brand_id || null;
+            var resolvedName = '';
+            if (ibId && brandsMap[ibId]) {
+                resolvedName = brandsMap[ibId].name;
+            } else if (it.brand_name && !isRawBrandIdString(it.brand_name)) {
+                resolvedName = it.brand_name;
+            } else if (it._brandLabel && !isRawBrandIdString(it._brandLabel)) {
+                resolvedName = it._brandLabel;
+            } else if (fallbackBrandInfo && fallbackBrandInfo.name) {
+                resolvedName = fallbackBrandInfo.name;
+            }
+            return Object.assign({}, it, {
+                brand_name: resolvedName || mainShopLabel
+            });
+        });
+    }
+
+    // Check if customer order came from success.html (_subOrders) or track.html (_groupOrders) with multiple brands
+    var rawSubs = o._subOrderSummaries || o._subOrders || o._groupOrders || null;
+    if (Array.isArray(rawSubs) && rawSubs.length > 1 && !o._invoiceMode) {
+        o._invoiceMode = 'master';
+        o._subOrderSummaries = rawSubs.map(function(so) {
+            var sbInfo = resolveBrandForOrder(so);
+            return Object.assign({}, so, {
+                _brandInfo: sbInfo,
+                brand_name: sbInfo.name,
+                items: cleanItemsArray(so.items, sbInfo)
+            });
+        });
+    } else if (Array.isArray(o._subOrderSummaries) && o._subOrderSummaries.length > 0) {
+        o._subOrderSummaries = o._subOrderSummaries.map(function(so) {
+            var sbInfo = resolveBrandForOrder(so);
+            return Object.assign({}, so, {
+                _brandInfo: sbInfo,
+                brand_name: sbInfo.name,
+                items: cleanItemsArray(so.items, sbInfo)
+            });
+        });
+    }
+
+    o._brandInfo = resolveBrandForOrder(o);
+    o.items = cleanItemsArray(o.items, o._brandInfo);
+}
+
 window.onload = function() {
     var orderRaw = localStorage.getItem('print_order');
     currentPrintType = localStorage.getItem('print_type') || 'full';
@@ -444,23 +572,60 @@ window.onload = function() {
         return;
     }
 
-    // Fallback to cached public store settings if _storeSettings wasn't embedded
-    if (!currentOrderData._storeSettings || !currentOrderData._storeSettings.store_name) {
-        try {
-            var pubRaw = localStorage.getItem('__fbr_public_data');
-            if (pubRaw) {
-                var pub = JSON.parse(pubRaw);
-                if (pub.data && pub.data.settings) {
-                    currentOrderData._storeSettings = pub.data.settings;
+    var brandsMap = {};
+    var cachedSettings = {};
+
+    // 1. Seed from sessionStorage / localStorage caches immediately
+    try {
+        var bListRaw = sessionStorage.getItem('__fbr_brands_list');
+        if (bListRaw) {
+            JSON.parse(bListRaw).forEach(function(b) { if (b && b.id) brandsMap[b.id] = b; });
+        }
+    } catch(e){}
+    try {
+        var pubRaw = localStorage.getItem('__fbr_public_data');
+        if (pubRaw) {
+            var pub = JSON.parse(pubRaw);
+            if (pub && pub.data) {
+                if (pub.data.main_settings && pub.data.main_settings.store_name) {
+                    cachedSettings = Object.assign({}, pub.data.settings || {}, { store_name: pub.data.main_settings.store_name });
+                } else if (pub.data.settings) {
+                    cachedSettings = pub.data.settings;
+                }
+                if (Array.isArray(pub.data.brands)) {
+                    pub.data.brands.forEach(function(b) { if (b && b.id) brandsMap[b.id] = b; });
                 }
             }
-        } catch(e){}
-    }
+        }
+    } catch(e){}
 
-    renderAllInvoices();
-    setTimeout(function() {
-        window.print();
-    }, 600);
+    // 2. Fetch fresh brands & main store settings from D1 so neither Admin nor User ever sees raw IDs or wrong store names
+    var apiBase = (window.CONFIG && (CONFIG.HF_API_BASE || CONFIG.API_BASE)) ? (CONFIG.HF_API_BASE || CONFIG.API_BASE) : '';
+    fetch(apiBase + '/api/d1-query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([
+            { sql: "SELECT * FROM settings WHERE id = 1" },
+            { sql: "SELECT * FROM brands" }
+        ])
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d && d.success && Array.isArray(d.result)) {
+            var sRows = (d.result[0] && d.result[0].results) ? d.result[0].results : [];
+            var bRows = (d.result[1] && d.result[1].results) ? d.result[1].results : [];
+            if (sRows[0]) cachedSettings = sRows[0];
+            bRows.forEach(function(b) { if (b && b.id) brandsMap[b.id] = b; });
+        }
+    })
+    .catch(function() {})
+    .finally(function() {
+        hydrateInvoiceData(currentOrderData, brandsMap, cachedSettings);
+        renderAllInvoices();
+        setTimeout(function() {
+            window.print();
+        }, 500);
+    });
 };
 </script>
 

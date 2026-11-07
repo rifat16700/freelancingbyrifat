@@ -41,23 +41,58 @@
 
 <!-- Modal -->
 <div class="modal-overlay" id="catModal">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width:540px;">
         <div class="modal-header">
             <div class="modal-title" id="catModalTitle">Add Category</div>
             <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
-        <div class="form-group"><label class="form-label">Brand / Storefront</label>
-            <select class="form-select" id="cBrand" data-brand-select="1"></select></div>
+        <div class="form-group"><label class="form-label">Primary Brand / Storefront</label>
+            <select class="form-select" id="cBrand" data-brand-select="1" onchange="renderCategoryShareBrandsUI()"></select></div>
         <div class="form-group"><label class="form-label">Category Name *</label>
             <input class="form-input" id="cName" placeholder="e.g. T-Shirts"></div>
         <div class="form-group"><label class="form-label">Icon URL or HTML Code (e.g. SVG or Emoji)</label>
             <textarea class="form-input" id="cIcon" placeholder="https://...icon.png or <svg>...</svg>" style="min-height:60px; font-family:monospace; font-size:12px;"></textarea></div>
         <div class="form-group"><label class="form-label">Sort Order</label>
             <input class="form-input" id="cSort" type="number" placeholder="0" value="0"></div>
-        <div class="toggle-wrap" onclick="toggleCatActive()" style="margin-bottom:20px;">
+        <div class="toggle-wrap" onclick="toggleCatActive()" style="margin-bottom:14px;">
             <div><div class="toggle-label">Active (visible on site)</div></div>
             <button class="toggle-switch on" id="cActive" type="button"></button>
         </div>
+
+        <!-- Advanced: Category & Product Sharing -->
+        <details id="catShareAdvancedDetails" style="margin-bottom:18px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;padding:12px 14px;">
+            <summary style="cursor:pointer;font-weight:700;font-size:13px;color:#1e293b;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+                <span>⚙️ Advanced: Share Category & Products with Other Brands</span>
+                <span style="font-size:11px;color:#64748b;font-weight:600;">Click to expand ▼</span>
+            </summary>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #cbd5e1;">
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label class="form-label" style="margin-bottom:4px;">1. Share This Category With (No Duplicate Data in DB)</label>
+                    <div style="font-size:11.5px;color:#64748b;margin-bottom:8px;">যে ব্র্যান্ডগুলো টিক দিবেন, সেগুলোতেও একই ক্যাটাগরি (নাম ও আইকন) শেয়ার হবে—ডাটাবেজে কোনো ডুপ্লিকেট ক্যাটাগরি তৈরি হবে না।</div>
+                    <div id="cSharedBrandsList" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;min-height:42px;"></div>
+                </div>
+
+                <div class="toggle-wrap" onclick="toggleCatShareProducts()" style="margin-bottom:12px;background:#fff;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
+                    <div style="padding-right:10px;">
+                        <div class="toggle-label" style="font-size:13px;font-weight:700;">2. Bring All Existing Products of This Category into Shared Brand(s)?</div>
+                        <div style="font-size:11.5px;color:#64748b;margin-top:2px;">অন করলে এই ক্যাটাগরির আগের সব প্রোডাক্ট শেয়ার করা ব্র্যান্ড স্টোরেও অটোমেটিক চলে আসবে।</div>
+                    </div>
+                    <button class="toggle-switch" id="cShareIncludeProducts" type="button"></button>
+                </div>
+
+                <div class="form-group" id="cShareUrlModeWrap" style="margin-bottom:4px;">
+                    <label class="form-label">3. Shared Products Canonical URL Mode (Duplicate URL Prevention)</label>
+                    <select class="form-select" id="cShareUrlMode">
+                        <option value="brand">🏷️ Run on Brand Site URL (/&lt;brand&gt;/product?id=...) — Recommended for Brand Promotion</option>
+                        <option value="main">🏠 Run on Main Site URL (/product?id=...) — Keep Main Site URL Everywhere</option>
+                    </select>
+                    <div style="font-size:11px;color:#64748b;margin-top:5px;">
+                        প্রোডাক্ট ডুপ্লিকেট যেন না হয় সেজন্য যেকোনো জায়গায় ক্লিক করলে এই সিলেক্ট করা ১টি URL-এই প্রোডাক্ট ওপেন হবে।
+                    </div>
+                </div>
+            </div>
+        </details>
+
         <div style="display:flex;gap:10px;">
             <button class="btn btn-primary btn-full" onclick="saveCat()">💾 Save</button>
             <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -66,7 +101,7 @@
 </div>
 
 <script>
-var allCats = [], editingId = null, cActive = true;
+var allCats = [], editingId = null, cActive = true, cShareIncludeProducts = false, currentSharedBrands = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     adminInit('categories', function() { loadCats(); });
@@ -95,27 +130,45 @@ function loadCats() {
                 showToast('Load failed: ' + err.message, 'error');
         });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        cfDbBatchQuery([{ sql: "SELECT * FROM categories ORDER BY sort_order" }], false)
-        .then(function(d) {
-            document.getElementById('pageLoader').style.display = 'none';
-            document.getElementById('adminMain').style.display  = 'flex';
-            allCats = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
-            allCats = allCats.map(function(c) { c.is_active = c.is_active === 1; return c; });
-            renderCats();
-        }).catch(function(err) {
-            var l = document.getElementById('pageLoader'), m = document.getElementById('adminMain');
+        cfDbBatchQuery([
+            { sql: "ALTER TABLE categories ADD COLUMN shared_brand_ids TEXT DEFAULT '[]'" },
+            { sql: "ALTER TABLE categories ADD COLUMN share_include_products INTEGER DEFAULT 0" },
+            { sql: "ALTER TABLE categories ADD COLUMN share_url_mode TEXT DEFAULT 'brand'" }
+        ], false).catch(function(){}).finally(function() {
+            cfDbBatchQuery([{ sql: "SELECT * FROM categories ORDER BY sort_order" }], false)
+            .then(function(d) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                allCats = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
+                allCats = allCats.map(function(c) { c.is_active = c.is_active === 1; return c; });
+                renderCats();
+            }).catch(function(err) {
+                var l = document.getElementById('pageLoader'), m = document.getElementById('adminMain');
                 if(l) l.style.display='none';
                 if(m) m.style.display='flex';
                 showToast('Load failed: ' + err.message, 'error');
+            });
         });
     }
+}
+
+function parseCatSharedBrands(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    try {
+        var parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) { return []; }
 }
 
 function renderCats() {
     var html = '';
     var filterVal = (document.getElementById('catBrandFilter') || {}).value || 'all';
     var filtered = allCats.filter(function(c) {
-        return window.matchesAdminBrandFilter ? window.matchesAdminBrandFilter(c.brand_id, filterVal) : true;
+        var shared = parseCatSharedBrands(c.shared_brand_ids);
+        if (filterVal === 'all') return true;
+        if (filterVal === '__main__') return !c.brand_id || shared.indexOf('__main__') !== -1;
+        return c.brand_id === filterVal || shared.indexOf(filterVal) !== -1;
     });
     if (!filtered.length) { html = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8E8E93;">No categories yet</td></tr>'; }
     filtered.forEach(function(c) {
@@ -129,10 +182,26 @@ function renderCats() {
             iconHtml = '<div style="width:36px;height:36px;border-radius:8px;background:var(--bg-card);display:flex;align-items:center;justify-content:center;color:#8E8E93;">—</div>';
         }
 
+        var shared = parseCatSharedBrands(c.shared_brand_ids);
+        var sharedBadgesHtml = '';
+        if (shared.length > 0) {
+            var sNames = shared.map(function(sid) {
+                if (sid === '__main__') return '🏠 Main Site';
+                var b = (window._adminBrandsCache || []).find(function(x) { return x.id === sid; });
+                return b ? ('🏷️ ' + b.name) : null;
+            }).filter(Boolean);
+            if (sNames.length > 0) {
+                var prodShareInfo = Number(c.share_include_products) === 1
+                    ? (' • Products Shared (' + (c.share_url_mode === 'main' ? 'Main URL' : 'Brand URL') + ')')
+                    : '';
+                sharedBadgesHtml = '<div style="margin-top:4px;font-size:11px;color:#0369a1;background:#e0f2fe;display:inline-block;padding:2px 8px;border-radius:999px;font-weight:600;">🔗 Shared: ' + sNames.join(', ') + prodShareInfo + '</div>';
+            }
+        }
+
         html += '<tr>' +
             '<td>' + iconHtml + '</td>' +
             '<td style="font-weight:600;color:var(--text-dark);">' + c.name + '</td>' +
-            '<td>' + (window.getAdminBrandBadge ? window.getAdminBrandBadge(c.brand_id) : '🏠 Main Site') + '</td>' +
+            '<td><div>' + (window.getAdminBrandBadge ? window.getAdminBrandBadge(c.brand_id) : '🏠 Main Site') + '</div>' + sharedBadgesHtml + '</td>' +
             '<td>' + (c.sort_order || 0) + '</td>' +
             '<td><span class="badge ' + (c.is_active ? 'badge-delivered' : 'badge-cancelled') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td>' +
             '<td style="display:flex;gap:6px;">' +
@@ -144,8 +213,57 @@ function renderCats() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+function renderCategoryShareBrandsUI(selectedSharedIds) {
+    if (Array.isArray(selectedSharedIds)) {
+        currentSharedBrands = selectedSharedIds.slice();
+    } else {
+        // Preserve currently checked boxes when primary brand dropdown changes
+        var checked = document.querySelectorAll('.cat-share-brand-cb:checked');
+        if (checked.length > 0) {
+            currentSharedBrands = Array.from(checked).map(function(cb) { return cb.value; });
+        }
+    }
+    var primaryBrandId = (document.getElementById('cBrand') && document.getElementById('cBrand').value) ? document.getElementById('cBrand').value : '';
+    var wrap = document.getElementById('cSharedBrandsList');
+    if (!wrap) return;
+
+    var options = [];
+    if (primaryBrandId) {
+        options.push({ id: '__main__', label: '🏠 Main Site (Default)' });
+    }
+    (window._adminBrandsCache || []).forEach(function(b) {
+        if (b.id !== primaryBrandId) {
+            options.push({ id: b.id, label: '🏷️ ' + b.name + ' (/' + b.slug + '/)' });
+        }
+    });
+
+    if (!options.length) {
+        wrap.innerHTML = '<span style="font-size:12px;color:#94a3b8;">No other brands created yet.</span>';
+        return;
+    }
+
+    wrap.innerHTML = options.map(function(opt) {
+        var isChecked = currentSharedBrands.indexOf(opt.id) !== -1;
+        return '<label style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;border:1px solid ' + (isChecked ? '#0284c7' : '#e2e8f0') + ';background:' + (isChecked ? '#f0f9ff' : '#f8fafc') + ';font-size:12px;font-weight:600;cursor:pointer;user-select:none;">' +
+            '<input type="checkbox" class="cat-share-brand-cb" value="' + opt.id + '" ' + (isChecked ? 'checked' : '') + ' onchange="onCatShareCbChange(this)">' +
+            '<span>' + opt.label + '</span>' +
+        '</label>';
+    }).join('');
+}
+
+function onCatShareCbChange(cb) {
+    var checked = document.querySelectorAll('.cat-share-brand-cb:checked');
+    currentSharedBrands = Array.from(checked).map(function(el) { return el.value; });
+    renderCategoryShareBrandsUI(currentSharedBrands);
+}
+
+function toggleCatShareProducts() {
+    cShareIncludeProducts = !cShareIncludeProducts;
+    setToggle('cShareIncludeProducts', cShareIncludeProducts);
+}
+
 function openModal() {
-    editingId = null; cActive = true;
+    editingId = null; cActive = true; cShareIncludeProducts = false; currentSharedBrands = [];
     document.getElementById('catModalTitle').textContent = 'Add Category';
     var filterVal = (document.getElementById('catBrandFilter') || {}).value || 'all';
     var defaultBrand = (filterVal !== 'all' && filterVal !== '__main__') ? filterVal : '';
@@ -153,23 +271,36 @@ function openModal() {
     document.getElementById('cName').value = '';
     document.getElementById('cIcon').value = '';
     document.getElementById('cSort').value = 0;
+    document.getElementById('cShareUrlMode').value = 'brand';
     setToggle('cActive', true);
+    setToggle('cShareIncludeProducts', false);
+    var det = document.getElementById('catShareAdvancedDetails');
+    if (det) det.open = false;
+    setTimeout(function() { renderCategoryShareBrandsUI([]); }, 60);
     document.getElementById('catModal').classList.add('show');
 }
 
 function editCat(c) {
     editingId = c.id; cActive = c.is_active !== false;
+    currentSharedBrands = parseCatSharedBrands(c.shared_brand_ids);
+    cShareIncludeProducts = Number(c.share_include_products) === 1;
     document.getElementById('catModalTitle').textContent = 'Edit Category';
     if (window.populateBrandSelect) window.populateBrandSelect('cBrand', c.brand_id || '');
     document.getElementById('cName').value = c.name || '';
     document.getElementById('cIcon').value = c.icon_url || '';
     document.getElementById('cSort').value = c.sort_order || 0;
+    document.getElementById('cShareUrlMode').value = (c.share_url_mode === 'main') ? 'main' : 'brand';
     setToggle('cActive', cActive);
+    setToggle('cShareIncludeProducts', cShareIncludeProducts);
+    var det = document.getElementById('catShareAdvancedDetails');
+    if (det) det.open = (currentSharedBrands.length > 0 || cShareIncludeProducts);
+    setTimeout(function() { renderCategoryShareBrandsUI(currentSharedBrands); }, 60);
     document.getElementById('catModal').classList.add('show');
 }
 
 function setToggle(id, state) {
     var el = document.getElementById(id);
+    if (!el) return;
     if (state) el.classList.add('on'); else el.classList.remove('on');
 }
 
@@ -178,7 +309,20 @@ function toggleCatActive() { cActive = !cActive; setToggle('cActive', cActive); 
 function saveCat() {
     var name = document.getElementById('cName').value.trim();
     if (!name) { showToast('Category name required', 'error'); return; }
-    var payload = { name: name, icon_url: document.getElementById('cIcon').value.trim(), sort_order: parseInt(document.getElementById('cSort').value)||0, is_active: cActive };
+    var checkedEls = document.querySelectorAll('.cat-share-brand-cb:checked');
+    var sharedBrandIds = Array.from(checkedEls).map(function(el) { return el.value; });
+    var shareIncludeProds = cShareIncludeProducts ? 1 : 0;
+    var shareUrlMode = (document.getElementById('cShareUrlMode') && document.getElementById('cShareUrlMode').value === 'main') ? 'main' : 'brand';
+
+    var payload = {
+        name: name,
+        icon_url: document.getElementById('cIcon').value.trim(),
+        sort_order: parseInt(document.getElementById('cSort').value)||0,
+        is_active: cActive,
+        shared_brand_ids: JSON.stringify(sharedBrandIds),
+        share_include_products: shareIncludeProds,
+        share_url_mode: shareUrlMode
+    };
     if (CONFIG.DB_PROVIDER === 'supabase') {
         var req = editingId ? supabaseClient.from('categories').update(payload).eq('id', editingId) : supabaseClient.from('categories').insert([payload]);
         req.then(function(r) {
@@ -210,9 +354,15 @@ function saveCat() {
         var brandIdVal = (document.getElementById('cBrand') && document.getElementById('cBrand').value) ? document.getElementById('cBrand').value : null;
         var p;
         if (editingId) {
-            p = d1AdminQuery("UPDATE categories SET name = ?, icon_url = ?, sort_order = ?, is_active = ?, brand_id = ? WHERE id = ?", [payload.name, payload.icon_url, payload.sort_order, payload.is_active, brandIdVal, editingId]);
+            p = d1AdminQuery(
+                "UPDATE categories SET name = ?, icon_url = ?, sort_order = ?, is_active = ?, brand_id = ?, shared_brand_ids = ?, share_include_products = ?, share_url_mode = ? WHERE id = ?",
+                [payload.name, payload.icon_url, payload.sort_order, payload.is_active, brandIdVal, payload.shared_brand_ids, payload.share_include_products, payload.share_url_mode, editingId]
+            );
         } else {
-            p = d1AdminQuery("INSERT INTO categories (id, name, icon_url, sort_order, is_active, brand_id) VALUES (?, ?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.name, payload.icon_url, payload.sort_order, payload.is_active, brandIdVal]);
+            p = d1AdminQuery(
+                "INSERT INTO categories (id, name, icon_url, sort_order, is_active, brand_id, shared_brand_ids, share_include_products, share_url_mode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [crypto.randomUUID(), payload.name, payload.icon_url, payload.sort_order, payload.is_active, brandIdVal, payload.shared_brand_ids, payload.share_include_products, payload.share_url_mode]
+            );
         }
         p.then(function() {
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadCats();

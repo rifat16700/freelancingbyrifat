@@ -1,5 +1,5 @@
 import { purgeAndWarmup } from './cache-helper.js';
-import { ensureBrandSchema, resolveBrand } from '../_lib/brand.js';
+import { ensureBrandSchema, resolveBrand, autoShareCategoriesForProduct } from '../_lib/brand.js';
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -83,6 +83,7 @@ export async function onRequestPost(context) {
                 env.DB.prepare(`INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)`).bind(p.id, cid)
             );
             await env.DB.batch(catStmts);
+            await autoShareCategoriesForProduct(env, p.category_ids, brandId, showOnMain);
         }
 
         // Auto-purge selective Cloudflare Cache

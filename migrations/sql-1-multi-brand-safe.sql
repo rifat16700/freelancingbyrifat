@@ -40,6 +40,9 @@ CREATE TABLE IF NOT EXISTS brand_slug_history (
 ALTER TABLE products      ADD COLUMN brand_id TEXT DEFAULT NULL;
 ALTER TABLE products      ADD COLUMN show_on_main INTEGER DEFAULT 0;
 ALTER TABLE categories    ADD COLUMN brand_id TEXT DEFAULT NULL;
+ALTER TABLE categories    ADD COLUMN shared_brand_ids TEXT DEFAULT '[]';
+ALTER TABLE categories    ADD COLUMN share_include_products INTEGER DEFAULT 0;
+ALTER TABLE categories    ADD COLUMN share_url_mode TEXT DEFAULT 'brand';
 ALTER TABLE banners       ADD COLUMN brand_id TEXT DEFAULT NULL;
 ALTER TABLE home_sections ADD COLUMN brand_id TEXT DEFAULT NULL;
 ALTER TABLE orders        ADD COLUMN brand_id TEXT DEFAULT NULL;

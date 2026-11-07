@@ -79,6 +79,9 @@ export async function ensureBrandSchema(env) {
             "ALTER TABLE products ADD COLUMN brand_id TEXT DEFAULT NULL",
             "ALTER TABLE products ADD COLUMN show_on_main INTEGER DEFAULT 0",
             "ALTER TABLE categories ADD COLUMN brand_id TEXT DEFAULT NULL",
+            "ALTER TABLE categories ADD COLUMN shared_brand_ids TEXT DEFAULT '[]'",
+            "ALTER TABLE categories ADD COLUMN share_include_products INTEGER DEFAULT 0",
+            "ALTER TABLE categories ADD COLUMN share_url_mode TEXT DEFAULT 'brand'",
             "ALTER TABLE banners ADD COLUMN brand_id TEXT DEFAULT NULL",
             "ALTER TABLE home_sections ADD COLUMN brand_id TEXT DEFAULT NULL",
             "ALTER TABLE home_sections ADD COLUMN type TEXT DEFAULT 'category'",
@@ -100,6 +103,204 @@ export async function ensureBrandSchema(env) {
     } catch (e) {
         // Non-fatal
     }
+}
+
+/**
+ * Safely parses categories.shared_brand_ids into an array of brand IDs (or '__main__').
+ */
+export function parseSharedBrands(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw.map(x => String(x || '').trim()).filter(Boolean);
+    try {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) return arr.map(x => String(x || '').trim()).filter(Boolean);
+    } catch (e) {}
+    return [];
+}
+
+/**
+ * Checks whether a category row should be visible on the given brand storefront (or Main Site when brandId is null/empty).
+ */
+export function isCategoryVisibleOnBrand(cat, brandId) {
+    if (!cat) return false;
+    const shared = parseSharedBrands(cat.shared_brand_ids);
+    const catBrand = (cat.brand_id && String(cat.brand_id).trim()) ? String(cat.brand_id).trim() : null;
+    if (brandId) {
+        return catBrand === brandId || shared.includes(brandId);
+    } else {
+        return !catBrand || shared.includes('__main__');
+    }
+}
+
+/**
+ * Automatically adds `brandId` (or '__main__' if product is on main site / showOnMain = 1)
+ * to `categories.shared_brand_ids` for each selected category so existing categories are reused
+ * without duplicating category rows in D1.
+ */
+export async function autoShareCategoriesForProduct(env, categoryIds, brandId, showOnMain = 0) {
+    if (!env || !env.DB || !Array.isArray(categoryIds) || categoryIds.length === 0) return;
+    await ensureBrandSchema(env);
+    for (const cid of categoryIds) {
+        if (!cid) continue;
+        try {
+            const cat = await env.DB.prepare(
+                "SELECT id, brand_id, shared_brand_ids FROM categories WHERE id = ? LIMIT 1"
+            ).bind(cid).first();
+            if (!cat) continue;
+            const catBrand = (cat.brand_id && String(cat.brand_id).trim()) ? String(cat.brand_id).trim() : null;
+            const shared = parseSharedBrands(cat.shared_brand_ids);
+            let changed = false;
+
+            if (brandId) {
+                if (catBrand !== brandId && !shared.includes(brandId)) {
+                    shared.push(brandId);
+                    changed = true;
+                }
+            }
+            if ((!brandId || Number(showOnMain) === 1) && catBrand) {
+                if (!shared.includes('__main__')) {
+                    shared.push('__main__');
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                await env.DB.prepare(
+                    "UPDATE categories SET shared_brand_ids = ? WHERE id = ?"
+                ).bind(JSON.stringify(shared), cat.id).run();
+            }
+        } catch (e) {}
+    }
+}
+
+/**
+ * Determines the canonical brand (or null for Main Site) for a product, taking into account
+ * its own `brand_id` AND any shared categories (`share_include_products = 1` + `share_url_mode`).
+ */
+export function resolveProductCanonicalBrand(product, prodCategories, brandMap, activeBrand = null) {
+    if (!product) return { canonicalBrand: null, urlMode: 'main' };
+
+    // Check if any category of this product has product-sharing enabled (`share_include_products = 1`)
+    const sharedProductCats = (prodCategories || []).filter(c => c && Number(c.share_include_products) === 1);
+
+    // If a shared category explicitly forces Main Site URL (`share_url_mode === 'main'`) and product is a main site product (or shared to main)
+    const forceMainCat = sharedProductCats.find(c => String(c.share_url_mode || '').toLowerCase() === 'main');
+    if (forceMainCat && !product.brand_id) {
+        return { canonicalBrand: null, urlMode: 'main' };
+    }
+
+    // If product directly belongs to an active brand
+    if (product.brand_id && brandMap && brandMap.has(product.brand_id)) {
+        // Unless a shared category on this brand product explicitly says use 'main' URL mode
+        if (forceMainCat) {
+            return { canonicalBrand: null, urlMode: 'main' };
+        }
+        return { canonicalBrand: brandMap.get(product.brand_id), urlMode: 'brand' };
+    }
+
+    // If product is a Main Site product (`!product.brand_id`) but belongs to a category shared with a brand in 'brand' URL mode
+    const brandModeCat = sharedProductCats.find(c => String(c.share_url_mode || 'brand').toLowerCase() === 'brand');
+    if (brandModeCat && brandMap) {
+        if (brandModeCat.brand_id && brandMap.has(brandModeCat.brand_id)) {
+            return { canonicalBrand: brandMap.get(brandModeCat.brand_id), urlMode: 'brand' };
+        }
+        const sharedIds = parseSharedBrands(brandModeCat.shared_brand_ids).filter(id => id !== '__main__' && brandMap.has(id));
+        if (activeBrand && sharedIds.includes(activeBrand.id)) {
+            return { canonicalBrand: activeBrand, urlMode: 'brand' };
+        }
+        if (sharedIds.length > 0) {
+            return { canonicalBrand: brandMap.get(sharedIds[0]), urlMode: 'brand' };
+        }
+    }
+
+    return { canonicalBrand: null, urlMode: 'main' };
+}
+
+/**
+ * Filters and enriches products and categories for either a Brand Storefront (`activeBrand`) or Main Site (`null`),
+ * respecting both product-level `brand_id`/`show_on_main` and category-level `shared_brand_ids`/`share_include_products`/`share_url_mode`.
+ */
+export function filterCatalogForBrandContext({
+    allCategories = [],
+    allProducts = [],
+    productCategories = [],
+    activeBrand = null,
+    brandMap = new Map(),
+    mainStoreName = 'Ranonex'
+}) {
+    const catMap = new Map();
+    allCategories.forEach(c => { if (c && c.id) catMap.set(c.id, c); });
+
+    const prodToCats = new Map();
+    productCategories.forEach(pc => {
+        if (!pc || !pc.product_id || !pc.category_id) return;
+        const c = catMap.get(pc.category_id);
+        if (!c) return;
+        if (!prodToCats.has(pc.product_id)) prodToCats.set(pc.product_id, []);
+        prodToCats.get(pc.product_id).push(c);
+    });
+
+    const targetBrandId = activeBrand ? activeBrand.id : null;
+    const visibleCatIdsFromProducts = new Set();
+
+    const enrichProduct = (p) => {
+        if (!p) return p;
+        const pCats = prodToCats.get(p.id) || [];
+        const { canonicalBrand, urlMode } = resolveProductCanonicalBrand(p, pCats, brandMap, activeBrand);
+        return {
+            ...p,
+            brand_slug: canonicalBrand ? canonicalBrand.slug : '',
+            brand_name: canonicalBrand ? canonicalBrand.name : (mainStoreName || 'Ranonex'),
+            canonical_url_mode: urlMode
+        };
+    };
+
+    const filteredProducts = [];
+    for (const p of allProducts) {
+        if (!p) continue;
+        // Skip products belonging to deleted/inactive brands
+        if (p.brand_id && !brandMap.has(p.brand_id)) continue;
+
+        const pCats = prodToCats.get(p.id) || [];
+        let visible = false;
+
+        if (targetBrandId) {
+            // Viewing a Brand Storefront
+            if (p.brand_id === targetBrandId) {
+                visible = true;
+            } else {
+                // Check if any category of this product is shared with this brand and has `share_include_products = 1`
+                visible = pCats.some(c => isCategoryVisibleOnBrand(c, targetBrandId) && Number(c.share_include_products) === 1);
+            }
+        } else {
+            // Viewing Main Site
+            if (!p.brand_id || Number(p.show_on_main) === 1) {
+                visible = true;
+            } else {
+                // Check if any category of this product is shared with Main Site and has `share_include_products = 1`
+                visible = pCats.some(c => isCategoryVisibleOnBrand(c, null) && Number(c.share_include_products) === 1);
+            }
+        }
+
+        if (visible) {
+            pCats.forEach(c => visibleCatIdsFromProducts.add(c.id));
+            filteredProducts.push(enrichProduct(p));
+        }
+    }
+
+    const filteredCategories = allCategories.filter(c => {
+        if (!c) return false;
+        if (isCategoryVisibleOnBrand(c, targetBrandId)) return true;
+        if (visibleCatIdsFromProducts.has(c.id)) return true;
+        return false;
+    });
+
+    return {
+        products: filteredProducts,
+        categories: filteredCategories,
+        enrichProduct,
+        prodToCats
+    };
 }
 
 export function cleanSlug(raw) {

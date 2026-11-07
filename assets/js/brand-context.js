@@ -88,10 +88,17 @@
         productUrl: function (productOrId) {
             var pid = (typeof productOrId === 'object' && productOrId) ? productOrId.id : productOrId;
             var bSlug = '';
-            if (typeof productOrId === 'object' && productOrId && productOrId.brand_slug) {
-                bSlug = productOrId.brand_slug;
-            } else if (pid && this.productBrandMap[pid] && this.productBrandMap[pid].brand_slug) {
-                bSlug = this.productBrandMap[pid].brand_slug;
+            var mapped = pid ? this.productBrandMap[pid] : null;
+            if (typeof productOrId === 'object' && productOrId) {
+                if (productOrId.canonical_url_mode === 'main') bSlug = '';
+                else if (productOrId.brand_slug) bSlug = productOrId.brand_slug;
+                else if (mapped && mapped.canonical_url_mode === 'main') bSlug = '';
+                else if (mapped && mapped.brand_slug) bSlug = mapped.brand_slug;
+                else if (this.slug) bSlug = this.slug;
+            } else if (mapped) {
+                if (mapped.canonical_url_mode === 'main') bSlug = '';
+                else if (mapped.brand_slug) bSlug = mapped.brand_slug;
+                else if (this.slug) bSlug = this.slug;
             } else if (this.slug) {
                 bSlug = this.slug;
             }
@@ -144,7 +151,8 @@
                 this.productBrandMap[p.id] = {
                     brand_id: p.brand_id || null,
                     brand_slug: p.brand_slug || '',
-                    brand_name: p.brand_name || (p.brand_id ? this.getBrandNameById(p.brand_id) : this.main_store_name)
+                    brand_name: p.brand_name || (p.brand_id ? this.getBrandNameById(p.brand_id) : this.main_store_name),
+                    canonical_url_mode: p.canonical_url_mode || (p.brand_slug ? 'brand' : 'main')
                 };
             }
             try {
@@ -222,27 +230,36 @@
                 var rawHref = a.getAttribute('href');
                 if (!rawHref) continue;
 
-                // Check if this is a product card link that should point to a specific brand URL (R1)
+                // Check if this is a product card link that should point to a specific brand URL or Main Site URL (R1 + Category Share URL Mode)
                 var prodMatch = rawHref.match(/^(?:\/[a-z0-9-]+)?\/product(?:\.html)?\?id=([^&#]+)/i) ||
                                 rawHref.match(/^product\.html\?id=([^&#]+)/i);
                 if (prodMatch && prodMatch[1]) {
                     var pid = decodeURIComponent(prodMatch[1]);
                     var pInfo = self.productBrandMap[pid];
-                    if (pInfo && pInfo.brand_slug) {
-                        var targetHref = '/' + pInfo.brand_slug + '/product?id=' + encodeURIComponent(pid);
-                        if (rawHref !== targetHref) a.setAttribute('href', targetHref);
-                        // Add subtle brand badge on main site product cards when show_on_main = 1
-                        if (!self.slug && pInfo.brand_name && a.classList.contains('product-card')) {
-                            var badgesWrap = a.querySelector('.product-badges');
-                            if (badgesWrap && !badgesWrap.querySelector('.badge-brand-tag')) {
-                                var bSpan = document.createElement('span');
-                                bSpan.className = 'product-badge badge-brand-tag';
-                                bSpan.style.cssText = 'background:rgba(17,24,39,0.85);color:#fff;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;';
-                                bSpan.textContent = '🏷️ ' + pInfo.brand_name;
-                                badgesWrap.appendChild(bSpan);
-                            }
+                    if (pInfo) {
+                        if (pInfo.canonical_url_mode === 'main' && !pInfo.brand_slug) {
+                            var mainHref = '/product?id=' + encodeURIComponent(pid);
+                            if (rawHref !== mainHref) a.setAttribute('href', mainHref);
+                            a.setAttribute('data-brand-explicit', '1');
+                            continue;
                         }
-                        continue;
+                        if (pInfo.brand_slug) {
+                            var targetHref = '/' + pInfo.brand_slug + '/product?id=' + encodeURIComponent(pid);
+                            if (rawHref !== targetHref) a.setAttribute('href', targetHref);
+                            a.setAttribute('data-brand-explicit', '1');
+                            // Add subtle brand badge on main site product cards when show_on_main = 1 or shared from brand
+                            if (!self.slug && pInfo.brand_name && a.classList.contains('product-card')) {
+                                var badgesWrap = a.querySelector('.product-badges');
+                                if (badgesWrap && !badgesWrap.querySelector('.badge-brand-tag')) {
+                                    var bSpan = document.createElement('span');
+                                    bSpan.className = 'product-badge badge-brand-tag';
+                                    bSpan.style.cssText = 'background:rgba(17,24,39,0.85);color:#fff;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:700;';
+                                    bSpan.textContent = '🏷️ ' + pInfo.brand_name;
+                                    badgesWrap.appendChild(bSpan);
+                                }
+                            }
+                            continue;
+                        }
                     }
                 }
 

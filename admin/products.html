@@ -255,8 +255,12 @@
                     <input class="form-input" id="pFlashEnd" type="datetime-local">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Categories (Select Multiple)</label>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+                        <label class="form-label" style="margin-bottom:0;">Categories (Select Multiple)</label>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="openQuickCatModal()" style="padding:3px 10px;font-size:11.5px;font-weight:700;color:#4f46e5;border:1px solid rgba(79,70,229,0.3);background:rgba(79,70,229,0.06);border-radius:6px;">+ Add Category</button>
+                    </div>
                     <div id="pCategoryList" class="category-checkbox-list"></div>
+                    <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">💡 অন্য ব্র্যান্ড বা মেইন সাইটের ক্যাটাগরি সিলেক্ট করলে সেটি অটোমেটিক এই ব্র্যান্ডের আন্ডারেও শেয়ার হয়ে যাবে (ডাটাবেজে ডুপ্লিকেট তৈরি হবে না)।</div>
                 </div>
             </div>
 
@@ -401,6 +405,36 @@
         </div>
     </div>
 
+    <!-- Quick Create Category Modal (Directly from Product Page) -->
+    <div class="modal-overlay" id="quickCatModal" style="z-index:1100;">
+        <div class="modal-box" style="max-width:460px;">
+            <div class="modal-header">
+                <div class="modal-title">➕ Create New Category</div>
+                <button class="modal-close" onclick="closeQuickCatModal()">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Brand / Storefront</label>
+                <select class="form-select" id="qcBrand" data-brand-select="1"></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category Name *</label>
+                <input class="form-input" id="qcName" placeholder="e.g. Smart Watches">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Icon URL or SVG Code (Optional)</label>
+                <textarea class="form-input" id="qcIcon" placeholder="https://...icon.png or <svg>...</svg>" style="min-height:56px;font-family:monospace;font-size:12px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Sort Order</label>
+                <input class="form-input" id="qcSort" type="number" value="0">
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;">
+                <button type="button" class="btn btn-primary btn-full" id="qcSaveBtn" onclick="saveQuickCategory()">💾 Create &amp; Select</button>
+                <button type="button" class="btn btn-ghost" onclick="closeQuickCatModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     var allProducts = [], allCategories = [];
     var editingProductId = null;
@@ -415,6 +449,126 @@
         });
     });
 
+    function parseProdCatShared(raw) {
+        if (!raw) return [];
+        if (Array.isArray(raw)) return raw;
+        try {
+            var arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr : [];
+        } catch (e) { return []; }
+    }
+
+    function populateProductCategoriesUI(preserveCheckedIds) {
+        var catFilter  = document.getElementById('catFilter');
+        var catFilterM = document.getElementById('catFilterM');
+        var pCatList   = document.getElementById('pCategoryList');
+
+        var checkedSet = new Set();
+        if (Array.isArray(preserveCheckedIds)) {
+            preserveCheckedIds.forEach(function(id) { checkedSet.add(String(id)); });
+        } else {
+            document.querySelectorAll('input[name="pCat"]:checked').forEach(function(cb) {
+                checkedSet.add(String(cb.value));
+            });
+        }
+
+        if (catFilter) catFilter.innerHTML = '<option value="">All Categories</option>';
+        if (catFilterM) catFilterM.innerHTML = '<option value="">All Categories</option>';
+        if (pCatList) pCatList.innerHTML = '';
+
+        allCategories.forEach(function(c) {
+            var bObj = window.getAdminBrandObj ? window.getAdminBrandObj(c.brand_id) : null;
+            var bPrefix = bObj ? ('[' + bObj.name + '] ') : '';
+            var opt = '<option value="' + c.id + '">' + bPrefix + c.name + '</option>';
+            if (catFilter) catFilter.innerHTML += opt;
+            if (catFilterM) catFilterM.innerHTML += opt;
+            if (pCatList) {
+                var sharedAttr = '';
+                try { sharedAttr = JSON.stringify(parseProdCatShared(c.shared_brand_ids)).replace(/"/g, '&quot;'); } catch (e) {}
+                var isChecked = checkedSet.has(String(c.id)) ? 'checked' : '';
+                pCatList.innerHTML +=
+                    '<label class="category-checkbox-item" data-cat-id="' + c.id + '" data-cat-brand="' + (c.brand_id || '') + '" data-cat-shared="' + sharedAttr + '">' +
+                        '<input type="checkbox" name="pCat" value="' + c.id + '" ' + isChecked + ' onchange="updateSeoTagPreview()">' +
+                        '<span class="cat-item-label">' + (bObj ? '<b style="color:#4f46e5;font-size:11px;">[' + bObj.name + ']</b> ' : '<b style="color:#64748b;font-size:11px;">[Main]</b> ') + c.name + '</span>' +
+                        '<span class="cat-share-hint" style="display:none;margin-left:auto;font-size:10px;padding:1px 6px;border-radius:99px;background:#e0f2fe;color:#0369a1;font-weight:700;">🔗 Auto-Share</span>' +
+                    '</label>';
+            }
+        });
+        onProductBrandChange();
+    }
+
+    function openQuickCatModal() {
+        var curBrand = (document.getElementById('pBrand') && document.getElementById('pBrand').value) ? document.getElementById('pBrand').value : '';
+        if (window.populateBrandSelect) window.populateBrandSelect('qcBrand', curBrand);
+        document.getElementById('qcName').value = '';
+        document.getElementById('qcIcon').value = '';
+        document.getElementById('qcSort').value = '0';
+        document.getElementById('quickCatModal').classList.add('show');
+        setTimeout(function() { document.getElementById('qcName').focus(); }, 60);
+    }
+
+    function closeQuickCatModal() {
+        document.getElementById('quickCatModal').classList.remove('show');
+    }
+
+    function saveQuickCategory() {
+        var name = (document.getElementById('qcName').value || '').trim();
+        if (!name) { showToast('Category name required', 'error'); return; }
+        var iconUrl = (document.getElementById('qcIcon').value || '').trim();
+        var sortOrder = parseInt(document.getElementById('qcSort').value, 10) || 0;
+        var brandIdVal = (document.getElementById('qcBrand') && document.getElementById('qcBrand').value) ? document.getElementById('qcBrand').value : null;
+
+        // Check if a category with the exact same name already exists — if so, reuse & select it without duplicating!
+        var existingCat = allCategories.find(function(c) {
+            return (c.name || '').trim().toLowerCase() === name.toLowerCase();
+        });
+        if (existingCat) {
+            var checkedNow = Array.from(document.querySelectorAll('input[name="pCat"]:checked')).map(function(cb) { return cb.value; });
+            if (checkedNow.indexOf(existingCat.id) === -1) checkedNow.push(existingCat.id);
+            populateProductCategoriesUI(checkedNow);
+            updateSeoTagPreview();
+            closeQuickCatModal();
+            showToast('Existing category "' + existingCat.name + '" selected & linked (no duplicate created)!', 'success');
+            return;
+        }
+
+        var btn = document.getElementById('qcSaveBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
+        var newId = crypto.randomUUID();
+
+        if (CONFIG.DB_PROVIDER === 'cf_db') {
+            d1AdminQuery(
+                "INSERT INTO categories (id, name, icon_url, sort_order, is_active, brand_id) VALUES (?, ?, ?, ?, 1, ?)",
+                [newId, name, iconUrl, sortOrder, brandIdVal]
+            ).then(function() {
+                var newCatObj = { id: newId, name: name, icon_url: iconUrl, sort_order: sortOrder, is_active: 1, brand_id: brandIdVal, shared_brand_ids: '[]' };
+                allCategories.push(newCatObj);
+                var checkedNow = Array.from(document.querySelectorAll('input[name="pCat"]:checked')).map(function(cb) { return cb.value; });
+                checkedNow.push(newId);
+                populateProductCategoriesUI(checkedNow);
+                updateSeoTagPreview();
+                closeQuickCatModal();
+                showToast('Category created & selected!', 'success');
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            }).finally(function() {
+                if (btn) { btn.disabled = false; btn.textContent = '💾 Create & Select'; }
+            });
+        } else if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('categories').insert([{ name: name, icon_url: iconUrl, sort_order: sortOrder, is_active: true }]).select().single().then(function(r) {
+                if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+                allCategories.push(r.data);
+                var checkedNow = Array.from(document.querySelectorAll('input[name="pCat"]:checked')).map(function(cb) { return cb.value; });
+                checkedNow.push(r.data.id);
+                populateProductCategoriesUI(checkedNow);
+                closeQuickCatModal();
+                showToast('Category created & selected!', 'success');
+            }).finally(function() {
+                if (btn) { btn.disabled = false; btn.textContent = '💾 Create & Select'; }
+            });
+        }
+    }
+
     function loadCategories() {
         if (CONFIG.DB_PROVIDER === 'supabase') {
             supabaseClient.from('settings').select('store_name, seo_keywords, site_url').eq('id', 1).single().then(function(sr) {
@@ -422,25 +576,7 @@
             });
             supabaseClient.from('categories').select('*').eq('is_active', true).order('sort_order').then(function(r) {
                 allCategories = r.data || [];
-                var catFilter  = document.getElementById('catFilter');
-                var catFilterM = document.getElementById('catFilterM');
-                var pCatList   = document.getElementById('pCategoryList');
-                catFilter.innerHTML = '<option value="">All Categories</option>';
-                if (catFilterM) catFilterM.innerHTML = '<option value="">All Categories</option>';
-                pCatList.innerHTML = '';
-                allCategories.forEach(function(c) {
-                    var bObj = window.getAdminBrandObj ? window.getAdminBrandObj(c.brand_id) : null;
-                    var bPrefix = bObj ? ('[' + bObj.name + '] ') : '';
-                    var opt = '<option value="' + c.id + '">' + bPrefix + c.name + '</option>';
-                    catFilter.innerHTML  += opt;
-                    if (catFilterM) catFilterM.innerHTML += opt;
-                    pCatList.innerHTML +=
-                        '<label class="category-checkbox-item" data-cat-brand="' + (c.brand_id || '') + '">' +
-                            '<input type="checkbox" name="pCat" value="' + c.id + '" onchange="updateSeoTagPreview()">' +
-                            '<span>' + (bObj ? '<b style="color:#4f46e5;font-size:11px;">[' + bObj.name + ']</b> ' : '') + c.name + '</span>' +
-                        '</label>';
-                });
-                onProductBrandChange();
+                populateProductCategoriesUI();
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings').then(function(s) {
@@ -451,25 +587,7 @@
                 AppwriteQuery.orderAsc('sort_order')
             ]).then(function(res) {
                 allCategories = res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; });
-                var catFilter  = document.getElementById('catFilter');
-                var catFilterM = document.getElementById('catFilterM');
-                var pCatList   = document.getElementById('pCategoryList');
-                catFilter.innerHTML = '<option value="">All Categories</option>';
-                if (catFilterM) catFilterM.innerHTML = '<option value="">All Categories</option>';
-                pCatList.innerHTML = '';
-                allCategories.forEach(function(c) {
-                    var bObj = window.getAdminBrandObj ? window.getAdminBrandObj(c.brand_id) : null;
-                    var bPrefix = bObj ? ('[' + bObj.name + '] ') : '';
-                    var opt = '<option value="' + c.id + '">' + bPrefix + c.name + '</option>';
-                    catFilter.innerHTML  += opt;
-                    if (catFilterM) catFilterM.innerHTML += opt;
-                    pCatList.innerHTML +=
-                        '<label class="category-checkbox-item" data-cat-brand="' + (c.brand_id || '') + '">' +
-                            '<input type="checkbox" name="pCat" value="' + c.id + '" onchange="updateSeoTagPreview()">' +
-                            '<span>' + (bObj ? '<b style="color:#4f46e5;font-size:11px;">[' + bObj.name + ']</b> ' : '') + c.name + '</span>' +
-                        '</label>';
-                });
-                onProductBrandChange();
+                populateProductCategoriesUI();
             }).catch(function(err) {
                 showToast('Category load error: ' + err.message, 'error');
             });
@@ -484,25 +602,7 @@
                 if (s) {
                     localStorage.setItem('site_settings_cache', JSON.stringify(s));
                 }
-                var catFilter  = document.getElementById('catFilter');
-                var catFilterM = document.getElementById('catFilterM');
-                var pCatList   = document.getElementById('pCategoryList');
-                catFilter.innerHTML = '<option value="">All Categories</option>';
-                if (catFilterM) catFilterM.innerHTML = '<option value="">All Categories</option>';
-                pCatList.innerHTML = '';
-                allCategories.forEach(function(c) {
-                    var bObj = window.getAdminBrandObj ? window.getAdminBrandObj(c.brand_id) : null;
-                    var bPrefix = bObj ? ('[' + bObj.name + '] ') : '';
-                    var opt = '<option value="' + c.id + '">' + bPrefix + c.name + '</option>';
-                    catFilter.innerHTML  += opt;
-                    if (catFilterM) catFilterM.innerHTML += opt;
-                    pCatList.innerHTML +=
-                        '<label class="category-checkbox-item" data-cat-brand="' + (c.brand_id || '') + '">' +
-                            '<input type="checkbox" name="pCat" value="' + c.id + '" onchange="updateSeoTagPreview()">' +
-                            '<span>' + (bObj ? '<b style="color:#4f46e5;font-size:11px;">[' + bObj.name + ']</b> ' : '') + c.name + '</span>' +
-                        '</label>';
-                });
-                onProductBrandChange();
+                populateProductCategoriesUI();
             }).catch(function(err) {
                 showToast('Category load error: ' + err.message, 'error');
             });
@@ -554,17 +654,31 @@
         if (showWrap) {
             showWrap.style.display = brandVal ? 'block' : 'none';
         }
-        var showOnMain = brandVal && document.getElementById('pShowOnMain') && document.getElementById('pShowOnMain').value === '1';
-        document.querySelectorAll('#pCategoryList .category-checkbox-item').forEach(function(lbl) {
+        // Keep ALL existing categories visible so selecting any category automatically shares it with this brand without DB duplication
+        var pCatList = document.getElementById('pCategoryList');
+        if (!pCatList) return;
+        var items = Array.from(pCatList.querySelectorAll('.category-checkbox-item'));
+        items.forEach(function(lbl) {
+            lbl.style.display = '';
             var catBrand = lbl.getAttribute('data-cat-brand') || '';
-            var visible = false;
+            var sharedArr = [];
+            try { sharedArr = JSON.parse(lbl.getAttribute('data-cat-shared') || '[]'); } catch (e) {}
+            var isNativeOrShared = false;
             if (!brandVal) {
-                visible = !catBrand;
+                isNativeOrShared = (!catBrand || sharedArr.indexOf('__main__') !== -1);
             } else {
-                visible = (catBrand === brandVal) || (showOnMain && !catBrand);
+                isNativeOrShared = (catBrand === brandVal || sharedArr.indexOf(brandVal) !== -1);
             }
-            lbl.style.display = visible ? '' : 'none';
+            var hint = lbl.querySelector('.cat-share-hint');
+            if (hint) {
+                hint.style.display = isNativeOrShared ? 'none' : 'inline-block';
+            }
+            lbl.setAttribute('data-sort-priority', isNativeOrShared ? '0' : '1');
         });
+        items.sort(function(a, b) {
+            return (a.getAttribute('data-sort-priority') || '1').localeCompare(b.getAttribute('data-sort-priority') || '1');
+        });
+        items.forEach(function(lbl) { pCatList.appendChild(lbl); });
     }
 
     function loadProducts() {

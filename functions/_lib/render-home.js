@@ -4,7 +4,8 @@ import {
     mergeSettingsWithBrand,
     buildBrandHeadInjection,
     rewriteAnchorHref,
-    escapeAttr
+    escapeAttr,
+    filterCatalogForBrandContext
 } from './brand.js';
 
 export async function renderHomePage(context, brand = null) {
@@ -22,29 +23,21 @@ export async function renderHomePage(context, brand = null) {
             "SELECT store_name, logo_url, favicon_url, seo_title, seo_description, seo_keywords, seo_og_image, site_url, footer_text FROM settings WHERE id = 1"
         ).first();
 
-        let pProducts;
-        let pCategories;
-        if (brand) {
-            pProducts = env.DB.prepare(
-                "SELECT id, name, base_price, flash_sale_price, gallery_images, variants, sku, brand_id, show_on_main FROM products WHERE is_active = 1 AND brand_id = ? ORDER BY is_featured DESC, created_at DESC LIMIT 100"
-            ).bind(brand.id).all().catch(() => ({ results: [] }));
-            pCategories = env.DB.prepare(
-                "SELECT id, name FROM categories WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order"
-            ).bind(brand.id).all().catch(() => ({ results: [] }));
-        } else {
-            // Main site: products with no brand OR brand products with show_on_main = 1
-            pProducts = env.DB.prepare(
-                "SELECT id, name, base_price, flash_sale_price, gallery_images, variants, sku, brand_id, show_on_main FROM products WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '' OR show_on_main = 1) ORDER BY is_featured DESC, created_at DESC LIMIT 100"
-            ).all().catch(() => ({ results: [] }));
-            pCategories = env.DB.prepare(
-                "SELECT id, name FROM categories WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '') ORDER BY sort_order"
-            ).all().catch(() => ({ results: [] }));
-        }
+        const pProducts = env.DB.prepare(
+            "SELECT id, name, base_price, flash_sale_price, gallery_images, variants, sku, brand_id, show_on_main FROM products WHERE is_active = 1 ORDER BY is_featured DESC, created_at DESC LIMIT 300"
+        ).all().catch(() => ({ results: [] }));
+        const pCategories = env.DB.prepare(
+            "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order"
+        ).all().catch(() => ({ results: [] }));
+        const pProdCats = env.DB.prepare(
+            "SELECT * FROM product_categories"
+        ).all().catch(() => ({ results: [] }));
 
-        const [rawSettings, prodsRes, catsRes, allBrands] = await Promise.all([
+        const [rawSettings, prodsRes, catsRes, prodCatsRes, allBrands] = await Promise.all([
             pSettings,
             pProducts,
             pCategories,
+            pProdCats,
             getAllActiveBrands(env)
         ]);
 
@@ -65,12 +58,17 @@ export async function renderHomePage(context, brand = null) {
         const desc = settings?.seo_description || settings?.footer_text || `Welcome to ${storeName}. Best quality products, fastest delivery, and cash on delivery all over Bangladesh.`;
         const keywords = settings?.seo_keywords || `${storeName}, ecommerce, online shopping bangladesh`;
 
-        // Filter out products belonging to inactive brands when on main site
-        const products = (prodsRes?.results || []).filter(p => {
-            if (!p.brand_id) return true;
-            return brandMap.has(p.brand_id);
+        const catalog = filterCatalogForBrandContext({
+            allCategories: catsRes?.results || [],
+            allProducts: prodsRes?.results || [],
+            productCategories: prodCatsRes?.results || [],
+            activeBrand: brand,
+            brandMap,
+            mainStoreName
         });
-        const categories = catsRes?.results || [];
+
+        const products = catalog.products.slice(0, 100);
+        const categories = catalog.categories;
 
         function normalizeUrl(u) {
             if (!u || typeof u !== 'string') return '';
@@ -108,16 +106,15 @@ export async function renderHomePage(context, brand = null) {
                     saleHtml = `<span class="product-old-price">৳${p.base_price}</span>`;
                 }
 
-                // R1: If product belongs to a brand, always link to that brand's product URL (no duplicate URL)
-                const prodBrand = p.brand_id ? brandMap.get(p.brand_id) : null;
-                const prodHref = prodBrand
-                    ? `/${prodBrand.slug}/product?id=${encodeURIComponent(p.id)}`
-                    : `${prefix}/product?id=${encodeURIComponent(p.id)}`;
-                const brandBadgeHtml = (!brand && prodBrand)
-                    ? `<span class="product-badge" style="background:rgba(17,24,39,0.82);color:#fff;">🏷️ ${escapeAttr(prodBrand.name)}</span>`
+                // R1 & Category URL Mode: Link to canonical product URL (no duplicate URL)
+                const prodHref = p.brand_slug
+                    ? `/${p.brand_slug}/product?id=${encodeURIComponent(p.id)}`
+                    : `/product?id=${encodeURIComponent(p.id)}`;
+                const brandBadgeHtml = (!brand && p.brand_slug && p.brand_name)
+                    ? `<span class="product-badge" style="background:rgba(17,24,39,0.82);color:#fff;">🏷️ ${escapeAttr(p.brand_name)}</span>`
                     : '';
 
-                return `<a href="${prodHref}" class="product-card" data-nosnippet>
+                return `<a href="${prodHref}" class="product-card" data-brand-explicit="1" data-nosnippet>
                     <div class="product-img-wrap">
                         ${img ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(p.name)}" loading="lazy" data-nosnippet>` : '<div style="height:200px;background:#f0f0f5;"></div>'}
                         <div class="product-badges">
@@ -225,6 +222,7 @@ export async function renderHomePage(context, brand = null) {
             .on('#footerBrand', { element(e) { e.setInnerContent(storeName); } })
             .on('a[href]', {
                 element(e) {
+                    if (e.hasAttribute('data-brand-explicit')) return;
                     const updated = rewriteAnchorHref(e.getAttribute('href'), brand);
                     if (updated) e.setAttribute('href', updated);
                 }

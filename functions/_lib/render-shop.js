@@ -4,7 +4,8 @@ import {
     mergeSettingsWithBrand,
     buildBrandHeadInjection,
     rewriteAnchorHref,
-    escapeAttr
+    escapeAttr,
+    filterCatalogForBrandContext
 } from './brand.js';
 
 export async function renderShopPage(context, brand = null) {
@@ -29,51 +30,22 @@ export async function renderShopPage(context, brand = null) {
             pCategory = env.DB.prepare("SELECT name, brand_id FROM categories WHERE id = ?").bind(catId).first();
         }
 
-        let pProducts;
-        if (brand) {
-            if (catId) {
-                pProducts = env.DB.prepare(`
-                    SELECT p.id, p.name, p.base_price, p.flash_sale_price, p.gallery_images, p.variants, p.sku, p.brand_id, p.show_on_main
-                    FROM products p
-                    INNER JOIN product_categories pc ON p.id = pc.product_id
-                    WHERE p.is_active = 1 AND p.brand_id = ? AND pc.category_id = ?
-                    ORDER BY p.is_featured DESC, p.created_at DESC
-                    LIMIT 100
-                `).bind(brand.id, catId).all().catch(() => ({ results: [] }));
-            } else {
-                pProducts = env.DB.prepare(`
-                    SELECT id, name, base_price, flash_sale_price, gallery_images, variants, sku, brand_id, show_on_main
-                    FROM products
-                    WHERE is_active = 1 AND brand_id = ?
-                    ORDER BY is_featured DESC, created_at DESC
-                    LIMIT 100
-                `).bind(brand.id).all().catch(() => ({ results: [] }));
-            }
-        } else {
-            if (catId) {
-                pProducts = env.DB.prepare(`
-                    SELECT p.id, p.name, p.base_price, p.flash_sale_price, p.gallery_images, p.variants, p.sku, p.brand_id, p.show_on_main
-                    FROM products p
-                    INNER JOIN product_categories pc ON p.id = pc.product_id
-                    WHERE p.is_active = 1 AND (p.brand_id IS NULL OR p.brand_id = '' OR p.show_on_main = 1) AND pc.category_id = ?
-                    ORDER BY p.is_featured DESC, p.created_at DESC
-                    LIMIT 100
-                `).bind(catId).all().catch(() => ({ results: [] }));
-            } else {
-                pProducts = env.DB.prepare(`
-                    SELECT id, name, base_price, flash_sale_price, gallery_images, variants, sku, brand_id, show_on_main
-                    FROM products
-                    WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '' OR show_on_main = 1)
-                    ORDER BY is_featured DESC, created_at DESC
-                    LIMIT 100
-                `).all().catch(() => ({ results: [] }));
-            }
-        }
+        const pProducts = env.DB.prepare(
+            "SELECT id, name, base_price, flash_sale_price, gallery_images, variants, sku, brand_id, show_on_main FROM products WHERE is_active = 1 ORDER BY is_featured DESC, created_at DESC LIMIT 300"
+        ).all().catch(() => ({ results: [] }));
+        const pCategories = env.DB.prepare(
+            "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order"
+        ).all().catch(() => ({ results: [] }));
+        const pProdCats = env.DB.prepare(
+            "SELECT * FROM product_categories"
+        ).all().catch(() => ({ results: [] }));
 
-        const [rawSettings, catObj, prodsRes, allBrands] = await Promise.all([
+        const [rawSettings, catObj, prodsRes, catsRes, prodCatsRes, allBrands] = await Promise.all([
             pSettings,
             pCategory,
             pProducts,
+            pCategories,
+            pProdCats,
             getAllActiveBrands(env)
         ]);
 
@@ -102,10 +74,23 @@ export async function renderShopPage(context, brand = null) {
             : `Browse our complete collection of quality items on ${storeName}. Best prices, cash on delivery all over Bangladesh.`;
         const keywords = settings?.seo_keywords || `${storeName}, shop, ecommerce, online shopping bangladesh`;
 
-        const products = (prodsRes?.results || []).filter(p => {
-            if (!p.brand_id) return true;
-            return brandMap.has(p.brand_id);
+        const catalog = filterCatalogForBrandContext({
+            allCategories: catsRes?.results || [],
+            allProducts: prodsRes?.results || [],
+            productCategories: prodCatsRes?.results || [],
+            activeBrand: brand,
+            brandMap,
+            mainStoreName
         });
+
+        let products = catalog.products;
+        if (catId) {
+            products = products.filter(p => {
+                const pCats = catalog.prodToCats.get(p.id) || [];
+                return pCats.some(c => String(c.id) === String(catId));
+            });
+        }
+        products = products.slice(0, 100);
 
         let logoUrl = settings?.logo_url || '';
         if (logoUrl && !logoUrl.startsWith('http')) {
@@ -136,15 +121,14 @@ export async function renderShopPage(context, brand = null) {
                     saleHtml = `<span class="product-old-price">৳${p.base_price}</span>`;
                 }
 
-                const prodBrand = p.brand_id ? brandMap.get(p.brand_id) : null;
-                const prodHref = prodBrand
-                    ? `/${prodBrand.slug}/product?id=${encodeURIComponent(p.id)}`
-                    : `${prefix}/product?id=${encodeURIComponent(p.id)}`;
-                const brandBadgeHtml = (!brand && prodBrand)
-                    ? `<span class="product-badge" style="background:rgba(17,24,39,0.82);color:#fff;">🏷️ ${escapeAttr(prodBrand.name)}</span>`
+                const prodHref = p.brand_slug
+                    ? `/${p.brand_slug}/product?id=${encodeURIComponent(p.id)}`
+                    : `/product?id=${encodeURIComponent(p.id)}`;
+                const brandBadgeHtml = (!brand && p.brand_slug && p.brand_name)
+                    ? `<span class="product-badge" style="background:rgba(17,24,39,0.82);color:#fff;">🏷️ ${escapeAttr(p.brand_name)}</span>`
                     : '';
 
-                return `<a href="${prodHref}" class="product-card">
+                return `<a href="${prodHref}" class="product-card" data-brand-explicit="1">
                     <div class="product-img-wrap">
                         ${img ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(p.name)}" loading="lazy">` : '<div style="height:200px;background:#f0f0f5;"></div>'}
                         <div class="product-badges">
@@ -179,8 +163,7 @@ export async function renderShopPage(context, brand = null) {
                     "@type": "ItemList",
                     "@id": canonicalUrl + "#items",
                     "itemListElement": products.map((p, idx) => {
-                        const pb = p.brand_id ? brandMap.get(p.brand_id) : null;
-                        const itemPrefix = pb ? `/${pb.slug}` : prefix;
+                        const itemPrefix = p.brand_slug ? `/${p.brand_slug}` : '';
                         return {
                             "@type": "ListItem",
                             "position": idx + 1,
@@ -236,6 +219,7 @@ export async function renderShopPage(context, brand = null) {
             .on('#footerBrand', { element(e) { e.setInnerContent(storeName); } })
             .on('a[href]', {
                 element(e) {
+                    if (e.hasAttribute('data-brand-explicit')) return;
                     const updated = rewriteAnchorHref(e.getAttribute('href'), brand);
                     if (updated) e.setAttribute('href', updated);
                 }

@@ -298,22 +298,32 @@
     }
 
     // ── Enrich items & Group multi-brand rows into 1 Master Order ──
-    function getBrandInfoObj(brandId) {
+    var brandsLookup = {};
+
+    function getBrandInfoObj(brandId, fallbackBrandName) {
         if (!brandId) {
             return {
                 id: null,
-                name: (storeSettings && storeSettings.store_name) ? storeSettings.store_name : 'Main Store',
+                name: (storeSettings && storeSettings.store_name) ? storeSettings.store_name : 'Ranonex Shop',
                 slug: '',
                 logo_url: (storeSettings && storeSettings.logo_url) ? storeSettings.logo_url : '',
                 phone: (storeSettings && storeSettings.whatsapp_number) ? storeSettings.whatsapp_number : '',
+                address: (storeSettings && storeSettings.store_address) ? storeSettings.store_address : '',
                 is_main: true
             };
         }
-        var b = (window.getAdminBrandById && window.getAdminBrandById(brandId)) || null;
+        var b = brandsLookup[brandId] ||
+                (window.getAdminBrandObj && window.getAdminBrandObj(brandId)) ||
+                (window.getAdminBrandById && window.getAdminBrandById(brandId)) ||
+                null;
         if (b) {
             var sl = {};
             if (b.social_links) {
                 try { sl = typeof b.social_links === 'string' ? JSON.parse(b.social_links) : b.social_links; } catch(e){}
+            }
+            var ov = {};
+            if (b.settings_override) {
+                try { ov = typeof b.settings_override === 'string' ? JSON.parse(b.settings_override) : b.settings_override; } catch(e){}
             }
             return {
                 id: b.id,
@@ -321,13 +331,24 @@
                 slug: b.slug || '',
                 tagline: b.tagline || '',
                 logo_url: b.logo_url || ((storeSettings && storeSettings.logo_url) || ''),
-                phone: (sl && (sl.whatsapp || sl.phone)) || ((storeSettings && storeSettings.whatsapp_number) || ''),
+                phone: (ov && ov.whatsapp_number) || (sl && (sl.whatsapp || sl.phone)) || ((storeSettings && storeSettings.whatsapp_number) || ''),
                 email: (sl && sl.email) || '',
                 address: (sl && sl.address) || ((storeSettings && storeSettings.store_address) || ''),
                 is_main: false
             };
         }
-        return { id: brandId, name: brandId, slug: '', logo_url: '', phone: '', is_main: false };
+        var cleanFallback = (fallbackBrandName && !/^brand_\d+$/i.test(String(fallbackBrandName).trim()))
+            ? String(fallbackBrandName).trim()
+            : ((storeSettings && storeSettings.store_name) ? storeSettings.store_name : 'Ranonex Shop');
+        return {
+            id: brandId,
+            name: cleanFallback,
+            slug: '',
+            logo_url: (storeSettings && storeSettings.logo_url) ? storeSettings.logo_url : '',
+            phone: (storeSettings && storeSettings.whatsapp_number) ? storeSettings.whatsapp_number : '',
+            address: (storeSettings && storeSettings.store_address) ? storeSettings.store_address : '',
+            is_main: false
+        };
     }
 
     function enrichOrderItem(item, fallbackBrandId) {
@@ -335,7 +356,7 @@
         var pid = item.productId || item.id || '';
         var pMeta = pid ? productLookup[pid] : null;
         var bId = item.brand_id || (pMeta && pMeta.brand_id) || fallbackBrandId || null;
-        var bInfo = getBrandInfoObj(bId);
+        var bInfo = getBrandInfoObj(bId, item.brand_name);
 
         var sku = item.sku || (pMeta && pMeta.sku) || '';
         var variantCode = item.variantCode || item.code || '';
@@ -513,7 +534,8 @@
                 cfDbBatchQuery([
                     { sql: "SELECT * FROM orders ORDER BY created_at DESC" },
                     { sql: "SELECT id, name, sku, brand_id, variants FROM products" },
-                    { sql: "SELECT * FROM settings WHERE id = 1" }
+                    { sql: "SELECT * FROM settings WHERE id = 1" },
+                    { sql: "SELECT * FROM brands" }
                 ], false).then(function(d) {
                     document.getElementById('pageLoader').style.display = 'none';
                     document.getElementById('adminMain').style.display  = 'flex';
@@ -521,7 +543,10 @@
                     rawOrders = (d.success && d.result && d.result[0] && d.result[0].results) ? d.result[0].results : [];
                     var prods = (d.success && d.result && d.result[1] && d.result[1].results) ? d.result[1].results : [];
                     var sRows = (d.success && d.result && d.result[2] && d.result[2].results) ? d.result[2].results : [];
+                    var bRows = (d.success && d.result && d.result[3] && d.result[3].results) ? d.result[3].results : [];
                     storeSettings = sRows[0] || {};
+                    brandsLookup = {};
+                    bRows.forEach(function(b) { if (b && b.id) brandsLookup[b.id] = b; });
 
                     prods.forEach(function(p) {
                         if (typeof p.variants === 'string') {
