@@ -256,50 +256,125 @@
         },
 
         renderBrandCoPromotion: function () {
+            var self = this;
             var footer = document.getElementById('mainFooter') || document.querySelector('footer');
-            if (!footer) return;
 
-            // 1. On a Brand Storefront: show "Official Ranonex Brand" badge + link back to Main Store in footer
-            if (this.slug) {
-                if (!document.getElementById('brandParentPromoBar')) {
-                    var bar = document.createElement('div');
-                    bar.id = 'brandParentPromoBar';
-                    bar.style.cssText = 'margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,0.15);font-size:12.5px;color:#bbb;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;';
-                    bar.innerHTML = '<span>🏷️ <strong>' + escapeHtml(this.name || this.slug) + '</strong> is an official brand of <strong>' + escapeHtml(this.main_store_name || 'Ranonex') + '</strong></span>' +
-                        '<a href="/" data-brand-explicit="1" style="color:#fff;background:rgba(255,255,255,0.12);padding:5px 12px;border-radius:20px;text-decoration:none;font-weight:600;font-size:12px;">🏠 Visit ' + escapeHtml(this.main_store_name || 'Ranonex') + ' Main Store ↗</a>';
-                    var bottom = footer.querySelector('.footer-bottom');
-                    if (bottom) bottom.parentNode.insertBefore(bar, bottom);
-                    else footer.appendChild(bar);
-                }
-                return;
+            // 1. Footer Co-Promotion Bar on Brand Storefronts
+            if (this.slug && footer && !document.getElementById('brandParentPromoBar')) {
+                var bar = document.createElement('div');
+                bar.id = 'brandParentPromoBar';
+                bar.style.cssText = 'margin-top:14px;padding-top:12px;border-top:1px dashed rgba(255,255,255,0.15);font-size:12.5px;color:#bbb;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;';
+                bar.innerHTML = '<span>🏷️ <strong>' + escapeHtml(this.name || this.slug) + '</strong> is an official brand of <strong>' + escapeHtml(this.main_store_name || 'Ranonex') + '</strong></span>' +
+                    '<a href="/" data-brand-explicit="1" style="color:#fff;background:rgba(255,255,255,0.12);padding:5px 12px;border-radius:20px;text-decoration:none;font-weight:600;font-size:12px;">🏠 Visit ' + escapeHtml(this.main_store_name || 'Ranonex') + ' Main Store ↗</a>';
+                var bottom = footer.querySelector('.footer-bottom');
+                if (bottom) bottom.parentNode.insertBefore(bar, bottom);
+                else footer.appendChild(bar);
             }
 
-            // 2. On Main Site: show "Our Official Brands" strip if active brands exist
-            if (!this.allBrands || !this.allBrands.length) return;
-            if (document.getElementById('ourOfficialBrandsSection')) return;
+            // Build list of shortcut items:
+            // - On Main Site: all active brands
+            // - On a Brand Site: Main Store + other active sibling brands
+            var shortcutItems = [];
+            if (this.slug) {
+                shortcutItems.push({
+                    name: (this.main_store_name || 'Ranonex') + ' (Main Store)',
+                    tagline: 'All Categories & Official Store',
+                    href: '/',
+                    logo_url: '',
+                    isMainStore: true
+                });
+            }
+            if (Array.isArray(this.allBrands)) {
+                this.allBrands.forEach(function (b) {
+                    if (!b || !b.slug) return;
+                    if (self.slug && b.slug.toLowerCase() === self.slug.toLowerCase()) return;
+                    shortcutItems.push({
+                        name: b.name,
+                        tagline: b.tagline || ('Official ' + b.name + ' Store'),
+                        href: '/' + encodeURIComponent(b.slug) + '/',
+                        logo_url: b.logo_url || '',
+                        primary_color: b.theme_primary_color || '',
+                        isMainStore: false
+                    });
+                });
+            }
 
-            var cardsHtml = this.allBrands.map(function (b) {
-                var logo = b.logo_url
-                    ? '<img src="' + escapeHtml(b.logo_url) + '" alt="' + escapeHtml(b.name) + '" style="width:42px;height:42px;border-radius:50%;object-fit:cover;background:#fff;border:1px solid #eee;">'
-                    : '<div style="width:42px;height:42px;border-radius:50%;background:var(--primary,#8B1A1A);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;">' + escapeHtml((b.name || 'B').charAt(0).toUpperCase()) + '</div>';
-                return '<a href="/' + encodeURIComponent(b.slug) + '/" data-brand-explicit="1" style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border:1px solid var(--border-light,#eee);border-radius:14px;text-decoration:none;color:var(--text-dark,#111);box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:transform 0.2s,box-shadow 0.2s;min-width:200px;flex:1 1 220px;max-width:320px;" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'\'">' +
-                    logo +
-                    '<div style="overflow:hidden;">' +
-                        '<div style="font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(b.name) + '</div>' +
-                        '<div style="font-size:11.5px;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(b.tagline || ('Official ' + b.name + ' Store')) + ' →</div>' +
+            if (!shortcutItems.length) return;
+
+            var sectionTitle = this.slug ? 'Explore Our Other Brands' : 'Explore Our Brands';
+
+            // Build Category-style horizontal shortcut items HTML
+            var pillsHtml = shortcutItems.map(function (item) {
+                var badgeColor = item.primary_color || 'var(--primary, #8B1A1A)';
+                var avatarHtml = item.logo_url
+                    ? '<img src="' + escapeHtml(item.logo_url) + '" alt="' + escapeHtml(item.name) + '" style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:#fff;border:2px solid #f1f5f9;box-shadow:0 2px 6px rgba(0,0,0,0.06);flex-shrink:0;">'
+                    : '<div style="width:48px;height:48px;border-radius:50%;background:' + (item.isMainStore ? '#0f172a' : badgeColor) + ';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;box-shadow:0 3px 8px rgba(0,0,0,0.12);flex-shrink:0;">' +
+                        (item.isMainStore ? '🏠' : escapeHtml((item.name || 'B').charAt(0).toUpperCase())) +
+                      '</div>';
+
+                return '<a href="' + item.href + '" data-brand-explicit="1" style="display:flex;align-items:center;gap:11px;padding:8px 14px 8px 9px;background:#fff;border:1.5px solid #e2e8f0;border-radius:40px;text-decoration:none;color:var(--text-dark,#0f172a);box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:all 0.2s ease;flex-shrink:0;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'var(--primary,#8B1A1A)\';this.style.boxShadow=\'0 6px 16px rgba(0,0,0,0.08)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'#e2e8f0\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.04)\'">' +
+                    avatarHtml +
+                    '<div style="text-align:left;padding-right:4px;">' +
+                        '<div style="font-weight:800;font-size:13.5px;line-height:1.2;color:#0f172a;white-space:nowrap;">' + escapeHtml(item.name) + '</div>' +
+                        '<div style="font-size:11px;font-weight:600;color:var(--primary,#8B1A1A);margin-top:2px;white-space:nowrap;">Visit Brand Store →</div>' +
                     '</div>' +
                 '</a>';
             }).join('');
 
-            var allProdSec = document.getElementById('allProductsSection');
-            if (allProdSec && allProdSec.parentNode) {
-                var sec = document.createElement('section');
-                sec.id = 'ourOfficialBrandsSection';
-                sec.className = 'section';
-                sec.style.cssText = 'margin-top:24px;margin-bottom:16px;';
-                sec.innerHTML = '<h2 class="section-title" style="margin-bottom:14px;">🏷️ Our Official Brands</h2>' +
-                    '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + cardsHtml + '</div>';
-                allProdSec.parentNode.insertBefore(sec, allProdSec);
+            var barInnerHtml =
+                '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
+                    '<div style="display:flex;align-items:center;gap:7px;">' +
+                        '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:rgba(139,26,26,0.1);color:var(--primary,#8B1A1A);font-size:14px;">🏷️</span>' +
+                        '<span style="font-size:15px;font-weight:800;color:var(--text-dark,#0f172a);letter-spacing:-0.2px;">' + sectionTitle + '</span>' +
+                    '</div>' +
+                    '<span style="font-size:11px;font-weight:700;color:#64748b;background:#f1f5f9;padding:3px 9px;border-radius:20px;">' + shortcutItems.length + (shortcutItems.length === 1 ? ' Storefront' : ' Storefronts') + '</span>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;">' +
+                    pillsHtml +
+                '</div>';
+
+            // 2A. Inject into Template V1 (right after #catStickyBar or #heroSection)
+            var v1Anchor = document.getElementById('catStickyBar') || document.getElementById('heroSection');
+            if (v1Anchor && v1Anchor.parentNode && !document.getElementById('exploreBrandsBarV1')) {
+                var v1Sec = document.createElement('div');
+                v1Sec.id = 'exploreBrandsBarV1';
+                v1Sec.style.cssText = 'margin:14px 0 6px;padding:12px 16px;background:linear-gradient(135deg,#ffffff,#f8fafc);border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,0.03);';
+                v1Sec.innerHTML = barInnerHtml;
+                if (v1Anchor.nextSibling) v1Anchor.parentNode.insertBefore(v1Sec, v1Anchor.nextSibling);
+                else v1Anchor.parentNode.appendChild(v1Sec);
+            }
+
+            // 2B. Inject into Template V2 (#v2-theme-wrapper main)
+            var v2Main = document.querySelector('#v2-theme-wrapper main');
+            if (v2Main && !document.getElementById('exploreBrandsBarV2')) {
+                var v2Sec = document.createElement('section');
+                v2Sec.id = 'exploreBrandsBarV2';
+                v2Sec.className = 'py-4 md:py-6 bg-white border-b border-gray-100';
+                v2Sec.innerHTML = '<div class="container mx-auto px-4 lg:px-24">' + barInnerHtml + '</div>';
+                // Insert right after the Hero slider or Categories section in V2
+                var v2Sections = v2Main.querySelectorAll(':scope > section');
+                var insertAfter = v2Sections.length > 1 ? v2Sections[1] : v2Sections[0];
+                if (insertAfter && insertAfter.nextSibling) {
+                    v2Main.insertBefore(v2Sec, insertAfter.nextSibling);
+                } else {
+                    v2Main.insertBefore(v2Sec, v2Main.firstChild);
+                }
+            }
+
+            // 2C. Inject into Mobile Drawer Menu (#mMenuCats)
+            var mmCats = document.getElementById('mMenuCats');
+            if (mmCats && !document.getElementById('mMenuBrandsBlock')) {
+                var mmBlock = document.createElement('div');
+                mmBlock.id = 'mMenuBrandsBlock';
+                mmBlock.style.cssText = 'margin-top:12px;padding-top:12px;border-top:1px solid #eee;';
+                mmBlock.innerHTML = '<div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:0.6px;padding:0 10px 6px;">🏷️ ' + sectionTitle + '</div>' +
+                    shortcutItems.map(function (item) {
+                        return '<a href="' + item.href + '" data-brand-explicit="1" style="display:flex;align-items:center;gap:8px;padding:9px 10px;font-weight:700;color:var(--text-dark,#111);border-radius:10px;text-decoration:none;">' +
+                            '<span class="mmenu-cat-icon">' + (item.isMainStore ? '🏠' : '🏷️') + '</span>' +
+                            '<span>' + escapeHtml(item.name) + '</span>' +
+                        '</a>';
+                    }).join('');
+                mmCats.appendChild(mmBlock);
             }
         }
     };
@@ -378,6 +453,7 @@
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(function () {
                     BRAND.rewriteDomLinks(document.body);
+                    BRAND.renderBrandCoPromotion();
                 }, 80);
             });
             observer.observe(document.body, { childList: true, subtree: true });
