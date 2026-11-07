@@ -44,9 +44,17 @@ export async function onRequestPost(context) {
         // removed updated_at=CURRENT_TIMESTAMP since column doesn't exist
         params.push(id);
 
-        await env.DB.prepare(
-            `UPDATE orders SET ${updates.join(', ')} WHERE id=?`
-        ).bind(...params).run();
+        const targetIds = Array.isArray(body.ids) && body.ids.length ? body.ids : [id];
+        for (const tid of targetIds) {
+            await env.DB.prepare(
+                `UPDATE orders SET ${updates.join(', ')} WHERE id=?`
+            ).bind(...params.slice(0, -1), tid).run();
+        }
+        if (body.order_group_id) {
+            await env.DB.prepare(
+                `UPDATE orders SET ${updates.join(', ')} WHERE order_group_id=?`
+            ).bind(...params.slice(0, -1), body.order_group_id).run().catch(() => {});
+        }
 
         // ── Send status email (non-blocking, fire-and-forget) ──
         if (status && env.EMAIL) {

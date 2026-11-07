@@ -1,3 +1,5 @@
+import { ensureBrandSchema } from '../_lib/brand.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -9,6 +11,9 @@ export async function onRequestPost(context) {
 
     try {
         const body = await request.json();
+        if (env.DB) {
+            await ensureBrandSchema(env);
+        }
         
         // Handle Batch Queries
         if (body.queries && Array.isArray(body.queries)) {

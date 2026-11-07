@@ -4,15 +4,16 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Confirmed</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=1791100000005">
-    <script>document.write('<link rel="stylesheet" href="assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
+    <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
 
-    <script src="assets/js/config.js?v=1792145528736"></script>
+    <script src="/assets/js/config.js?v=1792145528736"></script>
+    <script src="/assets/js/brand-context.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="assets/js/supabase-init.js"></script>
+    <script src="/assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@16"></script>
-    <script src="assets/js/appwrite-init.js"></script>
+    <script src="/assets/js/appwrite-init.js"></script>
     <style>
         body { background: linear-gradient(135deg, #f0fff4, #e8f5e9); min-height: 100vh; }
         .success-container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -26,7 +27,7 @@
         .invoice-table th { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; padding: 8px 0; border-bottom: 1px solid #eee; text-align: left; }
         .invoice-table td { padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
     </style>
-    <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <link rel="stylesheet" href="/assets/css/premium-icons.css">
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -69,9 +70,9 @@ var orderId = new URLSearchParams(window.location.search).get('id');
 var currentOrderData = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (!orderId) { window.location.href = 'index.html'; return; }
+    if (!orderId) { window.location.href = (window.BRAND ? BRAND.url('/') : '/'); return; }
     document.getElementById('displayOrderId').textContent = orderId;
-    document.getElementById('trackLink').href = 'track.html?id=' + orderId;
+    document.getElementById('trackLink').href = (window.BRAND ? BRAND.url('/track') : '/track') + '?id=' + orderId;
 
     var p1, p2;
     if (CONFIG.DB_PROVIDER === 'supabase') {
@@ -87,13 +88,40 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(function(r) { return { data: (r.success && r.result[0].results.length) ? r.result[0].results[0] : {} }; })
             .catch(function() { return { data: {} }; });
             
-        p2 = fetch((CONFIG.HF_API_BASE||'')+'/api/d1-query', { method: 'POST', headers: h, body: JSON.stringify({ sql: "SELECT * FROM orders WHERE id=?", params: [orderId] }) })
+        p2 = fetch((CONFIG.HF_API_BASE||'')+'/api/d1-query', { method: 'POST', headers: h, body: JSON.stringify({ sql: "SELECT o.*, b.name as brand_name FROM orders o LEFT JOIN brands b ON b.id = o.brand_id WHERE o.id=? OR o.order_group_id=? ORDER BY CASE WHEN o.id=? THEN 0 ELSE 1 END", params: [orderId, orderId, orderId] }) })
             .then(function(r) { return r.json(); })
             .then(function(r) { 
-                var obj = (r.success && r.result[0].results.length) ? r.result[0].results[0] : null;
-                if (obj && typeof obj.items === 'string') { try { obj.items = JSON.parse(obj.items); } catch(e){} }
-                if (obj && typeof obj.addons === 'string') { try { obj.addons = JSON.parse(obj.addons); } catch(e){} }
-                return { data: obj }; 
+                var rows = (r.success && r.result[0].results.length) ? r.result[0].results : [];
+                rows.forEach(function(obj) {
+                    if (typeof obj.items === 'string') { try { obj.items = JSON.parse(obj.items); } catch(e){ obj.items = []; } }
+                    if (typeof obj.addons === 'string') { try { obj.addons = JSON.parse(obj.addons); } catch(e){ obj.addons = []; } }
+                });
+                if (!rows.length) return { data: null };
+                if (rows.length === 1) return { data: rows[0] };
+                // Combine multi-brand group orders into a unified summary view
+                var primary = Object.assign({}, rows[0]);
+                primary._subOrders = rows;
+                primary.items = [];
+                primary.subtotal = 0;
+                primary.addon_total = 0;
+                primary.delivery_charge = 0;
+                primary.promo_discount = 0;
+                primary.grand_total = 0;
+                primary.advance_payable = 0;
+                rows.forEach(function(sub) {
+                    var bLabel = sub.brand_name || 'Main Store';
+                    (Array.isArray(sub.items) ? sub.items : []).forEach(function(it) {
+                        primary.items.push(Object.assign({}, it, { _subOrderId: sub.id, _brandLabel: it.brand_name || bLabel }));
+                    });
+                    primary.subtotal += Number(sub.subtotal || 0);
+                    primary.addon_total += Number(sub.addon_total || 0);
+                    primary.delivery_charge += Number(sub.delivery_charge || 0);
+                    primary.promo_discount += Number(sub.promo_discount || 0);
+                    primary.grand_total += Number(sub.grand_total || 0);
+                    primary.advance_payable += Number(sub.advance_payable || 0);
+                });
+                document.getElementById('displayOrderId').textContent = rows.map(function(s){ return s.id; }).join(' • ');
+                return { data: primary }; 
             })
             .catch(function() { return { data: null }; });
     } else {
@@ -132,8 +160,9 @@ function renderOrder(order, settings) {
     var items = Array.isArray(order.items) ? order.items : [];
 
     var itemsHtml = items.map(function(item) {
+        var brandTag = (item._brandLabel || item.brand_name) ? ' <span style="font-size:10px;font-weight:700;background:#eef2ff;color:#4f46e5;padding:1px 6px;border-radius:99px;">' + (item._brandLabel || item.brand_name) + '</span>' : '';
         return '<tr>' +
-            '<td>' + item.productName + (item.color?' <span style="color:#888;font-size:12px;">(' + item.color + '/' + item.size + ')</span>':'') + '</td>' +
+            '<td>' + item.productName + brandTag + (item.color?' <span style="color:#888;font-size:12px;">(' + item.color + '/' + item.size + ')</span>':'') + '</td>' +
             '<td style="text-align:center;">' + (item.quantity||1) + '</td>' +
             '<td style="text-align:right;">৳' + item.price + '</td>' +
             '<td style="text-align:right;font-weight:700;">৳' + (item.price*(item.quantity||1)) + '</td>' +
@@ -213,10 +242,10 @@ function downloadPDF() {
         });
     </script>
 
-    <script src="assets/js/offline-handler.js"></script>
+    <script src="/assets/js/offline-handler.js"></script>
     <!-- Shared Custom Right Click / Long-Press Menu -->
-    <script src="assets/js/context-menu.js"></script>
-    <script src="assets/js/tracking.js"></script>
+    <script src="/assets/js/context-menu.js"></script>
+    <script src="/assets/js/tracking.js"></script>
 </body>
 </html>
 

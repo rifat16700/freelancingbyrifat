@@ -42,6 +42,10 @@ var SIDEBAR_HTML = `
         </a>
 
         <div class="nav-section-label">Catalog</div>
+        <a href="brands.html" class="nav-item" data-page="brands">
+            <span class="nav-icon">🏪</span>
+            <span>Brands</span>
+        </a>
         <a href="products.html" class="nav-item" data-page="products">
             <span class="nav-icon">🛍️</span>
             <span>Products</span>
@@ -236,7 +240,9 @@ function adminInit(activePage, onReady) {
 
         loadSidebarStoreName();
         adminLoadBadges();
-        if (typeof onReady === 'function') onReady();
+        window.loadAdminBrands().finally(function() {
+            if (typeof onReady === 'function') onReady();
+        });
     });
 }
 
@@ -699,3 +705,97 @@ window.refreshIcons = function() {
         try { lucide.createIcons(); } catch(e) {}
     }
 };
+
+// ── Multi-Brand Admin Helpers ────────────────────────────────
+window.ADMIN_BRANDS = [];
+
+window.loadAdminBrands = function(force) {
+    if (!force && window.ADMIN_BRANDS && window.ADMIN_BRANDS.length > 0) {
+        window.refreshAllBrandSelects();
+        return Promise.resolve(window.ADMIN_BRANDS);
+    }
+    if (typeof CONFIG === 'undefined' || CONFIG.DB_PROVIDER !== 'cf_db') {
+        return Promise.resolve([]);
+    }
+    var apiBase = (CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '');
+    return fetch(apiBase + '/api/brands')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            window.ADMIN_BRANDS = (d && d.success && Array.isArray(d.brands)) ? d.brands : [];
+            window.refreshAllBrandSelects();
+            return window.ADMIN_BRANDS;
+        })
+        .catch(function() {
+            window.ADMIN_BRANDS = [];
+            return [];
+        });
+};
+
+window.populateBrandSelect = function(selectElOrId, selectedValue, opts) {
+    var el = typeof selectElOrId === 'string' ? document.getElementById(selectElOrId) : selectElOrId;
+    if (!el) return;
+    opts = opts || {};
+    var currentVal = selectedValue !== undefined ? (selectedValue || '') : (el.value || '');
+    var html = '';
+    if (opts.isFilter) {
+        html += '<option value="all">🌐 All (Main Site + All Brands)</option>';
+        html += '<option value="__main__">🏠 Main Site Only</option>';
+    } else if (opts.isPromo) {
+        html += '<option value="">🌐 All Brands + Main Site</option>';
+    } else {
+        html += '<option value="">🏠 Main Site (Default)</option>';
+    }
+    (window.ADMIN_BRANDS || []).forEach(function(b) {
+        var statusSuffix = (b.is_active === 0 || b.is_active === false) ? ' [Inactive]' : '';
+        html += '<option value="' + b.id + '">🏷️ ' + b.name + ' (/' + b.slug + '/)' + statusSuffix + '</option>';
+    });
+    el.innerHTML = html;
+    el.value = currentVal;
+    if (el.value !== currentVal && opts.isFilter) {
+        el.value = 'all';
+    }
+};
+
+window.refreshAllBrandSelects = function() {
+    document.querySelectorAll('select[data-brand-select]').forEach(function(el) {
+        window.populateBrandSelect(el, el.value, { isPromo: el.getAttribute('data-brand-select') === 'promo' });
+    });
+    document.querySelectorAll('select[data-brand-filter]').forEach(function(el) {
+        window.populateBrandSelect(el, el.value || 'all', { isFilter: true });
+    });
+};
+
+window.getAdminBrandObj = function(brandId) {
+    if (!brandId) return null;
+    var list = window.ADMIN_BRANDS || [];
+    for (var i = 0; i < list.length; i++) {
+        if (list[i].id === brandId) return list[i];
+    }
+    return null;
+};
+
+window.getAdminBrandBadge = function(brandId, showOnMain, isPromo) {
+    if (!brandId) {
+        if (isPromo) {
+            return '<span class="badge" style="background:#f0fdf4;color:#15803d;font-size:11px;font-weight:600;">🌐 All Stores</span>';
+        }
+        return '<span class="badge" style="background:#f1f5f9;color:#475569;font-size:11px;font-weight:600;">🏠 Main Site</span>';
+    }
+    var b = window.getAdminBrandObj(brandId);
+    var label = b ? b.name : brandId;
+    var slugAttr = b ? ' title="/' + b.slug + '/"' : '';
+    var html = '<span class="badge"' + slugAttr + ' style="background:#eef2ff;color:#4f46e5;font-size:11px;font-weight:700;">🏷️ ' + label + '</span>';
+    if (showOnMain === 1 || showOnMain === true) {
+        html += ' <span class="badge" title="Also shown on Main Site" style="background:#ecfdf5;color:#059669;font-size:10px;font-weight:700;">+Main</span>';
+    }
+    return html;
+};
+
+window.matchesAdminBrandFilter = function(itemBrandId, filterVal, showOnMain) {
+    if (!filterVal || filterVal === 'all') return true;
+    if (filterVal === '__main__') {
+        return !itemBrandId || showOnMain === 1 || showOnMain === true;
+    }
+    return itemBrandId === filterVal;
+};
+

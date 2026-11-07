@@ -102,6 +102,7 @@
                     <span class="filter-count" id="prodFilterCount">0</span>
                 </button>
                 <!-- Inline filters -->
+                <select class="form-select filter-inline" id="brandFilter" data-brand-filter="1" onchange="filterProducts();updateProdFilterCount()" style="width:auto;min-width:175px;"></select>
                 <select class="form-select filter-inline" id="catFilter" onchange="filterProducts();updateProdFilterCount()" style="width:auto;min-width:160px;">
                     <option value="">All Categories</option>
                 </select>
@@ -170,6 +171,21 @@
                     <button type="button" class="btn btn-ghost" onclick="document.getElementById('importProductUrl').value='';document.getElementById('importUrlStatus').style.display='none';" title="Clear" style="padding: 0 10px; font-size: 12px;">Clear</button>
                 </div>
                 <div id="importUrlStatus" style="display: none; margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; line-height: 1.4;"></div>
+            </div>
+
+            <!-- Brand & Storefront Assignment -->
+            <div class="form-row" style="background:rgba(79,70,229,0.04);border:1.5px solid rgba(79,70,229,0.2);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:16px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">🏪 Brand / Storefront</label>
+                    <select class="form-select" id="pBrand" data-brand-select="1" onchange="onProductBrandChange()"></select>
+                </div>
+                <div class="form-group" id="pShowOnMainWrap" style="margin-bottom:0;display:none;">
+                    <label class="form-label">⚙️ Advanced: Show on Main Site too?</label>
+                    <select class="form-select" id="pShowOnMain" onchange="onProductBrandChange()">
+                        <option value="0">🔒 No — Only show on this Brand's Storefront</option>
+                        <option value="1">🌐 Yes — Show on Main Site too (opens Brand URL)</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Basic Info -->
@@ -409,16 +425,22 @@
                 var catFilter  = document.getElementById('catFilter');
                 var catFilterM = document.getElementById('catFilterM');
                 var pCatList   = document.getElementById('pCategoryList');
+                catFilter.innerHTML = '<option value="">All Categories</option>';
+                if (catFilterM) catFilterM.innerHTML = '<option value="">All Categories</option>';
+                pCatList.innerHTML = '';
                 allCategories.forEach(function(c) {
-                    var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                    var bObj = window.getAdminBrandObj ? window.getAdminBrandObj(c.brand_id) : null;
+                    var bPrefix = bObj ? ('[' + bObj.name + '] ') : '';
+                    var opt = '<option value="' + c.id + '">' + bPrefix + c.name + '</option>';
                     catFilter.innerHTML  += opt;
                     if (catFilterM) catFilterM.innerHTML += opt;
                     pCatList.innerHTML +=
-                        '<label class="category-checkbox-item">' +
+                        '<label class="category-checkbox-item" data-cat-brand="' + (c.brand_id || '') + '">' +
                             '<input type="checkbox" name="pCat" value="' + c.id + '" onchange="updateSeoTagPreview()">' +
-                            '<span>' + c.name + '</span>' +
+                            '<span>' + (bObj ? '<b style="color:#4f46e5;font-size:11px;">[' + bObj.name + ']</b> ' : '') + c.name + '</span>' +
                         '</label>';
                 });
+                onProductBrandChange();
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings').then(function(s) {
@@ -432,16 +454,22 @@
                 var catFilter  = document.getElementById('catFilter');
                 var catFilterM = document.getElementById('catFilterM');
                 var pCatList   = document.getElementById('pCategoryList');
+                catFilter.innerHTML = '<option value="">All Categories</option>';
+                if (catFilterM) catFilterM.innerHTML = '<option value="">All Categories</option>';
+                pCatList.innerHTML = '';
                 allCategories.forEach(function(c) {
-                    var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                    var bObj = window.getAdminBrandObj ? window.getAdminBrandObj(c.brand_id) : null;
+                    var bPrefix = bObj ? ('[' + bObj.name + '] ') : '';
+                    var opt = '<option value="' + c.id + '">' + bPrefix + c.name + '</option>';
                     catFilter.innerHTML  += opt;
                     if (catFilterM) catFilterM.innerHTML += opt;
                     pCatList.innerHTML +=
-                        '<label class="category-checkbox-item">' +
+                        '<label class="category-checkbox-item" data-cat-brand="' + (c.brand_id || '') + '">' +
                             '<input type="checkbox" name="pCat" value="' + c.id + '" onchange="updateSeoTagPreview()">' +
-                            '<span>' + c.name + '</span>' +
+                            '<span>' + (bObj ? '<b style="color:#4f46e5;font-size:11px;">[' + bObj.name + ']</b> ' : '') + c.name + '</span>' +
                         '</label>';
                 });
+                onProductBrandChange();
             }).catch(function(err) {
                 showToast('Category load error: ' + err.message, 'error');
             });
@@ -459,16 +487,22 @@
                 var catFilter  = document.getElementById('catFilter');
                 var catFilterM = document.getElementById('catFilterM');
                 var pCatList   = document.getElementById('pCategoryList');
+                catFilter.innerHTML = '<option value="">All Categories</option>';
+                if (catFilterM) catFilterM.innerHTML = '<option value="">All Categories</option>';
+                pCatList.innerHTML = '';
                 allCategories.forEach(function(c) {
-                    var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                    var bObj = window.getAdminBrandObj ? window.getAdminBrandObj(c.brand_id) : null;
+                    var bPrefix = bObj ? ('[' + bObj.name + '] ') : '';
+                    var opt = '<option value="' + c.id + '">' + bPrefix + c.name + '</option>';
                     catFilter.innerHTML  += opt;
                     if (catFilterM) catFilterM.innerHTML += opt;
                     pCatList.innerHTML +=
-                        '<label class="category-checkbox-item">' +
+                        '<label class="category-checkbox-item" data-cat-brand="' + (c.brand_id || '') + '">' +
                             '<input type="checkbox" name="pCat" value="' + c.id + '" onchange="updateSeoTagPreview()">' +
-                            '<span>' + c.name + '</span>' +
+                            '<span>' + (bObj ? '<b style="color:#4f46e5;font-size:11px;">[' + bObj.name + ']</b> ' : '') + c.name + '</span>' +
                         '</label>';
                 });
+                onProductBrandChange();
             }).catch(function(err) {
                 showToast('Category load error: ' + err.message, 'error');
             });
@@ -504,6 +538,7 @@
     }
 
     function resetProdFilters() {
+        var bf = document.getElementById('brandFilter'); if (bf) bf.value = 'all';
         document.getElementById('catFilter').value    = '';
         document.getElementById('activeFilter').value = '';
         var m1 = document.getElementById('catFilterM');    if (m1) m1.value = '';
@@ -511,6 +546,25 @@
         filterProducts();
         updateProdFilterCount();
         document.getElementById('prodFilterPanel').classList.remove('open');
+    }
+
+    function onProductBrandChange() {
+        var brandVal = (document.getElementById('pBrand') && document.getElementById('pBrand').value) ? document.getElementById('pBrand').value : '';
+        var showWrap = document.getElementById('pShowOnMainWrap');
+        if (showWrap) {
+            showWrap.style.display = brandVal ? 'block' : 'none';
+        }
+        var showOnMain = brandVal && document.getElementById('pShowOnMain') && document.getElementById('pShowOnMain').value === '1';
+        document.querySelectorAll('#pCategoryList .category-checkbox-item').forEach(function(lbl) {
+            var catBrand = lbl.getAttribute('data-cat-brand') || '';
+            var visible = false;
+            if (!brandVal) {
+                visible = !catBrand;
+            } else {
+                visible = (catBrand === brandVal) || (showOnMain && !catBrand);
+            }
+            lbl.style.display = visible ? '' : 'none';
+        });
     }
 
     function loadProducts() {
@@ -594,13 +648,16 @@
     }
 
     function filterProducts() {
-        var q   = document.getElementById('prodSearch').value.toLowerCase();
-        var cat = document.getElementById('catFilter').value;
-        var act = document.getElementById('activeFilter').value;
+        var q      = document.getElementById('prodSearch').value.toLowerCase();
+        var brandF = (document.getElementById('brandFilter') || {}).value || 'all';
+        var cat    = document.getElementById('catFilter').value;
+        var act    = document.getElementById('activeFilter').value;
 
         var filtered = allProducts.filter(function(p) {
             var nameMatch = (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
+            var brandMatch = window.matchesAdminBrandFilter ? window.matchesAdminBrandFilter(p.brand_id, brandF, p.show_on_main) : true;
             return (!q   || nameMatch) &&
+                   brandMatch &&
                    (!cat || (p.category_ids && p.category_ids.includes(cat))) &&
                    (!act || (act === 'active' ? p.is_active : !p.is_active));
         });
@@ -632,9 +689,11 @@
 
             var card = document.createElement('div');
             card.className = 'product-card';
+            var brandBadgeHtml = window.getAdminBrandBadge ? '<div style="margin-bottom:5px;">' + window.getAdminBrandBadge(p.brand_id, p.show_on_main) + '</div>' : '';
             card.innerHTML =
                 '<img src="' + img + '" class="product-img" onerror="this.src=\'\';this.style.minHeight=\'60px\'">' +
                 '<div class="product-card-body">' +
+                    brandBadgeHtml +
                     '<div class="product-name">' + p.name + '</div>' +
                     '<div>' +
                         '<span class="product-price">৳' + finalPrice + '</span>' + saleHtml +
@@ -724,6 +783,11 @@
         galleryUrls = [''];
         variants    = [];
         document.getElementById('productModalTitle').textContent = 'Add New Product';
+        var filterVal = (document.getElementById('brandFilter') || {}).value || 'all';
+        var defaultBrand = (filterVal !== 'all' && filterVal !== '__main__') ? filterVal : '';
+        if (window.populateBrandSelect) window.populateBrandSelect('pBrand', defaultBrand);
+        if (document.getElementById('pShowOnMain')) document.getElementById('pShowOnMain').value = '0';
+        onProductBrandChange();
         
         // Reset import URL inputs
         var importInp = document.getElementById('importProductUrl');
@@ -1111,6 +1175,9 @@
         variants    = p.variants ? JSON.parse(JSON.stringify(p.variants)) : [];
 
         document.getElementById('productModalTitle').textContent = 'Edit Product';
+        if (window.populateBrandSelect) window.populateBrandSelect('pBrand', p.brand_id || '');
+        if (document.getElementById('pShowOnMain')) document.getElementById('pShowOnMain').value = (p.show_on_main === 1 || p.show_on_main === true) ? '1' : '0';
+        onProductBrandChange();
         document.getElementById('pName').value       = p.name || '';
         document.getElementById('pSku').value        = p.sku || '';
         document.getElementById('pDesc').innerHTML  = p.description || '';
@@ -1536,6 +1603,9 @@
         }
         var combinedTagsVal = mergedTagArray.length ? mergedTagArray.join(', ') : (manualTags || '');
 
+        var selectedBrandId = (document.getElementById('pBrand') && document.getElementById('pBrand').value) ? document.getElementById('pBrand').value : null;
+        var showOnMainFlag = (selectedBrandId && document.getElementById('pShowOnMain') && document.getElementById('pShowOnMain').value === '1') ? 1 : 0;
+
         var payload = {
             name:             name,
             sku:              document.getElementById('pSku').value.trim() || null,
@@ -1548,6 +1618,8 @@
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),
             is_add_once:      document.getElementById('pAddOnce').classList.contains('on'),
+            brand_id:         selectedBrandId,
+            show_on_main:     showOnMainFlag,
             tags:             combinedTagsVal || null,
             seo_keywords:     combinedTagsVal || null,
             seo_title:        seoTitleVal || null,

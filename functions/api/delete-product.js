@@ -1,4 +1,5 @@
 import { purgeAndWarmup } from './cache-helper.js';
+import { ensureBrandSchema, resolveBrand } from '../_lib/brand.js';
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -9,40 +10,48 @@ export async function onRequestPost(context) {
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
-    // Authenticate Admin
-    const authHeader = request.headers.get('Authorization');
-    if (false) { // Auth check bypassed as requested by user
-        return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-        });
-    }
-
     try {
+        await ensureBrandSchema(env);
+
         const body = await request.json();
         const { id } = body;
-        
+
+        const oldRow = await env.DB.prepare("SELECT brand_id FROM products WHERE id = ?").bind(id).first().catch(() => null);
+
         const sql = `DELETE FROM products WHERE id=?`;
         const stmt = env.DB.prepare(sql);
         const { results } = await stmt.bind(id).run();
 
-        
-        
-        // Auto-purge selective Cloudflare Cache
+        await env.DB.prepare("DELETE FROM product_categories WHERE product_id = ?").bind(id).run().catch(() => {});
+
         if (env.CLOUDFLARE_ZONE_ID && env.CLOUDFLARE_API_TOKEN) {
             const origin = new URL(request.url).origin;
             const filesToPurge = [
-                origin + "/api/get-products-list"
+                origin + "/",
+                origin + "/shop",
+                origin + "/api/public-data",
+                origin + "/api/get-products-list",
+                origin + "/api/checkout-data"
             ];
-            
-            const pid = typeof p !== 'undefined' && p && p.id ? p.id : (typeof id !== 'undefined' ? id : null);
-            if (pid) {
-                filesToPurge.push(origin + "/api/get-single-product?id=" + pid);
+
+            if (id) {
+                filesToPurge.push(
+                    origin + "/product?id=" + encodeURIComponent(id),
+                    origin + "/api/get-single-product?id=" + id
+                );
             }
-            
-            // Note: Since we are deleting, we might not know if it was an is_add_once product unless we query it first.
-            // But to be safe, we will just purge checkout-data as well when deleting a product.
-            filesToPurge.push(origin + "/api/checkout-data");
+
+            if (oldRow?.brand_id) {
+                const { brand } = await resolveBrand(env, oldRow.brand_id, true);
+                if (brand && brand.slug) {
+                    filesToPurge.push(
+                        `${origin}/${brand.slug}/`,
+                        `${origin}/${brand.slug}/shop`,
+                        `${origin}/${brand.slug}/product?id=${encodeURIComponent(id)}`,
+                        `${origin}/api/public-data?brand=${encodeURIComponent(brand.slug)}`
+                    );
+                }
+            }
 
             context.waitUntil(purgeAndWarmup(env, origin, filesToPurge));
         }

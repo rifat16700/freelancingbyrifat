@@ -713,8 +713,18 @@
                                 </div>
                             </div>
 
-                            <!-- Bulk Category Assigner -->
+                            <!-- Bulk Brand & Category Assigner -->
                             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-top:8px;border-top:1px solid #e2e8f0;">
+                                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff;padding:4px 8px;border-radius:8px;border:1px solid #cbd5e1;">
+                                    <span style="font-size:11.5px;font-weight:800;color:#312e81;">🏪 Brand:</span>
+                                    <select id="bulkTargetBrand" data-brand-select="1" class="bulk-inp" style="width:auto;padding:4px 8px;font-size:12px;font-weight:700;" onchange="document.getElementById('bulkShowOnMainWrap').style.display=this.value?'inline-flex':'none';"></select>
+                                    <span id="bulkShowOnMainWrap" style="display:none;align-items:center;gap:4px;">
+                                        <select id="bulkShowOnMain" class="bulk-inp" style="width:auto;padding:4px 8px;font-size:11.5px;">
+                                            <option value="0">🔒 Only Brand Site</option>
+                                            <option value="1">🌐 + Show on Main Site</option>
+                                        </select>
+                                    </span>
+                                </div>
                                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;">
                                     <span style="font-size:11.5px;font-weight:800;color:#334155;">🏷️ Batch Category:</span>
                                     <div id="bulkBatchCatPills" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
@@ -1590,6 +1600,9 @@
         var combinedTagsVal = mergedTagArray.length ? mergedTagArray.join(', ') : (item.tags || '');
         var seoSlug = (item.slug || '').trim() || ((typeof ImageSeoInjector !== 'undefined') ? ImageSeoInjector.slugify(name) : name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
 
+        var targetBrandId = (document.getElementById('bulkTargetBrand') && document.getElementById('bulkTargetBrand').value) ? document.getElementById('bulkTargetBrand').value : (item.brand_id || null);
+        var showOnMainVal = (targetBrandId && document.getElementById('bulkShowOnMain') && document.getElementById('bulkShowOnMain').value === '1') ? 1 : 0;
+
         var payload = {
             name:             name,
             sku:              sku,
@@ -1602,6 +1615,8 @@
             is_active:        Boolean(item.is_active),
             is_featured:      Boolean(item.is_featured),
             is_add_once:      Boolean(item.is_add_once),
+            brand_id:         targetBrandId,
+            show_on_main:     showOnMainVal,
             tags:             combinedTagsVal || null,
             seo_keywords:     combinedTagsVal || null,
             seo_title:        item.seo_title || name,

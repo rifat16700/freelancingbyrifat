@@ -15,16 +15,83 @@
     <script src="assets/js/admin-common.js?v=5"></script>
     <style>
         .order-detail-row { padding: 20px; background: var(--bg-card); border-radius: var(--radius-md); }
-        .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
         .detail-block label { font-size: 11px; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px; }
         .detail-block span  { font-size: 14px; font-weight: 600; }
-        .order-items-list { margin-top: 12px; }
+        .order-items-list { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
         .order-item-row {
-            display: flex; gap: 12px; align-items: center;
-            padding: 10px 12px; background: var(--bg-card-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px;
+            display: flex; gap: 14px; align-items: flex-start;
+            padding: 12px 14px; background: var(--bg-card-subtle); border: 1px solid var(--border); border-radius: 12px;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .order-item-img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: #FFFFFF; border: 1px solid var(--border); flex-shrink: 0; }
-        @media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr 1fr; } }
+        .order-item-row:hover { border-color: rgba(0, 122, 255, 0.35); box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .order-item-img { width: 62px; height: 62px; border-radius: 10px; object-fit: cover; background: #FFFFFF; border: 1px solid var(--border); flex-shrink: 0; }
+        .variant-pill {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 6px;
+            background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1;
+        }
+        .qty-pill {
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 12.5px; font-weight: 800; padding: 4px 10px; border-radius: 8px;
+            background: rgba(0, 122, 255, 0.12); color: #007AFF;
+        }
+        .qty-pill.multi {
+            background: #fef3c7; color: #b45309; border: 1px solid #fcd34d;
+        }
+        .address-card {
+            background: linear-gradient(135deg, rgba(0, 122, 255, 0.04), rgba(52, 199, 89, 0.04));
+            border: 1.5px solid rgba(0, 122, 255, 0.18);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .invoice-hub {
+            background: var(--bg-card-subtle);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .brand-switcher-bar {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #fff;
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .brand-switcher-select {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border: 1.5px solid rgba(255,255,255,0.28);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            min-width: 260px;
+            outline: none;
+        }
+        .brand-switcher-select option {
+            background: #0f172a;
+            color: #fff;
+        }
+        .mini-action-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 8px;
+            border: 1px solid var(--border); background: #fff; color: var(--text-primary);
+            cursor: pointer; text-decoration: none; transition: all 0.15s;
+        }
+        .mini-action-btn:hover { border-color: #007AFF; color: #007AFF; background: rgba(0,122,255,0.04); }
+        @media (max-width: 700px) {
+            .detail-grid { grid-template-columns: 1fr 1fr; }
+            .brand-switcher-select { width: 100%; min-width: 0; }
+        }
     </style>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -36,8 +103,9 @@
             <div class="header-left">
                 <button class="hamburger-btn" onclick="openSidebar()">☰</button>
                 <div>
-                    <div class="page-title">Orders</div>
+                    <div class="page-title">Orders (Master View)</div>
                     <div class="page-subtitle" id="orderCountSub">Loading...</div>
+                </div>
             </div>
         </header>
 
@@ -46,14 +114,13 @@
             <div class="filter-bar" id="ordersFilterBar">
                 <div class="search-box">
                     <span><i data-lucide="search" class="lucide-icon"></i></span>
-                    <input type="text" id="searchInput" placeholder="Search Order ID, Name, Phone..." oninput="filterOrders()">
+                    <input type="text" id="searchInput" placeholder="Search Order ID, Name, Phone, Product..." oninput="filterOrders()">
                 </div>
-                <!-- Mobile filter toggle button (shown on small screens) -->
                 <button class="filter-toggle-btn" id="orderFilterToggle" onclick="toggleOrderFilters()">
                     <i data-lucide="sliders-horizontal" class="lucide-icon"></i> Filters
                     <span class="filter-count" id="orderFilterCount">0</span>
                 </button>
-                <!-- Inline filters (hidden on mobile, shown via panel) -->
+                <select class="form-select filter-inline" id="brandFilter" data-brand-filter="1" onchange="filterOrders();updateFilterCount()" style="width:auto;min-width:175px;"></select>
                 <select class="form-select filter-inline" id="statusFilter" onchange="filterOrders();updateFilterCount()" style="width:auto;min-width:160px;">
                     <option value="">All Status</option>
                     <option value="Pending">⏛ Pending</option>
@@ -134,14 +201,14 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Order ID</th>
-                                <th>Customer</th>
-                                <th>Amount</th>
+                                <th>Master Order & Brands</th>
+                                <th>Customer & Address</th>
+                                <th>Total Amount</th>
                                 <th>Payment</th>
                                 <th>Method</th>
                                 <th>Status</th>
                                 <th>Date</th>
-                                <th>Action</th>
+                                <th>Action & Invoices</th>
                             </tr>
                         </thead>
                         <tbody id="ordersBody">
@@ -155,10 +222,10 @@
 
     <!-- Order Detail Modal -->
     <div class="modal-overlay" id="orderModal">
-        <div class="modal-box modal-box-lg">
+        <div class="modal-box modal-box-lg" style="max-width:780px;">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title"><i data-lucide="package" class="lucide-icon icon-bounce"></i> Order Details</div>
+                    <div class="modal-title"><i data-lucide="package" class="lucide-icon icon-bounce"></i> Order Details & Brand Parcels</div>
                     <div style="font-size:12px;color:#8E8E93;" id="modalOrderId">—</div>
                 </div>
                 <button class="modal-close" onclick="closeModal('orderModal')">✕</button>
@@ -168,13 +235,26 @@
     </div>
 
     <script>
-    var allOrders = [];
+    var rawOrders = [];      // All rows from DB `orders` table
+    var allOrders = [];      // Grouped Master Orders (1 per customer checkout / order_group_id)
+    var masterOrderMap = {}; // id or group_id -> masterOrder
+    var productLookup = {};  // productId -> { id, name, sku, brand_id, variants }
+    var storeSettings = {};  // settings row
+    var currentModalOrder = null;
+    var currentModalBrandKey = 'all'; // 'all' or subOrder.id
+
+    function escHtml(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
 
     // ── Mobile Filter Panel helpers ──────────────────────────
     function toggleOrderFilters() {
         var panel = document.getElementById('orderFilterPanel');
         panel.classList.toggle('open');
-        // Sync mobile selects to current main values when opening
         if (panel.classList.contains('open')) {
             document.getElementById('statusFilterM').value = document.getElementById('statusFilter').value;
             document.getElementById('payFilterM').value    = document.getElementById('payFilter').value;
@@ -206,6 +286,7 @@
         ['statusFilter','payFilter','typeFilter'].forEach(function(id) {
             var el = document.getElementById(id); if (el) el.value = '';
         });
+        var bf = document.getElementById('brandFilter'); if (bf) bf.value = 'all';
         ['statusFilterM','payFilterM','typeFilterM'].forEach(function(id) {
             var el = document.getElementById(id); if (el) el.value = '';
         });
@@ -216,26 +297,260 @@
         document.getElementById('orderFilterPanel').classList.remove('open');
     }
 
+    // ── Enrich items & Group multi-brand rows into 1 Master Order ──
+    function getBrandInfoObj(brandId) {
+        if (!brandId) {
+            return {
+                id: null,
+                name: (storeSettings && storeSettings.store_name) ? storeSettings.store_name : 'Main Store',
+                slug: '',
+                logo_url: (storeSettings && storeSettings.logo_url) ? storeSettings.logo_url : '',
+                phone: (storeSettings && storeSettings.whatsapp_number) ? storeSettings.whatsapp_number : '',
+                is_main: true
+            };
+        }
+        var b = (window.getAdminBrandById && window.getAdminBrandById(brandId)) || null;
+        if (b) {
+            var sl = {};
+            if (b.social_links) {
+                try { sl = typeof b.social_links === 'string' ? JSON.parse(b.social_links) : b.social_links; } catch(e){}
+            }
+            return {
+                id: b.id,
+                name: b.name,
+                slug: b.slug || '',
+                tagline: b.tagline || '',
+                logo_url: b.logo_url || ((storeSettings && storeSettings.logo_url) || ''),
+                phone: (sl && (sl.whatsapp || sl.phone)) || ((storeSettings && storeSettings.whatsapp_number) || ''),
+                email: (sl && sl.email) || '',
+                address: (sl && sl.address) || ((storeSettings && storeSettings.store_address) || ''),
+                is_main: false
+            };
+        }
+        return { id: brandId, name: brandId, slug: '', logo_url: '', phone: '', is_main: false };
+    }
+
+    function enrichOrderItem(item, fallbackBrandId) {
+        if (!item || typeof item !== 'object') return item;
+        var pid = item.productId || item.id || '';
+        var pMeta = pid ? productLookup[pid] : null;
+        var bId = item.brand_id || (pMeta && pMeta.brand_id) || fallbackBrandId || null;
+        var bInfo = getBrandInfoObj(bId);
+
+        var sku = item.sku || (pMeta && pMeta.sku) || '';
+        var variantCode = item.variantCode || item.code || '';
+        if (!variantCode && pMeta && Array.isArray(pMeta.variants) && item.color) {
+            var matchedVar = pMeta.variants.find(function(v) {
+                return v && v.colorName && v.colorName.toLowerCase() === String(item.color).toLowerCase();
+            });
+            if (matchedVar && matchedVar.code) variantCode = matchedVar.code;
+        }
+
+        var prodUrl = item.product_url || '';
+        if (!prodUrl && pid) {
+            prodUrl = (bInfo.slug ? ('/' + bInfo.slug) : '') + '/product?id=' + encodeURIComponent(pid);
+        }
+
+        return Object.assign({}, item, {
+            productId: pid,
+            productName: item.productName || item.name || (pMeta && pMeta.name) || 'Product',
+            sku: sku,
+            variantCode: variantCode,
+            brand_id: bId,
+            brand_name: bInfo.name,
+            brand_slug: bInfo.slug,
+            product_url: prodUrl
+        });
+    }
+
+    function rebuildMasterOrders() {
+        var groups = {};
+        var groupKeys = [];
+
+        rawOrders.forEach(function(raw) {
+            var o = Object.assign({}, raw);
+            if (typeof o.items === 'string') {
+                try { o.items = JSON.parse(o.items); } catch(e) { o.items = []; }
+            }
+            if (!Array.isArray(o.items)) o.items = [];
+            o.items = o.items.map(function(it) { return enrichOrderItem(it, o.brand_id); });
+
+            // If order.brand_id is empty but all items belong to a single brand, infer it
+            if (!o.brand_id && o.items.length === 1 && o.items[0].brand_id) {
+                o.brand_id = o.items[0].brand_id;
+            }
+
+            var gKey = o.order_group_id || o.id;
+            if (!groups[gKey]) {
+                groups[gKey] = [];
+                groupKeys.push(gKey);
+            }
+            groups[gKey].push(o);
+        });
+
+        masterOrderMap = {};
+        allOrders = groupKeys.map(function(gKey) {
+            var subList = groups[gKey];
+            // Sort subList so the primary order (id === gKey or delivery_charge > 0) comes first
+            subList.sort(function(a, b) {
+                if (a.id === gKey) return -1;
+                if (b.id === gKey) return 1;
+                return (b.delivery_charge || 0) - (a.delivery_charge || 0);
+            });
+
+            var primary = subList[0];
+
+            // Even if there is only 1 DB row, check if its items span multiple brands
+            var brandSubMap = {};
+            var brandSubKeys = [];
+
+            if (subList.length > 1) {
+                subList.forEach(function(so) {
+                    var bInfo = getBrandInfoObj(so.brand_id);
+                    so._brandInfo = bInfo;
+                    brandSubKeys.push(so.id);
+                    brandSubMap[so.id] = so;
+                });
+            } else {
+                // Single DB row — check if items belong to different brands or 1 brand
+                var byBrand = {};
+                var bKeys = [];
+                (primary.items || []).forEach(function(it) {
+                    var bk = it.brand_id || '__main__';
+                    if (!byBrand[bk]) { byBrand[bk] = []; bKeys.push(bk); }
+                    byBrand[bk].push(it);
+                });
+                if (bKeys.length <= 1) {
+                    var singleBId = bKeys[0] === '__main__' ? (primary.brand_id || null) : bKeys[0];
+                    primary.brand_id = singleBId;
+                    primary._brandInfo = getBrandInfoObj(singleBId);
+                } else {
+                    // Virtual sub-orders per brand for older single-row multi-brand orders
+                    subList = bKeys.map(function(bk, idx) {
+                        var bId = bk === '__main__' ? null : bk;
+                        var bItems = byBrand[bk];
+                        var bSub = bItems.reduce(function(s, i) { return s + (i.price || 0) * (i.quantity || 1); }, 0);
+                        var isFirst = (idx === 0);
+                        var vSub = Object.assign({}, primary, {
+                            id: isFirst ? primary.id : (primary.id + '-' + (idx + 1)),
+                            _realDbId: primary.id,
+                            brand_id: bId,
+                            _brandInfo: getBrandInfoObj(bId),
+                            items: bItems,
+                            subtotal: bSub,
+                            delivery_charge: isFirst ? (primary.delivery_charge || 0) : 0,
+                            addon_total: isFirst ? (primary.addon_total || 0) : 0,
+                            promo_discount: isFirst ? (primary.promo_discount || 0) : 0,
+                            grand_total: bSub + (isFirst ? (primary.delivery_charge || 0) + (primary.addon_total || 0) - (primary.promo_discount || 0) : 0)
+                        });
+                        return vSub;
+                    });
+                }
+            }
+
+            var combinedItems = [];
+            var brandIds = [];
+            var sumSubtotal = 0;
+            var sumAddon = 0;
+            var sumDelivery = 0;
+            var sumDiscount = 0;
+            var sumGrand = 0;
+            var sumAdvance = 0;
+            var dbIds = [];
+
+            subList.forEach(function(so) {
+                var realId = so._realDbId || so.id;
+                if (dbIds.indexOf(realId) === -1) dbIds.push(realId);
+                var bKey = so.brand_id || null;
+                if (brandIds.indexOf(bKey) === -1) brandIds.push(bKey);
+                if (!so._brandInfo) so._brandInfo = getBrandInfoObj(bKey);
+
+                (so.items || []).forEach(function(it) {
+                    combinedItems.push(Object.assign({}, it, {
+                        _subOrderId: so.id,
+                        brand_id: it.brand_id !== undefined ? it.brand_id : bKey,
+                        brand_name: it.brand_name || so._brandInfo.name,
+                        brand_slug: it.brand_slug || so._brandInfo.slug
+                    }));
+                });
+
+                sumSubtotal += Number(so.subtotal || 0);
+                sumAddon    += Number(so.addon_total || 0);
+                sumDelivery += Number(so.delivery_charge || 0);
+                sumDiscount += Number(so.promo_discount || 0);
+                sumGrand    += Number(so.grand_total || 0);
+                sumAdvance  += Number(so.advance_payable || 0);
+            });
+
+            var master = Object.assign({}, primary, {
+                id: gKey,
+                order_group_id: gKey,
+                _isMultiBrand: subList.length > 1,
+                _subOrders: subList,
+                _dbIds: dbIds,
+                _brandIds: brandIds,
+                brand_id: brandIds.length === 1 ? brandIds[0] : primary.brand_id,
+                items: combinedItems,
+                subtotal: sumSubtotal,
+                addon_total: sumAddon,
+                delivery_charge: sumDelivery,
+                promo_discount: sumDiscount,
+                grand_total: sumGrand,
+                advance_payable: sumAdvance
+            });
+
+            masterOrderMap[master.id] = master;
+            subList.forEach(function(so) { masterOrderMap[so.id] = master; });
+            return master;
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         adminInit('orders', function() {
-            // Check for ?id= in URL
             var urlId = new URLSearchParams(window.location.search).get('id');
 
-            if (CONFIG.DB_PROVIDER === 'supabase') {
-                supabaseClient.from('orders').select('*').order('created_at', { ascending: false }).then(function(r) {
+            if (CONFIG.DB_PROVIDER === 'cf_db') {
+                cfDbBatchQuery([
+                    { sql: "SELECT * FROM orders ORDER BY created_at DESC" },
+                    { sql: "SELECT id, name, sku, brand_id, variants FROM products" },
+                    { sql: "SELECT * FROM settings WHERE id = 1" }
+                ], false).then(function(d) {
                     document.getElementById('pageLoader').style.display = 'none';
                     document.getElementById('adminMain').style.display  = 'flex';
 
-                    if (r.error) { showToast('Failed to load orders', 'error'); return; }
-                    allOrders = r.data || [];
-                    document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
+                    rawOrders = (d.success && d.result && d.result[0] && d.result[0].results) ? d.result[0].results : [];
+                    var prods = (d.success && d.result && d.result[1] && d.result[1].results) ? d.result[1].results : [];
+                    var sRows = (d.success && d.result && d.result[2] && d.result[2].results) ? d.result[2].results : [];
+                    storeSettings = sRows[0] || {};
+
+                    prods.forEach(function(p) {
+                        if (typeof p.variants === 'string') {
+                            try { p.variants = JSON.parse(p.variants); } catch(e) { p.variants = []; }
+                        }
+                        productLookup[p.id] = p;
+                    });
+
+                    rebuildMasterOrders();
                     filterOrders();
 
-                    if (urlId) {
-                        var found = allOrders.find(function(o) { return o.id === urlId; });
-                        if (found) openOrderModal(found);
+                    if (urlId && masterOrderMap[urlId]) {
+                        openOrderModal(masterOrderMap[urlId].id);
                     }
-
+                    autoCleanupOrders();
+                }).catch(function(err) {
+                    document.getElementById('pageLoader').style.display = 'none';
+                    document.getElementById('adminMain').style.display  = 'flex';
+                    showToast('Failed to load orders: ' + err.message, 'error');
+                });
+            } else if (CONFIG.DB_PROVIDER === 'supabase') {
+                supabaseClient.from('orders').select('*').order('created_at', { ascending: false }).then(function(r) {
+                    document.getElementById('pageLoader').style.display = 'none';
+                    document.getElementById('adminMain').style.display  = 'flex';
+                    if (r.error) { showToast('Failed to load orders', 'error'); return; }
+                    rawOrders = r.data || [];
+                    rebuildMasterOrders();
+                    filterOrders();
+                    if (urlId && masterOrderMap[urlId]) openOrderModal(masterOrderMap[urlId].id);
                     autoCleanupOrders();
                 });
             } else if (CONFIG.DB_PROVIDER === 'appwrite') {
@@ -245,50 +560,15 @@
                 ]).then(function(res) {
                     document.getElementById('pageLoader').style.display = 'none';
                     document.getElementById('adminMain').style.display  = 'flex';
-                    allOrders = res.documents.map(function(doc) {
-                        doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
-                        // items is stored as JSON string in Appwrite
-                        if (typeof doc.items === 'string') {
-                            try { doc.items = JSON.parse(doc.items); } catch(e) { doc.items = []; }
-                        }
+                    rawOrders = res.documents.map(function(doc) {
+                        doc.id = doc.$id; doc.created_at = doc.$createdAt;
+                        if (typeof doc.items === 'string') { try { doc.items = JSON.parse(doc.items); } catch(e) { doc.items = []; } }
                         return doc;
                     });
-                    document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
+                    rebuildMasterOrders();
                     filterOrders();
-
-                    if (urlId) {
-                        var found = allOrders.find(function(o) { return o.id === urlId; });
-                        if (found) openOrderModal(found);
-                    }
-
+                    if (urlId && masterOrderMap[urlId]) openOrderModal(masterOrderMap[urlId].id);
                     autoCleanupOrders();
-                }).catch(function(err) {
-                    document.getElementById('pageLoader').style.display = 'none';
-                    document.getElementById('adminMain').style.display  = 'flex';
-                    showToast('Failed to load orders: ' + err.message, 'error');
-                });
-            } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-                cfDbBatchQuery([{ sql: "SELECT * FROM orders ORDER BY created_at DESC" }], false)
-                .then(function(d) {
-                    document.getElementById('pageLoader').style.display = 'none';
-                    document.getElementById('adminMain').style.display  = 'flex';
-                    allOrders = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
-                    allOrders = allOrders.map(function(o) {
-                        if (typeof o.items === 'string') { try { o.items = JSON.parse(o.items); } catch(e){} }
-                        return o;
-                    });
-                    document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
-                    filterOrders();
-
-                    if (urlId) {
-                        var found = allOrders.find(function(o) { return o.id === urlId; });
-                        if (found) openOrderModal(found);
-                    }
-                    autoCleanupOrders();
-                }).catch(function(err) {
-                    document.getElementById('pageLoader').style.display = 'none';
-                    document.getElementById('adminMain').style.display  = 'flex';
-                    showToast('Failed to load orders: ' + err.message, 'error');
                 });
             }
         });
@@ -298,78 +578,27 @@
         var thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         var dateStr = thirtyDaysAgo.toISOString();
-        
-        if (CONFIG.DB_PROVIDER === 'supabase') {
-            supabaseClient.from('orders').delete()
-              .in('status', ['Delivered', 'Cancelled'])
-              .lt('created_at', dateStr)
-              .then(function(r) {
-                  if (r.error) {
-                      console.error('Auto cleanup failed:', r.error);
-                  }
-              });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // Appwrite: filter and delete old delivered/cancelled orders
-            var thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            var oldOrders = allOrders.filter(function(o) {
-                return (o.status === 'Delivered' || o.status === 'Cancelled') &&
-                       o.created_at && new Date(o.created_at) < thirtyDaysAgo;
-            });
-            oldOrders.forEach(function(o) {
-                appwriteDatabases.deleteDocument(APP_DB, 'orders', o.$id || o.id)
-                .catch(function(err) { console.error('Auto cleanup error:', err.message); });
-            });
-        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            var thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            var dateStr = thirtyDaysAgo.toISOString();
-            
-            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-order', {
+        if (CONFIG.DB_PROVIDER === 'cf_db') {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/delete-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ cleanupOld: true, dateBefore: dateStr })
-            }).catch(function(err) { console.error('Auto cleanup error:', err.message); });
+            }).catch(function(){});
         }
     }
 
-    function deleteOrder(id) {
-        if (!confirm('Are you sure you want to permanently delete order ' + id + '?')) return;
-        if (CONFIG.DB_PROVIDER === 'supabase') {
-            supabaseClient.from('orders').delete().eq('id', id).then(function(r) {
-                if (r.error) { showToast('Failed to delete: ' + r.error.message, 'error'); return; }
-                showToast('Order deleted successfully!', 'success');
-                allOrders = allOrders.filter(function(o) { return o.id !== id; });
-                filterOrders();
-            });
-        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-order', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
-                body: JSON.stringify({ id: id })
-            }).then(function(r) { return r.json(); }).then(function(res) {
-                if (!res.success) { showToast('Failed to delete: ' + res.error, 'error'); return; }
-                showToast('Order deleted successfully!', 'success');
-                allOrders = allOrders.filter(function(o) { return o.id !== id; });
-                filterOrders();
-            }).catch(function(err) {
-                showToast('Failed to delete: ' + err.message, 'error');
-            });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            appwriteDatabases.deleteDocument(APP_DB, 'orders', id)
-            .then(function() {
-                showToast('Order deleted successfully!', 'success');
-                allOrders = allOrders.filter(function(o) { return o.id !== id; });
-                filterOrders();
-            }).catch(function(err) {
-                showToast('Failed to delete: ' + err.message, 'error');
-            });
+    function matchesMasterBrandFilter(masterOrder, filterVal) {
+        if (!filterVal || filterVal === 'all') return true;
+        var bIds = masterOrder._brandIds || [masterOrder.brand_id || null];
+        if (filterVal === '__main__') {
+            return bIds.some(function(id) { return !id; });
         }
+        return bIds.some(function(id) { return String(id || '') === String(filterVal); });
     }
-
 
     function filterOrders() {
-        var q      = document.getElementById('searchInput').value.toLowerCase();
+        var q      = document.getElementById('searchInput').value.toLowerCase().trim();
+        var brandF = (document.getElementById('brandFilter') || {}).value || 'all';
         var status = document.getElementById('statusFilter').value;
         var pay    = document.getElementById('payFilter').value;
         var sort   = document.getElementById('sortFilter').value;
@@ -379,14 +608,20 @@
         var filtered = allOrders.filter(function(o) {
             var cleanQ = q.replace(/-/g, '');
             var cleanId = (o.id || '').toLowerCase().replace(/-/g, '');
-            var matchQ = !q || cleanId.includes(cleanQ) ||
+            var subIdsMatch = (o._subOrders || []).some(function(so) {
+                return (so.id || '').toLowerCase().replace(/-/g, '').includes(cleanQ);
+            });
+            var prodMatch = (o.items || []).some(function(it) {
+                return (it.productName || '').toLowerCase().includes(q) || (it.sku || '').toLowerCase().includes(q);
+            });
+            var matchQ = !q || cleanId.includes(cleanQ) || subIdsMatch || prodMatch ||
                          (o.customer_name  || '').toLowerCase().includes(q) ||
                          (o.customer_phone || '').toLowerCase().includes(q);
+            var matchB = matchesMasterBrandFilter(o, brandF);
             var matchS = !status || o.status === status;
             var matchP = !pay    || o.payment_status === pay;
             var matchT = !oType  || (o.order_type || 'delivery') === oType;
-            
-            // Logic to identify failed/unconfirmed auto-payments
+
             var isManual = false;
             if (o.payment_method) {
                 var pm = o.payment_method.toLowerCase();
@@ -394,24 +629,29 @@
                     isManual = true;
                 }
             }
-            
-            // It's unconfirmed/failed auto payment if NOT manual, and status is Pending/Cancelled, and not Paid
             var isFailedOrUnconfirmedAuto = !isManual && (o.status === 'Pending' || o.status === 'Cancelled' || o.status === 'Failed') && (o.payment_status === 'Unpaid' || o.payment_status === 'Failed');
-            
             var matchFailedShow = showFailed ? true : !isFailedOrUnconfirmedAuto;
 
-            return matchQ && matchS && matchP && matchT && matchFailedShow;
+            return matchQ && matchB && matchS && matchP && matchT && matchFailedShow;
         });
 
         if (sort === 'oldest')  filtered.sort(function(a,b) { return new Date(a.created_at) - new Date(b.created_at); });
         if (sort === 'highest') filtered.sort(function(a,b) { return (b.grand_total||0) - (a.grand_total||0); });
 
-        // Update count text
-        var countText = filtered.length + ' orders';
-        if (filtered.length !== allOrders.length) countText += ' (filtered from ' + allOrders.length + ')';
+        var countText = filtered.length + ' master orders';
+        if (rawOrders.length > allOrders.length) {
+            countText += ' (' + rawOrders.length + ' brand parcels total)';
+        }
         document.getElementById('orderCountSub').textContent = countText;
 
         renderOrders(filtered);
+    }
+
+    function renderBrandBadgesForMaster(o) {
+        var bIds = o._brandIds || [o.brand_id || null];
+        return bIds.map(function(bId) {
+            return window.getAdminBrandBadge ? window.getAdminBrandBadge(bId) : '';
+        }).join(' ');
     }
 
     function renderOrders(orders) {
@@ -422,113 +662,489 @@
         }
         var html = '';
         orders.forEach(function(o) {
-            var itemCount = Array.isArray(o.items) ? o.items.length : '?';
-            var typeBadge = (o.order_type === 'pickup') ? '<span class="badge" style="background:rgba(255,149,0,0.15);color:#FF9500;font-size:10px;padding:2px 6px;">🚶 Pickup</span>' : '';
+            var totalQty = (o.items || []).reduce(function(s, i) { return s + (Number(i.quantity) || 1); }, 0);
+            var typeBadge = (o.order_type === 'pickup')
+                ? '<span class="badge" style="background:rgba(255,149,0,0.15);color:#FF9500;font-size:10px;padding:2px 6px;">🚶 Pickup</span>'
+                : '<span class="badge" style="background:rgba(0,122,255,0.1);color:#007AFF;font-size:10px;padding:2px 6px;">🚚 Delivery</span>';
+            var multiParcelBadge = o._isMultiBrand
+                ? '<span class="badge" style="background:#f3e8ff;color:#7e22ce;font-size:10.5px;padding:2px 8px;font-weight:700;" title="Multi-Brand Master Order (' + o._subOrders.length + ' brand parcels)">📦 ' + o._subOrders.length + ' Brands Combined</span>'
+                : '';
+            var brandBadges = renderBrandBadgesForMaster(o);
+            var locLine = [o.upazila, o.district].filter(Boolean).join(', ');
+
             html += '<tr>' +
-                '<td><code style="color:#007AFF;font-size:12px;">' + o.id + '</code> ' + typeBadge + '</td>' +
                 '<td>' +
-                    '<div style="font-weight:600;">' + (o.customer_name || '—') + '</div>' +
-                    '<div style="font-size:12px;color:#8E8E93;">' + (o.customer_phone || '') + '</div>' +
+                    '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                        '<code style="color:#007AFF;font-size:12.5px;font-weight:800;cursor:pointer;" onclick="openOrderModal(\'' + escHtml(o.id) + '\')">#' + escHtml(o.id) + '</code> ' +
+                        typeBadge +
+                    '</div>' +
+                    '<div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap;">' + brandBadges + ' ' + multiParcelBadge + '</div>' +
                 '</td>' +
-                '<td style="font-weight:700;">' + formatMoney(o.grand_total) + '</td>' +
+                '<td>' +
+                    '<div style="font-weight:700;color:var(--text-primary);">' + escHtml(o.customer_name || '—') + '</div>' +
+                    '<div style="font-size:12px;color:#007AFF;font-weight:600;">' + escHtml(o.customer_phone || '') + '</div>' +
+                    (locLine ? '<div style="font-size:11px;color:#8E8E93;margin-top:2px;">📍 ' + escHtml(locLine) + '</div>' : '') +
+                '</td>' +
+                '<td>' +
+                    '<div style="font-weight:800;font-size:14px;">' + formatMoney(o.grand_total) + '</div>' +
+                    '<div style="font-size:11px;color:#8E8E93;">' + (o.items ? o.items.length : 0) + ' items (Qty: ' + totalQty + ')</div>' +
+                '</td>' +
                 '<td>' + payBadge(o.payment_status) + '</td>' +
-                '<td style="font-size:12px;color:#8E8E93;">' + (o.payment_method || '—') + '</td>' +
+                '<td style="font-size:12px;color:#8E8E93;">' + escHtml(o.payment_method || '—') + '</td>' +
                 '<td>' + statusBadge(o.status) + '</td>' +
                 '<td style="font-size:12px;color:#8E8E93;">' + formatDate(o.created_at) + '</td>' +
                 '<td>' +
-                    '<div style="display:flex;gap:6px;align-items:center;">' +
-                        '<button class="btn btn-ghost btn-sm" onclick="openOrderModal(' + JSON.stringify(o).replace(/"/g,'&quot;') + ')">View</button>' +
-                        '<button class="btn btn-ghost btn-sm" onclick="downloadInvoice(' + JSON.stringify(o).replace(/"/g,'&quot;') + ', \'bill\')" title="Download Bill Invoice"><i data-lucide="file-text" class="lucide-icon" style="width:16px;height:16px;color:#007AFF;"></i></button>' +
-                        '<button class="btn btn-ghost btn-sm" onclick="downloadInvoice(' + JSON.stringify(o).replace(/"/g,'&quot;') + ', \'full\')" title="Download Detailed Delivery Invoice"><i data-lucide="truck" class="lucide-icon" style="width:16px;height:16px;color:#34C759;"></i></button>' +
-                        '<button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:4px 8px;" onclick="deleteOrder(\'' + o.id + '\')" title="Delete Order"><i data-lucide="trash-2" class="lucide-icon" style="width:16px;height:16px;"></i></button>' +
+                    '<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">' +
+                        '<button class="btn btn-primary btn-sm" style="padding:5px 10px;font-size:12px;" onclick="openOrderModal(\'' + escHtml(o.id) + '\')">View</button>' +
+                        '<button class="btn btn-ghost btn-sm" onclick="printMasterInvoice(\'' + escHtml(o.id) + '\', \'bill\')" title="Master Bill Invoice"><i data-lucide="file-text" class="lucide-icon" style="width:15px;height:15px;color:#007AFF;"></i></button>' +
+                        '<button class="btn btn-ghost btn-sm" onclick="printMasterInvoice(\'' + escHtml(o.id) + '\', \'full\')" title="Master Parcel Delivery Slip"><i data-lucide="truck" class="lucide-icon" style="width:15px;height:15px;color:#34C759;"></i></button>' +
+                        (o._isMultiBrand ? '<button class="btn btn-ghost btn-sm" onclick="printAllBrandPackSet(\'' + escHtml(o.id) + '\')" title="Print Master Slip + Every Brand Dedicated Invoice" style="color:#7e22ce;font-weight:700;font-size:11px;padding:4px 7px;">🖨️ All (' + o._subOrders.length + ')</button>' : '') +
+                        '<button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:4px 7px;" onclick="deleteOrder(\'' + escHtml(o.id) + '\')" title="Delete Order"><i data-lucide="trash-2" class="lucide-icon" style="width:15px;height:15px;"></i></button>' +
                     '</div>' +
                 '</td>' +
             '</tr>';
         });
         tbody.innerHTML = html;
-        if(typeof lucide !== 'undefined') lucide.createIcons();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
-    
-    window.downloadInvoice = function(orderObj, type) {
-        localStorage.setItem('print_order', JSON.stringify(orderObj));
-        localStorage.setItem('print_type', type);
+
+    // ── Dedicated Per-Brand & Master Parcel Invoice Triggers ──
+    window.printMasterInvoice = function(masterId, type) {
+        var m = (typeof masterId === 'object') ? masterId : masterOrderMap[masterId];
+        if (!m) return;
+        var payload = Object.assign({}, m, {
+            _invoiceMode: m._isMultiBrand ? 'master' : 'brand',
+            _brandInfo: m._isMultiBrand ? getBrandInfoObj(null) : getBrandInfoObj(m.brand_id),
+            _storeSettings: storeSettings,
+            _subOrderSummaries: (m._subOrders || []).map(function(so) {
+                var bInfo = so._brandInfo || getBrandInfoObj(so.brand_id);
+                return {
+                    id: so.id,
+                    brand_id: so.brand_id,
+                    brand_name: bInfo.name,
+                    brand_slug: bInfo.slug,
+                    brand_logo: bInfo.logo_url,
+                    brand_phone: bInfo.phone,
+                    subtotal: so.subtotal,
+                    grand_total: so.grand_total,
+                    items: so.items
+                };
+            })
+        });
+        localStorage.setItem('print_order', JSON.stringify(payload));
+        localStorage.setItem('print_type', type || 'full');
         window.open('../invoice.html', '_blank');
     };
 
-    function openOrderModal(o) {
-        document.getElementById('modalOrderId').textContent = 'ID: ' + o.id + ' | ' + formatDate(o.created_at);
+    window.printBrandSubInvoice = function(masterId, subOrderId, type) {
+        var m = masterOrderMap[masterId];
+        if (!m) return;
+        var sub = (m._subOrders || []).find(function(s) { return s.id === subOrderId; }) || m;
+        var bInfo = sub._brandInfo || getBrandInfoObj(sub.brand_id);
+        var payload = Object.assign({}, sub, {
+            _invoiceMode: 'brand',
+            _masterOrderId: m.id,
+            _isSubParcel: m._isMultiBrand,
+            _parcelIndex: (m._subOrders || []).indexOf(sub) + 1,
+            _totalParcels: (m._subOrders || []).length,
+            _brandInfo: bInfo,
+            _storeSettings: storeSettings
+        });
+        localStorage.setItem('print_order', JSON.stringify(payload));
+        localStorage.setItem('print_type', type || 'full');
+        window.open('../invoice.html', '_blank');
+    };
 
-        var items = Array.isArray(o.items) ? o.items : [];
-        var itemsHtml = items.map(function(item) {
-            return '<div class="order-item-row">' +
-                '<img src="' + (item.image || '') + '" class="order-item-img" onerror="this.style.display=\'none\'">' +
-                '<div style="flex:1;">' +
-                    '<div style="font-weight:600;">' + (item.productName || item.name || '—') + '</div>' +
-                    '<div style="font-size:12px;color:#8E8E93;">Color: ' + (item.color||'—') + ' | Size: ' + (item.size||'—') + ' | Qty: ' + (item.quantity||1) + '</div>' +
+    window.printAllBrandPackSet = function(masterId) {
+        var m = masterOrderMap[masterId];
+        if (!m) return;
+        var payload = Object.assign({}, m, {
+            _invoiceMode: 'all_pack',
+            _brandInfo: getBrandInfoObj(null),
+            _storeSettings: storeSettings,
+            _subOrderSummaries: (m._subOrders || []).map(function(so, idx) {
+                var bInfo = so._brandInfo || getBrandInfoObj(so.brand_id);
+                return Object.assign({}, so, {
+                    _parcelIndex: idx + 1,
+                    _totalParcels: (m._subOrders || []).length,
+                    _masterOrderId: m.id,
+                    _brandInfo: bInfo
+                });
+            })
+        });
+        localStorage.setItem('print_order', JSON.stringify(payload));
+        localStorage.setItem('print_type', 'full');
+        window.open('../invoice.html', '_blank');
+    };
+
+    // Backward-compatible alias
+    window.downloadInvoice = function(orderObjOrId, type) {
+        if (typeof orderObjOrId === 'string') {
+            printMasterInvoice(orderObjOrId, type);
+        } else if (orderObjOrId && orderObjOrId.id) {
+            printMasterInvoice(orderObjOrId.id, type);
+        }
+    };
+
+    window.copyTextToClipboard = function(txt, label) {
+        if (!navigator.clipboard) {
+            var ta = document.createElement('textarea');
+            ta.value = txt;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast('📋 Copied ' + (label || 'text') + '!', 'success');
+            return;
+        }
+        navigator.clipboard.writeText(txt).then(function() {
+            showToast('📋 Copied ' + (label || 'text') + '!', 'success');
+        });
+    };
+
+    window.copyCustomerCourierBlock = function(masterId) {
+        var o = masterOrderMap[masterId];
+        if (!o) return;
+        var lines = [
+            'Order #' + o.id,
+            'Name: ' + (o.customer_name || '—'),
+            'Phone: ' + (o.customer_phone || '—'),
+            'Address: ' + (o.address || '—'),
+            'Area: ' + [o.upazila, o.district, o.division].filter(Boolean).join(', '),
+            'COD / Total: ৳' + Math.max(0, (o.grand_total || 0) - (o.advance_payable || 0))
+        ];
+        copyTextToClipboard(lines.join('\n'), 'Full Courier Address');
+    };
+
+    // ── Upgraded Order Detail Modal with Brand Switcher Dropdown ──
+    window.openOrderModal = function(orderOrId) {
+        var o = (typeof orderOrId === 'string') ? masterOrderMap[orderOrId] : (masterOrderMap[orderOrId.id] || orderOrId);
+        if (!o) return;
+        currentModalOrder = o;
+        currentModalBrandKey = 'all';
+        renderOrderModalView();
+        document.getElementById('orderModal').classList.add('show');
+    };
+
+    window.switchModalBrandView = function(val) {
+        currentModalBrandKey = val || 'all';
+        renderOrderModalView();
+    };
+
+    function renderOrderModalView() {
+        var o = currentModalOrder;
+        if (!o) return;
+
+        var subOrders = o._subOrders || [o];
+        var isMulti = subOrders.length > 1;
+        var activeOrder = (currentModalBrandKey === 'all')
+            ? o
+            : (subOrders.find(function(s) { return s.id === currentModalBrandKey; }) || o);
+
+        var activeBrandInfo = (currentModalBrandKey === 'all')
+            ? null
+            : (activeOrder._brandInfo || getBrandInfoObj(activeOrder.brand_id));
+
+        document.getElementById('modalOrderId').innerHTML =
+            'Master ID: <b>#' + escHtml(o.id) + '</b>' +
+            (isMulti ? ' • <span style="color:#7e22ce;font-weight:700;">' + subOrders.length + ' Brand Parcels</span>' : '') +
+            ' • ' + formatDate(o.created_at);
+
+        // 1. Top Brand Switcher Dropdown Bar
+        var optionsHtml = '<option value="all"' + (currentModalBrandKey === 'all' ? ' selected' : '') + '>' +
+            '🌐 All Brands — Master Order (' + (o.items ? o.items.length : 0) + ' items • ' + formatMoney(o.grand_total) + ')' +
+            '</option>';
+
+        subOrders.forEach(function(so, idx) {
+            var bInfo = so._brandInfo || getBrandInfoObj(so.brand_id);
+            var cnt = Array.isArray(so.items) ? so.items.length : 0;
+            var icon = bInfo.is_main ? '🏠' : '🏷️';
+            optionsHtml += '<option value="' + escHtml(so.id) + '"' + (currentModalBrandKey === so.id ? ' selected' : '') + '>' +
+                icon + ' ' + escHtml(bInfo.name) + ' — Parcel #' + escHtml(so.id) + ' (' + cnt + ' items • ' + formatMoney(so.grand_total) + ')' +
+                '</option>';
+        });
+
+        var brandSwitcherHtml =
+            '<div class="brand-switcher-bar">' +
+                '<div>' +
+                    '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.6px;color:#94a3b8;font-weight:700;">🏷️ Filter Order by Brand / Parcel</div>' +
+                    '<div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-top:2px;">' +
+                        (currentModalBrandKey === 'all'
+                            ? (isMulti ? 'Showing all ' + subOrders.length + ' brands in 1 Master Order' : 'Single Brand Order (' + escHtml((subOrders[0]._brandInfo || getBrandInfoObj(o.brand_id)).name) + ')')
+                            : 'Viewing Dedicated Brand Parcel: <b>' + escHtml(activeBrandInfo.name) + '</b>') +
+                    '</div>' +
                 '</div>' +
-                '<div style="font-weight:700;">' + formatMoney((item.price||0) * (item.quantity||1)) + '</div>' +
+                '<select class="brand-switcher-select" onchange="switchModalBrandView(this.value)">' +
+                    optionsHtml +
+                '</select>' +
+            '</div>';
+
+        // 2. Dedicated Invoices & Packing Slip Hub
+        var perBrandInvoiceCards = subOrders.map(function(so, idx) {
+            var bInfo = so._brandInfo || getBrandInfoObj(so.brand_id);
+            var isSelected = (currentModalBrandKey === so.id);
+            return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:' + (isSelected ? '#eff6ff' : '#fff') + ';border:1.5px solid ' + (isSelected ? '#3b82f6' : 'var(--border)') + ';border-radius:10px;flex-wrap:wrap;">' +
+                '<div style="display:flex;align-items:center;gap:8px;">' +
+                    '<span style="font-size:11px;font-weight:800;background:#1e293b;color:#fff;padding:2px 7px;border-radius:6px;">Parcel ' + (idx + 1) + '</span>' +
+                    '<div>' +
+                        '<div style="font-size:13px;font-weight:800;color:var(--text-primary);">' + (bInfo.is_main ? '🏠 ' : '🏷️ ') + escHtml(bInfo.name) + '</div>' +
+                        '<div style="font-size:11px;color:#64748b;">Sub-ID: <code>#' + escHtml(so.id) + '</code> • ' + (so.items ? so.items.length : 0) + ' items • <b>' + formatMoney(so.subtotal) + '</b></div>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+                    '<button type="button" class="mini-action-btn" onclick="printBrandSubInvoice(\'' + escHtml(o.id) + '\', \'' + escHtml(so.id) + '\', \'bill\')" title="Dedicated Brand Bill Invoice">' +
+                        '📄 ' + escHtml(bInfo.name) + ' Bill' +
+                    '</button>' +
+                    '<button type="button" class="mini-action-btn" style="border-color:#16a34a;color:#15803d;background:#f0fdf4;" onclick="printBrandSubInvoice(\'' + escHtml(o.id) + '\', \'' + escHtml(so.id) + '\', \'full\')" title="Dedicated Inner Parcel Slip for ' + escHtml(bInfo.name) + '">' +
+                        '📦 ' + escHtml(bInfo.name) + ' Parcel Slip' +
+                    '</button>' +
+                '</div>' +
             '</div>';
         }).join('');
 
+        var invoiceHubHtml =
+            '<div class="invoice-hub">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
+                    '<div>' +
+                        '<div style="font-size:12.5px;font-weight:800;color:var(--text-primary);">🖨️ Invoices & Multi-Brand Parcel Slips</div>' +
+                        '<div style="font-size:11.5px;color:#64748b;">Pack each brand with its dedicated invoice, then attach the Master Parcel Slip on the outer courier bag.</div>' +
+                    '</div>' +
+                    '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+                        '<button type="button" class="mini-action-btn" style="background:#007AFF;color:#fff;border-color:#007AFF;" onclick="printMasterInvoice(\'' + escHtml(o.id) + '\', \'bill\')">' +
+                            '📄 Master Bill' +
+                        '</button>' +
+                        '<button type="button" class="mini-action-btn" style="background:#16a34a;color:#fff;border-color:#16a34a;" onclick="printMasterInvoice(\'' + escHtml(o.id) + '\', \'full\')">' +
+                            '🚚 Master Parcel Slip' +
+                        '</button>' +
+                        (isMulti ? '<button type="button" class="mini-action-btn" style="background:#7e22ce;color:#fff;border-color:#7e22ce;" onclick="printAllBrandPackSet(\'' + escHtml(o.id) + '\')">' +
+                            '🖨️ Print All (' + (subOrders.length + 1) + ' Slips)' +
+                        '</button>' : '') +
+                    '</div>' +
+                '</div>' +
+                '<div style="display:flex;flex-direction:column;gap:6px;">' +
+                    perBrandInvoiceCards +
+                '</div>' +
+            '</div>';
+
+        // 3. Clean Customer & Shipping Address Section
+        var cleanPhone = String(o.customer_phone || '').replace(/[^0-9+]/g, '');
+        var waPhone = cleanPhone.replace(/^\+/, '');
+        if (waPhone.indexOf('01') === 0 && waPhone.length === 11) waPhone = '88' + waPhone;
+
+        var addressCardHtml =
+            '<div class="address-card">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed rgba(0,122,255,0.2);">' +
+                    '<div style="display:flex;align-items:center;gap:8px;">' +
+                        '<span style="font-size:18px;">📍</span>' +
+                        '<div>' +
+                            '<div style="font-size:13px;font-weight:800;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.4px;">Customer & Shipping Address</div>' +
+                            '<div style="font-size:11.5px;color:#64748b;">' + ((o.order_type === 'pickup') ? '🚶 Store Pickup Order' : '🚚 Home Delivery Order') + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<button type="button" class="mini-action-btn" onclick="copyCustomerCourierBlock(\'' + escHtml(o.id) + '\')">' +
+                        '📋 Copy Full Courier Info' +
+                    '</button>' +
+                '</div>' +
+                '<div class="detail-grid" style="margin-bottom:10px;">' +
+                    '<div class="detail-block">' +
+                        '<label>Customer Name</label>' +
+                        '<span style="font-size:15px;font-weight:800;color:var(--text-primary);">' + escHtml(o.customer_name || '—') + '</span>' +
+                    '</div>' +
+                    '<div class="detail-block">' +
+                        '<label>Phone Number</label>' +
+                        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                            '<a href="tel:' + escHtml(cleanPhone) + '" style="font-size:14.5px;font-weight:800;color:#007AFF;text-decoration:none;">' + escHtml(o.customer_phone || '—') + '</a>' +
+                            (cleanPhone ? '<button type="button" class="mini-action-btn" style="padding:2px 6px;font-size:10.5px;" onclick="copyTextToClipboard(\'' + escHtml(o.customer_phone) + '\', \'Phone\')">📋</button>' : '') +
+                            (waPhone ? '<a href="https://wa.me/' + escHtml(waPhone) + '" target="_blank" class="mini-action-btn" style="padding:2px 6px;font-size:10.5px;color:#16a34a;border-color:#bbf7d0;">💬 WA</a>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="detail-block">' +
+                        '<label>Email</label>' +
+                        '<span style="font-size:13px;word-break:break-all;">' + escHtml(o.customer_email || '—') + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="background:#fff;border:1px solid rgba(0,122,255,0.2);border-radius:10px;padding:10px 12px;margin-bottom:10px;">' +
+                    '<div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:3px;">Street / Detailed Address</div>' +
+                    '<div style="font-size:14px;font-weight:700;color:#0f172a;line-height:1.45;">' + escHtml(o.address || '—') + '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+                    '<span class="variant-pill" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;">📍 Upazila: <b>' + escHtml(o.upazila || '—') + '</b></span>' +
+                    '<span class="variant-pill" style="background:#f0fdf4;border-color:#bbf7d0;color:#15803d;">🏙️ District: <b>' + escHtml(o.district || '—') + '</b></span>' +
+                    '<span class="variant-pill" style="background:#faf5ff;border-color:#e9d5ff;color:#6d28d9;">🗺️ Division: <b>' + escHtml(o.division || '—') + '</b></span>' +
+                '</div>' +
+            '</div>';
+
+        // 4. Ordered Products & Full Variant Info (`zyx` details + Clickable Product URL + Quantity)
+        var itemsToShow = Array.isArray(activeOrder.items) ? activeOrder.items : [];
+        var totalQtyInView = itemsToShow.reduce(function(s, i) { return s + (Number(i.quantity) || 1); }, 0);
+
+        var itemsHtml = itemsToShow.map(function(item, idx) {
+            var qty = Number(item.quantity) || 1;
+            var unitPrice = Number(item.price) || 0;
+            var lineTotal = unitPrice * qty;
+            var bBadge = window.getAdminBrandBadge ? window.getAdminBrandBadge(item.brand_id) : '';
+            var prodUrl = item.product_url || ((item.brand_slug ? ('/' + item.brand_slug) : '') + '/product?id=' + encodeURIComponent(item.productId || item.id || ''));
+            var fullProdUrl = window.location.origin + prodUrl;
+
+            var variantBadges = [];
+            if (item.color) {
+                variantBadges.push('<span class="variant-pill" style="background:#fef2f2;border-color:#fecaca;color:#991b1b;">🎨 Color: <b>' + escHtml(item.color) + '</b></span>');
+            }
+            if (item.size) {
+                variantBadges.push('<span class="variant-pill" style="background:#eff6ff;border-color:#bfdbfe;color:#1e40af;">📏 Size: <b>' + escHtml(item.size) + '</b></span>');
+            }
+            if (item.variantCode) {
+                variantBadges.push('<span class="variant-pill" style="background:#f3e8ff;border-color:#d8b4fe;color:#6b21a8;">🏷️ Variant Code: <b>' + escHtml(item.variantCode) + '</b></span>');
+            }
+            if (item.sku) {
+                variantBadges.push('<span class="variant-pill">🔢 SKU: <b>' + escHtml(item.sku) + '</b></span>');
+            }
+            if (!variantBadges.length) {
+                variantBadges.push('<span class="variant-pill" style="color:#64748b;">Standard Variant</span>');
+            }
+
+            return '<div class="order-item-row">' +
+                '<a href="' + escHtml(prodUrl) + '" target="_blank" title="Open Product Page">' +
+                    '<img src="' + escHtml(item.image || '') + '" class="order-item-img" onerror="this.style.display=\'none\'">' +
+                '</a>' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">' +
+                        bBadge +
+                        (item._subOrderId && isMulti ? '<span style="font-size:11px;color:#64748b;font-weight:600;">Parcel #' + escHtml(item._subOrderId) + '</span>' : '') +
+                        (item.productId ? '<code style="font-size:10.5px;color:#64748b;background:#f1f5f9;padding:1px 6px;border-radius:4px;">ID: ' + escHtml(item.productId) + '</code>' : '') +
+                    '</div>' +
+                    '<div style="font-weight:800;font-size:14.5px;color:var(--text-primary);margin-bottom:6px;line-height:1.35;">' +
+                        escHtml(item.productName || item.name || '—') +
+                    '</div>' +
+                    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">' +
+                        variantBadges.join('') +
+                    '</div>' +
+                    (prodUrl ? (
+                        '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f8fafc;border:1px dashed #cbd5e1;padding:5px 9px;border-radius:8px;font-size:11.5px;">' +
+                            '<span style="color:#475569;font-weight:600;word-break:break-all;">🔗 ' + escHtml(prodUrl) + '</span>' +
+                            '<a href="' + escHtml(prodUrl) + '" target="_blank" class="mini-action-btn" style="padding:2px 7px;font-size:11px;color:#007AFF;border-color:#bfdbfe;">↗ Open Product</a>' +
+                            '<button type="button" class="mini-action-btn" style="padding:2px 7px;font-size:11px;" onclick="copyTextToClipboard(\'' + escHtml(fullProdUrl) + '\', \'Product URL\')">📋 Copy URL</button>' +
+                        '</div>'
+                    ) : '') +
+                '</div>' +
+                '<div style="text-align:right;flex-shrink:0;min-width:110px;">' +
+                    '<div class="qty-pill ' + (qty > 1 ? 'multi' : '') + '" style="margin-bottom:6px;">Qty: × ' + qty + '</div>' +
+                    '<div style="font-size:11.5px;color:#64748b;">' + formatMoney(unitPrice) + ' × ' + qty + '</div>' +
+                    '<div style="font-weight:900;font-size:15px;color:var(--text-primary);margin-top:2px;">' + formatMoney(lineTotal) + '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        var itemsHeaderTitle = (currentModalBrandKey === 'all')
+            ? '📦 Ordered Products — All Brands (' + itemsToShow.length + ' items • Total Qty: ' + totalQtyInView + ')'
+            : '📦 Ordered Products — ' + escHtml(activeBrandInfo.name) + ' (' + itemsToShow.length + ' items • Total Qty: ' + totalQtyInView + ')';
+
+        // 5. Totals Summary + Payment & Tracking
         var content =
-            '<div class="detail-grid">' +
-                '<div class="detail-block"><label>Customer</label><span>' + (o.customer_name||'—') + '</span></div>' +
-                '<div class="detail-block"><label>Phone</label><span>' + (o.customer_phone||'—') + '</span></div>' +
-                '<div class="detail-block"><label>Email</label><span>' + (o.customer_email||'—') + '</span></div>' +
-                '<div class="detail-block"><label>Division</label><span>' + (o.division||'—') + '</span></div>' +
-                '<div class="detail-block"><label>District</label><span>' + (o.district||'—') + '</span></div>' +
-            '<div class="detail-block"><label>Upazila</label><span>' + (o.upazila||'—') + '</span></div>' +
-                '<div class="detail-block"><label>Order Type</label><span style="font-weight:700;color:' + (o.order_type === 'pickup' ? '#FF9500' : '#007AFF') + ';">' + ((o.order_type === 'pickup') ? '🚶 Pickup from Store' : '🚚 Delivery') + '</span></div>' +
-                '<div class="detail-block" style="grid-column:1/-1"><label>Address</label><span>' + (o.address||'—') + '</span></div>' +
+            brandSwitcherHtml +
+            invoiceHubHtml +
+            addressCardHtml +
+            '<div style="margin-top:14px;">' +
+                '<div style="font-size:13px;font-weight:800;color:var(--text-primary);margin-bottom:8px;">' + itemsHeaderTitle + '</div>' +
+                '<div class="order-items-list">' + itemsHtml + '</div>' +
             '</div>' +
 
-            '<div class="order-items-list">' + itemsHtml + '</div>' +
-
-            (o.addons && o.addons !== 'None' ? '<div style="background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:12px;padding:12px;margin-top:12px;font-size:13px;"><b style="color:var(--warning);">🎁 Selected Add-ons:</b><div style="font-weight:600;margin-top:4px;color:var(--text-primary);">' + o.addons + '</div></div>' : '') +
+            (activeOrder.addons && activeOrder.addons !== 'None' ? '<div style="background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:12px;padding:12px;margin-top:12px;font-size:13px;"><b style="color:var(--warning);">🎁 Selected Add-ons:</b><div style="font-weight:600;margin-top:4px;color:var(--text-primary);">' + escHtml(activeOrder.addons) + '</div></div>' : '') +
 
             '<div style="background:var(--bg-card-subtle);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;">' +
-                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>Subtotal</span><span>' + formatMoney(o.subtotal) + '</span></div>' +
-                (o.addon_total > 0 ? '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>Add-ons</span><span>' + formatMoney(o.addon_total) + '</span></div>' : '') +
-                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>Delivery</span><span>' + formatMoney(o.delivery_charge) + '</span></div>' +
-                (o.promo_discount > 0 ? '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;color:var(--success);"><span>Discount (' + o.promo_code + ')</span><span>-' + formatMoney(o.promo_discount) + '</span></div>' : '') +
-                '<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;border-top:1.5px solid var(--border);padding-top:10px;margin-top:6px;"><span>Total</span><span style="color:var(--accent);">' + formatMoney(o.grand_total) + '</span></div>' +
-                (o.advance_payable > 0 ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--warning);margin-top:6px;"><span>Advance Paid</span><span>' + formatMoney(o.advance_payable) + '</span></div>' : '') +
+                '<div style="font-size:11.5px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:8px;">' +
+                    (currentModalBrandKey === 'all' ? '💰 Master Order Summary (All Brands Combined)' : '💰 Brand Parcel Summary (' + escHtml(activeBrandInfo.name) + ')') +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>Subtotal (' + totalQtyInView + ' qty)</span><span>' + formatMoney(activeOrder.subtotal) + '</span></div>' +
+                (activeOrder.addon_total > 0 ? '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>Add-ons</span><span>' + formatMoney(activeOrder.addon_total) + '</span></div>' : '') +
+                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;"><span>Delivery Charge</span><span>' + formatMoney(activeOrder.delivery_charge) + '</span></div>' +
+                (activeOrder.promo_discount > 0 ? '<div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;color:var(--success);"><span>Discount (' + escHtml(activeOrder.promo_code || 'Promo') + ')</span><span>-' + formatMoney(activeOrder.promo_discount) + '</span></div>' : '') +
+                '<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;border-top:1.5px solid var(--border);padding-top:10px;margin-top:6px;"><span>Total Payable</span><span style="color:var(--accent);">' + formatMoney(activeOrder.grand_total) + '</span></div>' +
+                (activeOrder.advance_payable > 0 ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--warning);margin-top:6px;"><span>Advance Paid</span><span>' + formatMoney(activeOrder.advance_payable) + '</span></div>' : '') +
+                '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#16a34a;margin-top:6px;"><span>Cash to Collect (COD Due)</span><span>' + formatMoney(activeOrder.payment_status === 'Paid' ? 0 : Math.max(0, (activeOrder.grand_total || 0) - (activeOrder.advance_payable || 0))) + '</span></div>' +
             '</div>' +
 
             '<div style="background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:12px;padding:14px;margin-top:12px;">' +
                 '<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;"><i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> Payment Info</div>' +
-                '<div style="font-size:13px;color:var(--text-primary);"><b>Method:</b> ' + (o.payment_method||'—') + ' | <b>Status:</b> ' + (o.payment_status||'—') + '</div>' +
-                (o.payment_sender ? '<div style="font-size:13px;margin-top:4px;color:var(--text-primary);"><b>Sender:</b> <code style="background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;">' + o.payment_sender + '</code></div>' : '') +
-                (o.payment_trx_id ? '<div style="font-size:13px;margin-top:4px;color:var(--text-primary);"><b>TrxID:</b> <code style="background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;">' + o.payment_trx_id + '</code></div>' : '') +
+                '<div style="font-size:13px;color:var(--text-primary);"><b>Method:</b> ' + escHtml(activeOrder.payment_method || '—') + ' | <b>Status:</b> ' + escHtml(activeOrder.payment_status || '—') + '</div>' +
+                (activeOrder.payment_sender ? '<div style="font-size:13px;margin-top:4px;color:var(--text-primary);"><b>Sender:</b> <code style="background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;">' + escHtml(activeOrder.payment_sender) + '</code></div>' : '') +
+                (activeOrder.payment_trx_id ? '<div style="font-size:13px;margin-top:4px;color:var(--text-primary);"><b>TrxID:</b> <code style="background:rgba(0,0,0,0.04);padding:2px 6px;border-radius:4px;">' + escHtml(activeOrder.payment_trx_id) + '</code></div>' : '') +
             '</div>' +
 
-            // Tracking section
             '<div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;">' +
-                '<div style="font-size:12px;font-weight:700;color:#8E8E93;margin-bottom:10px;"><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Tracking & Status Update</div>' +
+                '<div style="font-size:12px;font-weight:700;color:#8E8E93;margin-bottom:10px;"><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Tracking & Status Update ' +
+                    (currentModalBrandKey === 'all' && isMulti ? '<span style="color:#7e22ce;">(Updates All ' + subOrders.length + ' Brand Parcels in Master Order)</span>' : '') +
+                '</div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
                     '<select class="form-select" id="updateStatus">' +
                     ['Pending','Confirmed','Processing','Shipped','Delivered','Cancelled'].map(function(s) {
-                        return '<option value="' + s + '"' + (o.status===s?' selected':'') + '>' + s + '</option>';
+                        return '<option value="' + s + '"' + (activeOrder.status===s?' selected':'') + '>' + s + '</option>';
                     }).join('') +
                     '</select>' +
                     '<select class="form-select" id="updatePayStatus">' +
                     ['Unpaid','Advance Paid','Paid'].map(function(s) {
-                        return '<option value="' + s + '"' + (o.payment_status===s?' selected':'') + '>' + s + '</option>';
+                        return '<option value="' + s + '"' + (activeOrder.payment_status===s?' selected':'') + '>' + s + '</option>';
                     }).join('') +
                     '</select>' +
-                    '<input class="form-input" id="updateCourier" placeholder="Courier Name (e.g. Pathao)" value="' + (o.courier_name||'') + '">' +
-                    '<input class="form-input" id="updateTrackNum" placeholder="Tracking Number" value="' + (o.tracking_number||'') + '">' +
+                    '<input class="form-input" id="updateCourier" placeholder="Courier Name (e.g. Pathao)" value="' + escHtml(activeOrder.courier_name || '') + '">' +
+                    '<input class="form-input" id="updateTrackNum" placeholder="Tracking Number" value="' + escHtml(activeOrder.tracking_number || '') + '">' +
                 '</div>' +
-                '<input class="form-input" id="updateTrackUrl" placeholder="Tracking URL (optional)" value="' + (o.tracking_url||'') + '" style="margin-bottom:10px;">' +
-                '<input class="form-input" id="updateNote" placeholder="Admin note (private)" value="' + (o.admin_note||'') + '" style="margin-bottom:10px;">' +
-                '<button class="btn btn-primary btn-full" onclick="updateOrder(\'' + o.id + '\')">💾 Update Order</button>' +
+                '<input class="form-input" id="updateTrackUrl" placeholder="Tracking URL (optional)" value="' + escHtml(activeOrder.tracking_url || '') + '" style="margin-bottom:10px;">' +
+                '<input class="form-input" id="updateNote" placeholder="Admin note (private)" value="' + escHtml(activeOrder.admin_note || '') + '" style="margin-bottom:10px;">' +
+                '<button class="btn btn-primary btn-full" onclick="updateOrder(\'' + escHtml(o.id) + '\')">💾 Save & Update ' + (currentModalBrandKey === 'all' && isMulti ? 'Master Order (All Brands)' : 'Order') + '</button>' +
             '</div>';
 
         document.getElementById('orderModalContent').innerHTML = content;
-        document.getElementById('orderModal').classList.add('show');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    function updateOrder(orderId) {
+    function deleteOrder(masterId) {
+        var m = masterOrderMap[masterId];
+        var idsToDelete = m ? (m._dbIds || [masterId]) : [masterId];
+        var msg = (idsToDelete.length > 1)
+            ? 'Are you sure you want to permanently delete Master Order #' + masterId + ' (and all ' + idsToDelete.length + ' brand sub-orders)?'
+            : 'Are you sure you want to permanently delete order #' + masterId + '?';
+        if (!confirm(msg)) return;
+
+        if (CONFIG.DB_PROVIDER === 'cf_db') {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/delete-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
+                body: JSON.stringify({ id: idsToDelete[0], ids: idsToDelete, order_group_id: m ? m.order_group_id : masterId })
+            }).then(function(r) { return r.json(); }).then(function(res) {
+                if (!res.success) { showToast('Failed to delete: ' + res.error, 'error'); return; }
+                showToast('Order deleted successfully!', 'success');
+                rawOrders = rawOrders.filter(function(o) {
+                    return idsToDelete.indexOf(o.id) === -1 && o.order_group_id !== masterId;
+                });
+                rebuildMasterOrders();
+                filterOrders();
+            }).catch(function(err) {
+                showToast('Failed to delete: ' + err.message, 'error');
+            });
+        } else if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('orders').delete().in('id', idsToDelete).then(function(r) {
+                if (r.error) { showToast('Failed to delete: ' + r.error.message, 'error'); return; }
+                showToast('Order deleted successfully!', 'success');
+                rawOrders = rawOrders.filter(function(o) { return idsToDelete.indexOf(o.id) === -1; });
+                rebuildMasterOrders();
+                filterOrders();
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            Promise.all(idsToDelete.map(function(id) { return appwriteDatabases.deleteDocument(APP_DB, 'orders', id); }))
+            .then(function() {
+                showToast('Order deleted successfully!', 'success');
+                rawOrders = rawOrders.filter(function(o) { return idsToDelete.indexOf(o.id) === -1; });
+                rebuildMasterOrders();
+                filterOrders();
+            });
+        }
+    }
+
+    function updateOrder(masterId) {
+        var m = masterOrderMap[masterId];
+        if (!m) return;
+
         var payload = {
             status:          document.getElementById('updateStatus').value,
             payment_status:  document.getElementById('updatePayStatus').value,
@@ -538,155 +1154,42 @@
             admin_note:      document.getElementById('updateNote').value.trim(),
         };
 
-        var currentOrder = allOrders.find(function(o) { return o.id === orderId; });
+        var targetIds = (currentModalBrandKey === 'all')
+            ? (m._dbIds || [m.id])
+            : [currentModalBrandKey];
 
-        if (CONFIG.DB_PROVIDER === 'supabase') {
-            supabaseClient.from('orders').update(payload).eq('id', orderId).then(function(r) {
-                if (r.error) { showToast('Update failed: ' + r.error.message, 'error'); return; }
-
-                // Trigger repeated customer personal coupon generation
-                if (payload.status === 'Delivered' && currentOrder && currentOrder.customer_phone) {
-                    var phone = currentOrder.customer_phone.trim();
-                    supabaseClient.from('promos').select('*').then(function(res) {
-                        var promosList = res.data || [];
-                        var repConfig = promosList.find(function(p) { return p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'); });
-                        
-                        var existingCoupon = promosList.find(function(p) {
-                            return p.code && p.code.split('|v1|')[0] === phone;
-                        });
-
-                        if (repConfig && repConfig.is_active && !existingCoupon) {
-                            try {
-                                var meta = JSON.parse(repConfig.code.split('|v1|')[1]);
-                                var expiry = null;
-                                if (meta.repExpiryDays) {
-                                    var d = new Date(); d.setDate(d.getDate() + parseInt(meta.repExpiryDays));
-                                    expiry = d.toISOString();
-                                }
-
-                                var newPromoMeta = {
-                                    type: 'private',
-                                    disc_type: meta.repType || 'flat',
-                                    disc_val: parseFloat(meta.repValue) || 0,
-                                    max_cap: parseFloat(meta.repCap) || null,
-                                    min_spend: parseFloat(meta.repMinSpend) || null,
-                                    del_reward: meta.repDelReward || 'none',
-                                    is_repeated_cust: true
-                                };
-
-                                var fullCode = phone + '|v1|' + JSON.stringify(newPromoMeta);
-                                var newPromoPayload = {
-                                    code: fullCode,
-                                    discount: meta.repType === 'flat' ? parseFloat(meta.repValue) : 0,
-                                    is_active: true,
-                                    expires_at: expiry
-                                };
-
-                                supabaseClient.from('promos').insert([newPromoPayload]).then(function(insertRes) {
-                                    if (insertRes.error) { console.error('Error generating repeated customer coupon:', insertRes.error); }
-                                    else { showToast('🎉 Personal coupon created for customer: ' + phone, 'success'); }
-                                });
-                            } catch (e) {
-                                console.error('Error parsing repeated customer promo config:', e);
-                            }
-                        }
-                    });
-                }
-
-                showToast('Order updated!', 'success');
-                closeModal('orderModal');
-
-                // Update local data
-                var idx = allOrders.findIndex(function(o) { return o.id === orderId; });
-                if (idx > -1) Object.assign(allOrders[idx], payload);
-                filterOrders();
-            });
-        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            appwriteDatabases.updateDocument(APP_DB, 'orders', orderId, payload)
-            .then(function() {
-                // Trigger repeated customer personal coupon if status = Delivered
-                if (payload.status === 'Delivered' && currentOrder && currentOrder.customer_phone) {
-                    var phone = currentOrder.customer_phone.trim();
-                    appwriteDatabases.listDocuments(APP_DB, 'promos', [AppwriteQuery.limit(500)])
-                    .then(function(promosRes) {
-                        var promosList = promosRes.documents;
-                        var repConfig = promosList.find(function(p) { return p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'); });
-                        var existingCoupon = promosList.find(function(p) { return p.code && p.code.split('|v1|')[0] === phone; });
-
-                        if (repConfig && repConfig.is_active && !existingCoupon) {
-                            try {
-                                var meta = JSON.parse(repConfig.code.split('|v1|')[1]);
-                                var expiry = null;
-                                if (meta.repExpiryDays) {
-                                    var d = new Date(); d.setDate(d.getDate() + parseInt(meta.repExpiryDays));
-                                    expiry = d.toISOString();
-                                }
-                                var newPromoMeta = {
-                                    type: 'private',
-                                    disc_type: meta.repType || 'flat',
-                                    disc_val: parseFloat(meta.repValue) || 0,
-                                    max_cap: parseFloat(meta.repCap) || null,
-                                    min_spend: parseFloat(meta.repMinSpend) || null,
-                                    del_reward: meta.repDelReward || 'none',
-                                    is_repeated_cust: true
-                                };
-                                var fullCode = phone + '|v1|' + JSON.stringify(newPromoMeta);
-                                var newPromoPayload = {
-                                    code: fullCode,
-                                    discount: meta.repType === 'flat' ? parseFloat(meta.repValue) || 0 : 0,
-                                    is_active: true,
-                                    expires_at: expiry,
-                                    type: 'private',
-                                    disc_type: meta.repType || 'flat',
-                                    disc_val: parseFloat(meta.repValue) || 0,
-                                    max_cap: parseInt(meta.repCap) || null,
-                                    min_spend: parseInt(meta.repMinSpend) || null,
-                                    del_reward: meta.repDelReward || 'none',
-                                    created_at: new Date().toISOString()
-                                };
-                                appwriteDatabases.createDocument(APP_DB, 'promos', AppwriteID.unique(), newPromoPayload)
-                                .then(function() {
-                                    showToast('🎉 Personal coupon created for: ' + phone, 'success');
-                                }).catch(function(e) { console.error('Coupon gen error:', e.message); });
-                            } catch (e) { console.error('Repeat config parse error:', e); }
-                        }
-                    }).catch(function(e) { console.error('Promos load error:', e.message); });
-                }
-
-                showToast('Order updated!', 'success');
-                closeModal('orderModal');
-                var idx = allOrders.findIndex(function(o) { return o.id === orderId; });
-                if (idx > -1) Object.assign(allOrders[idx], payload);
-                filterOrders();
-            }).catch(function(err) {
-                showToast('Update failed: ' + err.message, 'error');
-            });
-        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/update-order', {
+        if (CONFIG.DB_PROVIDER === 'cf_db') {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/update-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
-                body: JSON.stringify({ id: orderId, upData: payload })
+                body: JSON.stringify({
+                    id: targetIds[0],
+                    ids: targetIds,
+                    order_group_id: (currentModalBrandKey === 'all') ? m.order_group_id : null,
+                    upData: payload
+                })
             }).then(function(r) { return r.json(); }).then(function(res) {
                 if (!res.success) { showToast('Update failed: ' + res.error, 'error'); return; }
-                
-                if (payload.status === 'Delivered' && currentOrder && currentOrder.customer_phone) {
-                    var phone = currentOrder.customer_phone.trim();
-                    fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM promos" }) })
-                    .then(r => r.json()).then(d => {
+
+                if (payload.status === 'Delivered' && m.customer_phone) {
+                    var phone = m.customer_phone.trim();
+                    fetch((CONFIG.HF_API_BASE || '') + '/api/d1-query', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sql: 'SELECT * FROM promos' })
+                    }).then(function(r) { return r.json(); }).then(function(d) {
                         if (d.success && d.result && d.result[0].results) {
                             var promosList = d.result[0].results;
                             var repConfig = promosList.find(function(p) { return p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'); });
                             var existingCoupon = promosList.find(function(p) { return p.code && p.code.split('|v1|')[0] === phone; });
-                            
                             if (repConfig && repConfig.is_active && !existingCoupon) {
                                 try {
                                     var meta = JSON.parse(repConfig.code.split('|v1|')[1]);
                                     var expiry = null;
                                     if (meta.repExpiryDays) {
-                                        var d = new Date(); d.setDate(d.getDate() + parseInt(meta.repExpiryDays));
-                                        expiry = d.toISOString();
+                                        var dt = new Date(); dt.setDate(dt.getDate() + parseInt(meta.repExpiryDays));
+                                        expiry = dt.toISOString();
                                     }
-                                    
                                     var newPromoMeta = {
                                         type: 'private',
                                         disc_type: meta.repType || 'flat',
@@ -697,22 +1200,47 @@
                                         is_repeated_cust: true
                                     };
                                     var fullCode = phone + '|v1|' + JSON.stringify(newPromoMeta);
-                                    
-                                    var insertQ = "INSERT INTO promos (code, discount, is_active, expires_at) VALUES (?, ?, ?, ?)";
-                                    fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: insertQ, params: [fullCode, meta.repType === 'flat' ? parseFloat(meta.repValue) : 0, 1, expiry] }) }).then(function() { showToast('🎉 Personal coupon created for customer: ' + phone, 'success'); });
-                                } catch (e) { console.error('Error generating repeated customer coupon:', e); }
+                                    var insertQ = 'INSERT INTO promos (code, discount, is_active, expires_at) VALUES (?, ?, ?, ?)';
+                                    fetch((CONFIG.HF_API_BASE || '') + '/api/d1-query', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ sql: insertQ, params: [fullCode, meta.repType === 'flat' ? parseFloat(meta.repValue) : 0, 1, expiry] })
+                                    }).then(function() { showToast('🎉 Personal coupon created for customer: ' + phone, 'success'); });
+                                } catch(e){}
                             }
                         }
                     });
                 }
-                
+
                 showToast('Order updated!', 'success');
                 closeModal('orderModal');
-                var idx = allOrders.findIndex(function(o) { return o.id === orderId; });
-                if (idx > -1) Object.assign(allOrders[idx], payload);
+                rawOrders.forEach(function(ro) {
+                    if (targetIds.indexOf(ro.id) !== -1 || (currentModalBrandKey === 'all' && ro.order_group_id === m.order_group_id)) {
+                        Object.assign(ro, payload);
+                    }
+                });
+                rebuildMasterOrders();
                 filterOrders();
             }).catch(function(err) {
                 showToast('Update failed: ' + err.message, 'error');
+            });
+        } else if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('orders').update(payload).in('id', targetIds).then(function(r) {
+                if (r.error) { showToast('Update failed: ' + r.error.message, 'error'); return; }
+                showToast('Order updated!', 'success');
+                closeModal('orderModal');
+                rawOrders.forEach(function(ro) { if (targetIds.indexOf(ro.id) !== -1) Object.assign(ro, payload); });
+                rebuildMasterOrders();
+                filterOrders();
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            Promise.all(targetIds.map(function(id) { return appwriteDatabases.updateDocument(APP_DB, 'orders', id, payload); }))
+            .then(function() {
+                showToast('Order updated!', 'success');
+                closeModal('orderModal');
+                rawOrders.forEach(function(ro) { if (targetIds.indexOf(ro.id) !== -1) Object.assign(ro, payload); });
+                rebuildMasterOrders();
+                filterOrders();
             });
         }
     }
@@ -733,6 +1261,3 @@
     <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
-
-
-

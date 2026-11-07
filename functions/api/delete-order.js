@@ -18,11 +18,21 @@ export async function onRequestPost(context) {
 
     try {
         const body = await request.json();
-        const { id } = body;
+        const { id, ids, order_group_id } = body;
         
         const sql = `DELETE FROM orders WHERE id=?`;
         const stmt = env.DB.prepare(sql);
         const { results } = await stmt.bind(id).run();
+        if (Array.isArray(ids) && ids.length > 1) {
+            for (const subId of ids) {
+                if (subId && subId !== id) {
+                    await env.DB.prepare(`DELETE FROM orders WHERE id=?`).bind(subId).run().catch(() => {});
+                }
+            }
+        }
+        if (order_group_id) {
+            await env.DB.prepare(`DELETE FROM orders WHERE order_group_id=?`).bind(order_group_id).run().catch(() => {});
+        }
 
         return new Response(JSON.stringify({ success: true, result: [{ results }] }), {
             status: 200,

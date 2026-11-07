@@ -247,8 +247,8 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                     <!-- Desktop Search -->
                     <div class="hidden md:flex flex-grow justify-center px-4">
                         <div class="flex w-full max-w-[400px] border border-gray-300 rounded-md overflow-hidden">
-                            <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search products..." onkeypress="if(event.key==='Enter' && this.value.trim()) window.location.href='shop.html?q='+encodeURIComponent(this.value.trim())">
-                            <button aria-label="Search" class="text-dynamic px-4 py-1.5 transition hover:opacity-90" style="background: var(--primary);" onclick="var v=document.getElementById('v2SearchDesktop').value; if(v.trim()) window.location.href='shop.html?q='+encodeURIComponent(v.trim())"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                            <input type="text" id="v2SearchDesktop" class="px-4 py-1.5 w-full outline-none text-sm" placeholder="Search products..." onkeypress="if(event.key==='Enter' && this.value.trim()) window.location.href=(window.BRAND?BRAND.url('/shop'):'/shop')+'?q='+encodeURIComponent(this.value.trim())">
+                            <button aria-label="Search" class="text-dynamic px-4 py-1.5 transition hover:opacity-90" style="background: var(--primary);" onclick="var v=document.getElementById('v2SearchDesktop').value; if(v.trim()) window.location.href=(window.BRAND?BRAND.url('/shop'):'/shop')+'?q='+encodeURIComponent(v.trim())"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                         </div>
                     </div>
 
@@ -268,8 +268,8 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
 
                     <!-- Mobile Search Bar (Row 2) -->
                     <div class="w-full md:hidden flex border border-gray-300 rounded-md overflow-hidden mt-1">
-                        <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products..." onkeypress="if(event.key==='Enter' && this.value.trim()) window.location.href='shop.html?q='+encodeURIComponent(this.value.trim())">
-                        <button aria-label="Search" class="text-dynamic px-4 py-2 transition hover:opacity-90" style="background: var(--primary);" onclick="var v=document.getElementById('v2SearchMobile').value; if(v.trim()) window.location.href='shop.html?q='+encodeURIComponent(v.trim())"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
+                        <input type="text" id="v2SearchMobile" class="px-4 py-2 w-full outline-none text-sm" placeholder="Search products..." onkeypress="if(event.key==='Enter' && this.value.trim()) window.location.href=(window.BRAND?BRAND.url('/shop'):'/shop')+'?q='+encodeURIComponent(this.value.trim())">
+                        <button aria-label="Search" class="text-dynamic px-4 py-2 transition hover:opacity-90" style="background: var(--primary);" onclick="var v=document.getElementById('v2SearchMobile').value; if(v.trim()) window.location.href=(window.BRAND?BRAND.url('/shop'):'/shop')+'?q='+encodeURIComponent(v.trim())"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></button>
                     </div>
 
                 </div>

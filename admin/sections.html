@@ -219,7 +219,8 @@
                 <div class="page-subtitle">Manage homepage product sections</div>
             </div>
         </div>
-        <div class="header-right">
+        <div class="header-right" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <select class="form-select" id="secBrandFilter" data-brand-filter="1" onchange="renderSections()" style="width:auto;min-width:190px;"></select>
             <button class="btn btn-primary" onclick="openModal()">
                 <i data-lucide="plus" class="lucide-icon"></i> Add Section
             </button>
@@ -251,6 +252,12 @@
         <div class="modal-header">
             <div class="modal-title" id="modalTitle">Add Section</div>
             <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+
+        <!-- Brand / Storefront -->
+        <div class="form-group">
+            <label class="form-label">Brand / Storefront</label>
+            <select class="form-select" id="sBrand" data-brand-select="1" onchange="onSectionBrandChange()"></select>
         </div>
 
         <!-- Section Title -->
@@ -361,18 +368,41 @@ function loadAll() {
                 return { data: res.documents.map(function(doc) { doc.id = doc.$id; doc.created_at = doc.$createdAt; if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } } return doc; }) };
             });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        p1 = cfDbBatchQuery([{ sql: "SELECT s.*, c.name as category_name FROM home_sections s LEFT JOIN categories c ON s.category_id = c.id ORDER BY s.sort_order" }], false)
-            .then(function(d) {
-                var data = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
-                return { data: data.map(function(s) {
-                    s.is_active = s.is_active === 1;
-                    if (s.product_ids && typeof s.product_ids === 'string') try { s.product_ids = JSON.parse(s.product_ids); } catch(e){}
-                    if (s.category_name) s.categories = { name: s.category_name };
-                    return s;
-                }) };
+        p1 = cfDbBatchQuery([
+            { sql: "SELECT s.*, c.name as category_name FROM home_sections s LEFT JOIN categories c ON s.category_id = c.id ORDER BY s.sort_order" },
+            { sql: "SELECT id, name, brand_id FROM categories WHERE is_active = 1 ORDER BY sort_order" },
+            { sql: "SELECT id, name, base_price, flash_sale_price, variants, gallery_images, brand_id, show_on_main FROM products WHERE is_active = 1 ORDER BY created_at DESC" }
+        ], true)
+            .then(function(results) {
+                var secRows = (results[0] && results[0].result && results[0].result[0].results) ? results[0].result[0].results : [];
+                var catRows = (results[1] && results[1].result && results[1].result[0].results) ? results[1].result[0].results : [];
+                var prodRows = (results[2] && results[2].result && results[2].result[0].results) ? results[2].result[0].results : [];
+                prodRows.forEach(function(p) {
+                    if (typeof p.variants === 'string') { try { p.variants = JSON.parse(p.variants); } catch(e){ p.variants = []; } }
+                    if (typeof p.gallery_images === 'string') { try { p.gallery_images = JSON.parse(p.gallery_images); } catch(e){ p.gallery_images = []; } }
+                });
+                return {
+                    sections: secRows.map(function(s) {
+                        s.is_active = s.is_active === 1;
+                        if (s.product_ids && typeof s.product_ids === 'string') try { s.product_ids = JSON.parse(s.product_ids); } catch(e){}
+                        if (s.category_name) s.categories = { name: s.category_name };
+                        return s;
+                    }),
+                    cats: catRows,
+                    prods: prodRows
+                };
             });
-        p2 = cfDbBatchQuery([{ sql: "SELECT id, name FROM categories WHERE is_active = 1 ORDER BY sort_order" }], false)
-            .then(function(d) { return { data: (d.success && d.result && d.result[0].results) ? d.result[0].results : [] }; });
+        p1.then(function(bundle) {
+            allSections = bundle.sections || [];
+            allCats = bundle.cats || [];
+            allProducts = bundle.prods || [];
+            renderSections();
+            populateCategoryDropdown();
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+        return;
     }
     var p3 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
 
@@ -390,17 +420,34 @@ function loadAll() {
     });
 }
 
-function populateCategoryDropdown() {
+function populateCategoryDropdown(selectedCatId) {
     var sel = document.getElementById('sCategoryId');
+    var curVal = selectedCatId !== undefined ? selectedCatId : sel.value;
+    var brandId = (document.getElementById('sBrand') && document.getElementById('sBrand').value) ? document.getElementById('sBrand').value : '';
+    var scopedCats = allCats.filter(function(c) {
+        return brandId ? (c.brand_id === brandId) : (!c.brand_id);
+    });
     sel.innerHTML = '<option value="">— Category বেছে নাও —</option>' +
-        allCats.map(function(c) {
+        scopedCats.map(function(c) {
             return '<option value="' + c.id + '">' + c.name + '</option>';
         }).join('');
+    if (curVal) sel.value = curVal;
+}
+
+function onSectionBrandChange() {
+    populateCategoryDropdown('');
+    if (document.getElementById('productDropdown').classList.contains('show')) {
+        searchProducts(document.getElementById('productSearch').value);
+    }
 }
 
 function renderSections() {
     var grid = document.getElementById('sectionsGrid');
-    var count = allSections.length;
+    var filterVal = (document.getElementById('secBrandFilter') || {}).value || 'all';
+    var filtered = allSections.filter(function(s) {
+        return window.matchesAdminBrandFilter ? window.matchesAdminBrandFilter(s.brand_id, filterVal) : true;
+    });
+    var count = filtered.length;
     document.getElementById('sectionsCount').textContent = count + ' section' + (count !== 1 ? 's' : '') + ' configured';
 
     if (!count) {
@@ -413,12 +460,13 @@ function renderSections() {
     }
 
     var html = '';
-    allSections.forEach(function(s) {
+    filtered.forEach(function(s) {
         var typeInfo = getTypeInfo(s.type);
         var catName = '';
         if (s.type === 'category' && s.categories) catName = s.categories.name || '';
 
         var descParts = [];
+        if (window.getAdminBrandBadge) descParts.push(window.getAdminBrandBadge(s.brand_id));
         descParts.push('<span class="section-chip ' + typeInfo.chip + '">' + typeInfo.label + '</span>');
         if (catName) descParts.push('<span style="color:var(--text-secondary);">' + catName + '</span>');
         if (s.type === 'custom') {
@@ -472,6 +520,10 @@ function getTypeInfo(type) {
 function openModal() {
     editingId = null; sActive = true; selectedProductIds = [];
     document.getElementById('modalTitle').textContent = 'Add Section';
+    var filterVal = (document.getElementById('secBrandFilter') || {}).value || 'all';
+    var defaultBrand = (filterVal !== 'all' && filterVal !== '__main__') ? filterVal : '';
+    if (window.populateBrandSelect) window.populateBrandSelect('sBrand', defaultBrand);
+    populateCategoryDropdown('');
     document.getElementById('sTitle').value = '';
     document.getElementById('sType').value = 'category';
     document.getElementById('sCategoryId').value = '';
@@ -490,6 +542,8 @@ function editSection(s) {
     selectedProductIds = Array.isArray(s.product_ids) ? s.product_ids.slice() : [];
 
     document.getElementById('modalTitle').textContent = 'Edit Section';
+    if (window.populateBrandSelect) window.populateBrandSelect('sBrand', s.brand_id || '');
+    populateCategoryDropdown(s.category_id || '');
     document.getElementById('sTitle').value = s.title || '';
     document.getElementById('sType').value = s.type || 'category';
     document.getElementById('sCategoryId').value = s.category_id || '';
@@ -527,8 +581,10 @@ function showDropdown() {
 function searchProducts(q) {
     q = (q || '').toLowerCase();
     var dropdown = document.getElementById('productDropdown');
+    var brandId = (document.getElementById('sBrand') && document.getElementById('sBrand').value) ? document.getElementById('sBrand').value : '';
     var results = allProducts.filter(function(p) {
-        return !q || (p.name || '').toLowerCase().includes(q);
+        var brandMatch = brandId ? (p.brand_id === brandId) : (!p.brand_id || p.show_on_main === 1 || p.show_on_main === true);
+        return brandMatch && (!q || (p.name || '').toLowerCase().includes(q));
     }).slice(0, 30);
 
     if (!results.length) {
@@ -627,11 +683,12 @@ function saveSection() {
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         payload.is_active = payload.is_active ? 1 : 0;
         var pIds = JSON.stringify(payload.product_ids || []);
+        var brandIdVal = (document.getElementById('sBrand') && document.getElementById('sBrand').value) ? document.getElementById('sBrand').value : null;
         var p;
         if (editingId) {
-            p = d1AdminQuery("UPDATE home_sections SET title = ?, type = ?, category_id = ?, product_ids = ?, max_products = ?, sort_order = ?, is_active = ? WHERE id = ?", [payload.title, payload.type, payload.category_id, pIds, payload.max_products, payload.sort_order, payload.is_active, editingId]);
+            p = d1AdminQuery("UPDATE home_sections SET title = ?, type = ?, category_id = ?, product_ids = ?, max_products = ?, sort_order = ?, is_active = ?, brand_id = ? WHERE id = ?", [payload.title, payload.type, payload.category_id, pIds, payload.max_products, payload.sort_order, payload.is_active, brandIdVal, editingId]);
         } else {
-            p = d1AdminQuery("INSERT INTO home_sections (id, title, type, category_id, product_ids, max_products, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.title, payload.type, payload.category_id, pIds, payload.max_products, payload.sort_order, payload.is_active]);
+            p = d1AdminQuery("INSERT INTO home_sections (id, title, type, category_id, product_ids, max_products, sort_order, is_active, brand_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.title, payload.type, payload.category_id, pIds, payload.max_products, payload.sort_order, payload.is_active, brandIdVal]);
         }
         p.then(function() {
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');

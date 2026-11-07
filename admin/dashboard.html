@@ -295,6 +295,27 @@
                     if (typeof o.items === 'string') { try { o.items = JSON.parse(o.items); } catch(e){} }
                     return o;
                 });
+                orders = orders.map(function(o) {
+                    if (typeof o.items === 'string') { try { o.items = JSON.parse(o.items); } catch(e){} }
+                    return o;
+                });
+                var grpMap = {}, grpKeys = [];
+                orders.forEach(function(o) {
+                    var gk = o.order_group_id || o.id;
+                    if (!grpMap[gk]) { grpMap[gk] = []; grpKeys.push(gk); }
+                    grpMap[gk].push(o);
+                });
+                orders = grpKeys.map(function(gk) {
+                    var list = grpMap[gk];
+                    var base = Object.assign({}, list[0], { id: gk, items: [], grand_total: 0, _brandIds: [] });
+                    list.forEach(function(so) {
+                        if (Array.isArray(so.items)) base.items = base.items.concat(so.items);
+                        base.grand_total += Number(so.grand_total || 0);
+                        var bid = so.brand_id || null;
+                        if (base._brandIds.indexOf(bid) === -1) base._brandIds.push(bid);
+                    });
+                    return base;
+                });
                 var total = orders.length;
                 var todayOrders = orders.filter(function(o) { return new Date(o.created_at) >= today; });
                 var pending = orders.filter(function(o) { return o.status === 'Pending'; }).length;
@@ -349,8 +370,9 @@
         orders.forEach(function(o) {
             var items = o.items || [];
             var itemCount = Array.isArray(items) ? items.length : '?';
+            var bBadges = (o._brandIds || [o.brand_id || null]).map(function(bid) { return window.getAdminBrandBadge ? window.getAdminBrandBadge(bid) : ''; }).join(' ');
             html += '<tr>' +
-                '<td><code style="font-size:12px;color:#007AFF;">' + o.id + '</code></td>' +
+                '<td><div><code style="font-size:12px;color:#007AFF;">#' + o.id + '</code></div><div style="margin-top:3px;">' + bBadges + '</div></td>' +
                 '<td>' +
                     '<div style="font-weight:600;">' + (o.customer_name || '—') + '</div>' +
                     '<div style="font-size:12px;color:#8E8E93;">' + (o.customer_phone || '') + '</div>' +

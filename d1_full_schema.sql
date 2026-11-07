@@ -30,3 +30,15 @@ CREATE TABLE banners (id TEXT PRIMARY KEY, image_url TEXT NOT NULL, title TEXT, 
 
 INSERT INTO admins (id, email, password_hash) VALUES ('admin_1', 'admin@example.com', 'admin123');
 INSERT INTO settings (id, store_name, currency) VALUES (1, 'Freelancing By Rifat', '৳');
+
+-- Multi-brand (see migrations/d1-multi-brand.sql)
+CREATE TABLE IF NOT EXISTS brands (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, tagline TEXT DEFAULT '', logo_url TEXT DEFAULT '', favicon_url TEXT DEFAULT '', theme_colors TEXT DEFAULT '{}', seo_title TEXT DEFAULT '', seo_description TEXT DEFAULT '', seo_keywords TEXT DEFAULT '', seo_og_image TEXT DEFAULT '', footer_text TEXT DEFAULT '', settings_override TEXT DEFAULT '{}', is_active INTEGER DEFAULT 1, sort_order INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS brand_slug_history (old_slug TEXT PRIMARY KEY, brand_id TEXT NOT NULL, changed_at TEXT DEFAULT CURRENT_TIMESTAMP);
+ALTER TABLE products ADD COLUMN brand_id TEXT DEFAULT NULL;
+ALTER TABLE products ADD COLUMN show_on_main INTEGER DEFAULT 0;
+ALTER TABLE categories ADD COLUMN brand_id TEXT DEFAULT NULL;
+ALTER TABLE banners ADD COLUMN brand_id TEXT DEFAULT NULL;
+ALTER TABLE home_sections ADD COLUMN brand_id TEXT DEFAULT NULL;
+ALTER TABLE orders ADD COLUMN brand_id TEXT DEFAULT NULL;
+ALTER TABLE orders ADD COLUMN order_group_id TEXT DEFAULT NULL;
+ALTER TABLE promos ADD COLUMN brand_id TEXT DEFAULT NULL;

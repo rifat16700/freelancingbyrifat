@@ -7,20 +7,21 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon-192x192.png">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=1791100000005">
-    <script>document.write('<link rel="stylesheet" href="assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="assets/js/config.js?v=1792145528736"></script>
-    <script src="assets/js/seo-helper.js"></script>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
+    <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="/assets/js/config.js?v=1792145528736"></script>
+    <script src="/assets/js/brand-context.js"></script>
+    <script src="/assets/js/seo-helper.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="assets/js/supabase-init.js"></script>
+    <script src="/assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@16"></script>
-    <script src="assets/js/appwrite-init.js"></script>
-    <script src="assets/js/cf-db.js"></script>
-    <link rel="stylesheet" href="assets/css/ai-components.css?v=3.9.2">
-    <script src="assets/js/ai-config.js?v=3.9.2"></script>
-    <script src="assets/js/ai-product-chat.js?v=3.9.2"></script>
-    <script src="assets/js/ai-compare.js?v=3.9.2"></script>
+    <script src="/assets/js/appwrite-init.js"></script>
+    <script src="/assets/js/cf-db.js"></script>
+    <link rel="stylesheet" href="/assets/css/ai-components.css?v=3.9.2">
+    <script src="/assets/js/ai-config.js?v=3.9.2"></script>
+    <script src="/assets/js/ai-product-chat.js?v=3.9.2"></script>
+    <script src="/assets/js/ai-compare.js?v=3.9.2"></script>
     <style>
         .product-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; padding: 24px 0; width: 100%; max-width: 100%; box-sizing: border-box; }
         .product-gallery-col { width: 100%; max-width: 100%; min-width: 0; display: flex; flex-direction: column; }
@@ -162,7 +163,7 @@
             .navbar-search { display: none !important; }
         }
     </style>
-    <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <link rel="stylesheet" href="/assets/css/premium-icons.css">
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
@@ -182,7 +183,7 @@
     <!-- Desktop Search -->
     <div class="navbar-search" style="flex:1; max-width:420px; margin:0 12px;">
         <span class="search-icon"><i data-lucide="search" class="lucide-icon"></i></span>
-        <input type="text" placeholder="Search products..." onkeypress="if(event.key==='Enter' && this.value.trim()) window.location.href='/shop?q='+encodeURIComponent(this.value.trim())">
+        <input type="text" placeholder="Search products..." onkeypress="if(event.key==='Enter' && this.value.trim()) window.location.href=(window.BRAND?BRAND.url('/shop'):'/shop')+'?q='+encodeURIComponent(this.value.trim())">
     </div>
 
     <!-- Right Corner Actions: Track Order & Cart -->
@@ -199,8 +200,8 @@
 <div class="product-mobile-search" style="padding: 8px 14px; background: #fff; border-bottom: 1px solid var(--border-light);">
     <div style="position: relative; width: 100%; display: flex; align-items: center;">
         <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px; pointer-events: none;"><i data-lucide="search" class="lucide-icon"></i></span>
-        <input type="text" id="mobileSearchInput" placeholder="Search products..." style="width: 100%; padding: 8px 38px 8px 36px; border-radius: 20px; border: 1.5px solid var(--border); outline: none; font-size: 13px; background: var(--bg-subtle); color: var(--text-dark);" onkeypress="if(event.key==='Enter' && this.value.trim()) window.location.href='/shop?q='+encodeURIComponent(this.value.trim())">
-        <button type="button" onclick="var q=document.getElementById('mobileSearchInput').value; if(q.trim()) window.location.href='/shop?q='+encodeURIComponent(q.trim());" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: var(--primary); color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+        <input type="text" id="mobileSearchInput" placeholder="Search products..." style="width: 100%; padding: 8px 38px 8px 36px; border-radius: 20px; border: 1.5px solid var(--border); outline: none; font-size: 13px; background: var(--bg-subtle); color: var(--text-dark);" onkeypress="if(event.key==='Enter' && this.value.trim()) window.location.href=(window.BRAND?BRAND.url('/shop'):'/shop')+'?q='+encodeURIComponent(this.value.trim())">
+        <button type="button" onclick="var q=document.getElementById('mobileSearchInput').value; if(q.trim()) window.location.href=(window.BRAND?BRAND.url('/shop'):'/shop')+'?q='+encodeURIComponent(q.trim());" style="position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: var(--primary); color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
             <i data-lucide="arrow-right" class="lucide-icon" style="width: 13px; height: 13px;"></i>
         </button>
     </div>
@@ -1623,7 +1624,7 @@ function addToCart() {
     var cart = getCart();
     var ex = cart.find(function(i) { return i.key === key; });
     if (ex) ex.quantity += currentQty;
-    else cart.push({ key: key, productId: product.id, productName: product.name, price: finalPrice, color: color, size: size, quantity: currentQty, image: img });
+    else cart.push({ key: key, productId: product.id, productName: product.name, sku: product.sku || '', variantCode: (selectedColor && selectedColor.code) ? selectedColor.code : '', price: finalPrice, color: color, size: size, quantity: currentQty, image: img, brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id)) });
 
     saveCart(cart);
     updateCartBadge();
@@ -1665,7 +1666,7 @@ function directOrder() {
         color: color, 
         size: size, 
         quantity: currentQty, 
-        image: img 
+        image: img, sku: product.sku || '', variantCode: (selectedColor && selectedColor.code) ? selectedColor.code : '', brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id))
     }];
 
     // Main cart untouched — direct order goes to its own temp key
@@ -1682,7 +1683,7 @@ function directOrder() {
     }
     
     // সরাসরি Checkout এ যাও — direct=1 flag দিয়ে
-    window.location.href = 'checkout.html?direct=1';
+    window.location.href = (window.BRAND ? BRAND.url('/checkout') : '/checkout') + '?direct=1';
 }
 
 
@@ -1840,10 +1841,10 @@ function pickupOrder() {
     var key   = product.id + '-' + color + '-' + size;
 
     // Main cart touch করে না — direct key তে রাখো
-    var directItem = [{ key: key, productId: product.id, productName: product.name, price: finalPrice, color: color, size: size, quantity: currentQty, image: img }];
+    var directItem = [{ key: key, productId: product.id, productName: product.name, sku: product.sku || '', variantCode: (selectedColor && selectedColor.code) ? selectedColor.code : '', price: finalPrice, color: color, size: size, quantity: currentQty, image: img, brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id)) }];
     var dKey = (typeof CONFIG !== 'undefined' && CONFIG.DIRECT_ORDER_KEY) ? CONFIG.DIRECT_ORDER_KEY : 'fbr_direct_order';
     localStorage.setItem(dKey, JSON.stringify(directItem));
-    window.location.href = 'checkout.html?pickup=1&direct=1';
+    window.location.href = (window.BRAND ? BRAND.url('/checkout') : '/checkout') + '?pickup=1&direct=1';
 }
 
 // Reviews
@@ -2072,10 +2073,10 @@ document.addEventListener('scroll', function() {
         });
     </script>
 
-    <script src="assets/js/offline-handler.js"></script>
+    <script src="/assets/js/offline-handler.js"></script>
     <!-- Shared Custom Right Click / Long-Press Menu -->
-    <script src="assets/js/context-menu.js"></script>
-<script src="assets/js/tracking.js"></script>
+    <script src="/assets/js/context-menu.js"></script>
+<script src="/assets/js/tracking.js"></script>
 <!-- Interactive Fullscreen Photo Zoom Panel -->
 <div id="imageZoomModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:9999999;flex-direction:column;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);user-select:none;-webkit-user-select:none;">
     

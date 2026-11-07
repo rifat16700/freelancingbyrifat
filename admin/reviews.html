@@ -46,6 +46,7 @@
     </header>
     <div class="admin-content">
         <div class="filter-bar">
+            <select class="form-select" id="brandFilter" data-brand-filter="1" onchange="filterReviews()" style="width:auto;min-width:175px;"></select>
             <select class="form-select" id="reviewFilter" onchange="filterReviews()" style="width:auto;min-width:180px;">
                 <option value="">All Reviews</option>
                 <option value="pending">⏳ Pending Approval</option>
@@ -94,7 +95,7 @@ function loadReviews() {
             })
             .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        cfDbBatchQuery([{ sql: "SELECT r.*, p.name as product_name FROM reviews r LEFT JOIN products p ON r.product_id = p.id ORDER BY r.created_at DESC" }], false)
+        cfDbBatchQuery([{ sql: "SELECT r.*, p.name as product_name, p.brand_id as brand_id FROM reviews r LEFT JOIN products p ON r.product_id = p.id ORDER BY r.created_at DESC" }], false)
             .then(function(d) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';
@@ -115,8 +116,10 @@ function filterReviews() {
     var f = document.getElementById('reviewFilter').value;
     var rf = document.getElementById('ratingFilter').value;
 
+    var bf = (document.getElementById('brandFilter') || {}).value || 'all';
     var filtered = allReviews.filter(function(rv) {
-        return (!f  || (f==='pending' ? !rv.is_approved : rv.is_approved)) &&
+        var matchB = window.matchesAdminBrandFilter ? window.matchesAdminBrandFilter(rv.brand_id, bf) : true;
+        return matchB && (!f  || (f==='pending' ? !rv.is_approved : rv.is_approved)) &&
                (!rf || rv.rating === parseInt(rf));
     });
     renderReviews(filtered);
@@ -145,7 +148,7 @@ function renderReviews(reviews) {
                     '<div class="stars" style="margin-top:2px;">' + stars + '</div>' +
                 '</div>' +
                 '<div style="text-align:right;">' +
-                    '<div style="font-size:12px;color:var(--primary);font-weight:700;">' + productName + '</div>' +
+                    '<div style="font-size:12px;color:var(--primary);font-weight:700;">' + productName + ' ' + (window.getAdminBrandBadge ? window.getAdminBrandBadge(rv.brand_id) : '') + '</div>' +
                     '<div style="font-size:11px;color:var(--text-muted);">' + formatDate(rv.created_at) + '</div>' +
                 '</div>' +
             '</div>' +

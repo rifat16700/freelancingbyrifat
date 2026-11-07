@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brands — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="../assets/js/config.js?v=1792145528736"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
+    <script src="assets/js/admin-common.js?v=6"></script>
+    <script src="../assets/js/imgbb-uploader.js?v=1791100000002"></script>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
+    <style>
+        .slug-preview-box {
+            display: flex; align-items: center; gap: 6px;
+            background: #f8fafc; border: 1px solid var(--border);
+            border-radius: 8px; padding: 8px 12px; margin-top: 6px;
+            font-family: monospace; font-size: 12.5px; color: #334155;
+            flex-wrap: wrap;
+        }
+        .slug-status { font-size: 11.5px; font-weight: 700; margin-left: auto; }
+        .slug-status.ok { color: #16a34a; }
+        .slug-status.err { color: #dc2626; }
+        .adv-toggle-btn {
+            width: 100%; text-align: left; padding: 10px 14px;
+            background: #f8fafc; border: 1px dashed var(--border);
+            border-radius: 10px; font-size: 13px; font-weight: 700;
+            color: var(--text-dark); cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between;
+            margin: 14px 0 10px;
+        }
+        .adv-panel {
+            display: none; padding: 14px; background: #f8fafc;
+            border: 1px solid var(--border); border-radius: 10px; margin-bottom: 14px;
+        }
+        .adv-panel.open { display: block; }
+        .color-row { display: flex; align-items: center; gap: 8px; }
+        .color-row input[type="color"] {
+            width: 38px; height: 38px; border: 1px solid var(--border);
+            border-radius: 8px; padding: 2px; cursor: pointer; background: #fff;
+        }
+    </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+<main class="admin-main" id="adminMain" style="display:none;">
+    <header class="admin-header">
+        <div class="header-left">
+            <button class="hamburger-btn" onclick="openSidebar()">☰</button>
+            <div>
+                <div class="page-title">Brands (Sub-Storefronts)</div>
+                <div class="page-subtitle">Create independent brand storefronts with custom URL paths (e.g. <code>/ranonexwatch/</code>)</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-primary" onclick="openBrandModal()">+ Create Brand</button>
+        </div>
+    </header>
+
+    <div class="admin-content">
+        <div class="card" style="margin-bottom:16px;background:linear-gradient(135deg,#eef2ff,#f8fafc);border:1px solid #c7d2fe;">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="font-size:24px;">🏪</div>
+                <div style="font-size:13px;color:#334155;line-height:1.6;">
+                    <strong style="color:#312e81;font-size:14px;">Multi-Brand System কীভাবে কাজ করে?</strong><br>
+                    ১. এখানে নতুন Brand তৈরি করুন এবং তার URL Path (যেমন: <code>ranonexwatch</code>) সেট করুন।<br>
+                    ২. এরপর <b>Products, Categories, Banners, Homepage Sections</b> বা <b>Promo Codes</b> পেজে গিয়ে ড্রপডাউন থেকে Brand সিলেক্ট করুন।<br>
+                    ৩. প্রোডাক্টে <b>"Show on Main Site?"</b> অন রাখলে প্রোডাক্টটি মেইন সাইটেও দেখাবে এবং ক্লিক করলে সরাসরি সেই ব্র্যান্ডের URL-এ ওপেন হবে (কোনো ডুপ্লিকেট প্রোডাক্ট তৈরি হবে না)।
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="padding:0;">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Logo</th>
+                            <th>Brand Name</th>
+                            <th>Storefront URL</th>
+                            <th>Products</th>
+                            <th>SEO / Theme</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="brandBody">
+                        <tr><td colspan="7" style="text-align:center;padding:40px;color:#8E8E93;">Loading brands...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Create / Edit Brand Modal -->
+<div class="modal-overlay" id="brandModal">
+    <div class="modal-box" style="max-width:620px;">
+        <div class="modal-header">
+            <div class="modal-title" id="brandModalTitle">Create Brand</div>
+            <button class="modal-close" onclick="closeBrandModal()">✕</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+                <label class="form-label">Brand Name *</label>
+                <input class="form-input" id="bName" placeholder="e.g. Ranonex Watch" oninput="onBrandNameInput()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tagline (Optional)</label>
+                <input class="form-input" id="bTagline" placeholder="e.g. Luxury Timepieces">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Brand URL Path (Slug) *</label>
+            <input class="form-input" id="bSlug" placeholder="e.g. ranonexwatch" oninput="onBrandSlugInput()">
+            <div class="slug-preview-box">
+                <span>🔗</span>
+                <span id="slugDomainPrefix">domain.com/</span><strong id="slugPreviewText" style="color:#4f46e5;">ranonexwatch</strong><span>/</span>
+                <span class="slug-status" id="slugStatusText"></span>
+            </div>
+            <div style="font-size:11px;color:#64748b;margin-top:4px;">
+                শুধু ইংরেজি ছোট হাতের অক্ষর (a-z), সংখ্যা (0-9) এবং হাইফেন (-) ব্যবহার করা যাবে। পরে পরিবর্তন করলে পুরনো URL স্বয়ংক্রিয়ভাবে নতুন URL-এ Redirect হবে।
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+                <label class="form-label">Brand Logo URL</label>
+                <div class="imgbb-upload-row">
+                    <input class="form-input" id="bLogo" placeholder="https://...logo.png" oninput="updateLogoPreview()">
+                    <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" onclick="uploadBrandAsset('bLogo')">📤</button>
+                </div>
+                <img id="bLogoPreview" src="" style="display:none;margin-top:6px;height:40px;object-fit:contain;border-radius:6px;border:1px solid var(--border);padding:2px;background:#fff;" onerror="this.style.display='none'">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Brand Favicon URL</label>
+                <div class="imgbb-upload-row">
+                    <input class="form-input" id="bFavicon" placeholder="https://...favicon.png" oninput="updateFaviconPreview()">
+                    <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" onclick="uploadBrandAsset('bFavicon')">📤</button>
+                </div>
+                <img id="bFaviconPreview" src="" style="display:none;margin-top:6px;width:32px;height:32px;object-fit:contain;border-radius:6px;border:1px solid var(--border);padding:2px;background:#fff;" onerror="this.style.display='none'">
+            </div>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;">
+            <div style="font-size:12.5px;font-weight:800;color:var(--text-dark);margin-bottom:8px;">🔍 SEO Settings (Co-Promotional with Main Site)</div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label class="form-label">SEO Title (<code>| Main Store Name</code> স্বয়ংক্রিয়ভাবে যুক্ত হবে)</label>
+                <input class="form-input" id="bMetaTitle" placeholder="e.g. Ranonex Watch — Official Store">
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label class="form-label">SEO Meta Description</label>
+                <textarea class="form-input" id="bMetaDesc" style="min-height:54px;" placeholder="Premium watches & accessories from Ranonex Watch..."></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">SEO Keywords (comma separated)</label>
+                    <input class="form-input" id="bMetaKeywords" placeholder="watch, luxury watch, smart watch">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">OG Share Image URL</label>
+                    <div class="imgbb-upload-row">
+                        <input class="form-input" id="bOgImage" placeholder="https://...og.jpg">
+                        <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" onclick="uploadBrandAsset('bOgImage')">📤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="adv-toggle-btn" onclick="toggleAdvBrandPanel()">
+            <span>⚙️ Advanced Options (Theme Colors, Social Links & Footer Override)</span>
+            <span id="advToggleArrow">▼</span>
+        </button>
+        <div class="adv-panel" id="advBrandPanel">
+            <div style="font-size:11.5px;color:#64748b;margin-bottom:10px;">
+                খালি রাখলে মেইন সাইটের থিম কালার, সোশ্যাল লিংক ও ফুটার স্বয়ংক্রিয়ভাবে ব্যবহৃত হবে।
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">Theme Primary Color (Optional)</label>
+                    <div class="color-row">
+                        <input type="color" id="bPrimaryPicker" value="#8B1A1A" oninput="document.getElementById('bPrimaryColor').value=this.value">
+                        <input class="form-input" id="bPrimaryColor" placeholder="#8B1A1A (blank = default)" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('bPrimaryPicker').value=this.value">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Theme Accent Color (Optional)</label>
+                    <div class="color-row">
+                        <input type="color" id="bAccentPicker" value="#ff4d4d" oninput="document.getElementById('bAccentColor').value=this.value">
+                        <input class="form-input" id="bAccentColor" placeholder="#ff4d4d (blank = default)" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('bAccentPicker').value=this.value">
+                    </div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">WhatsApp Number Override</label>
+                    <input class="form-input" id="bWhatsapp" placeholder="Leave blank for Main Site WhatsApp">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Facebook Page URL Override</label>
+                    <input class="form-input" id="bFacebook" placeholder="https://facebook.com/...">
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">Instagram URL Override</label>
+                    <input class="form-input" id="bInstagram" placeholder="https://instagram.com/...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">YouTube URL Override</label>
+                    <input class="form-input" id="bYoutube" placeholder="https://youtube.com/...">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Custom Footer Text Override</label>
+                <input class="form-input" id="bFooterText" placeholder="Leave blank to use Main Site footer text">
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;margin-bottom:18px;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Sort Order</label>
+                <input class="form-input" id="bSort" type="number" value="0">
+            </div>
+            <div class="toggle-wrap" onclick="toggleBrandActive()" style="margin-top:18px;">
+                <div><div class="toggle-label">Active (Storefront Live)</div></div>
+                <button class="toggle-switch on" id="bActiveBtn" type="button"></button>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary btn-full" id="saveBrandBtn" onclick="saveBrand()">💾 Save Brand</button>
+            <button class="btn btn-ghost" onclick="closeBrandModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var allBrands = [];
+var editingBrandId = null;
+var brandActive = true;
+var slugManuallyEdited = false;
+var slugCheckTimer = null;
+var lastSlugAvailable = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('slugDomainPrefix').textContent = window.location.origin + '/';
+    adminInit('brands', function() {
+        loadBrandsList();
+    });
+});
+
+function loadBrandsList() {
+    window.loadAdminBrands(true).then(function(brands) {
+        document.getElementById('pageLoader').style.display = 'none';
+        document.getElementById('adminMain').style.display  = 'flex';
+        allBrands = brands || [];
+        renderBrandsTable();
+    }).catch(function(err) {
+        document.getElementById('pageLoader').style.display = 'none';
+        document.getElementById('adminMain').style.display  = 'flex';
+        showToast('Failed to load brands: ' + err.message, 'error');
+    });
+}
+
+function renderBrandsTable() {
+    var tbody = document.getElementById('brandBody');
+    if (!allBrands.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:50px;color:#8E8E93;">No brands created yet. Click <b>+ Create Brand</b> to launch your first sub-storefront!</td></tr>';
+        return;
+    }
+    var html = '';
+    allBrands.forEach(function(b) {
+        var isAct = b.is_active === 1 || b.is_active === true;
+        var logoHtml = b.logo_url
+            ? '<img src="' + b.logo_url + '" style="width:42px;height:42px;border-radius:8px;object-fit:contain;background:#fff;border:1px solid var(--border);padding:2px;" onerror="this.style.display=\'none\'">'
+            : '<div style="width:42px;height:42px;border-radius:8px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;">' + (b.name ? b.name.charAt(0).toUpperCase() : 'B') + '</div>';
+        var liveUrl = '/' + b.slug + '/';
+        var colorSwatch = b.theme_primary_color
+            ? '<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + b.theme_primary_color + ';vertical-align:middle;margin-right:4px;border:1px solid rgba(0,0,0,0.15);"></span>'
+            : '';
+
+        html += '<tr>' +
+            '<td>' + logoHtml + '</td>' +
+            '<td>' +
+                '<div style="font-weight:700;color:var(--text-dark);font-size:14px;">' + b.name + '</div>' +
+                (b.tagline ? '<div style="font-size:11.5px;color:#64748b;">' + b.tagline + '</div>' : '') +
+            '</td>' +
+            '<td>' +
+                '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                    '<a href="' + liveUrl + '" target="_blank" style="font-family:monospace;font-size:12.5px;font-weight:700;color:#4f46e5;background:#eef2ff;padding:4px 8px;border-radius:6px;text-decoration:none;">' + liveUrl + ' ↗</a>' +
+                    '<button class="btn btn-ghost btn-sm" style="padding:3px 7px;font-size:11px;" onclick="copyBrandUrl(\'' + b.slug + '\')" title="Copy Full URL">📋</button>' +
+                '</div>' +
+            '</td>' +
+            '<td><span class="badge" style="background:#f1f5f9;color:#334155;font-weight:700;">' + (b.product_count || 0) + ' Products</span></td>' +
+            '<td style="font-size:12px;color:#64748b;">' +
+                colorSwatch + (b.meta_title ? 'Custom SEO' : 'Auto Co-SEO') +
+            '</td>' +
+            '<td><span class="badge ' + (isAct ? 'badge-delivered' : 'badge-cancelled') + '">' + (isAct ? 'Active' : 'Inactive') + '</span></td>' +
+            '<td style="display:flex;gap:6px;">' +
+                '<button class="btn btn-ghost btn-sm" onclick=\'editBrand(' + JSON.stringify(b).replace(/'/g, "&apos;") + ')\'><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i> Edit</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteBrand(\'' + b.id + '\', \'' + (b.name || '').replace(/'/g, "\\'") + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
+            '</td>' +
+        '</tr>';
+    });
+    tbody.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function copyBrandUrl(slug) {
+    var full = window.location.origin + '/' + slug + '/';
+    navigator.clipboard.writeText(full).then(function() {
+        showToast('Copied: ' + full, 'success');
+    });
+}
+
+function sanitizeSlugClient(str) {
+    return String(str || '').toLowerCase().trim()
+        .replace(/[^a-z0-9-_]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
+function onBrandNameInput() {
+    if (!editingBrandId && !slugManuallyEdited) {
+        var rawName = document.getElementById('bName').value;
+        var autoSlug = String(rawName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        document.getElementById('bSlug').value = autoSlug;
+        triggerSlugCheck(autoSlug);
+    }
+}
+
+function onBrandSlugInput() {
+    slugManuallyEdited = true;
+    var clean = sanitizeSlugClient(document.getElementById('bSlug').value);
+    document.getElementById('bSlug').value = clean;
+    triggerSlugCheck(clean);
+}
+
+function triggerSlugCheck(slug) {
+    document.getElementById('slugPreviewText').textContent = slug || 'your-brand';
+    var statusEl = document.getElementById('slugStatusText');
+    if (!slug || slug.length < 2) {
+        statusEl.textContent = '⚠️ Minimum 2 characters';
+        statusEl.className = 'slug-status err';
+        lastSlugAvailable = false;
+        return;
+    }
+    statusEl.textContent = 'Checking...';
+    statusEl.className = 'slug-status';
+    if (slugCheckTimer) clearTimeout(slugCheckTimer);
+    slugCheckTimer = setTimeout(function() {
+        var apiBase = (CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '');
+        fetch(apiBase + '/api/brands', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'check_slug', slug: slug, exclude_id: editingBrandId })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.available) {
+                statusEl.textContent = '✓ Available';
+                statusEl.className = 'slug-status ok';
+                lastSlugAvailable = true;
+            } else {
+                statusEl.textContent = '✕ ' + (d.reason || 'Unavailable');
+                statusEl.className = 'slug-status err';
+                lastSlugAvailable = false;
+            }
+        })
+        .catch(function() {
+            statusEl.textContent = '';
+            lastSlugAvailable = true;
+        });
+    }, 250);
+}
+
+function toggleAdvBrandPanel() {
+    var p = document.getElementById('advBrandPanel');
+    var a = document.getElementById('advToggleArrow');
+    if (p.classList.contains('open')) {
+        p.classList.remove('open');
+        a.textContent = '▼';
+    } else {
+        p.classList.add('open');
+        a.textContent = '▲';
+    }
+}
+
+function updateLogoPreview() {
+    var v = document.getElementById('bLogo').value.trim();
+    var img = document.getElementById('bLogoPreview');
+    if (v) { img.src = v; img.style.display = 'block'; } else { img.style.display = 'none'; }
+}
+
+function updateFaviconPreview() {
+    var v = document.getElementById('bFavicon').value.trim();
+    var img = document.getElementById('bFaviconPreview');
+    if (v) { img.src = v; img.style.display = 'block'; } else { img.style.display = 'none'; }
+}
+
+function uploadBrandAsset(inputId) {
+    var apiKey = typeof getImgbbKey === 'function' ? getImgbbKey() : '';
+    if (!apiKey) {
+        showToast('⚠️ ImgBB API Key সেট করা নেই! Settings পেজ থেকে সেট করুন।', 'warning');
+        return;
+    }
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = function() {
+        if (!fileInput.files || !fileInput.files[0]) return;
+        showToast('⏳ Uploading image...', 'info');
+        imgbbUpload(fileInput.files[0], apiKey)
+            .then(function(res) {
+                document.getElementById(inputId).value = res.url;
+                updateLogoPreview();
+                updateFaviconPreview();
+                showToast('✅ Image uploaded!', 'success');
+            })
+            .catch(function(err) {
+                showToast('❌ Upload failed: ' + err.message, 'error');
+            });
+    };
+    fileInput.click();
+}
+
+function openBrandModal() {
+    editingBrandId = null;
+    brandActive = true;
+    slugManuallyEdited = false;
+    lastSlugAvailable = true;
+    document.getElementById('brandModalTitle').textContent = 'Create Brand';
+    ['bName','bSlug','bTagline','bLogo','bFavicon','bMetaTitle','bMetaDesc','bMetaKeywords','bOgImage','bPrimaryColor','bAccentColor','bWhatsapp','bFacebook','bInstagram','bYoutube','bFooterText'].forEach(function(id) {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('bSort').value = 0;
+    document.getElementById('slugPreviewText').textContent = 'your-brand';
+    document.getElementById('slugStatusText').textContent = '';
+    document.getElementById('bLogoPreview').style.display = 'none';
+    document.getElementById('bFaviconPreview').style.display = 'none';
+    document.getElementById('advBrandPanel').classList.remove('open');
+    document.getElementById('advToggleArrow').textContent = '▼';
+    setBrandToggle(true);
+    document.getElementById('brandModal').classList.add('show');
+}
+
+function editBrand(b) {
+    editingBrandId = b.id;
+    brandActive = b.is_active === 1 || b.is_active === true;
+    slugManuallyEdited = true;
+    lastSlugAvailable = true;
+    document.getElementById('brandModalTitle').textContent = 'Edit Brand — ' + b.name;
+    document.getElementById('bName').value = b.name || '';
+    document.getElementById('bSlug').value = b.slug || '';
+    document.getElementById('bTagline').value = b.tagline || '';
+    document.getElementById('bLogo').value = b.logo_url || '';
+    document.getElementById('bFavicon').value = b.favicon_url || '';
+    document.getElementById('bMetaTitle').value = b.meta_title || '';
+    document.getElementById('bMetaDesc').value = b.meta_description || '';
+    document.getElementById('bMetaKeywords').value = b.meta_keywords || '';
+    document.getElementById('bOgImage').value = b.og_image || '';
+    document.getElementById('bPrimaryColor').value = b.theme_primary_color || '';
+    document.getElementById('bAccentColor').value = b.theme_accent_color || '';
+    if (b.theme_primary_color && /^#[0-9a-fA-F]{6}$/.test(b.theme_primary_color)) {
+        document.getElementById('bPrimaryPicker').value = b.theme_primary_color;
+    }
+    if (b.theme_accent_color && /^#[0-9a-fA-F]{6}$/.test(b.theme_accent_color)) {
+        document.getElementById('bAccentPicker').value = b.theme_accent_color;
+    }
+    document.getElementById('bWhatsapp').value = b.whatsapp_number || '';
+    document.getElementById('bFacebook').value = b.facebook_url || '';
+    document.getElementById('bInstagram').value = b.instagram_url || '';
+    document.getElementById('bYoutube').value = b.youtube_url || '';
+    document.getElementById('bFooterText').value = b.footer_text || '';
+    document.getElementById('bSort').value = b.sort_order || 0;
+    document.getElementById('slugPreviewText').textContent = b.slug || '';
+    document.getElementById('slugStatusText').textContent = '✓ Current URL';
+    document.getElementById('slugStatusText').className = 'slug-status ok';
+    updateLogoPreview();
+    updateFaviconPreview();
+    setBrandToggle(brandActive);
+    document.getElementById('brandModal').classList.add('show');
+}
+
+function setBrandToggle(state) {
+    var el = document.getElementById('bActiveBtn');
+    if (state) el.classList.add('on'); else el.classList.remove('on');
+}
+
+function toggleBrandActive() {
+    brandActive = !brandActive;
+    setBrandToggle(brandActive);
+}
+
+function saveBrand() {
+    var name = document.getElementById('bName').value.trim();
+    var slug = sanitizeSlugClient(document.getElementById('bSlug').value);
+    if (!name) { showToast('Brand name is required', 'error'); return; }
+    if (!slug || slug.length < 2) { showToast('Valid URL path (slug) is required', 'error'); return; }
+    if (!lastSlugAvailable) { showToast('This URL path is unavailable or reserved', 'error'); return; }
+
+    var btn = document.getElementById('saveBrandBtn');
+    setBtnLoading(btn, true);
+
+    var payload = {
+        action: editingBrandId ? 'update' : 'create',
+        id: editingBrandId || undefined,
+        name: name,
+        slug: slug,
+        tagline: document.getElementById('bTagline').value.trim(),
+        logo_url: document.getElementById('bLogo').value.trim(),
+        favicon_url: document.getElementById('bFavicon').value.trim(),
+        meta_title: document.getElementById('bMetaTitle').value.trim(),
+        meta_description: document.getElementById('bMetaDesc').value.trim(),
+        meta_keywords: document.getElementById('bMetaKeywords').value.trim(),
+        og_image: document.getElementById('bOgImage').value.trim(),
+        theme_primary_color: document.getElementById('bPrimaryColor').value.trim(),
+        theme_accent_color: document.getElementById('bAccentColor').value.trim(),
+        whatsapp_number: document.getElementById('bWhatsapp').value.trim(),
+        facebook_url: document.getElementById('bFacebook').value.trim(),
+        instagram_url: document.getElementById('bInstagram').value.trim(),
+        youtube_url: document.getElementById('bYoutube').value.trim(),
+        footer_text: document.getElementById('bFooterText').value.trim(),
+        sort_order: parseInt(document.getElementById('bSort').value) || 0,
+        is_active: brandActive ? 1 : 0
+    };
+
+    var apiBase = (CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '');
+    fetch(apiBase + '/api/brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        setBtnLoading(btn, false, '💾 Save Brand');
+        if (!d.success) {
+            showToast(d.error || 'Failed to save brand', 'error');
+            return;
+        }
+        showToast('Brand saved successfully!', 'success');
+        closeBrandModal();
+        loadBrandsList();
+    })
+    .catch(function(err) {
+        setBtnLoading(btn, false, '💾 Save Brand');
+        showToast('Error: ' + err.message, 'error');
+    });
+}
+
+function deleteBrand(id, name) {
+    if (!adminConfirm('Delete brand "' + name + '"?\n\nNote: Products under this brand will NOT be deleted — they will safely move back to the Main Site.')) return;
+    var apiBase = (CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '');
+    fetch(apiBase + '/api/brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: id, delete_products: false })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.success) { showToast(d.error || 'Delete failed', 'error'); return; }
+        showToast('Brand deleted!', 'success');
+        loadBrandsList();
+    })
+    .catch(function(err) {
+        showToast('Delete failed: ' + err.message, 'error');
+    });
+}
+
+function closeBrandModal() {
+    document.getElementById('brandModal').classList.remove('show');
+}
+</script>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+</script>
+<script src="../assets/js/offline-handler.js"></script>
+</body>
+</html>
+

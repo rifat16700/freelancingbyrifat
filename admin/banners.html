@@ -42,7 +42,8 @@
             <button class="hamburger-btn" onclick="openSidebar()">☰</button>
             <div><div class="page-title">Banners</div><div class="page-subtitle">Homepage slider. <strong>Recommendation:</strong> Use images with 16:9 or 2:1 aspect ratio (e.g. 1200x600px for PC, 800x400px for Mobile).</div></div>
         </div>
-        <div class="header-right">
+        <div class="header-right" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <select class="form-select" id="bannerBrandFilter" data-brand-filter="1" onchange="renderBanners()" style="width:auto;min-width:190px;"></select>
             <button class="btn btn-primary" onclick="openModal()">+ Add Banner</button>
         </div>
     </header>
@@ -60,6 +61,8 @@
             <div class="modal-title" id="bannerModalTitle">Add Banner</div>
             <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
+        <div class="form-group"><label class="form-label">Brand / Storefront</label>
+            <select class="form-select" id="bBrand" data-brand-select="1"></select></div>
         <div class="form-group"><label class="form-label">Banner Image *</label>
             <div class="imgbb-upload-row" style="margin-bottom:8px;">
                 <input class="form-input" id="bImg" placeholder="https://...banner.jpg" oninput="updateBannerPreview()">
@@ -166,18 +169,25 @@ function loadBanners() {
 
 function renderBanners() {
     var grid = document.getElementById('bannerGrid');
-    if (!allBanners.length) {
+    var filterVal = (document.getElementById('bannerBrandFilter') || {}).value || 'all';
+    var filtered = allBanners.filter(function(b) {
+        return window.matchesAdminBrandFilter ? window.matchesAdminBrandFilter(b.brand_id, filterVal) : true;
+    });
+    if (!filtered.length) {
         grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted);"><div style="font-size:40px;margin-bottom:12px;"><i data-lucide="image" class="lucide-icon icon-hover-pulse"></i></div><div>No banners yet</div></div>';
         if (typeof lucide !== 'undefined') lucide.createIcons();
         return;
     }
     grid.innerHTML = '';
-    allBanners.forEach(function(b) {
+    filtered.forEach(function(b) {
         var card = document.createElement('div'); card.className = 'banner-card';
         card.innerHTML =
             '<img src="' + (b.image_url||'') + '" class="banner-img" onerror="this.src=\'https://via.placeholder.com/600x300?text=No+Image\'">' +
             '<div class="banner-body">' +
-                '<div style="font-weight:700;color:var(--text-dark);font-size:14px;">' + (b.title||'Untitled Banner') + '</div>' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;">' +
+                    '<div style="font-weight:700;color:var(--text-dark);font-size:14px;">' + (b.title||'Untitled Banner') + '</div>' +
+                    (window.getAdminBrandBadge ? window.getAdminBrandBadge(b.brand_id) : '') +
+                '</div>' +
                 (b.subtitle ? '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">' + b.subtitle + '</div>' : '') +
                 '<div style="font-size:11.5px;color:var(--text-muted);margin-top:8px;display:flex;align-items:center;justify-content:space-between;">' +
                     '<span>Sort: ' + (b.sort_order||0) + '</span>' +
@@ -265,6 +275,9 @@ function updateAreaPreview() {
 function openModal() {
     editingId = null; bActive = true;
     document.getElementById('bannerModalTitle').textContent = 'Add Banner';
+    var filterVal = (document.getElementById('bannerBrandFilter') || {}).value || 'all';
+    var defaultBrand = (filterVal !== 'all' && filterVal !== '__main__') ? filterVal : '';
+    if (window.populateBrandSelect) window.populateBrandSelect('bBrand', defaultBrand);
     ['bImg','bTitle','bSub','bLink'].forEach(function(id) { document.getElementById(id).value = ''; });
     document.getElementById('bSort').value = 0;
     document.getElementById('previewWrap').style.display = 'none';
@@ -314,6 +327,7 @@ function setupBannerImgUpload() {
 function editBanner(b) {
     editingId = b.id; bActive = b.is_active !== false;
     document.getElementById('bannerModalTitle').textContent = 'Edit Banner';
+    if (window.populateBrandSelect) window.populateBrandSelect('bBrand', b.brand_id || '');
     document.getElementById('bImg').value   = b.image_url || '';
     document.getElementById('bTitle').value = b.title || '';
     document.getElementById('bSub').value   = b.subtitle || '';
@@ -399,11 +413,12 @@ function saveBanner() {
         }
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         payload.is_active = payload.is_active ? 1 : 0;
+        var brandIdVal = (document.getElementById('bBrand') && document.getElementById('bBrand').value) ? document.getElementById('bBrand').value : null;
         var p;
         if (editingId) {
-            p = d1AdminQuery("UPDATE banners SET image_url = ?, title = ?, subtitle = ?, link_url = ?, sort_order = ?, is_active = ? WHERE id = ?", [payload.image_url, payload.title, payload.subtitle, payload.link_url, payload.sort_order, payload.is_active, editingId]);
+            p = d1AdminQuery("UPDATE banners SET image_url = ?, title = ?, subtitle = ?, link_url = ?, sort_order = ?, is_active = ?, brand_id = ? WHERE id = ?", [payload.image_url, payload.title, payload.subtitle, payload.link_url, payload.sort_order, payload.is_active, brandIdVal, editingId]);
         } else {
-            p = d1AdminQuery("INSERT INTO banners (id, image_url, title, subtitle, link_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.image_url, payload.title, payload.subtitle, payload.link_url, payload.sort_order, payload.is_active]);
+            p = d1AdminQuery("INSERT INTO banners (id, image_url, title, subtitle, link_url, sort_order, is_active, brand_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.image_url, payload.title, payload.subtitle, payload.link_url, payload.sort_order, payload.is_active, brandIdVal]);
         }
         p.then(function() {
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadBanners();

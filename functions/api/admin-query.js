@@ -1,4 +1,5 @@
 import { purgeAndWarmup } from './cache-helper.js';
+import { ensureBrandSchema } from '../_lib/brand.js';
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -28,15 +29,22 @@ export async function onRequestPost(context) {
                 headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
             });
         }
+        await ensureBrandSchema(env);
         const stmt = env.DB.prepare(sql);
         const { results } = await stmt.bind(...params.map(v => v === undefined ? null : v)).all();
 
-        // Selective Cache Purging for Checkout Data
+        // Selective Cache Purging for Checkout & Public Data
         const sqlUpper = sql.toUpperCase();
         if (sqlUpper.includes("INSERT ") || sqlUpper.includes("UPDATE ") || sqlUpper.includes("DELETE ")) {
+            const origin = new URL(request.url).origin;
+            const filesToPurge = [];
             if (sqlUpper.includes("PROMOS") || sqlUpper.includes("ADDONS") || sqlUpper.includes("DELIVERY_ZONES") || sqlUpper.includes("SETTINGS")) {
-                const origin = new URL(request.url).origin;
-                const filesToPurge = [ origin + "/api/checkout-data" ];
+                filesToPurge.push(origin + "/api/checkout-data");
+            }
+            if (sqlUpper.includes("CATEGORIES") || sqlUpper.includes("BANNERS") || sqlUpper.includes("HOME_SECTIONS") || sqlUpper.includes("SETTINGS") || sqlUpper.includes("BRANDS")) {
+                filesToPurge.push(origin + "/api/public-data");
+            }
+            if (filesToPurge.length > 0) {
                 context.waitUntil(purgeAndWarmup(env, origin, filesToPurge));
             }
         }

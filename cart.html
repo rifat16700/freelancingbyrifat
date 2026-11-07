@@ -8,20 +8,65 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon-192x192.png">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=1791100000005">
-    <script>document.write('<link rel="stylesheet" href="assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="assets/js/config.js?v=1792145528736"></script>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
+    <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="/assets/js/config.js?v=1792145528736"></script>
+    <script src="/assets/js/brand-context.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="assets/js/supabase-init.js"></script>
+    <script src="/assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
-    <script src="assets/js/appwrite-init.js"></script>
+    <script src="/assets/js/appwrite-init.js"></script>
     <style>
         .cart-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; padding: 20px 0; }
         .order-summary { background: #fff; border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border); position: sticky; top: 80px; height: fit-content; }
         .summary-row   { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; }
         .summary-total { border-top: 2px solid var(--border); padding-top: 12px; margin-top: 8px; font-size: 18px; font-weight: 800; }
         @media (max-width: 768px) { .cart-layout { grid-template-columns: 1fr; } .order-summary { position: static; } }
+
+        /* Brand Group Card in Master Cart */
+        .brand-cart-group {
+            background: #fff;
+            border: 1.5px solid var(--border-light, #eaeaea);
+            border-radius: 16px;
+            margin-bottom: 18px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        }
+        .brand-cart-group.current-brand-group {
+            border-color: var(--primary, #8B1A1A);
+            box-shadow: 0 4px 18px rgba(139,26,26,0.08);
+        }
+        .brand-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-subtle, #f8f9fb);
+            border-bottom: 1px solid var(--border-light, #eee);
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .brand-cart-group.current-brand-group .brand-group-header {
+            background: linear-gradient(90deg, rgba(139,26,26,0.07), rgba(139,26,26,0.02));
+        }
+        .brand-group-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #fafafa;
+            border-top: 1px solid var(--border-light, #eee);
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .cart-item-check {
+            width: 19px;
+            height: 19px;
+            accent-color: var(--primary, #8B1A1A);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
 
         /* Messaging Bottom Sheet */
         @keyframes cartSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -63,7 +108,7 @@
         }
         .required-star { color: var(--primary); }
     </style>
-    <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <link rel="stylesheet" href="/assets/css/premium-icons.css">
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
@@ -79,30 +124,41 @@
 </nav>
 
 <div class="container">
-    <div style="padding-top:10px;margin-bottom:4px;font-size:22px;font-weight:900;color:var(--text-dark);"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Your Cart</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding-top:10px;margin-bottom:4px;">
+        <div style="font-size:22px;font-weight:900;color:var(--text-dark);"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Your Cart</div>
+        <label id="masterSelectAllWrap" style="display:none;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text-dark);cursor:pointer;background:#fff;padding:6px 12px;border-radius:20px;border:1px solid var(--border-light);">
+            <input type="checkbox" id="masterSelectAll" class="cart-item-check" onchange="toggleSelectAllCart(this.checked)">
+            <span>সব আইটেম সিলেক্ট করুন</span>
+        </label>
+    </div>
 
     <div class="cart-layout">
-        <!-- Cart Items -->
+        <!-- Cart Items (Grouped by Brand) -->
         <div id="cartItemsWrap"></div>
 
-        <!-- Order Summary -->
+        <!-- Master Order Summary -->
         <div>
             <div class="order-summary">
-                <div style="font-size:16px;font-weight:800;color:var(--text-dark);margin-bottom:16px;"><i data-lucide="clipboard-list" class="lucide-icon"></i> Order Summary</div>
+                <div style="font-size:16px;font-weight:800;color:var(--text-dark);margin-bottom:6px;"><i data-lucide="clipboard-list" class="lucide-icon"></i> Master Cart Summary</div>
+                <div id="selectedMetaLabel" style="font-size:12px;color:#777;margin-bottom:14px;">Selected items will be checked out together</div>
 
-                <div class="summary-row"><span>Subtotal</span><span id="sumSubtotal">৳0</span></div>
+                <div class="summary-row"><span>Selected Items</span><span id="sumSelectedCount">0</span></div>
+                <div class="summary-row"><span>Selected Subtotal</span><span id="sumSubtotal">৳0</span></div>
                 <div class="summary-row" id="discountRow" style="color:var(--success);display:none;"><span>Discount</span><span id="sumDiscount">-৳0</span></div>
                 <div class="summary-row"><span style="color:#888;font-size:13px;">Delivery</span><span style="color:#888;font-size:13px;">Calculated at checkout</span></div>
-                <div class="summary-row summary-total"><span>Subtotal</span><span id="sumTotal" style="color:var(--primary);">৳0</span></div>
+                <div class="summary-row summary-total"><span>Total Selected</span><span id="sumTotal" style="color:var(--primary);">৳0</span></div>
 
-                <a href="/checkout" class="btn btn-primary btn-full btn-lg" id="checkoutBtn" style="margin-top:16px;">
-                    <i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Proceed to Checkout
-                </a>
+                <button type="button" onclick="proceedMasterCheckout()" class="btn btn-primary btn-full btn-lg" id="checkoutBtn" style="margin-top:16px;border:none;cursor:pointer;">
+                    <i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Master Checkout (Selected)
+                </button>
+                <div style="font-size:11.5px;color:#888;text-align:center;margin-top:8px;">
+                    💡 আনসিলেক্ট করা আইটেমগুলো কার্টেই সুরক্ষিত থাকবে
+                </div>
 
                 <!-- Order by Message button — settings থেকে show/hide হবে -->
                 <button class="btn btn-full" id="cartMsgOrderBtn" onclick="openCartMsgSheet()"
                     style="display:none;margin-top:10px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;font-weight:700;border:none;font-size:14px;">
-                    💬 Order by Message
+                    💬 Order Selected by Message
                 </button>
 
                 <a href="/shop" style="display:block;text-align:center;margin-top:12px;font-size:13px;color:#888;font-weight:600;">← Continue Shopping</a>
@@ -124,25 +180,18 @@
 
 <!-- ══ Message Order Bottom Sheet ══════════════════════════════ -->
 <div id="cartMsgSheet" style="display:none;position:fixed;inset:0;z-index:9999;">
-    <!-- Backdrop -->
     <div onclick="closeCartMsgSheet()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);"></div>
-
-    <!-- Sheet -->
     <div class="cart-msg-sheet-inner">
-        <!-- Handle bar -->
         <div style="width:40px;height:4px;background:#ddd;border-radius:99px;margin:0 auto 18px;"></div>
-
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
             <h3 style="font-size:17px;font-weight:800;color:var(--text-dark);">💬 Order by Message</h3>
             <button onclick="closeCartMsgSheet()" style="background:none;border:none;font-size:20px;color:#bbb;cursor:pointer;line-height:1;">✕</button>
         </div>
         <p style="font-size:13px;color:#888;margin-bottom:18px;">ঠিকানা দাও, তারপর পছন্দের অ্যাপে অর্ডার পাঠাও</p>
 
-        <!-- Cart Items Preview -->
-        <div class="sheet-section-label">🛒 তোমার অর্ডার</div>
+        <div class="sheet-section-label">🛒 তোমার সিলেক্ট করা অর্ডার</div>
         <div class="cart-order-items-preview" id="cartMsgItemsPreview"></div>
 
-        <!-- Customer Info -->
         <div class="sheet-section-label">📋 ডেলিভারি তথ্য</div>
         <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
             <input class="sheet-input" id="cmName"    placeholder="নাম (optional)">
@@ -151,7 +200,6 @@
                 placeholder="ডেলিভারি ঠিকানা ✱ — বাসা/ফ্ল্যাট নং, রোড, এলাকা, জেলা"></textarea>
         </div>
 
-        <!-- App Buttons -->
         <div class="sheet-section-label" style="margin-bottom:10px;">👇 কোন অ্যাপে পাঠাবে?</div>
         <div id="cartMsgAppsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;"></div>
 
@@ -165,7 +213,6 @@
 var cartSettings = {};
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Settings লোড করো (messaging apps + store name)
     var settingsPromise;
     try {
         if (CONFIG.DB_PROVIDER === 'supabase') {
@@ -178,27 +225,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     return { data: doc };
                 }).catch(function() { return { data: {} }; });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            settingsPromise = fetch((CONFIG.HF_API_BASE || '') + '/api/public-data')
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    var s = (res && res.success && res.data && res.data.settings) ? res.data.settings : {};
+                    if (typeof s.messaging_apps === 'string') {
+                        try { s.messaging_apps = JSON.parse(s.messaging_apps); } catch(e) { s.messaging_apps = []; }
+                    }
+                    return { data: s };
+                }).catch(function() { return { data: {} }; });
         } else {
             settingsPromise = Promise.resolve({ data: {} });
         }
 
-    settingsPromise.then(function(r) {
-        if (r && r.data) {
-            cartSettings = r.data;
-            if (r.data.store_name) {
-                document.getElementById('navBrand').textContent = r.data.store_name;
+        settingsPromise.then(function(r) {
+            if (r && r.data) {
+                cartSettings = r.data;
+                if (r.data.store_name) {
+                    document.getElementById('navBrand').textContent = r.data.store_name;
+                }
+                var hasApps = Array.isArray(r.data.messaging_apps) && r.data.messaging_apps.some(function(a) { return a.enabled && a.contact; });
+                if ((r.data.allow_msg_order || r.data.allow_whatsapp_order) && hasApps) {
+                    document.getElementById('cartMsgOrderBtn').style.display = 'flex';
+                }
             }
-            // Messaging order button দেখাও যদি enabled থাকে
-            var hasApps = r.data.messaging_apps && r.data.messaging_apps.some(function(a) { return a.enabled && a.contact; });
-            if ((r.data.allow_msg_order || r.data.allow_whatsapp_order) && hasApps) {
-                document.getElementById('cartMsgOrderBtn').style.display = 'flex';
-            }
-        }
-        document.getElementById('pageLoader').style.display = 'none';
-    }).catch(function(err) {
-        console.error('Settings load error:', err);
-        document.getElementById('pageLoader').style.display = 'none';
-    });
+            document.getElementById('pageLoader').style.display = 'none';
+            renderCart();
+        }).catch(function(err) {
+            console.error('Settings load error:', err);
+            document.getElementById('pageLoader').style.display = 'none';
+        });
     } catch (e) {
         console.error('Init error:', e);
         document.getElementById('pageLoader').style.display = 'none';
@@ -207,52 +264,193 @@ document.addEventListener('DOMContentLoaded', function() {
     renderCart();
 });
 
-function getCart()   { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
-function saveCart(c) { localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(c)); }
+function getCart() {
+    try {
+        var raw = JSON.parse(localStorage.getItem(CONFIG.CART_KEY) || '[]');
+        return (window.BRAND && BRAND.enrichCartArray) ? BRAND.enrichCartArray(raw) : raw;
+    } catch(e) { return []; }
+}
+function saveCart(c) {
+    localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(c));
+}
+
+function getItemBrandKey(item) {
+    return (item && item.brand_id) ? String(item.brand_id) : '__main__';
+}
+
+function getCurrentContextBrandKey() {
+    if (window.BRAND && BRAND.id) return String(BRAND.id);
+    if (window.BRAND && BRAND.slug && Array.isArray(BRAND.allBrands)) {
+        var found = BRAND.allBrands.find(function(b) { return b.slug === BRAND.slug; });
+        if (found) return String(found.id);
+    }
+    return '__main__';
+}
+
+function escHtmlCart(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 function renderCart() {
     var cart = getCart();
     var wrap = document.getElementById('cartItemsWrap');
-    document.getElementById('cartCountLabel').textContent = cart.length + ' item' + (cart.length!==1?'s':'');
+    var masterWrap = document.getElementById('masterSelectAllWrap');
+    var totalQty = cart.reduce(function(s, i) { return s + (i.quantity || 1); }, 0);
+    document.getElementById('cartCountLabel').textContent = totalQty + ' item' + (totalQty !== 1 ? 's' : '');
 
     if (!cart.length) {
+        if (masterWrap) masterWrap.style.display = 'none';
         wrap.innerHTML =
-            '<div style="text-align:center;padding:80px 20px;">' +
+            '<div style="text-align:center;padding:80px 20px;background:#fff;border-radius:16px;border:1px solid var(--border-light);">' +
             '<div style="font-size:64px;margin-bottom:16px;"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i></div>' +
             '<div style="font-size:20px;font-weight:800;color:var(--text-dark);margin-bottom:8px;">Cart is empty</div>' +
             '<div style="color:#999;margin-bottom:20px;">Add some products to get started</div>' +
-            '<a href="/shop" class="btn btn-primary btn-lg"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Start Shopping</a>' +
+            '<a href="' + (window.BRAND ? BRAND.url('/shop') : '/shop') + '" class="btn btn-primary btn-lg"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Start Shopping</a>' +
             '</div>';
         updateSummary(cart);
         if (typeof lucide !== 'undefined') lucide.createIcons();
         return;
     }
 
-    wrap.innerHTML = cart.map(function(item, i) {
-        var subtotal = item.price * (item.quantity || 1);
-        return '<div class="cart-item" id="item-' + i + '">' +
-            (item.image ? '<img src="' + item.image + '" class="cart-item-img" onerror="this.style.display=\'none\'">' : '') +
-            '<div class="cart-item-info">' +
-                '<div class="cart-item-name">' + item.productName + '</div>' +
-                '<div class="cart-item-meta">' +
-                    (item.color ? '<i data-lucide="palette" class="lucide-icon icon-pulse"></i> ' + item.color + '  ' : '') +
-                    (item.size  ? '📏 ' + item.size  : '') +
+    if (masterWrap) {
+        masterWrap.style.display = 'inline-flex';
+        var allSelected = cart.every(function(it) { return it.selected !== false; });
+        document.getElementById('masterSelectAll').checked = allSelected;
+    }
+
+    // Group items by brand_id (__main__ for Main Ranonex store)
+    var groupsMap = {};
+    var groupOrder = [];
+    var mainStoreName = (window.BRAND && BRAND.main_store_name) ? BRAND.main_store_name : (cartSettings.store_name || 'Ranonex');
+
+    cart.forEach(function(item, idx) {
+        var bKey = getItemBrandKey(item);
+        if (!groupsMap[bKey]) {
+            var bName = mainStoreName;
+            var bSlug = '';
+            if (bKey !== '__main__') {
+                bName = item.brand_name || (window.BRAND ? BRAND.getBrandNameById(bKey) : 'Brand Store');
+                bSlug = item.brand_slug || '';
+                if (!bSlug && window.BRAND && BRAND.getBrandById(bKey)) {
+                    bSlug = BRAND.getBrandById(bKey).slug || '';
+                }
+            }
+            groupsMap[bKey] = {
+                key: bKey,
+                brand_id: bKey === '__main__' ? null : bKey,
+                name: bName,
+                slug: bSlug,
+                entries: []
+            };
+            groupOrder.push(bKey);
+        }
+        groupsMap[bKey].entries.push({ item: item, index: idx });
+    });
+
+    // R2: Sort so that the brand the user is currently browsing appears FIRST at the top
+    var currentKey = getCurrentContextBrandKey();
+    groupOrder.sort(function(a, b) {
+        if (a === currentKey && b !== currentKey) return -1;
+        if (b === currentKey && a !== currentKey) return 1;
+        if (a === '__main__') return -1;
+        if (b === '__main__') return 1;
+        return 0;
+    });
+
+    var hasMultipleGroups = groupOrder.length > 1;
+
+    wrap.innerHTML = groupOrder.map(function(bKey) {
+        var g = groupsMap[bKey];
+        var isCurrent = (bKey === currentKey);
+        var groupAllSelected = g.entries.every(function(e) { return e.item.selected !== false; });
+        var groupSelectedEntries = g.entries.filter(function(e) { return e.item.selected !== false; });
+        var groupSelectedSubtotal = groupSelectedEntries.reduce(function(s, e) {
+            return s + (e.item.price * (e.item.quantity || 1));
+        }, 0);
+        var storeHref = g.slug ? ('/' + g.slug + '/') : '/';
+
+        var itemsHtml = g.entries.map(function(entry) {
+            var item = entry.item;
+            var i = entry.index;
+            var isChecked = item.selected !== false;
+            var subtotal = item.price * (item.quantity || 1);
+            var prodHref = g.slug ? ('/' + g.slug + '/product?id=' + encodeURIComponent(item.productId || '')) : ('/product?id=' + encodeURIComponent(item.productId || ''));
+            return '<div class="cart-item" id="item-' + i + '" style="margin-bottom:0;border-radius:0;border:none;border-bottom:1px solid #f2f2f2;opacity:' + (isChecked ? '1' : '0.6') + ';">' +
+                '<input type="checkbox" class="cart-item-check" ' + (isChecked ? 'checked' : '') + ' onchange="toggleItemSelect(' + i + ', this.checked)" title="Select item for checkout">' +
+                (item.image ? '<a href="' + prodHref + '" data-brand-explicit="1"><img src="' + escHtmlCart(item.image) + '" class="cart-item-img" onerror="this.style.display=\'none\'"></a>' : '') +
+                '<div class="cart-item-info">' +
+                    '<a href="' + prodHref + '" data-brand-explicit="1" class="cart-item-name" style="text-decoration:none;color:inherit;">' + escHtmlCart(item.productName) + '</a>' +
+                    '<div class="cart-item-meta">' +
+                        (item.color ? '<i data-lucide="palette" class="lucide-icon icon-pulse"></i> ' + escHtmlCart(item.color) + '  ' : '') +
+                        (item.size  ? '📏 ' + escHtmlCart(item.size)  : '') +
+                    '</div>' +
+                    '<div class="cart-item-price">৳' + subtotal + '</div>' +
                 '</div>' +
-                '<div class="cart-item-price">৳' + subtotal + '</div>' +
+                '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">' +
+                    '<button onclick="removeItem(' + i + ')" style="background:none;border:none;font-size:18px;color:#ccc;cursor:pointer;" title="Remove">✕</button>' +
+                    '<div class="qty-control">' +
+                        '<button class="qty-btn" onclick="changeQty(' + i + ',-1)">−</button>' +
+                        '<span class="qty-num">' + (item.quantity || 1) + '</span>' +
+                        '<button class="qty-btn" onclick="changeQty(' + i + ',1)">+</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        return '<div class="brand-cart-group' + (isCurrent ? ' current-brand-group' : '') + '">' +
+            '<div class="brand-group-header">' +
+                '<div style="display:flex;align-items:center;gap:10px;">' +
+                    '<input type="checkbox" class="cart-item-check" ' + (groupAllSelected ? 'checked' : '') + ' onchange="toggleBrandGroupSelect(\'' + escHtmlCart(bKey) + '\', this.checked)">' +
+                    '<a href="' + storeHref + '" data-brand-explicit="1" style="font-weight:800;font-size:15px;color:var(--text-dark);text-decoration:none;display:flex;align-items:center;gap:6px;">' +
+                        (bKey === '__main__' ? '🏠 ' : '🏷️ ') + escHtmlCart(g.name) +
+                    '</a>' +
+                    (isCurrent && hasMultipleGroups ? '<span style="font-size:10.5px;font-weight:700;background:var(--primary,#8B1A1A);color:#fff;padding:2px 8px;border-radius:12px;">Current Store</span>' : '') +
+                '</div>' +
+                '<span style="font-size:12px;color:#777;font-weight:600;">' + g.entries.length + ' item' + (g.entries.length !== 1 ? 's' : '') + '</span>' +
             '</div>' +
-            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">' +
-                '<button onclick="removeItem(' + i + ')" style="background:none;border:none;font-size:18px;color:#ccc;cursor:pointer;" title="Remove">✕</button>' +
-                '<div class="qty-control">' +
-                    '<button class="qty-btn" onclick="changeQty(' + i + ',-1)">−</button>' +
-                    '<span class="qty-num">' + (item.quantity || 1) + '</span>' +
-                    '<button class="qty-btn" onclick="changeQty(' + i + ',1)">+</button>' +
+            '<div>' + itemsHtml + '</div>' +
+            '<div class="brand-group-footer">' +
+                '<div style="font-size:13.5px;color:#555;">' +
+                    'Selected Subtotal (' + groupSelectedEntries.length + '): <strong style="color:var(--primary);font-size:15px;">৳' + groupSelectedSubtotal + '</strong>' +
                 '</div>' +
+                '<button type="button" class="btn btn-primary btn-sm" ' + (groupSelectedEntries.length === 0 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : 'style="cursor:pointer;"') + ' onclick="checkoutBrandGroup(\'' + escHtmlCart(bKey) + '\')">' +
+                    'Checkout ' + escHtmlCart(g.name) + ' →' +
+                '</button>' +
             '</div>' +
         '</div>';
     }).join('');
 
     updateSummary(cart);
     if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function toggleItemSelect(index, checked) {
+    var cart = getCart();
+    if (cart[index]) {
+        cart[index].selected = !!checked;
+        saveCart(cart);
+        renderCart();
+    }
+}
+
+function toggleBrandGroupSelect(bKey, checked) {
+    var cart = getCart();
+    cart.forEach(function(item) {
+        if (getItemBrandKey(item) === bKey) {
+            item.selected = !!checked;
+        }
+    });
+    saveCart(cart);
+    renderCart();
+}
+
+function toggleSelectAllCart(checked) {
+    var cart = getCart();
+    cart.forEach(function(item) {
+        item.selected = !!checked;
+    });
+    saveCart(cart);
+    renderCart();
 }
 
 function changeQty(i, delta) {
@@ -269,21 +467,62 @@ function removeItem(i) {
     renderCart();
 }
 
+function getSelectedItems(cart) {
+    return (cart || getCart()).filter(function(item) { return item.selected !== false; });
+}
+
 function updateSummary(cart) {
-    var subtotal = cart.reduce(function(s,i) { return s + i.price*(i.quantity||1); }, 0);
+    var selected = getSelectedItems(cart);
+    var subtotal = selected.reduce(function(s, i) { return s + i.price * (i.quantity || 1); }, 0);
+    var selCount = selected.reduce(function(s, i) { return s + (i.quantity || 1); }, 0);
+
+    var brandSet = {};
+    selected.forEach(function(i) { brandSet[getItemBrandKey(i)] = true; });
+    var brandCount = Object.keys(brandSet).length;
+
+    document.getElementById('sumSelectedCount').textContent = selCount + ' item' + (selCount !== 1 ? 's' : '') + (brandCount > 1 ? ' (' + brandCount + ' brands)' : '');
     document.getElementById('sumSubtotal').textContent = '৳' + subtotal;
     document.getElementById('sumTotal').textContent    = '৳' + subtotal;
 
     var checkoutBtn = document.getElementById('checkoutBtn');
-    if (checkoutBtn && !cart.length) {
-        checkoutBtn.style.opacity = '0.4';
-        checkoutBtn.style.pointerEvents = 'none';
+    if (checkoutBtn) {
+        checkoutBtn.disabled = selected.length === 0;
+        checkoutBtn.style.opacity = selected.length === 0 ? '0.4' : '1';
+        checkoutBtn.style.pointerEvents = selected.length === 0 ? 'none' : 'auto';
     }
     var msgBtn = document.getElementById('cartMsgOrderBtn');
-    if (msgBtn && !cart.length) {
-        msgBtn.style.opacity = '0.4';
-        msgBtn.style.pointerEvents = 'none';
+    if (msgBtn) {
+        msgBtn.disabled = selected.length === 0;
+        msgBtn.style.opacity = selected.length === 0 ? '0.4' : '1';
+        msgBtn.style.pointerEvents = selected.length === 0 ? 'none' : 'auto';
     }
+}
+
+// ── Checkout Selected Items (Brand-specific or Master Checkout) ──
+function checkoutBrandGroup(bKey) {
+    var cart = getCart();
+    var selectedInGroup = cart.filter(function(item) {
+        return getItemBrandKey(item) === bKey && item.selected !== false;
+    });
+    if (!selectedInGroup.length) {
+        alert('এই ব্র্যান্ডের অন্তত একটি প্রোডাক্ট সিলেক্ট করুন।');
+        return;
+    }
+    localStorage.setItem('fbr_checkout_items', JSON.stringify(selectedInGroup));
+    var targetSlug = selectedInGroup[0].brand_slug || '';
+    var targetCheckout = targetSlug ? ('/' + targetSlug + '/checkout?mode=selected') : '/checkout?mode=selected';
+    window.location.href = targetCheckout;
+}
+
+function proceedMasterCheckout() {
+    var selected = getSelectedItems();
+    if (!selected.length) {
+        alert('চেকআউট করার জন্য অন্তত একটি প্রোডাক্ট সিলেক্ট করুন।');
+        return;
+    }
+    localStorage.setItem('fbr_checkout_items', JSON.stringify(selected));
+    var checkoutUrl = (window.BRAND ? BRAND.url('/checkout') : '/checkout') + '?mode=selected';
+    window.location.href = checkoutUrl;
 }
 
 // ── Messaging Sheet ─────────────────────────────────────────────
@@ -328,25 +567,24 @@ var CART_MSG_APP_ICONS = {
 };
 
 function openCartMsgSheet() {
-    var cart = getCart();
-    if (!cart.length) return;
+    var selected = getSelectedItems();
+    if (!selected.length) return;
 
-    // Cart items preview তৈরি করো
-    var previewHtml = cart.map(function(item) {
+    var previewHtml = selected.map(function(item) {
         var sub = item.price * (item.quantity || 1);
-        var line = '🛍️ <b>' + item.productName + '</b>';
-        if (item.color) line += ' · ' + item.color;
-        if (item.size)  line += ' · ' + item.size;
+        var line = '🛍️ <b>' + escHtmlCart(item.productName) + '</b>';
+        if (item.brand_name) line += ' <span style="font-size:11px;color:#666;">[' + escHtmlCart(item.brand_name) + ']</span>';
+        if (item.color) line += ' · ' + escHtmlCart(item.color);
+        if (item.size)  line += ' · ' + escHtmlCart(item.size);
         line += ' × ' + (item.quantity || 1) + ' = <b style="color:var(--primary);">৳' + sub + '</b>';
         return '<div>' + line + '</div>';
     }).join('');
 
-    var total = cart.reduce(function(s, i) { return s + i.price * (i.quantity||1); }, 0);
+    var total = selected.reduce(function(s, i) { return s + i.price * (i.quantity||1); }, 0);
     previewHtml += '<div style="border-top:1px solid var(--border-light);margin-top:8px;padding-top:8px;font-weight:800;color:var(--primary);">মোট: ৳' + total + '</div>';
 
     document.getElementById('cartMsgItemsPreview').innerHTML = previewHtml;
 
-    // App buttons build করো
     var apps = (cartSettings.messaging_apps || []).filter(function(a) { return a.enabled && a.contact; });
     var list = document.getElementById('cartMsgAppsList');
     var noApps = document.getElementById('cartMsgNoApps');
@@ -370,7 +608,6 @@ function openCartMsgSheet() {
     }
 
     document.getElementById('cartMsgSheet').style.display = 'block';
-    // scroll to top of sheet
     setTimeout(function() {
         var inner = document.querySelector('.cart-msg-sheet-inner');
         if (inner) inner.scrollTop = 0;
@@ -382,13 +619,14 @@ function closeCartMsgSheet() {
 }
 
 function buildCartMsg(name, phone, address) {
-    var cart = getCart();
-    var total = cart.reduce(function(s, i) { return s + i.price * (i.quantity||1); }, 0);
+    var selected = getSelectedItems();
+    var total = selected.reduce(function(s, i) { return s + i.price * (i.quantity||1); }, 0);
 
     var msg = 'হ্যালো! আমি অর্ডার করতে চাই:\n\n';
     msg += '🛒 *অর্ডার তালিকা:*\n';
-    cart.forEach(function(item) {
+    selected.forEach(function(item) {
         msg += '• ' + item.productName;
+        if (item.brand_name) msg += ' [' + item.brand_name + ']';
         if (item.color) msg += ' (' + item.color + ')';
         if (item.size)  msg += ' [' + item.size + ']';
         msg += ' × ' + (item.quantity || 1) + ' = ৳' + (item.price * (item.quantity||1)) + '\n';
@@ -437,12 +675,9 @@ function sendCartMsg(app) {
         });
     </script>
 
-    <script src="assets/js/offline-handler.js"></script>
+    <script src="/assets/js/offline-handler.js"></script>
     <!-- Shared Custom Right Click / Long-Press Menu -->
-    <script src="assets/js/context-menu.js"></script>
-    <script src="assets/js/tracking.js"></script>
+    <script src="/assets/js/context-menu.js"></script>
+    <script src="/assets/js/tracking.js"></script>
 </body>
 </html>
-
-
-

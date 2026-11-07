@@ -170,7 +170,8 @@
                 <div class="page-subtitle">Fully automated, premium discount codes management</div>
             </div>
         </div>
-        <div class="header-right" style="display:flex;gap:10px;">
+        <div class="header-right" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <select class="form-select" id="promoBrandFilter" data-brand-filter="1" onchange="renderPromos()" style="width:auto;min-width:190px;"></select>
             <button class="btn btn-outline" onclick="openRepeatSettings()"><i data-lucide="settings" class="lucide-icon"></i> Repeat Customer Config</button>
             <button class="btn btn-primary" onclick="openModal()">+ Add Coupon</button>
         </div>
@@ -240,6 +241,10 @@
                     <option value="private">Private (Must input exactly)</option>
                 </select>
             </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Applicable Store / Brand</label>
+            <select class="form-select" id="pBrand" data-brand-select="promo"></select>
         </div>
         <div class="form-row">
             <div class="form-group">
@@ -723,8 +728,12 @@ function checkRepeatCustPromo() {
 function renderPromos() {
     var html = '';
     var activeCount = 0, publicCount = 0;
+    var filterVal = (document.getElementById('promoBrandFilter') || {}).value || 'all';
     var visiblePromos = allPromos.filter(function(p) {
-        return !p.is_repeated_config && !(p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'));
+        if (p.is_repeated_config || (p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'))) return false;
+        if (filterVal === 'all') return true;
+        if (filterVal === '__main__') return !p.brand_id;
+        return !p.brand_id || p.brand_id === filterVal;
     });
 
     if (!visiblePromos.length) {
@@ -753,7 +762,7 @@ function renderPromos() {
         var dVal  = discType === 'percent' ? discVal + '%' : '৳' + discVal;
         var maxCapText = (discType === 'percent' && maxCap) ? '<div style="font-size:11px;color:#999;">Max ৳' + maxCap + '</div>' : '';
 
-        var rest = '';
+        var rest = '<div style="margin-bottom:3px;">' + (window.getAdminBrandBadge ? window.getAdminBrandBadge(p.brand_id, false, true) : '') + '</div>';
         if (minSpend) rest += '<div class="meta-tag">Min ৳' + minSpend + '</div>';
         if (delRew === 'free') rest += '<div class="meta-tag" style="background:#E1F5FE;color:#0288D1;">Free Delivery</div>';
         if (delRew === 'amount' && delAmt) rest += '<div class="meta-tag" style="background:#E1F5FE;color:#0288D1;">-৳' + delAmt + ' Del.</div>';
@@ -802,6 +811,9 @@ function resetChipSelects(selProds, selCats, selPays, selDists) {
 function openModal() {
     editingId = null; pActive = true;
     document.getElementById('promoModalTitle').textContent = 'Add Promo Code';
+    var filterVal = (document.getElementById('promoBrandFilter') || {}).value || 'all';
+    var defaultBrand = (filterVal !== 'all' && filterVal !== '__main__') ? filterVal : '';
+    if (window.populateBrandSelect) window.populateBrandSelect('pBrand', defaultBrand, { isPromo: true });
     ['pCode','pDiscount','pMaxCap','pLimit','pExpiry','pMinSpend','pDelDiscAmount','pDelDiscCap'].forEach(function(id){
         var el = document.getElementById(id); if (el) el.value = '';
     });
@@ -818,6 +830,7 @@ function openModal() {
 function editPromo(p) {
     editingId = p.id; pActive = p.is_active !== false;
     document.getElementById('promoModalTitle').textContent = 'Edit Promo';
+    if (window.populateBrandSelect) window.populateBrandSelect('pBrand', p.brand_id || '', { isPromo: true });
     var cleanCode = p.code ? p.code.split('|v1|')[0] : '';
     document.getElementById('pCode').value      = cleanCode;
     document.getElementById('pType').value      = p.type || 'public';
@@ -933,12 +946,13 @@ function savePromo() {
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         payload.is_active = payload.is_active ? 1 : 0;
         payload.is_repeated_config = 0; // standard promo
+        var brandIdVal = (document.getElementById('pBrand') && document.getElementById('pBrand').value) ? document.getElementById('pBrand').value : null;
         var j = function(x) { return JSON.stringify(x||[]); };
         var p;
         if (editingId) {
-            p = d1AdminQuery("UPDATE promos SET code = ?, discount = ?, is_active = ?, usage_limit = ?, expires_at = ?, type = ?, disc_type = ?, disc_val = ?, max_cap = ?, min_spend = ?, del_reward = ?, del_disc_amount = ?, del_disc_cap = ?, applicable_products = ?, applicable_categories = ?, applicable_districts = ?, applicable_payments = ? WHERE id = ?", [payload.code, payload.discount, payload.is_active, payload.usage_limit, payload.expires_at, payload.type, payload.disc_type, payload.disc_val, payload.max_cap, payload.min_spend, payload.del_reward, payload.del_disc_amount, payload.del_disc_cap, j(payload.applicable_products), j(payload.applicable_categories), j(payload.applicable_districts), j(payload.applicable_payments), editingId]);
+            p = d1AdminQuery("UPDATE promos SET code = ?, discount = ?, is_active = ?, usage_limit = ?, expires_at = ?, type = ?, disc_type = ?, disc_val = ?, max_cap = ?, min_spend = ?, del_reward = ?, del_disc_amount = ?, del_disc_cap = ?, applicable_products = ?, applicable_categories = ?, applicable_districts = ?, applicable_payments = ?, brand_id = ? WHERE id = ?", [payload.code, payload.discount, payload.is_active, payload.usage_limit, payload.expires_at, payload.type, payload.disc_type, payload.disc_val, payload.max_cap, payload.min_spend, payload.del_reward, payload.del_disc_amount, payload.del_disc_cap, j(payload.applicable_products), j(payload.applicable_categories), j(payload.applicable_districts), j(payload.applicable_payments), brandIdVal, editingId]);
         } else {
-            p = d1AdminQuery("INSERT INTO promos (id, code, discount, is_active, is_repeated_config, usage_limit, expires_at, type, disc_type, disc_val, max_cap, min_spend, del_reward, del_disc_amount, del_disc_cap, applicable_products, applicable_categories, applicable_districts, applicable_payments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.code, payload.discount, payload.is_active, payload.is_repeated_config, payload.usage_limit, payload.expires_at, payload.type, payload.disc_type, payload.disc_val, payload.max_cap, payload.min_spend, payload.del_reward, payload.del_disc_amount, payload.del_disc_cap, j(payload.applicable_products), j(payload.applicable_categories), j(payload.applicable_districts), j(payload.applicable_payments)]);
+            p = d1AdminQuery("INSERT INTO promos (id, code, discount, is_active, is_repeated_config, usage_limit, expires_at, type, disc_type, disc_val, max_cap, min_spend, del_reward, del_disc_amount, del_disc_cap, applicable_products, applicable_categories, applicable_districts, applicable_payments, brand_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.code, payload.discount, payload.is_active, payload.is_repeated_config, payload.usage_limit, payload.expires_at, payload.type, payload.disc_type, payload.disc_val, payload.max_cap, payload.min_spend, payload.del_reward, payload.del_disc_amount, payload.del_disc_cap, j(payload.applicable_products), j(payload.applicable_categories), j(payload.applicable_districts), j(payload.applicable_payments), brandIdVal]);
         }
         p.then(function() {
             showToast('✅ Coupon saved!', 'success'); closeModal(); loadData();

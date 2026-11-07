@@ -8,14 +8,15 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon-192x192.png">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/tailwind.css?v=1791100000005">
-    <script>document.write('<link rel="stylesheet" href="assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="assets/js/config.js?v=1792145528736"></script>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
+    <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="/assets/js/config.js?v=1792145528736"></script>
+    <script src="/assets/js/brand-context.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="assets/js/supabase-init.js"></script>
+    <script src="/assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
-    <script src="assets/js/appwrite-init.js"></script>
+    <script src="/assets/js/appwrite-init.js"></script>
     <style>
         .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; padding: 20px 0 40px; }
         .section-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 16px; }
@@ -126,7 +127,7 @@
         .add-once-sheet { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-height: 80vh; overflow-y: auto; padding: 0 0 24px; animation: aoSlideUp 0.35s cubic-bezier(0.22,0.61,0.36,1); }
         @keyframes aoSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
-    <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <link rel="stylesheet" href="/assets/css/premium-icons.css">
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
@@ -435,17 +436,25 @@ var promoFreeDelivery = false;     // if coupon gives free delivery
 var isPickup = new URLSearchParams(window.location.search).get('pickup') === '1';
 // Direct Order (Buy Now) — main cart থেকে আলাদা
 var isDirectOrder = new URLSearchParams(window.location.search).get('direct') === '1';
+var isSelectedCheckout = new URLSearchParams(window.location.search).get('mode') === 'selected';
 var DIRECT_KEY = (typeof CONFIG !== 'undefined' && CONFIG.DIRECT_ORDER_KEY) ? CONFIG.DIRECT_ORDER_KEY : 'fbr_direct_order';
 
 // ── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-    // Direct Order হলে আলাদা key থেকে load করো, main cart untouched
+    // Direct Order বা Selected Cart Checkout হলে নির্দিষ্ট আইটেম load করো, বাকি cart অক্ষত থাকবে
     if (isDirectOrder) {
         try { cart = JSON.parse(localStorage.getItem(DIRECT_KEY) || '[]'); } catch(e) { cart = []; }
-        if (!cart.length) { window.location.href = 'shop.html'; return; }
+        if (window.BRAND && BRAND.enrichCartArray) cart = BRAND.enrichCartArray(cart);
+        if (!cart.length) { window.location.href = (window.BRAND ? BRAND.url('/shop') : '/shop'); return; }
+    } else if (isSelectedCheckout) {
+        try { cart = JSON.parse(localStorage.getItem('fbr_checkout_items') || '[]'); } catch(e) { cart = []; }
+        if (!cart.length) {
+            cart = getCart().filter(function(i) { return i.selected !== false; });
+        }
+        if (!cart.length) { window.location.href = (window.BRAND ? BRAND.url('/cart') : '/cart'); return; }
     } else {
-        cart = getCart();
-        if (!cart.length) { window.location.href = 'cart.html'; return; }
+        cart = getCart().filter(function(i) { return i.selected !== false; });
+        if (!cart.length) { window.location.href = (window.BRAND ? BRAND.url('/cart') : '/cart'); return; }
     }
 
     if (isPickup) {
@@ -590,10 +599,11 @@ function renderSummaryItems() {
     var html = cart.map(function(item) {
         var lineTotal = item.price * (item.quantity || 1);
         subtotal += lineTotal;
+        var bLabel = item.brand_name ? '<span style="display:inline-block;font-size:10px;background:#f0f2f5;color:#555;padding:1px 6px;border-radius:6px;margin-left:6px;font-weight:600;">🏷️ ' + item.brand_name + '</span>' : '';
         return '<div class="order-item-row2">' +
             (item.image ? '<img src="' + item.image + '" style="width:48px;height:48px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0;">' : '') +
             '<div style="flex:1;font-size:13px;">' +
-                '<div style="font-weight:700;">' + item.productName + '</div>' +
+                '<div style="font-weight:700;">' + item.productName + bLabel + '</div>' +
                 '<div style="color:#888;">' + (item.color||'') + ' / ' + (item.size||'') + ' × ' + (item.quantity||1) + '</div>' +
             '</div>' +
             '<div style="font-weight:800;font-size:14px;color:var(--primary);">৳' + lineTotal + '</div>' +
@@ -614,17 +624,24 @@ function updateSummaryTotals() {
     var delDisc = 0;
     
     if (activePromoObj) {
+        var promoBrandId = activePromoObj.brand_id || null;
+        var eligibleSubtotal = subtotal;
+        if (promoBrandId) {
+            eligibleSubtotal = cart.reduce(function(s, i) {
+                return (String(i.brand_id || '') === String(promoBrandId)) ? (s + i.price * (i.quantity || 1)) : s;
+            }, 0);
+        }
         var minSpend  = activePromoObj.min_spend || 0;
-        if (subtotal >= minSpend) {
+        if (eligibleSubtotal > 0 && eligibleSubtotal >= minSpend) {
             var discType  = activePromoObj.disc_type || 'flat';
             var discVal   = activePromoObj.disc_val || activePromoObj.discount || 0;
             var maxCap    = activePromoObj.max_cap || null;
             
             if (discType === 'percent') {
-                prodDisc = (discVal / 100) * subtotal;
+                prodDisc = (discVal / 100) * eligibleSubtotal;
                 if (maxCap && prodDisc > maxCap) prodDisc = maxCap;
             } else {
-                prodDisc = discVal;
+                prodDisc = Math.min(discVal, eligibleSubtotal);
             }
             
             var delReward = activePromoObj.del_reward || 'none';
@@ -1364,15 +1381,28 @@ function applyPromo(providedCode) {
     var appDists  = Array.isArray(promo.applicable_districts)  ? promo.applicable_districts  : [];
     var appPays   = Array.isArray(promo.applicable_payments)   ? promo.applicable_payments   : [];
 
+    // 0. Brand restriction check (NULL brand_id = global promo valid for all brands)
+    var promoBrandId = promo.brand_id || null;
+    var eligibleSubtotal = subtotal;
+    if (promoBrandId) {
+        eligibleSubtotal = cart.reduce(function(s, i) {
+            return (String(i.brand_id || '') === String(promoBrandId)) ? (s + i.price * (i.quantity || 1)) : s;
+        }, 0);
+        if (eligibleSubtotal <= 0) {
+            msg.innerHTML = '⛔ এই কুপনটি কার্টের বর্তমান ব্র্যান্ডের প্রোডাক্টের জন্য প্রযোজ্য নয়';
+            msg.style.color = 'var(--danger)'; return;
+        }
+    }
+
     // 1. Min spend check
-    if (minSpend && subtotal < minSpend) {
+    if (minSpend && eligibleSubtotal < minSpend) {
         msg.innerHTML = '⛔ Minimum cart value of ৳' + minSpend + ' required';
         msg.style.color = 'var(--danger)'; return;
     }
 
     // 2. Product restriction
     if (appProds.length) {
-        var matched = cart.some(function(i){ return appProds.indexOf(i.id) > -1; });
+        var matched = cart.some(function(i){ return appProds.indexOf(i.productId || i.id) > -1; });
         if (!matched) { msg.innerHTML = '⛔ Coupon not valid for products in your cart'; msg.style.color='var(--danger)'; return; }
     }
 
@@ -1604,10 +1634,13 @@ function placeOrder() {
         order_type:     isPickup ? 'pickup' : 'delivery'
     };
 
+    var splitOrders = buildSplitOrdersFromBase(orderData);
+    orderData = splitOrders[0];
+
     var autoAdv = settings.advance_method && settings.advance_method.toString().includes('auto');
     if (selectedPayMethod === 'auto_gateway' || (selectedPayMethod === 'cod' && advancePayable > 0 && autoAdv)) {
         var gatewayAmount = (selectedPayMethod === 'cod') ? advancePayable : total;
-        initiateGatewayPayment(orderId, gatewayAmount, orderData);
+        initiateGatewayPayment(orderId, gatewayAmount, orderData, splitOrders);
         return;
     }
 
@@ -1630,7 +1663,7 @@ function placeOrder() {
         insertPromise = fetch((CONFIG.HF_API_BASE || '') + '/api/save-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderData: orderData })
+            body: JSON.stringify({ orderData: orderData, orders: splitOrders })
         }).then(function(res) {
             return res.json().then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Failed to save order');
@@ -1647,24 +1680,22 @@ function placeOrder() {
         // Save locally for Guest/Main Profile history (max 10)
         try {
             var localOrders = JSON.parse(localStorage.getItem('my_orders') || '[]');
-            orderData.created_at = new Date().toISOString();
-            localOrders.unshift(orderData); // Add to beginning
+            splitOrders.forEach(function(so) {
+                so.created_at = new Date().toISOString();
+                localOrders.unshift(so);
+            });
             if (localOrders.length > 10) localOrders = localOrders.slice(0, 10);
             localStorage.setItem('my_orders', JSON.stringify(localOrders));
         } catch(e){}
 
-        sendOrderNotification(orderData);
-        if (isDirectOrder) {
-            localStorage.removeItem(DIRECT_KEY);
-        } else {
-            localStorage.removeItem(CONFIG.CART_KEY);
-        }
-        window.location.href = 'success.html?id=' + orderId;
+        splitOrders.forEach(function(so) { sendOrderNotification(so); });
+        cleanupOrderedItemsFromCart();
+        window.location.href = (window.BRAND ? BRAND.url('/success') : '/success') + '?id=' + orderId + (splitOrders.length > 1 ? '&group=' + orderId : '');
     });
 }
 
 // ── Auto Gateway Payment ──────────────────────────────────────
-function initiateGatewayPayment(orderId, total, orderData) {
+function initiateGatewayPayment(orderId, total, orderData, splitOrders) {
     var gatewayVersion = (settings.gateway_version || 'v1');
     var proxyUrl = (gatewayVersion === 'v2') 
         ? 'https://payment.freelancingbyrifat.top/proxyv2.php'
@@ -1693,10 +1724,13 @@ function initiateGatewayPayment(orderId, total, orderData) {
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var ordersPayload = (Array.isArray(splitOrders) && splitOrders.length > 0 ? splitOrders : [orderData]).map(function(o) {
+            return Object.assign({}, o, { payment_status: 'Unpaid', status: 'Pending' });
+        });
         insertPromise = fetch((CONFIG.HF_API_BASE || '') + '/api/save-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderData: Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' }) })
+            body: JSON.stringify({ orderData: ordersPayload[0], orders: ordersPayload })
         }).then(function(res) {
             return res.json().then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Failed to save order');
@@ -1833,9 +1867,9 @@ function verifyGatewayPayment(orderId, trxId) {
                         }
                         updatePromise.then(function(upRes) {
                             sendOrderNotification(oData);
-                            if (isDirectOrder) { localStorage.removeItem(DIRECT_KEY); } else { localStorage.removeItem(CONFIG.CART_KEY); }
+                            cleanupOrderedItemsFromCart();
                             window.history.replaceState({}, document.title, window.location.pathname);
-                            window.location.href = 'success.html?id=' + orderId;
+                            window.location.href = (window.BRAND ? BRAND.url('/success') : '/success') + '?id=' + orderId;
                         });
                     } else {
                         document.getElementById('pageLoader').style.display = 'none';
@@ -1858,7 +1892,14 @@ function verifyGatewayPayment(orderId, trxId) {
 
 // ── Telegram Notifications ────────────────────────────────────
 function sendOrderNotification(order) {
-    var msg = '🛍️ *NEW ORDER* — #' + order.id + '\n\n' +
+    var brandLine = '';
+    if (order.brand_id && window.BRAND) {
+        brandLine = '🏷️ Brand: *' + (BRAND.getBrandNameById(order.brand_id) || order.brand_id) + '*\n';
+    } else if (window.BRAND && BRAND.name) {
+        brandLine = '🏷️ Brand: *' + BRAND.name + '*\n';
+    }
+    var msg = '🛍️ *NEW ORDER* — #' + order.id + (order.order_group_id && order.order_group_id !== order.id ? ' (Group #' + order.order_group_id + ')' : '') + '\n' +
+              brandLine + '\n' +
               '👤 ' + (order.customer_name || '—') + ' | 📞 ' + (order.customer_phone || '—') + '\n' +
               '📍 ' + (order.district || '—') + ', ' + (order.division || '—') + '\n' +
               '📝 Type: ' + (order.order_type === 'pickup' ? '🚶 Pickup' : '🚚 Delivery') + '\n' +
@@ -1936,7 +1977,110 @@ function genOrderId() {
     return finalId;
 }
 
-function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
+function getCart() {
+    try {
+        var raw = JSON.parse(localStorage.getItem(CONFIG.CART_KEY) || '[]');
+        return (window.BRAND && BRAND.enrichCartArray) ? BRAND.enrichCartArray(raw) : raw;
+    } catch(e){ return []; }
+}
+
+/**
+ * R2 + Option A: Splits a master checkout order into per-brand orders sharing order_group_id.
+ * Delivery charge, addons, and advance payable are applied ONCE on the primary order.
+ */
+function buildSplitOrdersFromBase(baseOrder) {
+    var items = Array.isArray(baseOrder.items) ? baseOrder.items : [];
+    var groups = {};
+    var orderKeys = [];
+
+    items.forEach(function(item) {
+        var bKey = (item && item.brand_id) ? String(item.brand_id) : '__main__';
+        if (!groups[bKey]) {
+            groups[bKey] = [];
+            orderKeys.push(bKey);
+        }
+        groups[bKey].push(item);
+    });
+
+    // Single brand (or only main site): return 1 order with brand_id set
+    if (orderKeys.length <= 1) {
+        var singleKey = orderKeys[0] || '__main__';
+        baseOrder.brand_id = singleKey === '__main__' ? (window.BRAND && BRAND.id ? BRAND.id : null) : singleKey;
+        baseOrder.order_group_id = baseOrder.id;
+        return [baseOrder];
+    }
+
+    var groupId = baseOrder.id;
+    var totalSubtotal = Math.max(1, baseOrder.subtotal || 1);
+    var totalPromoDisc = baseOrder.promo_discount || 0;
+    var promoBrandId = (activePromoObj && activePromoObj.brand_id) ? String(activePromoObj.brand_id) : null;
+
+    // Effective delivery after any delivery coupon
+    var effectiveDelivery = Math.max(0, (baseOrder.grand_total || 0) - (baseOrder.subtotal || 0) - (baseOrder.addon_total || 0) + totalPromoDisc);
+
+    return orderKeys.map(function(bKey, idx) {
+        var grpItems = groups[bKey];
+        var grpSub = grpItems.reduce(function(s, i) { return s + i.price * (i.quantity || 1); }, 0);
+        var isFirst = (idx === 0);
+
+        var grpPromoDisc = 0;
+        if (totalPromoDisc > 0) {
+            if (promoBrandId) {
+                grpPromoDisc = (bKey === promoBrandId) ? totalPromoDisc : 0;
+            } else {
+                grpPromoDisc = Math.round(totalPromoDisc * (grpSub / totalSubtotal));
+            }
+        }
+
+        // Option A: Delivery charge & Add-ons charged once (on the first order in the group)
+        var grpDelivery = isFirst ? baseOrder.delivery_charge : 0;
+        var grpEffDelivery = isFirst ? effectiveDelivery : 0;
+        var grpAddonTotal = isFirst ? (baseOrder.addon_total || 0) : 0;
+        var grpAddons = isFirst ? baseOrder.addons : 'None';
+        var grpAdvance = isFirst ? (baseOrder.advance_payable || 0) : 0;
+        var grpGrandTotal = Math.max(0, grpSub + grpAddonTotal + grpEffDelivery - grpPromoDisc);
+
+        return Object.assign({}, baseOrder, {
+            id: isFirst ? groupId : genOrderId(),
+            order_group_id: groupId,
+            brand_id: bKey === '__main__' ? null : bKey,
+            items: grpItems,
+            addons: grpAddons,
+            subtotal: grpSub,
+            addon_total: grpAddonTotal,
+            delivery_charge: grpDelivery,
+            promo_discount: grpPromoDisc,
+            grand_total: grpGrandTotal,
+            advance_payable: grpAdvance
+        });
+    });
+}
+
+/**
+ * R2: Removes ONLY the checked-out items from fbr_cart; unselected or other-brand items stay in the cart.
+ */
+function cleanupOrderedItemsFromCart() {
+    try { localStorage.removeItem('fbr_checkout_items'); } catch(e) {}
+    if (isDirectOrder) {
+        try { localStorage.removeItem(DIRECT_KEY); } catch(e) {}
+        return;
+    }
+    try {
+        var fullCart = JSON.parse(localStorage.getItem(CONFIG.CART_KEY) || '[]');
+        var orderedKeys = {};
+        cart.forEach(function(i) {
+            var k = i.key || ((i.productId || i.id) + '-' + (i.color || '') + '-' + (i.size || ''));
+            orderedKeys[k] = true;
+        });
+        var remaining = fullCart.filter(function(i) {
+            var k = i.key || ((i.productId || i.id) + '-' + (i.color || '') + '-' + (i.size || ''));
+            return !orderedKeys[k];
+        });
+        localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(remaining));
+    } catch(e) {
+        localStorage.removeItem(CONFIG.CART_KEY);
+    }
+}
 
 // ── International Transfer System ─────────────────────────────
 var currentTransferTab = 'national';
@@ -2651,9 +2795,8 @@ function placeCryptoOrder(txid, usdt, isBackup) {
         }
 
         sendOrderNotification(orderData);
-        if (isDirectOrder) { localStorage.removeItem(DIRECT_KEY); }
-        else               { localStorage.removeItem(CONFIG.CART_KEY); }
-        window.location.href = 'success.html?id=' + orderId;
+        cleanupOrderedItemsFromCart();
+        window.location.href = (window.BRAND ? BRAND.url('/success') : '/success') + '?id=' + orderId;
     });
 }
 
@@ -2694,8 +2837,8 @@ function copyElementText(elId) {
         });
     </script>
 
-    <script src="assets/js/offline-handler.js"></script>
-    <script src="assets/js/tracking.js"></script>
+    <script src="/assets/js/offline-handler.js"></script>
+    <script src="/assets/js/tracking.js"></script>
 
     <!-- Autofill logged in user data -->
     <script>

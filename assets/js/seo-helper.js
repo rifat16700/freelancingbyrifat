@@ -239,13 +239,20 @@ window.SEO = (function() {
             ]
         };
 
+        var brandPrefix = (typeof window !== 'undefined' && window.BRAND && typeof window.BRAND.isBrand === 'function' && window.BRAND.isBrand())
+            ? ('/' + window.BRAND.slug())
+            : '';
+        var mainStoreSuffix = (settings._main_store_name && settings._main_store_name !== storeName && !title.toLowerCase().includes(settings._main_store_name.toLowerCase()))
+            ? (' | ' + settings._main_store_name)
+            : '';
+
         applyPageSEO({
             settings: settings,
-            title: title,
+            title: title + mainStoreSuffix,
             description: desc,
             keywords: settings.seo_keywords,
             image: img,
-            url: siteUrl + '/',
+            url: siteUrl + (brandPrefix ? brandPrefix + '/' : '/'),
             type: 'website',
             jsonLd: jsonLd,
             jsonLdId: 'website'
@@ -291,7 +298,13 @@ window.SEO = (function() {
             img = siteUrl + (img.startsWith('/') ? '' : '/') + img;
         }
 
-        var prodUrl = siteUrl + '/product?id=' + encodeURIComponent(product.id);
+        var brandPrefix = (typeof window !== 'undefined' && window.BRAND && typeof window.BRAND.isBrand === 'function' && window.BRAND.isBrand())
+            ? ('/' + window.BRAND.slug())
+            : '';
+        if (settings._main_store_name && settings._main_store_name !== storeName && !title.toLowerCase().includes(settings._main_store_name.toLowerCase())) {
+            title += ' | ' + settings._main_store_name;
+        }
+        var prodUrl = siteUrl + brandPrefix + '/product?id=' + encodeURIComponent(product.id);
         var finalPrice = (product.flash_sale_price > 0) ? (product.base_price - product.flash_sale_price) : (product.base_price || 0);
 
         // Product Schema with Multiple Images and Offer
@@ -391,8 +404,14 @@ window.SEO = (function() {
         if (catName) title = catName + ' Collection — ' + storeName;
         else if (searchTerm) title = 'Search: ' + searchTerm + ' — ' + storeName;
 
+        var brandPrefix = (typeof window !== 'undefined' && window.BRAND && typeof window.BRAND.isBrand === 'function' && window.BRAND.isBrand())
+            ? ('/' + window.BRAND.slug())
+            : '';
+        if (settings._main_store_name && settings._main_store_name !== storeName && !title.toLowerCase().includes(settings._main_store_name.toLowerCase())) {
+            title += ' | ' + settings._main_store_name;
+        }
         var desc = 'Browse our complete catalog of quality items on ' + storeName + '. Enjoy fast shipping and secure cash on delivery.';
-        var pageUrl = siteUrl + '/shop' + (window.location.search || '');
+        var pageUrl = siteUrl + brandPrefix + '/shop' + (window.location.search || '');
 
         var jsonLd = {
             "@context": "https://schema.org",

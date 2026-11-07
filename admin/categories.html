@@ -22,7 +22,8 @@
             <button class="hamburger-btn" onclick="openSidebar()">☰</button>
             <div><div class="page-title">Categories</div><div class="page-subtitle">Product categories</div></div>
         </div>
-        <div class="header-right">
+        <div class="header-right" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <select class="form-select" id="catBrandFilter" data-brand-filter="1" onchange="renderCats()" style="width:auto;min-width:190px;"></select>
             <button class="btn btn-primary" onclick="openModal()">+ Add Category</button>
         </div>
     </header>
@@ -30,8 +31,8 @@
         <div class="card" style="padding:0;">
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>Icon</th><th>Name</th><th>Sort Order</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody id="catBody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#8E8E93;">Loading...</td></tr></tbody>
+                    <thead><tr><th>Icon</th><th>Name</th><th>Brand</th><th>Sort Order</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="catBody"><tr><td colspan="6" style="text-align:center;padding:40px;color:#8E8E93;">Loading...</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -45,6 +46,8 @@
             <div class="modal-title" id="catModalTitle">Add Category</div>
             <button class="modal-close" onclick="closeModal()">✕</button>
         </div>
+        <div class="form-group"><label class="form-label">Brand / Storefront</label>
+            <select class="form-select" id="cBrand" data-brand-select="1"></select></div>
         <div class="form-group"><label class="form-label">Category Name *</label>
             <input class="form-input" id="cName" placeholder="e.g. T-Shirts"></div>
         <div class="form-group"><label class="form-label">Icon URL or HTML Code (e.g. SVG or Emoji)</label>
@@ -110,8 +113,12 @@ function loadCats() {
 
 function renderCats() {
     var html = '';
-    if (!allCats.length) { html = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8E8E93;">No categories yet</td></tr>'; }
-    allCats.forEach(function(c) {
+    var filterVal = (document.getElementById('catBrandFilter') || {}).value || 'all';
+    var filtered = allCats.filter(function(c) {
+        return window.matchesAdminBrandFilter ? window.matchesAdminBrandFilter(c.brand_id, filterVal) : true;
+    });
+    if (!filtered.length) { html = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#8E8E93;">No categories yet</td></tr>'; }
+    filtered.forEach(function(c) {
         var iconHtml = '';
         var iconUrl = c.icon_url || '';
         if (iconUrl.trim().startsWith('<')) {
@@ -125,6 +132,7 @@ function renderCats() {
         html += '<tr>' +
             '<td>' + iconHtml + '</td>' +
             '<td style="font-weight:600;color:var(--text-dark);">' + c.name + '</td>' +
+            '<td>' + (window.getAdminBrandBadge ? window.getAdminBrandBadge(c.brand_id) : '🏠 Main Site') + '</td>' +
             '<td>' + (c.sort_order || 0) + '</td>' +
             '<td><span class="badge ' + (c.is_active ? 'badge-delivered' : 'badge-cancelled') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td>' +
             '<td style="display:flex;gap:6px;">' +
@@ -139,6 +147,9 @@ function renderCats() {
 function openModal() {
     editingId = null; cActive = true;
     document.getElementById('catModalTitle').textContent = 'Add Category';
+    var filterVal = (document.getElementById('catBrandFilter') || {}).value || 'all';
+    var defaultBrand = (filterVal !== 'all' && filterVal !== '__main__') ? filterVal : '';
+    if (window.populateBrandSelect) window.populateBrandSelect('cBrand', defaultBrand);
     document.getElementById('cName').value = '';
     document.getElementById('cIcon').value = '';
     document.getElementById('cSort').value = 0;
@@ -149,6 +160,7 @@ function openModal() {
 function editCat(c) {
     editingId = c.id; cActive = c.is_active !== false;
     document.getElementById('catModalTitle').textContent = 'Edit Category';
+    if (window.populateBrandSelect) window.populateBrandSelect('cBrand', c.brand_id || '');
     document.getElementById('cName').value = c.name || '';
     document.getElementById('cIcon').value = c.icon_url || '';
     document.getElementById('cSort').value = c.sort_order || 0;
@@ -195,11 +207,12 @@ function saveCat() {
         }
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         payload.is_active = payload.is_active ? 1 : 0;
+        var brandIdVal = (document.getElementById('cBrand') && document.getElementById('cBrand').value) ? document.getElementById('cBrand').value : null;
         var p;
         if (editingId) {
-            p = d1AdminQuery("UPDATE categories SET name = ?, icon_url = ?, sort_order = ?, is_active = ? WHERE id = ?", [payload.name, payload.icon_url, payload.sort_order, payload.is_active, editingId]);
+            p = d1AdminQuery("UPDATE categories SET name = ?, icon_url = ?, sort_order = ?, is_active = ?, brand_id = ? WHERE id = ?", [payload.name, payload.icon_url, payload.sort_order, payload.is_active, brandIdVal, editingId]);
         } else {
-            p = d1AdminQuery("INSERT INTO categories (id, name, icon_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.name, payload.icon_url, payload.sort_order, payload.is_active]);
+            p = d1AdminQuery("INSERT INTO categories (id, name, icon_url, sort_order, is_active, brand_id) VALUES (?, ?, ?, ?, ?, ?)", [crypto.randomUUID(), payload.name, payload.icon_url, payload.sort_order, payload.is_active, brandIdVal]);
         }
         p.then(function() {
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadCats();
