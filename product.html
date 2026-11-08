@@ -504,6 +504,42 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.removeItem('__fbr_public_data');
                 }
             } catch(e) {}
+            // 1. প্রথমে চেক করবে ৫ মিনিটের ক্যাশ করা Master JSON ইতিমধ্যে ব্রাউজারে আছে কি না — থাকলে ওই JSON থেকেই প্রোডাক্ট ডাটা নিয়ে দেখাবে!
+            const brandKey = (window.BRAND && window.BRAND.slug) ? window.BRAND.slug : 'main';
+            const sessionJsonKey = '__fbr_master_json_5m_' + brandKey;
+            try {
+                const rawCached = sessionStorage.getItem(sessionJsonKey);
+                if (rawCached) {
+                    const parsed = JSON.parse(rawCached);
+                    if (parsed && parsed.ts && (Date.now() - parsed.ts < 300000) && parsed.data) {
+                        const mData = parsed.data;
+                        const allProds = (mData.product_chunks && mData.product_chunks.length)
+                            ? mData.product_chunks.flatMap(c => c.products || [])
+                            : (mData.products || []);
+                        const idLower = String(id).toLowerCase();
+                        const matchedProd = allProds.find(x =>
+                            String(x.id) === String(id) ||
+                            (x.sku && String(x.sku).toLowerCase() === idLower) ||
+                            (x.slug && String(x.slug).toLowerCase() === idLower)
+                        );
+                        if (matchedProd) {
+                            if (window.BRAND) window.BRAND.registerPublicData(mData);
+                            return {
+                                success: true,
+                                product: matchedProd,
+                                related_products: allProds.filter(x => String(x.id) !== String(matchedProd.id)).slice(0, 12),
+                                brand: mData.brand || null,
+                                brands: mData.brands || [],
+                                settings: mData.settings || {},
+                                categories: mData.categories || [],
+                                product_categories: mData.product_categories || []
+                            };
+                        }
+                    }
+                }
+            } catch(e) {}
+
+            // 2. যদি Cache Miss হয় (অর্থাৎ প্রোডাক্ট পেজে সরাসরি ঢুকেছে বা ৫ মিনিটের JSON নেই), তখন প্রক্সির কাছে শুধু এই ১টি প্রোডাক্টই ফেচ করার রিকোয়েস্ট যাবে!
             const apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
             const singlePath = "/api/public-data?product_id=" + encodeURIComponent(id);
             const primaryUrl = window.BRAND ? window.BRAND.api(apiBase + singlePath) : (apiBase + singlePath);

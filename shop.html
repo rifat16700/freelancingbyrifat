@@ -338,11 +338,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch(e) {}
 
+            const brandKey = (window.BRAND && window.BRAND.slug) ? window.BRAND.slug : 'main';
+            const sessionJsonKey = '__fbr_master_json_5m_' + brandKey;
+            const saveMasterJson5m = (dataObj) => {
+                try {
+                    sessionStorage.setItem(sessionJsonKey, JSON.stringify({ ts: Date.now(), data: dataObj }));
+                } catch(e) {}
+            };
+            try {
+                const rawCached = sessionStorage.getItem(sessionJsonKey);
+                if (rawCached) {
+                    const parsed = JSON.parse(rawCached);
+                    if (parsed && parsed.ts && (Date.now() - parsed.ts < 300000) && parsed.data) {
+                        if (window.BRAND) window.BRAND.registerPublicData(parsed.data);
+                        return parsed.data;
+                    }
+                }
+            } catch(e) {}
+
             const apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
             const targetUrl = window.BRAND ? window.BRAND.api(apiBase + "/api/public-data") : (apiBase + "/api/public-data");
             try {
                 const res = await fetch(targetUrl).then(r => r.json());
                 if (res && res.success && res.data) {
+                    saveMasterJson5m(res.data);
                     if (window.BRAND) window.BRAND.registerPublicData(res.data);
                     return res.data;
                 }
@@ -353,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const fbUrl = window.BRAND ? window.BRAND.api("/api/public-data") : "/api/public-data";
                     const fbRes = await fetch(fbUrl).then(r => r.json());
                     if (fbRes && fbRes.success && fbRes.data) {
+                        saveMasterJson5m(fbRes.data);
                         if (window.BRAND) window.BRAND.registerPublicData(fbRes.data);
                         return fbRes.data;
                     }

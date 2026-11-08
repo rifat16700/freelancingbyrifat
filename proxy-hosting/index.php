@@ -1,9 +1,12 @@
 <?php
 /**
  * ============================================================================
- * RANONEX UNIVERSAL PROXY HOSTING ENGINE (PHP Edition)
+ * RANONEX UNIVERSAL STATELESS PROXY ENGINE (PHP Edition)
  * Works on: AlwaysData, cPanel, DirectAdmin, CyberPanel, Plesk, InfinityFree, VPS
  * ============================================================================
+ * প্রক্সির কাজ শুধুমাত্র Cache Miss হলে D1 থেকে ডাটা ফেচ করে JSON আকারে ইউজার ও Cloudflare-কে দেওয়া।
+ * ক্যাশ করে রাখার সম্পূর্ণ কাজ Cloudflare Edge Cache (5 মিনিট) এবং ব্রাউজারের।
+ *
  * শুধু নিচের ৪টি লাইন পরিবর্তন করুন (অথবা আপনার সাইটের /stup-site পেজ থেকে জেনারেট করুন):
  */
 define('ALLOWED_SITE_URL',   'https://ranonex.shop');          // 1. আপনার মেইন সাইটের URL (Whitelist)
@@ -11,7 +14,7 @@ define('CF_ACCOUNT_ID',      'YOUR_CLOUDFLARE_ACCOUNT_ID');    // 2. Cloudflare 
 define('CF_D1_DATABASE_ID',  'YOUR_D1_DATABASE_ID');           // 3. Cloudflare D1 Database ID
 define('CF_API_TOKEN',       'YOUR_CF_API_TOKEN_D1_READ');     // 4. Cloudflare API Token (D1:Read Permission)
 
-define('CACHE_TTL_SECONDS',  300);                             // 5 মিনিট (300s) JSON Database Cache
+define('CACHE_TTL_SECONDS',  300);                             // Cloudflare 5 মিনিট (300s) Edge Cache TTL
 define('CHUNK_SIZE',         100);                             // প্রতি চ্যাঙ্কে ১০০টি করে প্রোডাক্ট
 
 // ============================================================================
@@ -58,42 +61,11 @@ if (($origin || $referer) && !$isAllowedOrigin) {
 header('Access-Control-Allow-Origin: ' . ($origin && $isAllowedOrigin ? $origin : ALLOWED_SITE_URL));
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: public, max-age=60, s-maxage=' . CACHE_TTL_SECONDS . ', stale-while-revalidate=600');
+// Cloudflare Edge & Browser caches this JSON response for 5 minutes (300 seconds)
+header('Cache-Control: public, max-age=' . CACHE_TTL_SECONDS . ', s-maxage=' . CACHE_TTL_SECONDS . ', stale-while-revalidate=600');
 
 // ============================================================================
-// 2. JSON FILE DATABASE CACHE HELPERS (json_db/)
-// ============================================================================
-$jsonDbDir = __DIR__ . '/json_db';
-if (!is_dir($jsonDbDir)) {
-    @mkdir($jsonDbDir, 0755, true);
-}
-
-function safeCacheName($str) {
-    return preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower((string)$str)) ?: 'main';
-}
-
-function readJsonCache($key) {
-    global $jsonDbDir;
-    if (!empty($_GET['nocache'])) return null;
-    $file = $jsonDbDir . '/' . $key . '.json';
-    if (is_file($file) && (time() - filemtime($file)) < CACHE_TTL_SECONDS) {
-        $raw = @file_get_contents($file);
-        if ($raw !== false && strlen($raw) > 2) return $raw;
-    }
-    return null;
-}
-
-function writeJsonCache($key, $jsonString) {
-    global $jsonDbDir;
-    $file = $jsonDbDir . '/' . $key . '.json';
-    $tmp  = $file . '.tmp.' . getmypid();
-    if (@file_put_contents($tmp, $jsonString) !== false) {
-        @rename($tmp, $file);
-    }
-}
-
-// ============================================================================
-// 3. CLOUDFLARE D1 REST API QUERY ENGINE (WITH D1:READ TOKEN)
+// 2. CLOUDFLARE D1 REST API QUERY ENGINE (WITH D1:READ TOKEN)
 // ============================================================================
 function d1Query($sql, $params = []) {
     $url = 'https://api.cloudflare.com/client/v4/accounts/' . CF_ACCOUNT_ID . '/d1/database/' . CF_D1_DATABASE_ID . '/query';
@@ -121,7 +93,7 @@ function d1Query($sql, $params = []) {
 }
 
 // ============================================================================
-// 4. BRAND & SHARED CATEGORY FILTERING HELPERS
+// 3. BRAND & SHARED CATEGORY FILTERING HELPERS
 // ============================================================================
 function parseSharedBrands($cat) {
     if (empty($cat['shared_brand_ids'])) return [];
@@ -139,19 +111,19 @@ function isCatVisibleOnBrand($cat, $brandId) {
 function mergeBrandSettings($rawSettings, $brand) {
     if (!$brand) return $rawSettings;
     $merged = $rawSettings;
-    if (!empty($brand['name']))     $merged['store_name']  = $brand['name'];
-    if (!empty($brand['tagline']))  $merged['tagline']     = $brand['tagline'];
-    if (!empty($brand['logo_url'])) $merged['logo_url']    = $brand['logo_url'];
-    if (!empty($brand['favicon_url'])) $merged['favicon_url'] = $brand['favicon_url'];
+    if (!empty($brand['name']))        $merged['store_name']   = $brand['name'];
+    if (!empty($brand['tagline']))     $merged['tagline']      = $brand['tagline'];
+    if (!empty($brand['logo_url']))    $merged['logo_url']     = $brand['logo_url'];
+    if (!empty($brand['favicon_url'])) $merged['favicon_url']  = $brand['favicon_url'];
     if (!empty($brand['footer_text'])) $merged['footer_about'] = $brand['footer_text'];
     return $merged;
 }
 
 // ============================================================================
-// 5. ROUTE DISPATCHER
+// 4. ROUTE DISPATCHER (Stateless Fetch -> Return JSON -> Cloudflare Caches It)
 // ============================================================================
-$reqUri   = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$endpoint = isset($_GET['endpoint']) ? $_GET['endpoint'] : $reqUri;
+$reqUri    = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$endpoint  = isset($_GET['endpoint']) ? $_GET['endpoint'] : $reqUri;
 $brandSlug = trim($_GET['brand'] ?? $_GET['brand_id'] ?? '');
 $productId = trim($_GET['product_id'] ?? '');
 $chunkNum  = isset($_GET['chunk']) ? max(1, (int)$_GET['chunk']) : 0;
@@ -164,19 +136,11 @@ if (strpos($endpoint, 'public-reviews') !== false) {
         echo json_encode(['success' => true, 'data' => []]);
         exit;
     }
-    $cacheKey = 'reviews_' . safeCacheName($productId);
-    $cached   = readJsonCache($cacheKey);
-    if ($cached !== null) {
-        echo $cached;
-        exit;
-    }
     $rows = d1Query(
         "SELECT * FROM reviews WHERE product_id = ? AND is_approved = 1 ORDER BY created_at DESC LIMIT 50",
         [$productId]
     );
-    $out = json_encode(['success' => true, 'data' => $rows], JSON_UNESCAPED_UNICODE);
-    writeJsonCache($cacheKey, $out);
-    echo $out;
+    echo json_encode(['success' => true, 'data' => $rows], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -184,13 +148,6 @@ if (strpos($endpoint, 'public-reviews') !== false) {
 // ROUTE B: /api/checkout-data (Targeted Checkout Data Only — NO Full Product DB!)
 // ----------------------------------------------------------------------------
 if (strpos($endpoint, 'checkout-data') !== false) {
-    $cacheKey = 'checkout_' . safeCacheName($brandSlug ?: 'main');
-    $cached   = readJsonCache($cacheKey);
-    if ($cached !== null) {
-        echo $cached;
-        exit;
-    }
-
     $allBrands   = d1Query("SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC");
     $activeBrand = null;
     if ($brandSlug) {
@@ -219,7 +176,7 @@ if (strpos($endpoint, 'checkout-data') !== false) {
         );
     }
 
-    $out = json_encode([
+    echo json_encode([
         'success' => true,
         'data'    => [
             'settings' => mergeBrandSettings($rawSettings, $activeBrand),
@@ -231,23 +188,13 @@ if (strpos($endpoint, 'checkout-data') !== false) {
             'add_once' => $addOnce
         ]
     ], JSON_UNESCAPED_UNICODE);
-
-    writeJsonCache($cacheKey, $out);
-    echo $out;
     exit;
 }
 
 // ----------------------------------------------------------------------------
-// ROUTE C: /api/public-data?product_id=<id> (Targeted Single Product Only — NO Full DB!)
+// ROUTE C: /api/public-data?product_id=<id> (Cache Miss on Product Page -> Single Product Only!)
 // ----------------------------------------------------------------------------
 if ($productId !== '') {
-    $cacheKey = 'product_' . safeCacheName($productId) . '_' . safeCacheName($brandSlug ?: 'main');
-    $cached   = readJsonCache($cacheKey);
-    if ($cached !== null) {
-        echo $cached;
-        exit;
-    }
-
     $pidLower    = strtolower($productId);
     $foundRows   = d1Query(
         "SELECT * FROM products WHERE is_active = 1 AND (id = ? OR lower(sku) = ? OR lower(slug) = ?) LIMIT 1",
@@ -297,7 +244,7 @@ if ($productId !== '') {
         }
     }
 
-    $out = json_encode([
+    echo json_encode([
         'success'            => true,
         'product'            => $found,
         'related_products'   => $related,
@@ -309,35 +256,12 @@ if ($productId !== '') {
         })),
         'product_categories' => $prodCats
     ], JSON_UNESCAPED_UNICODE);
-
-    writeJsonCache($cacheKey, $out);
-    echo $out;
     exit;
 }
 
 // ----------------------------------------------------------------------------
 // ROUTE D: /api/public-data (Master JSON with 100-Product Chunks)
 // ----------------------------------------------------------------------------
-$brandKey = safeCacheName($brandSlug ?: 'main');
-
-// If specific 100-product chunk requested (?chunk=1)
-if ($chunkNum > 0) {
-    $chunkCacheKey = 'chunk_' . $brandKey . '_' . $chunkNum;
-    $cachedChunk   = readJsonCache($chunkCacheKey);
-    if ($cachedChunk !== null) {
-        echo $cachedChunk;
-        exit;
-    }
-}
-
-$masterCacheKey = 'master_' . $brandKey;
-$cachedMaster   = readJsonCache($masterCacheKey);
-if ($cachedMaster !== null && $chunkNum === 0) {
-    echo $cachedMaster;
-    exit;
-}
-
-// Fetch from Cloudflare D1 and build 100-product chunks + Master JSON
 $allBrands   = d1Query("SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC");
 $activeBrand = null;
 if ($brandSlug) {
@@ -354,12 +278,12 @@ foreach ($allBrands as $b) {
     $brandMap[$b['id']] = $b;
 }
 
-$settingsRows = d1Query("SELECT * FROM settings WHERE id = 1");
-$rawSettings  = $settingsRows[0] ?? [];
+$settingsRows  = d1Query("SELECT * FROM settings WHERE id = 1");
+$rawSettings   = $settingsRows[0] ?? [];
 $mainStoreName = $rawSettings['store_name'] ?? 'Ranonex';
-$categories   = d1Query("SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order");
-$products     = d1Query("SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, created_at DESC");
-$prodCats     = d1Query("SELECT * FROM product_categories");
+$categories    = d1Query("SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order");
+$products      = d1Query("SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, created_at DESC");
+$prodCats      = d1Query("SELECT * FROM product_categories");
 
 if ($activeBrand) {
     $banners  = d1Query("SELECT * FROM banners WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order", [$activeBrand['id']]);
@@ -436,37 +360,33 @@ foreach ($products as $p) {
     $filteredProducts[] = $p;
 }
 
-// Organize products into 100-product chunks & save chunk JSON files
+// Organize products into 100-product chunks inside Master JSON
 $rawChunks = array_chunk($filteredProducts, CHUNK_SIZE);
 $productChunks = [];
 foreach ($rawChunks as $idx => $slice) {
     $cNum = $idx + 1;
-    $chunkObj = [
+    $productChunks[] = [
         'chunk'    => $cNum,
         'count'    => count($slice),
         'products' => $slice
     ];
-    $productChunks[] = $chunkObj;
-
-    $singleChunkJson = json_encode([
-        'success'        => true,
-        'chunk'          => $cNum,
-        'count'          => count($slice),
-        'total_products' => count($filteredProducts),
-        'has_more'       => ($cNum < count($rawChunks)),
-        'next_chunk'     => ($cNum < count($rawChunks)) ? ($cNum + 1) : null,
-        'products'       => $slice
-    ], JSON_UNESCAPED_UNICODE);
-    writeJsonCache('chunk_' . $brandKey . '_' . $cNum, $singleChunkJson);
 }
 
 if ($chunkNum > 0) {
-    $cachedChunk = readJsonCache('chunk_' . $brandKey . '_' . $chunkNum);
-    echo $cachedChunk ?: json_encode(['success' => true, 'chunk' => $chunkNum, 'count' => 0, 'products' => []]);
+    $slice = $rawChunks[$chunkNum - 1] ?? [];
+    echo json_encode([
+        'success'        => true,
+        'chunk'          => $chunkNum,
+        'count'          => count($slice),
+        'total_products' => count($filteredProducts),
+        'has_more'       => ($chunkNum < count($rawChunks)),
+        'next_chunk'     => ($chunkNum < count($rawChunks)) ? ($chunkNum + 1) : null,
+        'products'       => $slice
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$masterPayload = [
+echo json_encode([
     'success' => true,
     'data'    => [
         'settings'           => mergeBrandSettings($rawSettings, $activeBrand),
@@ -486,8 +406,4 @@ $masterPayload = [
         'home_sections'      => $sections,
         'product_categories' => $prodCats
     ]
-];
-
-$masterJson = json_encode($masterPayload, JSON_UNESCAPED_UNICODE);
-writeJsonCache($masterCacheKey, $masterJson);
-echo $masterJson;
+], JSON_UNESCAPED_UNICODE);

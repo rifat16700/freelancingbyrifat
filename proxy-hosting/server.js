@@ -1,8 +1,11 @@
 /**
  * ============================================================================
- * RANONEX UNIVERSAL PROXY HOSTING ENGINE (Node.js Edition)
+ * RANONEX UNIVERSAL STATELESS PROXY ENGINE (Node.js Edition)
  * Works on: AlwaysData (Node.js), cPanel Node.js Selector, VPS, Railway, Render
  * ============================================================================
+ * প্রক্সির কাজ শুধুমাত্র Cache Miss হলে D1 থেকে ডাটা ফেচ করে JSON আকারে ইউজার ও Cloudflare-কে দেওয়া।
+ * ক্যাশ করে রাখার সম্পূর্ণ কাজ Cloudflare Edge Cache (5 মিনিট) এবং ব্রাউজারের।
+ *
  * শুধু নিচের ৪টি লাইন পরিবর্তন করুন (অথবা আপনার সাইটের /stup-site পেজ থেকে জেনারেট করুন):
  */
 const ALLOWED_SITE_URL  = process.env.ALLOWED_SITE_URL  || 'https://ranonex.shop';          // 1. আপনার মেইন সাইটের URL (Whitelist)
@@ -10,45 +13,13 @@ const CF_ACCOUNT_ID     = process.env.CF_ACCOUNT_ID     || 'YOUR_CLOUDFLARE_ACCO
 const CF_D1_DATABASE_ID = process.env.CF_D1_DATABASE_ID || 'YOUR_D1_DATABASE_ID';           // 3. Cloudflare D1 Database ID
 const CF_API_TOKEN      = process.env.CF_API_TOKEN      || 'YOUR_CF_API_TOKEN_D1_READ';     // 4. Cloudflare API Token (D1:Read Permission)
 
-const CACHE_TTL_SECONDS = 300; // 5 মিনিট (300s) JSON Database Cache
+const CACHE_TTL_SECONDS = 300; // Cloudflare 5 মিনিট (300s) Edge Cache TTL
 const CHUNK_SIZE        = 100; // প্রতি চ্যাঙ্কে ১০০টি করে প্রোডাক্ট
 const PORT              = process.env.PORT || process.env.ALWAYSDATA_HTTPD_PORT || 8100;
 const HOST              = process.env.IP   || process.env.ALWAYSDATA_HTTPD_IP   || '0.0.0.0';
 
 const http = require('http');
-const fs   = require('fs');
-const path = require('path');
 const { URL } = require('url');
-
-const JSON_DB_DIR = path.join(__dirname, 'json_db');
-if (!fs.existsSync(JSON_DB_DIR)) {
-    fs.mkdirSync(JSON_DB_DIR, { recursive: true });
-}
-
-function safeCacheName(str) {
-    return String(str || 'main').toLowerCase().replace(/[^a-z0-9_-]/g, '_') || 'main';
-}
-
-function readJsonCache(key, noCache) {
-    if (noCache) return null;
-    try {
-        const file = path.join(JSON_DB_DIR, key + '.json');
-        const stat = fs.statSync(file);
-        if ((Date.now() - stat.mtimeMs) < CACHE_TTL_SECONDS * 1000) {
-            return fs.readFileSync(file, 'utf8');
-        }
-    } catch (e) {}
-    return null;
-}
-
-function writeJsonCache(key, jsonStr) {
-    try {
-        const file = path.join(JSON_DB_DIR, key + '.json');
-        const tmp  = file + '.tmp.' + process.pid;
-        fs.writeFileSync(tmp, jsonStr, 'utf8');
-        fs.renameSync(tmp, file);
-    } catch (e) {}
-}
 
 async function d1Query(sql, params = []) {
     const endpoint = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/d1/database/${CF_D1_DATABASE_ID}/query`;
@@ -136,7 +107,7 @@ const server = http.createServer(async (req, res) => {
         'Access-Control-Allow-Origin': cors.headerOrigin,
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': `public, max-age=60, s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate=600`
+        'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}, s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate=600`
     };
 
     const reqUrl    = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -144,7 +115,6 @@ const server = http.createServer(async (req, res) => {
     const brandSlug = (reqUrl.searchParams.get('brand') || reqUrl.searchParams.get('brand_id') || '').trim();
     const productId = (reqUrl.searchParams.get('product_id') || '').trim();
     const chunkNum  = parseInt(reqUrl.searchParams.get('chunk') || '0', 10) || 0;
-    const noCache   = reqUrl.searchParams.get('nocache') === '1';
 
     // 1. Reviews Endpoint (/api/public-reviews?product_id=<id>)
     if (pathname.includes('public-reviews')) {
@@ -152,28 +122,13 @@ const server = http.createServer(async (req, res) => {
             res.writeHead(200, commonHeaders);
             return res.end(JSON.stringify({ success: true, data: [] }));
         }
-        const cacheKey = 'reviews_' + safeCacheName(productId);
-        const cached   = readJsonCache(cacheKey, noCache);
-        if (cached) {
-            res.writeHead(200, commonHeaders);
-            return res.end(cached);
-        }
         const rows = await d1Query("SELECT * FROM reviews WHERE product_id = ? AND is_approved = 1 ORDER BY created_at DESC LIMIT 50", [productId]);
-        const out  = JSON.stringify({ success: true, data: rows });
-        writeJsonCache(cacheKey, out);
         res.writeHead(200, commonHeaders);
-        return res.end(out);
+        return res.end(JSON.stringify({ success: true, data: rows }));
     }
 
     // 2. Checkout Endpoint (/api/checkout-data) — ONLY Checkout Data, NEVER Full Products DB!
     if (pathname.includes('checkout-data')) {
-        const cacheKey = 'checkout_' + safeCacheName(brandSlug || 'main');
-        const cached   = readJsonCache(cacheKey, noCache);
-        if (cached) {
-            res.writeHead(200, commonHeaders);
-            return res.end(cached);
-        }
-
         const allBrands = await d1Query("SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC");
         const activeBrand = brandSlug
             ? (allBrands.find(b => String(b.slug || '').toLowerCase() === brandSlug.toLowerCase() || b.id === brandSlug) || null)
@@ -190,7 +145,8 @@ const server = http.createServer(async (req, res) => {
         ]);
 
         const rawSettings = settingsRows[0] || {};
-        const out = JSON.stringify({
+        res.writeHead(200, commonHeaders);
+        return res.end(JSON.stringify({
             success: true,
             data: {
                 settings: mergeBrandSettings(rawSettings, activeBrand),
@@ -201,21 +157,11 @@ const server = http.createServer(async (req, res) => {
                 promos,
                 add_once: addOnce
             }
-        });
-        writeJsonCache(cacheKey, out);
-        res.writeHead(200, commonHeaders);
-        return res.end(out);
+        }));
     }
 
-    // 3. Single Product Endpoint (/api/public-data?product_id=<id>) — ONLY Single Product + Related, NEVER Full DB!
+    // 3. Single Product Endpoint (/api/public-data?product_id=<id>) — Cache Miss on Product Page -> Single Product Only!
     if (productId) {
-        const cacheKey = 'product_' + safeCacheName(productId) + '_' + safeCacheName(brandSlug || 'main');
-        const cached   = readJsonCache(cacheKey, noCache);
-        if (cached) {
-            res.writeHead(200, commonHeaders);
-            return res.end(cached);
-        }
-
         const pidLower = productId.toLowerCase();
         const [foundRows, allBrands, settingsRows, categories, prodCats] = await Promise.all([
             d1Query("SELECT * FROM products WHERE is_active = 1 AND (id = ? OR lower(sku) = ? OR lower(slug) = ?) LIMIT 1", [productId, pidLower, pidLower]),
@@ -248,7 +194,8 @@ const server = http.createServer(async (req, res) => {
             }
         }
 
-        const out = JSON.stringify({
+        res.writeHead(200, commonHeaders);
+        return res.end(JSON.stringify({
             success: true,
             product: found,
             related_products: related,
@@ -257,34 +204,14 @@ const server = http.createServer(async (req, res) => {
             settings: mergeBrandSettings(rawSettings, prodBrand),
             categories: categories.filter(c => isCatVisibleOnBrand(c, prodBrand ? prodBrand.id : null)),
             product_categories: prodCats
-        });
-        writeJsonCache(cacheKey, out);
-        res.writeHead(200, commonHeaders);
-        return res.end(out);
+        }));
     }
 
     // 4. Master JSON + 100-Product Chunks (/api/public-data)
-    const brandKey = safeCacheName(brandSlug || 'main');
-    if (chunkNum > 0) {
-        const cachedChunk = readJsonCache(`chunk_${brandKey}_${chunkNum}`, noCache);
-        if (cachedChunk) {
-            res.writeHead(200, commonHeaders);
-            return res.end(cachedChunk);
-        }
-    }
-
-    const masterCacheKey = `master_${brandKey}`;
-    const cachedMaster   = readJsonCache(masterCacheKey, noCache);
-    if (cachedMaster && chunkNum === 0) {
-        res.writeHead(200, commonHeaders);
-        return res.end(cachedMaster);
-    }
-
     const allBrands = await d1Query("SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC");
     const activeBrand = brandSlug
         ? (allBrands.find(b => String(b.slug || '').toLowerCase() === brandSlug.toLowerCase() || b.id === brandSlug) || null)
         : null;
-    const brandMap = new Map(allBrands.map(b => [b.id, b]));
 
     const [settingsRows, categories, products, prodCats, banners, sections] = await Promise.all([
         d1Query("SELECT * FROM settings WHERE id = 1"),
@@ -309,18 +236,24 @@ const server = http.createServer(async (req, res) => {
         const slice = products.slice(i, i + CHUNK_SIZE);
         const cNum  = Math.floor(i / CHUNK_SIZE) + 1;
         prodChunks.push({ chunk: cNum, count: slice.length, products: slice });
-        writeJsonCache(`chunk_${brandKey}_${cNum}`, JSON.stringify({
+    }
+
+    if (chunkNum > 0) {
+        const chosen = prodChunks[chunkNum - 1] || { products: [] };
+        res.writeHead(200, commonHeaders);
+        return res.end(JSON.stringify({
             success: true,
-            chunk: cNum,
-            count: slice.length,
+            chunk: chunkNum,
+            count: chosen.products.length,
             total_products: products.length,
-            has_more: (i + CHUNK_SIZE) < products.length,
-            next_chunk: (i + CHUNK_SIZE) < products.length ? (cNum + 1) : null,
-            products: slice
+            has_more: chunkNum < prodChunks.length,
+            next_chunk: chunkNum < prodChunks.length ? (chunkNum + 1) : null,
+            products: chosen.products
         }));
     }
 
-    const masterOut = JSON.stringify({
+    res.writeHead(200, commonHeaders);
+    return res.end(JSON.stringify({
         success: true,
         data: {
             settings: mergeBrandSettings(rawSettings, activeBrand),
@@ -340,13 +273,9 @@ const server = http.createServer(async (req, res) => {
             home_sections: sections,
             product_categories: prodCats
         }
-    });
-
-    writeJsonCache(masterCacheKey, masterOut);
-    res.writeHead(200, commonHeaders);
-    return res.end(masterOut);
+    }));
 });
 
 server.listen(PORT, HOST, () => {
-    console.log(`Ranonex Universal Proxy Server running on http://${HOST}:${PORT}`);
+    console.log(`Ranonex Universal Stateless Proxy Server running on http://${HOST}:${PORT}`);
 });
