@@ -11,3 +11,5 @@
 /login.html /login 301
 /register.html /register 301
 /forgot-password.html /forgot-password 301
+/stup-site.html /stup-site 301
+/setup-site /stup-site 200

@@ -510,7 +510,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
             }).catch(function() { return { data: [] }; });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            var masterPromise = fetch((CONFIG.HF_API_BASE||"")+"/api/checkout-data").then(function(r){return r.json();}).catch(function(e){return {success:false, data:{}};});
+            var apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
+            var checkoutUrl = window.BRAND ? window.BRAND.api(apiBase + "/api/checkout-data") : (apiBase + "/api/checkout-data");
+            var masterPromise = fetch(checkoutUrl)
+                .then(function(r){ return r.json(); })
+                .then(function(res){
+                    if (res && res.success && res.data) return res;
+                    if (apiBase) {
+                        var fbUrl = window.BRAND ? window.BRAND.api("/api/checkout-data") : "/api/checkout-data";
+                        return fetch(fbUrl).then(function(r2){ return r2.json(); });
+                    }
+                    return res;
+                })
+                .catch(function(){
+                    if (apiBase) {
+                        var fbUrl = window.BRAND ? window.BRAND.api("/api/checkout-data") : "/api/checkout-data";
+                        return fetch(fbUrl).then(function(r2){ return r2.json(); }).catch(function(){ return {success:false, data:{}}; });
+                    }
+                    return {success:false, data:{}};
+                });
             p1 = masterPromise.then(function(r) {
                 var doc = (r.success && r.data && r.data.settings) ? r.data.settings : {};
                 if (typeof doc.messaging_apps === 'string') try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e){}
@@ -1660,7 +1678,7 @@ function placeOrder() {
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insertPromise = fetch((CONFIG.HF_API_BASE || '') + '/api/save-order', {
+        insertPromise = fetch('/api/save-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderData: orderData, orders: splitOrders })
@@ -1727,7 +1745,7 @@ function initiateGatewayPayment(orderId, total, orderData, splitOrders) {
         var ordersPayload = (Array.isArray(splitOrders) && splitOrders.length > 0 ? splitOrders : [orderData]).map(function(o) {
             return Object.assign({}, o, { payment_status: 'Unpaid', status: 'Pending' });
         });
-        insertPromise = fetch((CONFIG.HF_API_BASE || '') + '/api/save-order', {
+        insertPromise = fetch('/api/save-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderData: ordersPayload[0], orders: ordersPayload })

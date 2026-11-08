@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
         p4 = appwriteDatabases.listDocuments(APP_DB, 'product_categories', [AppwriteQuery.limit(5000)]).then(function(res) { return { data: res.documents.map(function(d){ d.id=d.$id; return d; }) }; }).catch(function() { return { data: [] }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         const fetchPublicData = async () => {
-            // Local caching disabled as requested: always fetch fresh from API (caching is managed via Cloudflare Domain Cache Rules)
+            // Local caching disabled as requested: always fetch fresh from Proxy/API (caching is managed via Proxy JSON DB + Cloudflare Domain Cache Rules)
             const cacheKey = '__fbr_pub_data_v4_' + (window.location.hostname || 'main');
             try {
                 if (typeof window.localStorage !== 'undefined') {
@@ -338,17 +338,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch(e) {}
 
+            const apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
+            const targetUrl = window.BRAND ? window.BRAND.api(apiBase + "/api/public-data") : (apiBase + "/api/public-data");
             try {
-                const res = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-data").then(r => r.json());
+                const res = await fetch(targetUrl).then(r => r.json());
                 if (res && res.success && res.data) {
+                    if (window.BRAND) window.BRAND.registerPublicData(res.data);
                     return res.data;
                 }
             } catch(e) {}
 
+            if (apiBase) {
+                try {
+                    const fbUrl = window.BRAND ? window.BRAND.api("/api/public-data") : "/api/public-data";
+                    const fbRes = await fetch(fbUrl).then(r => r.json());
+                    if (fbRes && fbRes.success && fbRes.data) {
+                        if (window.BRAND) window.BRAND.registerPublicData(fbRes.data);
+                        return fbRes.data;
+                    }
+                } catch(e) {}
+            }
+
             try {
                 const fRes = await fetch("/public_data.json").then(r => r.json());
                 const fData = fRes.data || fRes;
-                if (fData && fData.products) return fData;
+                if (fData && (fData.products || fData.product_chunks)) return fData;
             } catch(e) {}
 
             return null;
@@ -362,10 +376,9 @@ document.addEventListener('DOMContentLoaded', function() {
         p2 = pubDataPromise.then(d => ({ data: d ? d.categories : [] }));
         p3 = pubDataPromise.then(d => {
             if (!d) return { data: [] };
-            let prods = d.products;
-            if ((!prods || !prods.length) && d.product_chunks && d.product_chunks.length) {
-                prods = d.product_chunks.flatMap(c => c.products);
-            }
+            let prods = (d.product_chunks && d.product_chunks.length)
+                ? d.product_chunks.flatMap(c => c.products || [])
+                : (d.products || []);
             return {
                 data: (prods || []).map(p => { 
                     try { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); } catch(e) { p.gallery_images = []; }

@@ -12,7 +12,8 @@
 (function () {
     var RESERVED = {
         'api': 1, 'admin': 1, 'assets': 1, 'functions': 1, 'migrations': 1, 'scripts': 1,
-        'supabase': 1, 'worker': 1, 'wp': 1, 'shop': 1, 'product': 1, 'cart': 1,
+        'supabase': 1, 'worker': 1, 'wp': 1, 'stup-site': 1, 'setup-site': 1, 'proxy-hosting': 1,
+        'shop': 1, 'product': 1, 'cart': 1,
         'checkout': 1, 'track': 1, 'policies': 1, 'team': 1, 'profile': 1, 'login': 1,
         'register': 1, 'forgot-password': 1, 'success': 1, 'invoice': 1, 'offline': 1,
         '404': 1, 'fraud-chack': 1, 'full-page-demo': 1, 'hero-v2-demo': 1,

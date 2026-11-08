@@ -13,6 +13,9 @@ const rawBrandColors = (process.env.BRAND_COLORS || process.env.THEME_COLORS || 
 // ── Site Canonical URL from Cloudflare Env Var (SITE_URL বা CANONICAL_URL) ──
 const rawSiteUrl = (process.env.SITE_URL || process.env.CANONICAL_URL || '').toString().trim();
 
+// ── External Proxy Hosting URL from Cloudflare Env Var (PROXY_API_URL বা HF_API_BASE) ──
+const rawProxyUrl = (process.env.PROXY_API_URL || process.env.PROXY_URL || process.env.HF_API_BASE || '').toString().trim().replace(/\/+$/, '');
+
 const configJs = `// ============================================================
 // Auto-generated during Cloudflare Build
 // ============================================================
@@ -30,7 +33,9 @@ var CONFIG = {
     // ── DB Provider ──────────────────────────────────────────
     DB_PROVIDER: '${s(process.env.DB_PROVIDER) || 'cf_db'}',
     
-    HF_API_BASE: '',
+    // ── Proxy Hosting Base URL (Cloudflare Env Var: PROXY_API_URL) ──
+    PROXY_API_URL: '${s(rawProxyUrl)}',
+    HF_API_BASE: '${s(rawProxyUrl)}',
 
     // ── Supabase ─────────────────────────────────────────────
     SUPABASE_URL:      '${s(process.env.SUPABASE_URL)}',

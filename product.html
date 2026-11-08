@@ -504,62 +504,78 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.removeItem('__fbr_public_data');
                 }
             } catch(e) {}
+            const apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
+            const singlePath = "/api/public-data?product_id=" + encodeURIComponent(id);
+            const primaryUrl = window.BRAND ? window.BRAND.api(apiBase + singlePath) : (apiBase + singlePath);
             try {
-                const res = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-data").then(r => r.json());
-                if (res && res.success && res.data) {
-                    return res.data;
+                const spRes = await fetch(primaryUrl).then(r => r.json());
+                if (spRes && spRes.success && spRes.product) {
+                    if (window.BRAND) {
+                        window.BRAND.registerPublicData({
+                            brand: spRes.brand,
+                            brands: spRes.brands,
+                            products: [spRes.product].concat(spRes.related_products || [])
+                        });
+                    }
+                    return spRes;
                 }
             } catch(e) {}
-            try {
-                const fRes = await fetch("/public_data.json").then(r => r.json());
-                const fData = fRes.data || fRes;
-                if (fData && fData.products) return fData;
-            } catch(e) {}
-            return null;
-        };
-        const fetchReviews = async (pid) => {
-            try {
-                const res = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-reviews?product_id="+pid).then(r=>r.json());
-                return res.success ? res.data : [];
-            } catch(e) { return []; }
-        };
-
-        const pubDataPromise = fetchPublicData();
-        pubDataPromise.then(function(d) {
-            if (d && d.tawk_widget_url && window.initTawkTo) window.initTawkTo(d.tawk_widget_url);
-        });
-        const reviewsPromise = fetchReviews(id);
-
-        p1 = pubDataPromise.then(d => ({ data: d ? d.settings : null }));
-        p4 = pubDataPromise.then(d => {
-            if (!d) return { data: [] };
-            let prods = d.products;
-            if ((!prods || !prods.length) && d.product_chunks && d.product_chunks.length) {
-                prods = d.product_chunks.flatMap(c => c.products);
-            }
-            return {
-                data: (prods || []).map(p => { 
-                    try { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); } catch(e) { p.gallery_images = []; }
-                    try { p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); } catch(e) { p.variants = []; }
-                    return p; 
-                })
-            };
-        });
-        p2 = p4.then(async res => {
-            let idLower = String(id).toLowerCase();
-            let found = res.data.find(x => String(x.id) === String(id) || (x.sku && String(x.sku).toLowerCase() === idLower) || (x.slug && String(x.slug).toLowerCase() === idLower));
-            if (!found) {
+            if (apiBase) {
                 try {
-                    const spRes = await fetch((CONFIG.HF_API_BASE||"")+"/api/public-data?product_id="+encodeURIComponent(id)).then(r => r.json());
-                    if (spRes && spRes.success && spRes.product) {
-                        let p = spRes.product;
-                        try { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); } catch(e) { p.gallery_images = []; }
-                        try { p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); } catch(e) { p.variants = []; }
-                        return { data: p };
+                    const fbUrl = window.BRAND ? window.BRAND.api(singlePath) : singlePath;
+                    const fbRes = await fetch(fbUrl).then(r => r.json());
+                    if (fbRes && fbRes.success && fbRes.product) {
+                        if (window.BRAND) {
+                            window.BRAND.registerPublicData({
+                                brand: fbRes.brand,
+                                brands: fbRes.brands,
+                                products: [fbRes.product].concat(fbRes.related_products || [])
+                            });
+                        }
+                        return fbRes;
                     }
                 } catch(e) {}
             }
-            return { data: found || null };
+            return null;
+        };
+        const fetchReviews = async (pid) => {
+            const apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
+            const revPath = "/api/public-reviews?product_id=" + encodeURIComponent(pid);
+            try {
+                const res = await fetch(apiBase + revPath).then(r=>r.json());
+                if (res && res.success) return res.data || [];
+            } catch(e) {}
+            if (apiBase) {
+                try {
+                    const fbRes = await fetch(revPath).then(r=>r.json());
+                    if (fbRes && fbRes.success) return fbRes.data || [];
+                } catch(e) {}
+            }
+            return [];
+        };
+
+        const parseProductFields = (p) => {
+            if (!p) return null;
+            try { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); } catch(e) { p.gallery_images = []; }
+            try { p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); } catch(e) { p.variants = []; }
+            return p;
+        };
+
+        const pubDataPromise = fetchPublicData();
+        const reviewsPromise = fetchReviews(id);
+
+        p1 = pubDataPromise.then(d => ({ data: d ? d.settings : null }));
+        p2 = pubDataPromise.then(d => ({ data: (d && d.product) ? parseProductFields(d.product) : null }));
+        p4 = pubDataPromise.then(d => {
+            if (!d) return { data: [] };
+            let list = [];
+            if (d.product) list.push(parseProductFields(Object.assign({}, d.product)));
+            if (Array.isArray(d.related_products)) {
+                d.related_products.forEach(rp => {
+                    if (rp) list.push(parseProductFields(Object.assign({}, rp)));
+                });
+            }
+            return { data: list };
         });
         p5 = pubDataPromise.then(d => ({ data: d ? d.product_categories : [] }));
         p3 = reviewsPromise.then(d => ({ data: d || [] }));

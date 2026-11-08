@@ -10,6 +10,7 @@
 
 export const RESERVED_SLUGS = new Set([
     'api', 'admin', 'assets', 'functions', 'migrations', 'scripts', 'supabase', 'worker', 'wp',
+    'stup-site', 'setup-site', 'stup-site.html', 'setup-site.html', 'proxy-hosting',
     'shop', 'product', 'cart', 'checkout', 'track', 'policies', 'team', 'profile',
     'login', 'register', 'forgot-password', 'success', 'invoice', 'offline', '404',
     'fraud-chack', 'full-page-demo', 'hero-v2-demo', 'pricing-section', 'premium_e_commerce_pricing',

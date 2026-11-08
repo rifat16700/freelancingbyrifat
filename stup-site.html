@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site & Proxy Setup Guide — /stup-site</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --card: #131b2e;
+            --card-alt: #19233c;
+            --border: rgba(255,255,255,0.1);
+            --primary: #3b82f6;
+            --accent: #10b981;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Hind Siliguri', 'Inter', sans-serif;
+            line-height: 1.7;
+            padding: 32px 16px 80px;
+        }
+        .container { max-width: 1040px; margin: 0 auto; }
+        .hero {
+            background: linear-gradient(135deg, rgba(59,130,246,0.18), rgba(16,185,129,0.12));
+            border: 1px solid rgba(59,130,246,0.35);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 28px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16,185,129,0.18);
+            color: #34d399;
+            border: 1px solid rgba(16,185,129,0.35);
+            padding: 4px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; color: #fff; }
+        h2 { font-size: 20px; font-weight: 700; margin-bottom: 14px; color: #fff; display: flex; align-items: center; gap: 10px; }
+        h3 { font-size: 16px; font-weight: 700; margin: 14px 0 8px; color: #93c5fd; }
+        p { color: var(--muted); font-size: 15px; margin-bottom: 10px; }
+        .section-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 26px;
+            margin-bottom: 24px;
+        }
+        .step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            background: var(--primary);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 14px;
+        }
+        .info-box {
+            background: var(--card-alt);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+        }
+        .info-box strong { color: #fff; }
+        .alert-warn {
+            background: rgba(245,158,11,0.12);
+            border-left: 4px solid var(--warn);
+            padding: 14px 18px;
+            border-radius: 10px;
+            color: #fde68a;
+            font-size: 14.5px;
+            margin: 14px 0;
+        }
+        .alert-ok {
+            background: rgba(16,185,129,0.12);
+            border-left: 4px solid var(--accent);
+            padding: 14px 18px;
+            border-radius: 10px;
+            color: #a7f3d0;
+            font-size: 14.5px;
+            margin: 14px 0;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 14px;
+            margin: 18px 0;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: #090d16;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .tab-btn {
+            padding: 9px 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card-alt);
+            color: #cbd5e1;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .code-wrap {
+            position: relative;
+            background: #070a12;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .code-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .code-toolbar span {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            color: #93c5fd;
+            font-weight: 600;
+        }
+        .btn-row { display: flex; gap: 8px; }
+        .btn {
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            font-size: 12.5px;
+            cursor: pointer;
+            color: #fff;
+            background: var(--primary);
+            transition: 0.2s;
+        }
+        .btn.green { background: var(--accent); color: #052e16; }
+        .btn:hover { opacity: 0.92; transform: translateY(-1px); }
+        pre {
+            padding: 16px;
+            overflow-x: auto;
+            max-height: 420px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            line-height: 1.55;
+            color: #e2e8f0;
+        }
+        code.inline {
+            background: rgba(59,130,246,0.16);
+            color: #93c5fd;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+        ul.steps-list {
+            padding-left: 20px;
+            color: #cbd5e1;
+            font-size: 14.5px;
+        }
+        ul.steps-list li { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="hero">
+        <div class="badge">⚙️ OFFICIAL SETUP & CONFIGURATION HUB (/stup-site)</div>
+        <h1>Universal External Proxy Hosting + Smart JSON Database Setup</h1>
+        <p>যেকোনো প্যানেল বা হোস্টিংয়ে (AlwaysData, cPanel, DirectAdmin, VPS, Node.js বা PHP) মাত্র ৪টি তথ্য বসিয়ে আপনার সাইটের ডাটা ফেচ, ১০০-প্রোডাক্ট চ্যাঙ্কিং, সিঙ্গেল প্রোডাক্ট ফেচ, চেকআউট ডাটা ফেচ এবং Cloudflare 5-Min Edge Caching সেটআপ করার সম্পূর্ণ গাইড।</p>
+    </div>
+
+    <!-- ARCHITECTURE OVERVIEW -->
+    <div class="section-card">
+        <h2><span class="step-num">★</span> এই নতুন প্রক্সি ও JSON সিস্টেম কীভাবে কাজ করে?</h2>
+        <div class="grid-2">
+            <div class="info-box">
+                <h3>📦 ১. Master JSON + 100-Product Chunks</h3>
+                <p>হোম ও শপ পেজে প্রোডাক্ট লোড করার সময় প্রক্সি সার্ভার ১০০টি করে প্রোডাক্ট চ্যাঙ্কে (<code class="inline">chunk_1.json</code>, <code class="inline">chunk_2.json</code>...) ভাগ করে <code class="inline">master_main.json</code> ফাইলে রাখে এবং সেই JSON ফাইলকেই ডাটাবেজ হিসেবে ব্যবহার করে।</p>
+            </div>
+            <div class="info-box">
+                <h3>🎯 ২. সিঙ্গেল প্রোডাক্ট পেজে শুধু ১টি প্রোডাক্ট ফেচ</h3>
+                <p>কাস্টমার যখন কোনো প্রোডাক্ট পেজে (<code class="inline">/product?id=...</code>) ঢুকবে এবং ক্যাশ মিস হবে, তখন পুরো ডাটাবেজ ফেচ না করে প্রক্সি শুধুমাত্র ওই ১টি প্রোডাক্ট ও তার রিলেটেড প্রোডাক্ট ফেচ করবে (<code class="inline">product_&lt;id&gt;.json</code>)।</p>
+            </div>
+            <div class="info-box">
+                <h3>🛒 ৩. চেকআউট পেজে শুধুই চেকআউট ডাটা</h3>
+                <p>চেকআউট পেজে (<code class="inline">/checkout</code>) প্রোডাক্ট ক্যাটালগ লোড না করে শুধুমাত্র ডেলিভারি জোন, প্রোমো কোড ও পেমেন্ট সেটিংস (<code class="inline">checkout_main.json</code>) কল করা হয়। আর **Order Confirm** আগের মতোই সরাসরি Cloudflare Function (<code class="inline">/api/save-order</code>) হ্যান্ডেল করে।</p>
+            </div>
+            <div class="info-box">
+                <h3>🔒 ৪. ডোমেইন হোয়াইটলিস্ট ও D1 API Token</h3>
+                <p>Cloudflare সাধারণ ব্রাউজার রিকোয়েস্টে CORS এরর দেয়—তাই প্রক্সি সার্ভারে <code class="inline">D1:Read</code> পারমিশনসহ API Token দেওয়া থাকে এবং <code class="inline">ALLOWED_SITE_URL</code> দিয়ে আপনার মেইন সাইট ছাড়া অন্য সব ডোমেইন ব্লক করা থাকে।</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 1: HOW TO GET CLOUDFLARE CREDENTIALS -->
+    <div class="section-card">
+        <h2><span class="step-num">১</span> Cloudflare থেকে প্রয়োজনীয় ৩টি তথ্য কোথায় ও কীভাবে পাবেন?</h2>
+        <p>প্রক্সি ফাইলটি Cloudflare D1 ডাটাবেজ থেকে ডাটা পড়ার জন্য নিচের ৩টি জিনিস লাগবে:</p>
+
+        <div class="grid-2">
+            <div class="info-box">
+                <h3>১. CF_ACCOUNT_ID (Account ID)</h3>
+                <ul class="steps-list">
+                    <li><a href="https://dash.cloudflare.com" target="_blank" style="color:#60a5fa;">Cloudflare Dashboard</a>-এ লগইন করুন।</li>
+                    <li>বাম পাশের মেনু থেকে <strong>Workers & Pages</strong>-এ যান।</li>
+                    <li>ডান পাশের সাইডবারে <strong>Account ID</strong> লেখা দেখবেন — ক্লিক করে কপি করুন।</li>
+                </ul>
+            </div>
+            <div class="info-box">
+                <h3>২. CF_D1_DATABASE_ID (Database ID)</h3>
+                <ul class="steps-list">
+                    <li>Cloudflare Dashboard-এর বাম মেনু থেকে <strong>Workers & Pages &rarr; D1 SQL Database</strong>-এ যান।</li>
+                    <li>আপনার স্টোরের ডাটাবেজটিতে ক্লিক করুন।</li>
+                    <li>উপরে <strong>Database ID</strong> দেখতে পাবেন (যেমন: <code class="inline">xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code>) — কপি করুন।</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="info-box" style="margin-top:16px;">
+            <h3>৩. CF_API_TOKEN (D1:Read Permission সহ API Token তৈরির নিয়ম)</h3>
+            <div class="alert-warn">
+                <strong>কেন API Token লাগবে?</strong> Cloudflare D1 ডাটাবেজকে বাইরের হোস্টিং (যেমন AlwaysData বা cPanel) থেকে সরাসরি কল করলে ব্লক করে দেয়। তাই একটি <strong>Read-Only API Token</strong> তৈরি করে প্রক্সি ফাইলে দিতে হবে যাতে প্রক্সি নিরাপদে ডাটাবেজ পড়তে পারে।
+            </div>
+            <ul class="steps-list">
+                <li>Cloudflare Dashboard-এর একদম উপরের ডান কোণায় <strong>Profile Icon &rarr; My Profile &rarr; API Tokens</strong>-এ যান (অথবা সরাসরি <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" style="color:#60a5fa;">dash.cloudflare.com/profile/api-tokens</a> লিংকে যান)।</li>
+                <li><strong>Create Token</strong> বাটনে ক্লিক করুন &rarr; নিচে <strong>Create Custom Token</strong>-এর পাশে <strong>Get started</strong>-এ ক্লিক করুন।</li>
+                <li><strong>Token name:</strong> যেকোনো নাম দিন (যেমন: <code class="inline">Ranonex-Proxy-D1-Read</code>)।</li>
+                <li><strong>Permissions:</strong> প্রথম বক্সে <code class="inline">Account</code> সিলেক্ট করুন &rarr; দ্বিতীয় বক্সে <code class="inline">D1</code> সিলেক্ট করুন &rarr; তৃতীয় বক্সে <code class="inline">Read</code> সিলেক্ট করুন।</li>
+                <li>নিচে <strong>Continue to summary &rarr; Create Token</strong>-এ ক্লিক করুন এবং যে টোকেনটি দেখাবে সেটি কপি করে নিচের বক্সে বসান।</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- STEP 2: INTERACTIVE PROXY FILE GENERATOR -->
+    <div class="section-card">
+        <h2><span class="step-num">২</span> ১-ক্লিক প্রক্সি ফাইল জেনারেটর (PHP ও Node.js)</h2>
+        <p>নিচের ৪টি ঘরে আপনার তথ্য বসালে নিচের প্রক্সি কোড অটোমেটিক আপডেট হয়ে যাবে। এরপর <strong>Copy Code</strong> বা <strong>Download File</strong> বাটনে ক্লিক করে আপনার হোস্টিংয়ে আপলোড করুন:</p>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>1. ALLOWED_SITE_URL (আপনার মেইন সাইট)</label>
+                <input type="text" id="inpSiteUrl" value="https://ranonex.shop" oninput="updateGeneratedCode()">
+            </div>
+            <div class="form-group">
+                <label>2. CF_ACCOUNT_ID (Account ID)</label>
+                <input type="text" id="inpAccountId" placeholder="যেমন: 9a8b7c6d5e4f..." oninput="updateGeneratedCode()">
+            </div>
+            <div class="form-group">
+                <label>3. CF_D1_DATABASE_ID (D1 Database ID)</label>
+                <input type="text" id="inpDbId" placeholder="যেমন: 12345678-abcd-..." oninput="updateGeneratedCode()">
+            </div>
+            <div class="form-group">
+                <label>4. CF_API_TOKEN (D1:Read API Token)</label>
+                <input type="text" id="inpApiToken" placeholder="আপনার Cloudflare API Token" oninput="updateGeneratedCode()">
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" id="tabPhp" onclick="switchTab('php')">🐘 PHP Proxy (index.php — AlwaysData / cPanel / DirectAdmin)</button>
+            <button class="tab-btn" id="tabHtaccess" onclick="switchTab('htaccess')">⚙️ Apache .htaccess (PHP রাউটিংয়ের জন্য)</button>
+            <button class="tab-btn" id="tabNode" onclick="switchTab('node')">🟢 Node.js Proxy (server.js — AlwaysData Node / VPS)</button>
+        </div>
+
+        <div class="code-wrap">
+            <div class="code-toolbar">
+                <span id="codeFileName">index.php</span>
+                <div class="btn-row">
+                    <button class="btn" onclick="copyCurrentCode()">📋 Copy Code</button>
+                    <button class="btn green" onclick="downloadCurrentCode()">⬇️ Download File</button>
+                </div>
+            </div>
+            <pre><code id="generatedCodeBox">Loading...</code></pre>
+        </div>
+
+        <div class="alert-ok" style="margin-top:16px;">
+            <strong>হোস্টিংয়ে আপলোড করার নিয়ম:</strong><br>
+            • <strong>PHP হোস্টিং (AlwaysData / cPanel):</strong> আপনার হোস্টিংয়ের রুট ফোল্ডারে (<code class="inline">www/</code> বা <code class="inline">public_html/</code>) উপরের <code class="inline">index.php</code> এবং <code class="inline">.htaccess</code> ফাইল দুটি আপলোড করে দিন। প্রক্সি নিজে থেকেই <code class="inline">json_db/</code> ফোল্ডার বানিয়ে ১০০টি করে প্রোডাক্টের মাস্টার JSON ও সিঙ্গেল প্রোডাক্ট JSON ক্যাশ করে রাখবে!<br>
+            • <strong>Node.js হোস্টিং:</strong> <code class="inline">server.js</code> ফাইলটি আপলোড করে রান কমান্ডে <code class="inline">node server.js</code> দিন।
+        </div>
+    </div>
+
+    <!-- STEP 3: CLOUDFLARE PAGES ENVIRONMENT VARIABLE -->
+    <div class="section-card">
+        <h2><span class="step-num">৩</span> Cloudflare Pages-এর Environment Variable-এ প্রক্সি লিংক যুক্ত করুন</h2>
+        <p>আপনার মেইন ওয়েবসাইট যেন ফাংশনের বদলে আপনার প্রক্সি হোস্টিং থেকে ডাটা আনে, সেজন্য Cloudflare-এ শুধু ১টি Environment Variable যোগ করুন:</p>
+        <ul class="steps-list">
+            <li>Cloudflare Dashboard &rarr; <strong>Workers & Pages</strong> &rarr; আপনার ওয়েবসাইট প্রজেক্টে ক্লিক করুন।</li>
+            <li>উপরে <strong>Settings &rarr; Environment variables</strong>-এ যান।</li>
+            <li><strong>Add variable</strong>-এ ক্লিক করে নিচের মতো বসান:
+                <div style="margin:10px 0;padding:12px;background:#090d16;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:13px;">
+                    Variable name: <strong style="color:#34d399;">PROXY_API_URL</strong><br>
+                    Value: <strong style="color:#60a5fa;">https://your-proxy-domain.alwaysdata.net</strong> <span style="color:#94a3b8;">(শেষে / দেবেন না)</span>
+                </div>
+            </li>
+            <li><strong>Save</strong> করুন এবং <strong>Deployments</strong> ট্যাবে গিয়ে <strong>Retry deployment</strong> দিন। ব্যস!</li>
+        </ul>
+    </div>
+
+    <!-- STEP 4: CLOUDFLARE 5-MIN CACHE RULE & WWW REDIRECT & SUBDOMAIN -->
+    <div class="section-card">
+        <h2><span class="step-num">৪</span> Cloudflare 5-Min Domain Cache Rule, Subdomain (`shop.domain.com`) এবং `www.` Redirect</h2>
+
+        <h3>ক) `www.` থেকে মেইন ডোমেইনে 301 Redirect (যাতে `www` ও ছাড়া আলাদা ২ বার ক্যাশ না হয়)</h3>
+        <ul class="steps-list">
+            <li>Cloudflare Dashboard-এ আপনার ডোমেইনে ক্লিক করুন &rarr; বাম মেনু থেকে <strong>Rules &rarr; Redirect Rules</strong> (অথবা <strong>Overview &rarr; Bulk Redirects / Single Redirects</strong>)-এ যান।</li>
+            <li><strong>Create rule</strong>-এ ক্লিক করুন:
+                <br>• <strong>Rule name:</strong> <code class="inline">Redirect www to root</code>
+                <br>• <strong>When incoming requests match:</strong> Custom filter expression &rarr; Field: <code class="inline">Hostname</code>, Operator: <code class="inline">equals</code>, Value: <code class="inline">www.ranonex.shop</code>
+                <br>• <strong>Then:</strong> Type: <code class="inline">Dynamic</code>, Expression: <code class="inline">concat("https://ranonex.shop", http.request.uri.path)</code>, Status code: <code class="inline">301</code>, Preserve query string: ✅ Check দিন।
+            </li>
+        </ul>
+
+        <h3 style="margin-top:20px;">খ) ৫ মিনিটের Cloudflare Cache Rule (মেইন ডোমেইন অথবা শুধুই `shop.domain.com` সাবডোমেইনের জন্য)</h3>
+        <ul class="steps-list">
+            <li>Cloudflare-এ আপনার ডোমেইনে ঢুকে বাম মেনু থেকে <strong>Caching &rarr; Cache Rules &rarr; Create rule</strong>-এ যান।</li>
+            <li><strong>যদি মেইন ডোমেইনে সাইট থাকে:</strong>
+                <br>• Field: <code class="inline">URI Path</code> &rarr; Operator: <code class="inline">starts with</code> &rarr; Value: <code class="inline">/api/public-data</code> (এবং OR দিয়ে <code class="inline">/api/checkout-data</code> ও <code class="inline">/api/public-reviews</code>)।
+            </li>
+            <li><strong>যদি আপনার মেইন ডোমেইন ব্র্যান্ড ডোমেইন হয় এবং শপটি `shop.domain.com` সাবডোমেইনে থাকে:</strong>
+                <br>• হ্যাঁ! আপনি শুধুমাত্র ওই সাবডোমেইনটির জন্যই ক্যাশিং করাতে পারবেন। ফিল্টারে দিন:
+                <br><code class="inline">(http.host eq "shop.domain.com")</code> — তাহলে মেইন ব্র্যান্ড ডোমেইনে কোনো প্রভাব না ফেলেই শুধুমাত্র <code class="inline">shop.domain.com</code>-এর সব ডাটা ক্যাশ হবে!
+            </li>
+            <li><strong>Cache eligibility:</strong> <code class="inline">Eligible for cache</code> সিলেক্ট করুন।</li>
+            <li><strong>Edge TTL:</strong> <code class="inline">Override origin</code> সিলেক্ট করে <code class="inline">5 minutes</code> দিন।</li>
+            <li><strong>Browser TTL:</strong> <code class="inline">1 minute</code> দিয়ে <strong>Deploy</strong> করুন!</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+var currentTab = 'php';
+
+function getInputs() {
+    return {
+        siteUrl:   (document.getElementById('inpSiteUrl').value || 'https://ranonex.shop').trim().replace(/\/+$/, ''),
+        accountId: (document.getElementById('inpAccountId').value || 'YOUR_CLOUDFLARE_ACCOUNT_ID').trim(),
+        dbId:      (document.getElementById('inpDbId').value || 'YOUR_D1_DATABASE_ID').trim(),
+        apiToken:  (document.getElementById('inpApiToken').value || 'YOUR_CF_API_TOKEN_D1_READ').trim()
+    };
+}
+
+function buildHtaccessCode() {
+    return [
+        'RewriteEngine On',
+        'RewriteCond %{REQUEST_FILENAME} !-f',
+        'RewriteCond %{REQUEST_FILENAME} !-d',
+        'RewriteRule ^(.*)$ index.php [QSA,L]'
+    ].join('\n');
+}
+
+var cachedPhpTemplate = "<?php\n/**\n * ============================================================================\n * RANONEX UNIVERSAL PROXY HOSTING ENGINE (PHP Edition)\n * Works on: AlwaysData, cPanel, DirectAdmin, CyberPanel, Plesk, InfinityFree, VPS\n * ============================================================================\n * শুধু নিচের ৪টি লাইন পরিবর্তন করুন (অথবা আপনার সাইটের /stup-site পেজ থেকে জেনারেট করুন):\n */\ndefine('ALLOWED_SITE_URL',   'https://ranonex.shop');          // 1. আপনার মেইন সাইটের URL (Whitelist)\ndefine('CF_ACCOUNT_ID',      'YOUR_CLOUDFLARE_ACCOUNT_ID');    // 2. Cloudflare Account ID\ndefine('CF_D1_DATABASE_ID',  'YOUR_D1_DATABASE_ID');           // 3. Cloudflare D1 Database ID\ndefine('CF_API_TOKEN',       'YOUR_CF_API_TOKEN_D1_READ');     // 4. Cloudflare API Token (D1:Read Permission)\n\ndefine('CACHE_TTL_SECONDS',  300);                             // 5 মিনিট (300s) JSON Database Cache\ndefine('CHUNK_SIZE',         100);                             // প্রতি চ্যাঙ্কে ১০০টি করে প্রোডাক্ট\n\n// ============================================================================\n// 1. STRICT DOMAIN WHITELIST & CORS PROTECTION\n// ============================================================================\n$allowedHost = strtolower(preg_replace('/^www\\./i', '', parse_url(ALLOWED_SITE_URL, PHP_URL_HOST) ?: ''));\n$origin      = isset($_SERVER['HTTP_ORIGIN']) ? trim($_SERVER['HTTP_ORIGIN']) : '';\n$referer     = isset($_SERVER['HTTP_REFERER']) ? trim($_SERVER['HTTP_REFERER']) : '';\n\n$reqHost = '';\nif ($origin) {\n    $reqHost = strtolower(preg_replace('/^www\\./i', '', parse_url($origin, PHP_URL_HOST) ?: ''));\n} elseif ($referer) {\n    $reqHost = strtolower(preg_replace('/^www\\./i', '', parse_url($referer, PHP_URL_HOST) ?: ''));\n}\n\n$isAllowedOrigin = false;\nif (!$allowedHost || $allowedHost === 'your-domain.com') {\n    $isAllowedOrigin = true;\n} elseif ($reqHost && ($reqHost === $allowedHost || substr($reqHost, -strlen('.' . $allowedHost)) === '.' . $allowedHost)) {\n    $isAllowedOrigin = true;\n}\n\nif ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {\n    header('Access-Control-Allow-Origin: ' . ($origin && $isAllowedOrigin ? $origin : ALLOWED_SITE_URL));\n    header('Access-Control-Allow-Methods: GET, OPTIONS');\n    header('Access-Control-Allow-Headers: Content-Type, Authorization');\n    header('Access-Control-Max-Age: 86400');\n    http_response_code(204);\n    exit;\n}\n\n// Block unauthorized cross-origin abuse if Origin/Referer is present and doesn't match ALLOWED_SITE_URL\nif (($origin || $referer) && !$isAllowedOrigin) {\n    header('Content-Type: application/json; charset=utf-8');\n    http_response_code(403);\n    echo json_encode([\n        'success' => false,\n        'error'   => 'Forbidden: Domain not whitelisted on this Proxy Server.'\n    ]);\n    exit;\n}\n\nheader('Access-Control-Allow-Origin: ' . ($origin && $isAllowedOrigin ? $origin : ALLOWED_SITE_URL));\nheader('Access-Control-Allow-Methods: GET, OPTIONS');\nheader('Content-Type: application/json; charset=utf-8');\nheader('Cache-Control: public, max-age=60, s-maxage=' . CACHE_TTL_SECONDS . ', stale-while-revalidate=600');\n\n// ============================================================================\n// 2. JSON FILE DATABASE CACHE HELPERS (json_db/)\n// ============================================================================\n$jsonDbDir = __DIR__ . '/json_db';\nif (!is_dir($jsonDbDir)) {\n    @mkdir($jsonDbDir, 0755, true);\n}\n\nfunction safeCacheName($str) {\n    return preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower((string)$str)) ?: 'main';\n}\n\nfunction readJsonCache($key) {\n    global $jsonDbDir;\n    if (!empty($_GET['nocache'])) return null;\n    $file = $jsonDbDir . '/' . $key . '.json';\n    if (is_file($file) && (time() - filemtime($file)) < CACHE_TTL_SECONDS) {\n        $raw = @file_get_contents($file);\n        if ($raw !== false && strlen($raw) > 2) return $raw;\n    }\n    return null;\n}\n\nfunction writeJsonCache($key, $jsonString) {\n    global $jsonDbDir;\n    $file = $jsonDbDir . '/' . $key . '.json';\n    $tmp  = $file . '.tmp.' . getmypid();\n    if (@file_put_contents($tmp, $jsonString) !== false) {\n        @rename($tmp, $file);\n    }\n}\n\n// ============================================================================\n// 3. CLOUDFLARE D1 REST API QUERY ENGINE (WITH D1:READ TOKEN)\n// ============================================================================\nfunction d1Query($sql, $params = []) {\n    $url = 'https://api.cloudflare.com/client/v4/accounts/' . CF_ACCOUNT_ID . '/d1/database/' . CF_D1_DATABASE_ID . '/query';\n    $payload = json_encode(['sql' => $sql, 'params' => array_values($params)]);\n\n    $ch = curl_init($url);\n    curl_setopt_array($ch, [\n        CURLOPT_RETURNTRANSFER => true,\n        CURLOPT_POST           => true,\n        CURLOPT_POSTFIELDS     => $payload,\n        CURLOPT_HTTPHEADER     => [\n            'Authorization: Bearer ' . CF_API_TOKEN,\n            'Content-Type: application/json'\n        ],\n        CURLOPT_TIMEOUT        => 15\n    ]);\n    $res  = curl_exec($ch);\n    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);\n    curl_close($ch);\n\n    if ($code !== 200 || !$res) return [];\n    $decoded = json_decode($res, true);\n    if (empty($decoded['success']) || empty($decoded['result'][0]['results'])) return [];\n    return $decoded['result'][0]['results'];\n}\n\n// ============================================================================\n// 4. BRAND & SHARED CATEGORY FILTERING HELPERS\n// ============================================================================\nfunction parseSharedBrands($cat) {\n    if (empty($cat['shared_brand_ids'])) return [];\n    $arr = is_array($cat['shared_brand_ids']) ? $cat['shared_brand_ids'] : json_decode($cat['shared_brand_ids'], true);\n    return is_array($arr) ? array_map('strval', $arr) : [];\n}\n\nfunction isCatVisibleOnBrand($cat, $brandId) {\n    $cBrand = isset($cat['brand_id']) ? trim((string)$cat['brand_id']) : '';\n    if (!$brandId) return $cBrand === '';\n    if ($cBrand === (string)$brandId) return true;\n    return in_array((string)$brandId, parseSharedBrands($cat), true);\n}\n\nfunction mergeBrandSettings($rawSettings, $brand) {\n    if (!$brand) return $rawSettings;\n    $merged = $rawSettings;\n    if (!empty($brand['name']))     $merged['store_name']  = $brand['name'];\n    if (!empty($brand['tagline']))  $merged['tagline']     = $brand['tagline'];\n    if (!empty($brand['logo_url'])) $merged['logo_url']    = $brand['logo_url'];\n    if (!empty($brand['favicon_url'])) $merged['favicon_url'] = $brand['favicon_url'];\n    if (!empty($brand['footer_text'])) $merged['footer_about'] = $brand['footer_text'];\n    return $merged;\n}\n\n// ============================================================================\n// 5. ROUTE DISPATCHER\n// ============================================================================\n$reqUri   = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';\n$endpoint = isset($_GET['endpoint']) ? $_GET['endpoint'] : $reqUri;\n$brandSlug = trim($_GET['brand'] ?? $_GET['brand_id'] ?? '');\n$productId = trim($_GET['product_id'] ?? '');\n$chunkNum  = isset($_GET['chunk']) ? max(1, (int)$_GET['chunk']) : 0;\n\n// ----------------------------------------------------------------------------\n// ROUTE A: /api/public-reviews?product_id=<id> (Targeted Product Reviews Only)\n// ----------------------------------------------------------------------------\nif (strpos($endpoint, 'public-reviews') !== false) {\n    if (!$productId) {\n        echo json_encode(['success' => true, 'data' => []]);\n        exit;\n    }\n    $cacheKey = 'reviews_' . safeCacheName($productId);\n    $cached   = readJsonCache($cacheKey);\n    if ($cached !== null) {\n        echo $cached;\n        exit;\n    }\n    $rows = d1Query(\n        \"SELECT * FROM reviews WHERE product_id = ? AND is_approved = 1 ORDER BY created_at DESC LIMIT 50\",\n        [$productId]\n    );\n    $out = json_encode(['success' => true, 'data' => $rows], JSON_UNESCAPED_UNICODE);\n    writeJsonCache($cacheKey, $out);\n    echo $out;\n    exit;\n}\n\n// ----------------------------------------------------------------------------\n// ROUTE B: /api/checkout-data (Targeted Checkout Data Only — NO Full Product DB!)\n// ----------------------------------------------------------------------------\nif (strpos($endpoint, 'checkout-data') !== false) {\n    $cacheKey = 'checkout_' . safeCacheName($brandSlug ?: 'main');\n    $cached   = readJsonCache($cacheKey);\n    if ($cached !== null) {\n        echo $cached;\n        exit;\n    }\n\n    $allBrands   = d1Query(\"SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC\");\n    $activeBrand = null;\n    if ($brandSlug) {\n        foreach ($allBrands as $b) {\n            if (strtolower($b['slug'] ?? '') === strtolower($brandSlug) || ($b['id'] ?? '') === $brandSlug) {\n                $activeBrand = $b;\n                break;\n            }\n        }\n    }\n\n    $settingsRows = d1Query(\"SELECT * FROM settings WHERE id = 1\");\n    $rawSettings  = $settingsRows[0] ?? [];\n    $zones        = d1Query(\"SELECT * FROM delivery_zones\");\n    $addons       = d1Query(\"SELECT * FROM addons WHERE is_active = 1 ORDER BY created_at\");\n    $promos       = d1Query(\"SELECT * FROM promos WHERE is_active = 1 LIMIT 500\");\n\n    if ($activeBrand) {\n        $addOnce = d1Query(\n            \"SELECT id,name,base_price,flash_sale_price,gallery_images,variants,brand_id FROM products WHERE is_add_once = 1 AND is_active = 1 AND brand_id = ?\",\n            [$activeBrand['id']]\n        );\n    } else {\n        $addOnce = d1Query(\n            \"SELECT id,name,base_price,flash_sale_price,gallery_images,variants,brand_id FROM products WHERE is_add_once = 1 AND is_active = 1 AND (brand_id IS NULL OR brand_id = '' OR show_on_main = 1)\"\n        );\n    }\n\n    $out = json_encode([\n        'success' => true,\n        'data'    => [\n            'settings' => mergeBrandSettings($rawSettings, $activeBrand),\n            'brand'    => $activeBrand,\n            'brands'   => $allBrands,\n            'zones'    => $zones,\n            'addons'   => $addons,\n            'promos'   => $promos,\n            'add_once' => $addOnce\n        ]\n    ], JSON_UNESCAPED_UNICODE);\n\n    writeJsonCache($cacheKey, $out);\n    echo $out;\n    exit;\n}\n\n// ----------------------------------------------------------------------------\n// ROUTE C: /api/public-data?product_id=<id> (Targeted Single Product Only — NO Full DB!)\n// ----------------------------------------------------------------------------\nif ($productId !== '') {\n    $cacheKey = 'product_' . safeCacheName($productId) . '_' . safeCacheName($brandSlug ?: 'main');\n    $cached   = readJsonCache($cacheKey);\n    if ($cached !== null) {\n        echo $cached;\n        exit;\n    }\n\n    $pidLower    = strtolower($productId);\n    $foundRows   = d1Query(\n        \"SELECT * FROM products WHERE is_active = 1 AND (id = ? OR lower(sku) = ? OR lower(slug) = ?) LIMIT 1\",\n        [$productId, $pidLower, $pidLower]\n    );\n    $found       = $foundRows[0] ?? null;\n    $allBrands   = d1Query(\"SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC\");\n    $settingsRow = d1Query(\"SELECT * FROM settings WHERE id = 1\");\n    $rawSettings = $settingsRow[0] ?? [];\n    $categories  = d1Query(\"SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order\");\n    $prodCats    = d1Query(\"SELECT * FROM product_categories\");\n\n    $activeBrand = null;\n    if ($brandSlug) {\n        foreach ($allBrands as $b) {\n            if (strtolower($b['slug'] ?? '') === strtolower($brandSlug) || ($b['id'] ?? '') === $brandSlug) {\n                $activeBrand = $b;\n                break;\n            }\n        }\n    }\n\n    $related = [];\n    if ($found) {\n        if (!empty($found['brand_id'])) {\n            $related = d1Query(\n                \"SELECT * FROM products WHERE is_active = 1 AND id != ? AND brand_id = ? ORDER BY is_featured DESC, created_at DESC LIMIT 12\",\n                [$found['id'], $found['brand_id']]\n            );\n        } else {\n            $related = d1Query(\n                \"SELECT * FROM products WHERE is_active = 1 AND id != ? ORDER BY is_featured DESC, created_at DESC LIMIT 12\",\n                [$found['id']]\n            );\n        }\n    }\n\n    $prodBrand = $activeBrand;\n    if ($found && !empty($found['brand_id'])) {\n        foreach ($allBrands as $b) {\n            if (($b['id'] ?? '') === $found['brand_id']) {\n                $found['brand_slug'] = $b['slug'];\n                $found['brand_name'] = $b['name'];\n                if (!$prodBrand) $prodBrand = $b;\n                break;\n            }\n        }\n    }\n\n    $out = json_encode([\n        'success'            => true,\n        'product'            => $found,\n        'related_products'   => $related,\n        'brand'              => $prodBrand,\n        'brands'             => $allBrands,\n        'settings'           => mergeBrandSettings($rawSettings, $prodBrand),\n        'categories'         => array_values(array_filter($categories, function($c) use ($prodBrand) {\n            return isCatVisibleOnBrand($c, $prodBrand ? $prodBrand['id'] : null);\n        })),\n        'product_categories' => $prodCats\n    ], JSON_UNESCAPED_UNICODE);\n\n    writeJsonCache($cacheKey, $out);\n    echo $out;\n    exit;\n}\n\n// ----------------------------------------------------------------------------\n// ROUTE D: /api/public-data (Master JSON with 100-Product Chunks)\n// ----------------------------------------------------------------------------\n$brandKey = safeCacheName($brandSlug ?: 'main');\n\n// If specific 100-product chunk requested (?chunk=1)\nif ($chunkNum > 0) {\n    $chunkCacheKey = 'chunk_' . $brandKey . '_' . $chunkNum;\n    $cachedChunk   = readJsonCache($chunkCacheKey);\n    if ($cachedChunk !== null) {\n        echo $cachedChunk;\n        exit;\n    }\n}\n\n$masterCacheKey = 'master_' . $brandKey;\n$cachedMaster   = readJsonCache($masterCacheKey);\nif ($cachedMaster !== null && $chunkNum === 0) {\n    echo $cachedMaster;\n    exit;\n}\n\n// Fetch from Cloudflare D1 and build 100-product chunks + Master JSON\n$allBrands   = d1Query(\"SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC\");\n$activeBrand = null;\nif ($brandSlug) {\n    foreach ($allBrands as $b) {\n        if (strtolower($b['slug'] ?? '') === strtolower($brandSlug) || ($b['id'] ?? '') === $brandSlug) {\n            $activeBrand = $b;\n            break;\n        }\n    }\n}\n\n$brandMap = [];\nforeach ($allBrands as $b) {\n    $brandMap[$b['id']] = $b;\n}\n\n$settingsRows = d1Query(\"SELECT * FROM settings WHERE id = 1\");\n$rawSettings  = $settingsRows[0] ?? [];\n$mainStoreName = $rawSettings['store_name'] ?? 'Ranonex';\n$categories   = d1Query(\"SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order\");\n$products     = d1Query(\"SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, created_at DESC\");\n$prodCats     = d1Query(\"SELECT * FROM product_categories\");\n\nif ($activeBrand) {\n    $banners  = d1Query(\"SELECT * FROM banners WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order\", [$activeBrand['id']]);\n    $sections = d1Query(\"SELECT * FROM home_sections WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order\", [$activeBrand['id']]);\n} else {\n    $banners  = d1Query(\"SELECT * FROM banners WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '') ORDER BY sort_order\");\n    $sections = d1Query(\"SELECT * FROM home_sections WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '') ORDER BY sort_order\");\n}\n\n// Filter categories and products for brand context (including shared categories)\n$activeBrandId = $activeBrand ? $activeBrand['id'] : null;\n$filteredCategories = array_values(array_filter($categories, function($c) use ($activeBrandId) {\n    return isCatVisibleOnBrand($c, $activeBrandId);\n}));\n\n$sharedCatModes = [];\nif ($activeBrandId) {\n    foreach ($categories as $c) {\n        $inc = !empty($c['share_include_products']) && ($c['share_include_products'] == 1 || $c['share_include_products'] === true);\n        if ($inc && in_array((string)$activeBrandId, parseSharedBrands($c), true)) {\n            $sharedCatModes[(string)$c['id']] = (($c['share_url_mode'] ?? 'brand') === 'main') ? 'main' : 'brand';\n        }\n    }\n}\n\n$prodCatLookup = [];\nforeach ($prodCats as $pc) {\n    $pid = (string)($pc['product_id'] ?? '');\n    $cid = (string)($pc['category_id'] ?? '');\n    if ($pid && $cid) $prodCatLookup[$pid][] = $cid;\n}\n\n$filteredProducts = [];\nforeach ($products as $p) {\n    $pBrandId = !empty($p['brand_id']) ? (string)$p['brand_id'] : '';\n    $ownerBrand = ($pBrandId && isset($brandMap[$pBrandId])) ? $brandMap[$pBrandId] : null;\n    if ($pBrandId && !$ownerBrand) continue;\n\n    $pidsCats = $prodCatLookup[(string)$p['id']] ?? [];\n    if (!empty($p['category_id'])) $pidsCats[] = (string)$p['category_id'];\n\n    if ($activeBrandId) {\n        $isOwn = ($pBrandId === (string)$activeBrandId);\n        $matchedSharedMode = null;\n        if (!$isOwn) {\n            foreach ($pidsCats as $cid) {\n                if (isset($sharedCatModes[$cid])) {\n                    $matchedSharedMode = $sharedCatModes[$cid];\n                    break;\n                }\n            }\n        }\n        if (!$isOwn && !$matchedSharedMode) continue;\n\n        if (!$isOwn && $matchedSharedMode === 'brand') {\n            $p['brand_slug'] = $activeBrand['slug'];\n            $p['brand_name'] = $activeBrand['name'];\n            $p['canonical_url_mode'] = 'brand';\n        } elseif (!$isOwn && $matchedSharedMode === 'main') {\n            $p['brand_slug'] = $ownerBrand ? $ownerBrand['slug'] : '';\n            $p['brand_name'] = $ownerBrand ? $ownerBrand['name'] : $mainStoreName;\n            $p['canonical_url_mode'] = 'main';\n        } else {\n            $p['brand_slug'] = $ownerBrand ? $ownerBrand['slug'] : $activeBrand['slug'];\n            $p['brand_name'] = $ownerBrand ? $ownerBrand['name'] : $activeBrand['name'];\n            $p['canonical_url_mode'] = 'brand';\n        }\n    } else {\n        if ($pBrandId && empty($p['show_on_main'])) continue;\n        $p['brand_slug'] = $ownerBrand ? $ownerBrand['slug'] : '';\n        $p['brand_name'] = $ownerBrand ? $ownerBrand['name'] : $mainStoreName;\n        $p['canonical_url_mode'] = $ownerBrand ? 'brand' : 'main';\n    }\n    $filteredProducts[] = $p;\n}\n\n// Organize products into 100-product chunks & save chunk JSON files\n$rawChunks = array_chunk($filteredProducts, CHUNK_SIZE);\n$productChunks = [];\nforeach ($rawChunks as $idx => $slice) {\n    $cNum = $idx + 1;\n    $chunkObj = [\n        'chunk'    => $cNum,\n        'count'    => count($slice),\n        'products' => $slice\n    ];\n    $productChunks[] = $chunkObj;\n\n    $singleChunkJson = json_encode([\n        'success'        => true,\n        'chunk'          => $cNum,\n        'count'          => count($slice),\n        'total_products' => count($filteredProducts),\n        'has_more'       => ($cNum < count($rawChunks)),\n        'next_chunk'     => ($cNum < count($rawChunks)) ? ($cNum + 1) : null,\n        'products'       => $slice\n    ], JSON_UNESCAPED_UNICODE);\n    writeJsonCache('chunk_' . $brandKey . '_' . $cNum, $singleChunkJson);\n}\n\nif ($chunkNum > 0) {\n    $cachedChunk = readJsonCache('chunk_' . $brandKey . '_' . $chunkNum);\n    echo $cachedChunk ?: json_encode(['success' => true, 'chunk' => $chunkNum, 'count' => 0, 'products' => []]);\n    exit;\n}\n\n$masterPayload = [\n    'success' => true,\n    'data'    => [\n        'settings'           => mergeBrandSettings($rawSettings, $activeBrand),\n        'main_settings'      => [\n            'store_name'  => $mainStoreName,\n            'logo_url'    => $rawSettings['logo_url'] ?? '',\n            'favicon_url' => $rawSettings['favicon_url'] ?? ''\n        ],\n        'brand'              => $activeBrand,\n        'brands'             => $allBrands,\n        'banners'            => $banners,\n        'categories'         => $filteredCategories,\n        'product_chunks'     => $productChunks,\n        'total_products'     => count($filteredProducts),\n        'chunk_size'         => CHUNK_SIZE,\n        'total_chunks'       => count($productChunks),\n        'home_sections'      => $sections,\n        'product_categories' => $prodCats\n    ]\n];\n\n$masterJson = json_encode($masterPayload, JSON_UNESCAPED_UNICODE);\nwriteJsonCache($masterCacheKey, $masterJson);\necho $masterJson;\n";
+var cachedNodeTemplate = "/**\n * ============================================================================\n * RANONEX UNIVERSAL PROXY HOSTING ENGINE (Node.js Edition)\n * Works on: AlwaysData (Node.js), cPanel Node.js Selector, VPS, Railway, Render\n * ============================================================================\n * শুধু নিচের ৪টি লাইন পরিবর্তন করুন (অথবা আপনার সাইটের /stup-site পেজ থেকে জেনারেট করুন):\n */\nconst ALLOWED_SITE_URL  = process.env.ALLOWED_SITE_URL  || 'https://ranonex.shop';          // 1. আপনার মেইন সাইটের URL (Whitelist)\nconst CF_ACCOUNT_ID     = process.env.CF_ACCOUNT_ID     || 'YOUR_CLOUDFLARE_ACCOUNT_ID';    // 2. Cloudflare Account ID\nconst CF_D1_DATABASE_ID = process.env.CF_D1_DATABASE_ID || 'YOUR_D1_DATABASE_ID';           // 3. Cloudflare D1 Database ID\nconst CF_API_TOKEN      = process.env.CF_API_TOKEN      || 'YOUR_CF_API_TOKEN_D1_READ';     // 4. Cloudflare API Token (D1:Read Permission)\n\nconst CACHE_TTL_SECONDS = 300; // 5 মিনিট (300s) JSON Database Cache\nconst CHUNK_SIZE        = 100; // প্রতি চ্যাঙ্কে ১০০টি করে প্রোডাক্ট\nconst PORT              = process.env.PORT || process.env.ALWAYSDATA_HTTPD_PORT || 8100;\nconst HOST              = process.env.IP   || process.env.ALWAYSDATA_HTTPD_IP   || '0.0.0.0';\n\nconst http = require('http');\nconst fs   = require('fs');\nconst path = require('path');\nconst { URL } = require('url');\n\nconst JSON_DB_DIR = path.join(__dirname, 'json_db');\nif (!fs.existsSync(JSON_DB_DIR)) {\n    fs.mkdirSync(JSON_DB_DIR, { recursive: true });\n}\n\nfunction safeCacheName(str) {\n    return String(str || 'main').toLowerCase().replace(/[^a-z0-9_-]/g, '_') || 'main';\n}\n\nfunction readJsonCache(key, noCache) {\n    if (noCache) return null;\n    try {\n        const file = path.join(JSON_DB_DIR, key + '.json');\n        const stat = fs.statSync(file);\n        if ((Date.now() - stat.mtimeMs) < CACHE_TTL_SECONDS * 1000) {\n            return fs.readFileSync(file, 'utf8');\n        }\n    } catch (e) {}\n    return null;\n}\n\nfunction writeJsonCache(key, jsonStr) {\n    try {\n        const file = path.join(JSON_DB_DIR, key + '.json');\n        const tmp  = file + '.tmp.' + process.pid;\n        fs.writeFileSync(tmp, jsonStr, 'utf8');\n        fs.renameSync(tmp, file);\n    } catch (e) {}\n}\n\nasync function d1Query(sql, params = []) {\n    const endpoint = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/d1/database/${CF_D1_DATABASE_ID}/query`;\n    try {\n        const res = await fetch(endpoint, {\n            method: 'POST',\n            headers: {\n                'Authorization': `Bearer ${CF_API_TOKEN}`,\n                'Content-Type': 'application/json'\n            },\n            body: JSON.stringify({ sql, params })\n        });\n        if (!res.ok) return [];\n        const json = await res.json();\n        return (json && json.success && json.result && json.result[0] && json.result[0].results)\n            ? json.result[0].results\n            : [];\n    } catch (e) {\n        return [];\n    }\n}\n\nfunction parseSharedBrands(cat) {\n    if (!cat || !cat.shared_brand_ids) return [];\n    try {\n        const arr = typeof cat.shared_brand_ids === 'string' ? JSON.parse(cat.shared_brand_ids) : cat.shared_brand_ids;\n        return Array.isArray(arr) ? arr.map(String) : [];\n    } catch (e) { return []; }\n}\n\nfunction isCatVisibleOnBrand(cat, brandId) {\n    const cBrand = cat && cat.brand_id ? String(cat.brand_id).trim() : '';\n    if (!brandId) return cBrand === '';\n    if (cBrand === String(brandId)) return true;\n    return parseSharedBrands(cat).includes(String(brandId));\n}\n\nfunction mergeBrandSettings(rawSettings, brand) {\n    if (!brand) return rawSettings;\n    const merged = Object.assign({}, rawSettings);\n    if (brand.name)        merged.store_name   = brand.name;\n    if (brand.tagline)     merged.tagline      = brand.tagline;\n    if (brand.logo_url)    merged.logo_url     = brand.logo_url;\n    if (brand.favicon_url) merged.favicon_url  = brand.favicon_url;\n    if (brand.footer_text) merged.footer_about = brand.footer_text;\n    return merged;\n}\n\nfunction checkOriginAllowed(req) {\n    let allowedHost = '';\n    try { allowedHost = new URL(ALLOWED_SITE_URL).hostname.replace(/^www\\./i, '').toLowerCase(); } catch (e) {}\n    const origin  = req.headers['origin']  || '';\n    const referer = req.headers['referer'] || '';\n    let reqHost   = '';\n    try {\n        if (origin) reqHost = new URL(origin).hostname.replace(/^www\\./i, '').toLowerCase();\n        else if (referer) reqHost = new URL(referer).hostname.replace(/^www\\./i, '').toLowerCase();\n    } catch (e) {}\n\n    if (!allowedHost || allowedHost === 'your-domain.com') return { allowed: true, headerOrigin: origin || '*' };\n    if (!origin && !referer) return { allowed: true, headerOrigin: ALLOWED_SITE_URL };\n    const isMatch = reqHost === allowedHost || reqHost.endsWith('.' + allowedHost);\n    return { allowed: isMatch, headerOrigin: isMatch && origin ? origin : ALLOWED_SITE_URL };\n}\n\nconst server = http.createServer(async (req, res) => {\n    const cors = checkOriginAllowed(req);\n\n    if (req.method === 'OPTIONS') {\n        res.writeHead(204, {\n            'Access-Control-Allow-Origin': cors.headerOrigin,\n            'Access-Control-Allow-Methods': 'GET, OPTIONS',\n            'Access-Control-Allow-Headers': 'Content-Type, Authorization',\n            'Access-Control-Max-Age': '86400'\n        });\n        return res.end();\n    }\n\n    if (!cors.allowed) {\n        res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });\n        return res.end(JSON.stringify({ success: false, error: 'Forbidden: Domain not whitelisted on this Proxy Server.' }));\n    }\n\n    const commonHeaders = {\n        'Access-Control-Allow-Origin': cors.headerOrigin,\n        'Access-Control-Allow-Methods': 'GET, OPTIONS',\n        'Content-Type': 'application/json; charset=utf-8',\n        'Cache-Control': `public, max-age=60, s-maxage=${CACHE_TTL_SECONDS}, stale-while-revalidate=600`\n    };\n\n    const reqUrl    = new URL(req.url, `http://${req.headers.host || 'localhost'}`);\n    const pathname  = reqUrl.pathname;\n    const brandSlug = (reqUrl.searchParams.get('brand') || reqUrl.searchParams.get('brand_id') || '').trim();\n    const productId = (reqUrl.searchParams.get('product_id') || '').trim();\n    const chunkNum  = parseInt(reqUrl.searchParams.get('chunk') || '0', 10) || 0;\n    const noCache   = reqUrl.searchParams.get('nocache') === '1';\n\n    // 1. Reviews Endpoint (/api/public-reviews?product_id=<id>)\n    if (pathname.includes('public-reviews')) {\n        if (!productId) {\n            res.writeHead(200, commonHeaders);\n            return res.end(JSON.stringify({ success: true, data: [] }));\n        }\n        const cacheKey = 'reviews_' + safeCacheName(productId);\n        const cached   = readJsonCache(cacheKey, noCache);\n        if (cached) {\n            res.writeHead(200, commonHeaders);\n            return res.end(cached);\n        }\n        const rows = await d1Query(\"SELECT * FROM reviews WHERE product_id = ? AND is_approved = 1 ORDER BY created_at DESC LIMIT 50\", [productId]);\n        const out  = JSON.stringify({ success: true, data: rows });\n        writeJsonCache(cacheKey, out);\n        res.writeHead(200, commonHeaders);\n        return res.end(out);\n    }\n\n    // 2. Checkout Endpoint (/api/checkout-data) — ONLY Checkout Data, NEVER Full Products DB!\n    if (pathname.includes('checkout-data')) {\n        const cacheKey = 'checkout_' + safeCacheName(brandSlug || 'main');\n        const cached   = readJsonCache(cacheKey, noCache);\n        if (cached) {\n            res.writeHead(200, commonHeaders);\n            return res.end(cached);\n        }\n\n        const allBrands = await d1Query(\"SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC\");\n        const activeBrand = brandSlug\n            ? (allBrands.find(b => String(b.slug || '').toLowerCase() === brandSlug.toLowerCase() || b.id === brandSlug) || null)\n            : null;\n\n        const [settingsRows, zones, addons, promos, addOnce] = await Promise.all([\n            d1Query(\"SELECT * FROM settings WHERE id = 1\"),\n            d1Query(\"SELECT * FROM delivery_zones\"),\n            d1Query(\"SELECT * FROM addons WHERE is_active = 1 ORDER BY created_at\"),\n            d1Query(\"SELECT * FROM promos WHERE is_active = 1 LIMIT 500\"),\n            activeBrand\n                ? d1Query(\"SELECT id,name,base_price,flash_sale_price,gallery_images,variants,brand_id FROM products WHERE is_add_once = 1 AND is_active = 1 AND brand_id = ?\", [activeBrand.id])\n                : d1Query(\"SELECT id,name,base_price,flash_sale_price,gallery_images,variants,brand_id FROM products WHERE is_add_once = 1 AND is_active = 1 AND (brand_id IS NULL OR brand_id = '' OR show_on_main = 1)\")\n        ]);\n\n        const rawSettings = settingsRows[0] || {};\n        const out = JSON.stringify({\n            success: true,\n            data: {\n                settings: mergeBrandSettings(rawSettings, activeBrand),\n                brand: activeBrand,\n                brands: allBrands,\n                zones,\n                addons,\n                promos,\n                add_once: addOnce\n            }\n        });\n        writeJsonCache(cacheKey, out);\n        res.writeHead(200, commonHeaders);\n        return res.end(out);\n    }\n\n    // 3. Single Product Endpoint (/api/public-data?product_id=<id>) — ONLY Single Product + Related, NEVER Full DB!\n    if (productId) {\n        const cacheKey = 'product_' + safeCacheName(productId) + '_' + safeCacheName(brandSlug || 'main');\n        const cached   = readJsonCache(cacheKey, noCache);\n        if (cached) {\n            res.writeHead(200, commonHeaders);\n            return res.end(cached);\n        }\n\n        const pidLower = productId.toLowerCase();\n        const [foundRows, allBrands, settingsRows, categories, prodCats] = await Promise.all([\n            d1Query(\"SELECT * FROM products WHERE is_active = 1 AND (id = ? OR lower(sku) = ? OR lower(slug) = ?) LIMIT 1\", [productId, pidLower, pidLower]),\n            d1Query(\"SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC\"),\n            d1Query(\"SELECT * FROM settings WHERE id = 1\"),\n            d1Query(\"SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order\"),\n            d1Query(\"SELECT * FROM product_categories\")\n        ]);\n\n        const found       = foundRows[0] || null;\n        const rawSettings = settingsRows[0] || {};\n        const activeBrand = brandSlug\n            ? (allBrands.find(b => String(b.slug || '').toLowerCase() === brandSlug.toLowerCase() || b.id === brandSlug) || null)\n            : null;\n\n        let related = [];\n        if (found) {\n            related = found.brand_id\n                ? await d1Query(\"SELECT * FROM products WHERE is_active = 1 AND id != ? AND brand_id = ? ORDER BY is_featured DESC, created_at DESC LIMIT 12\", [found.id, found.brand_id])\n                : await d1Query(\"SELECT * FROM products WHERE is_active = 1 AND id != ? ORDER BY is_featured DESC, created_at DESC LIMIT 12\", [found.id]);\n        }\n\n        let prodBrand = activeBrand;\n        if (found && found.brand_id) {\n            const owner = allBrands.find(b => b.id === found.brand_id);\n            if (owner) {\n                found.brand_slug = owner.slug;\n                found.brand_name = owner.name;\n                if (!prodBrand) prodBrand = owner;\n            }\n        }\n\n        const out = JSON.stringify({\n            success: true,\n            product: found,\n            related_products: related,\n            brand: prodBrand,\n            brands: allBrands,\n            settings: mergeBrandSettings(rawSettings, prodBrand),\n            categories: categories.filter(c => isCatVisibleOnBrand(c, prodBrand ? prodBrand.id : null)),\n            product_categories: prodCats\n        });\n        writeJsonCache(cacheKey, out);\n        res.writeHead(200, commonHeaders);\n        return res.end(out);\n    }\n\n    // 4. Master JSON + 100-Product Chunks (/api/public-data)\n    const brandKey = safeCacheName(brandSlug || 'main');\n    if (chunkNum > 0) {\n        const cachedChunk = readJsonCache(`chunk_${brandKey}_${chunkNum}`, noCache);\n        if (cachedChunk) {\n            res.writeHead(200, commonHeaders);\n            return res.end(cachedChunk);\n        }\n    }\n\n    const masterCacheKey = `master_${brandKey}`;\n    const cachedMaster   = readJsonCache(masterCacheKey, noCache);\n    if (cachedMaster && chunkNum === 0) {\n        res.writeHead(200, commonHeaders);\n        return res.end(cachedMaster);\n    }\n\n    const allBrands = await d1Query(\"SELECT * FROM brands WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC\");\n    const activeBrand = brandSlug\n        ? (allBrands.find(b => String(b.slug || '').toLowerCase() === brandSlug.toLowerCase() || b.id === brandSlug) || null)\n        : null;\n    const brandMap = new Map(allBrands.map(b => [b.id, b]));\n\n    const [settingsRows, categories, products, prodCats, banners, sections] = await Promise.all([\n        d1Query(\"SELECT * FROM settings WHERE id = 1\"),\n        d1Query(\"SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order\"),\n        d1Query(\"SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, created_at DESC\"),\n        d1Query(\"SELECT * FROM product_categories\"),\n        activeBrand\n            ? d1Query(\"SELECT * FROM banners WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order\", [activeBrand.id])\n            : d1Query(\"SELECT * FROM banners WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '') ORDER BY sort_order\"),\n        activeBrand\n            ? d1Query(\"SELECT * FROM home_sections WHERE is_active = 1 AND brand_id = ? ORDER BY sort_order\", [activeBrand.id])\n            : d1Query(\"SELECT * FROM home_sections WHERE is_active = 1 AND (brand_id IS NULL OR brand_id = '') ORDER BY sort_order\")\n    ]);\n\n    const rawSettings   = settingsRows[0] || {};\n    const mainStoreName = rawSettings.store_name || 'Ranonex';\n    const activeBrandId = activeBrand ? activeBrand.id : null;\n    const filteredCategories = categories.filter(c => isCatVisibleOnBrand(c, activeBrandId));\n\n    const prodChunks = [];\n    for (let i = 0; i < products.length; i += CHUNK_SIZE) {\n        const slice = products.slice(i, i + CHUNK_SIZE);\n        const cNum  = Math.floor(i / CHUNK_SIZE) + 1;\n        prodChunks.push({ chunk: cNum, count: slice.length, products: slice });\n        writeJsonCache(`chunk_${brandKey}_${cNum}`, JSON.stringify({\n            success: true,\n            chunk: cNum,\n            count: slice.length,\n            total_products: products.length,\n            has_more: (i + CHUNK_SIZE) < products.length,\n            next_chunk: (i + CHUNK_SIZE) < products.length ? (cNum + 1) : null,\n            products: slice\n        }));\n    }\n\n    const masterOut = JSON.stringify({\n        success: true,\n        data: {\n            settings: mergeBrandSettings(rawSettings, activeBrand),\n            main_settings: {\n                store_name: mainStoreName,\n                logo_url: rawSettings.logo_url || '',\n                favicon_url: rawSettings.favicon_url || ''\n            },\n            brand: activeBrand,\n            brands: allBrands,\n            banners,\n            categories: filteredCategories,\n            product_chunks: prodChunks,\n            total_products: products.length,\n            chunk_size: CHUNK_SIZE,\n            total_chunks: prodChunks.length,\n            home_sections: sections,\n            product_categories: prodCats\n        }\n    });\n\n    writeJsonCache(masterCacheKey, masterOut);\n    res.writeHead(200, commonHeaders);\n    return res.end(masterOut);\n});\n\nserver.listen(PORT, HOST, () => {\n    console.log(`Ranonex Universal Proxy Server running on http://${HOST}:${PORT}`);\n});\n";
+
+async function loadTemplates() {
+    try {
+        var r1 = await fetch('/proxy-hosting/index.php');
+        if (r1.ok) cachedPhpTemplate = await r1.text();
+    } catch (e) {}
+    try {
+        var r2 = await fetch('/proxy-hosting/server.js');
+        if (r2.ok) cachedNodeTemplate = await r2.text();
+    } catch (e) {}
+    updateGeneratedCode();
+}
+
+function updateGeneratedCode() {
+    var inp = getInputs();
+    var box = document.getElementById('generatedCodeBox');
+    var nameEl = document.getElementById('codeFileName');
+
+    if (currentTab === 'htaccess') {
+        nameEl.textContent = '.htaccess';
+        box.textContent = buildHtaccessCode();
+        return;
+    }
+
+    if (currentTab === 'php') {
+        nameEl.textContent = 'index.php';
+        var tpl = cachedPhpTemplate || "<?php\ndefine('ALLOWED_SITE_URL', 'https://ranonex.shop');\ndefine('CF_ACCOUNT_ID', 'YOUR_CLOUDFLARE_ACCOUNT_ID');\ndefine('CF_D1_DATABASE_ID', 'YOUR_D1_DATABASE_ID');\ndefine('CF_API_TOKEN', 'YOUR_CF_API_TOKEN_D1_READ');\n";
+        tpl = tpl
+            .replace(/define\('ALLOWED_SITE_URL',\s*'[^']*'\);/, "define('ALLOWED_SITE_URL',   '" + inp.siteUrl + "');")
+            .replace(/define\('CF_ACCOUNT_ID',\s*'[^']*'\);/,    "define('CF_ACCOUNT_ID',      '" + inp.accountId + "');")
+            .replace(/define\('CF_D1_DATABASE_ID',\s*'[^']*'\);/,"define('CF_D1_DATABASE_ID',  '" + inp.dbId + "');")
+            .replace(/define\('CF_API_TOKEN',\s*'[^']*'\);/,     "define('CF_API_TOKEN',       '" + inp.apiToken + "');");
+        box.textContent = tpl;
+        return;
+    }
+
+    if (currentTab === 'node') {
+        nameEl.textContent = 'server.js';
+        var nTpl = cachedNodeTemplate || "const ALLOWED_SITE_URL = 'https://ranonex.shop';\n";
+        nTpl = nTpl
+            .replace(/ALLOWED_SITE_URL\s*\|\|\s*'[^']*'/,  "ALLOWED_SITE_URL  || '" + inp.siteUrl + "'")
+            .replace(/CF_ACCOUNT_ID\s*\|\|\s*'[^']*'/,     "CF_ACCOUNT_ID     || '" + inp.accountId + "'")
+            .replace(/CF_D1_DATABASE_ID\s*\|\|\s*'[^']*'/, "CF_D1_DATABASE_ID || '" + inp.dbId + "'")
+            .replace(/CF_API_TOKEN\s*\|\|\s*'[^']*'/,      "CF_API_TOKEN      || '" + inp.apiToken + "'");
+        box.textContent = nTpl;
+    }
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tabPhp').classList.toggle('active', tab === 'php');
+    document.getElementById('tabHtaccess').classList.toggle('active', tab === 'htaccess');
+    document.getElementById('tabNode').classList.toggle('active', tab === 'node');
+    updateGeneratedCode();
+}
+
+function copyCurrentCode() {
+    var code = document.getElementById('generatedCodeBox').textContent;
+    navigator.clipboard.writeText(code).then(function() {
+        alert('✅ কোড কপি হয়েছে!');
+    });
+}
+
+function downloadCurrentCode() {
+    var code = document.getElementById('generatedCodeBox').textContent;
+    var fname = document.getElementById('codeFileName').textContent;
+    var blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+loadTemplates();
+</script>
+</body>
+</html>
