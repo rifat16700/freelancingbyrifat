@@ -64,6 +64,8 @@ if (($origin || $referer) && !$isAllowedOrigin) {
 header('Access-Control-Allow-Origin: ' . ($origin && $isAllowedOrigin ? $origin : ALLOWED_SITE_URL));
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Content-Type: application/json; charset=utf-8');
+header('X-Data-Source: alwaysdata_proxy');
+header('X-Proxy-Engine: Ranonex-AlwaysData-PHP');
 // Cloudflare Edge & Browser caches this JSON response for 5 minutes (300 seconds)
 header('Cache-Control: public, max-age=' . CACHE_TTL_SECONDS . ', s-maxage=' . CACHE_TTL_SECONDS . ', stale-while-revalidate=600');
 
@@ -181,8 +183,10 @@ if (strpos($endpoint, 'checkout-data') !== false) {
     }
 
     echo json_encode([
-        'success' => true,
-        'data'    => [
+        'success'      => true,
+        'source'       => 'alwaysdata_proxy',
+        'proxy_engine' => 'AlwaysData PHP Engine',
+        'data'         => [
             'settings' => mergeBrandSettings($rawSettings, $activeBrand),
             'brand'    => $activeBrand,
             'brands'   => $allBrands,
@@ -250,6 +254,8 @@ if ($productId !== '') {
 
     echo json_encode([
         'success'            => true,
+        'source'             => 'alwaysdata_proxy',
+        'proxy_engine'       => 'AlwaysData PHP Engine',
         'product'            => $found,
         'related_products'   => $related,
         'brand'              => $prodBrand,
@@ -375,6 +381,8 @@ if ($chunkNum > 0) {
 
     echo json_encode([
         'success'        => true,
+        'source'         => 'alwaysdata_proxy',
+        'proxy_engine'   => 'AlwaysData PHP Engine',
         'chunk'          => $chunkNum,
         'count'          => count($slice),
         'total_products' => count($filteredProducts),
@@ -394,8 +402,10 @@ $totalChunks    = (int)ceil($remainingCount / CHUNK_SIZE);
 $nextChunk      = $hasMore ? 1 : null;
 
 echo json_encode([
-    'success' => true,
-    'data'    => [
+    'success'      => true,
+    'source'       => 'alwaysdata_proxy',
+    'proxy_engine' => 'AlwaysData PHP Engine',
+    'data'         => [
         'settings'           => mergeBrandSettings($rawSettings, $activeBrand),
         'main_settings'      => [
             'store_name'  => $mainStoreName,
