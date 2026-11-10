@@ -210,12 +210,12 @@ if (fs.existsSync(redirectsPath)) {
 
     if (rawProxyUrl) {
         const proxyRules = [
-            `/public-data ${rawProxyUrl}/public-data 200`,
-            `/checkout-data ${rawProxyUrl}/checkout-data 200`,
-            `/public-reviews ${rawProxyUrl}/public-reviews 200`
+            `/public-data ${rawProxyUrl}/public-data 302`,
+            `/checkout-data ${rawProxyUrl}/checkout-data 302`,
+            `/public-reviews ${rawProxyUrl}/public-reviews 302`
         ].join('\n');
         redirectsContent = proxyRules + '\n' + redirectsContent;
-        console.log(`✅ Proxy 200 rewrites injected into _redirects -> ${rawProxyUrl}`);
+        console.log(`✅ Proxy 302 redirects injected into _redirects -> ${rawProxyUrl}`);
     }
     fs.writeFileSync(redirectsPath, redirectsContent + '\n', 'utf8');
 }
