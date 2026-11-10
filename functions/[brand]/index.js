@@ -9,10 +9,7 @@ export async function onRequest(context) {
     if (rawSlug === 'public-data' || rawSlug === 'checkout-data' || rawSlug === 'public-reviews') {
         const proxyBase = (env?.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
         const u = new URL(request.url);
-        return fetch(`${proxyBase}/${rawSlug}${u.search}`, {
-            method: request.method,
-            headers: request.headers
-        });
+        return fetch(`${proxyBase}/${rawSlug}${u.search}`);
     }
 
     // If it matches a reserved route or static asset (e.g., /cart, /checkout, /login), fall through to static assets
