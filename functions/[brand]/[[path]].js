@@ -21,18 +21,21 @@ const ALLOWED_BRAND_SUBPAGES = new Map([
     ['invoice', { assetPath: '/invoice', titlePrefix: 'Invoice' }]
 ]);
 
-export async function onRequestGet(context) {
+export async function onRequest(context) {
     const { request, env, params } = context;
     const rawSlug = params?.brand || '';
     const rawPath = Array.isArray(params?.path) ? params.path : (params?.path ? [params.path] : []);
     // Filter out empty segments caused by trailing slashes (e.g. /gadgets/ -> [''])
     const pathParts = rawPath.filter(p => p !== undefined && p !== null && String(p).trim() !== '');
 
-    // If it matches proxy data endpoints, immediately redirect to proxy
+    // If it matches proxy data endpoints, transparently proxy to AlwaysData / Custom Proxy
     if (rawSlug === 'public-data' || rawSlug === 'checkout-data' || rawSlug === 'public-reviews') {
-        const proxyBase = (env.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
+        const proxyBase = (env?.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
         const u = new URL(request.url);
-        return Response.redirect(`${proxyBase}/${rawSlug}${u.search}`, 302);
+        return fetch(`${proxyBase}/${rawSlug}${u.search}`, {
+            method: request.method,
+            headers: request.headers
+        });
     }
 
     if (isReservedSlug(rawSlug)) {

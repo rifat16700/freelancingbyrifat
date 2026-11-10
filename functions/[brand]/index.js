@@ -1,15 +1,18 @@
 import { resolveBrand, isReservedSlug, serveNotFoundPage } from '../_lib/brand.js';
 import { renderHomePage } from '../_lib/render-home.js';
 
-export async function onRequestGet(context) {
+export async function onRequest(context) {
     const { request, env, params } = context;
     const rawSlug = params?.brand || '';
 
-    // If it matches proxy data endpoints, immediately redirect to proxy
+    // If it matches proxy data endpoints, transparently proxy to AlwaysData / Custom Proxy
     if (rawSlug === 'public-data' || rawSlug === 'checkout-data' || rawSlug === 'public-reviews') {
-        const proxyBase = (env.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
+        const proxyBase = (env?.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
         const u = new URL(request.url);
-        return Response.redirect(`${proxyBase}/${rawSlug}${u.search}`, 302);
+        return fetch(`${proxyBase}/${rawSlug}${u.search}`, {
+            method: request.method,
+            headers: request.headers
+        });
     }
 
     // If it matches a reserved route or static asset (e.g., /cart, /checkout, /login), fall through to static assets
