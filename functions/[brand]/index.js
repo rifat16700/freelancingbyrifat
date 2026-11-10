@@ -8,7 +8,10 @@ export async function onRequest(context) {
     // If it matches proxy data endpoints, transparently proxy to AlwaysData / Custom Proxy
     if (rawSlug === 'public-data' || rawSlug === 'checkout-data' || rawSlug === 'public-reviews') {
         try {
-            const proxyBase = (env?.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
+            let proxyBase = (env?.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').trim().replace(/\/+$/, '');
+            if (!proxyBase.startsWith('http://') && !proxyBase.startsWith('https://')) {
+                proxyBase = 'https://' + proxyBase;
+            }
             const u = new URL(request.url);
             const target = `${proxyBase}/${rawSlug}${u.search}`;
             const res = await fetch(target);
