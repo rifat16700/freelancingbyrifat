@@ -7,9 +7,26 @@ export async function onRequest(context) {
 
     // If it matches proxy data endpoints, transparently proxy to AlwaysData / Custom Proxy
     if (rawSlug === 'public-data' || rawSlug === 'checkout-data' || rawSlug === 'public-reviews') {
-        const proxyBase = (env?.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
-        const u = new URL(request.url);
-        return fetch(`${proxyBase}/${rawSlug}${u.search}`);
+        try {
+            const proxyBase = (env?.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
+            const u = new URL(request.url);
+            const target = `${proxyBase}/${rawSlug}${u.search}`;
+            const res = await fetch(target);
+            const body = await res.text();
+            return new Response(body, {
+                status: res.status,
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    'Access-Control-Allow-Origin': '*',
+                    'Cache-Control': 'public, max-age=300, s-maxage=300'
+                }
+            });
+        } catch (err) {
+            return new Response(JSON.stringify({ success: false, error: err.message, stack: err.stack }), {
+                status: 500,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
     }
 
     // If it matches a reserved route or static asset (e.g., /cart, /checkout, /login), fall through to static assets
