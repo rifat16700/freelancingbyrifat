@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
     <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="/assets/js/config.js?v=1794330139110"></script>
+    <script src="/assets/js/config.js?v=1794339373686"></script>
     <script src="/assets/js/brand-context.js"></script>
     <script src="/assets/js/seo-helper.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -512,54 +512,82 @@ document.addEventListener('DOMContentLoaded', function() {
         var pl = document.getElementById('pageLoader');
         if (pl) pl.style.display = 'none';
 
-        // ── Progressive 100-Product Chunk Loader (Background & Infinite Scroll) ──
+        // ── Progressive 50-Product Chunk Loader (Zero-Wait Background Stream + Scroll Fallback) ──
         if (window.__pubDataMeta && window.__pubDataMeta.has_more) {
-            var currentChunk = 1;
-            var hasMoreChunks = true;
-            var isLoadingChunk = false;
+            (function streamShopChunks() {
+                var nextChunk = window.__pubDataMeta.next_chunk || 1;
+                var isStreaming = false;
 
-            async function loadNextChunk() {
-                if (!hasMoreChunks || isLoadingChunk) return;
-                isLoadingChunk = true;
-                try {
-                    var res = await fetch((CONFIG.HF_API_BASE||"") + "/api/public-data?chunk=" + currentChunk).then(r => r.json());
-                    if (res && res.success && res.products && res.products.length) {
-                        var newProds = res.products.map(function(p) {
-                            try { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); } catch(e) { p.gallery_images = []; }
-                            try { p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); } catch(e) { p.variants = []; }
-                            p.category_ids = pc.filter(function(x) { return String(x.product_id) === String(p.id); }).map(function(x) { return String(x.category_id); });
-                            if (p.category_id && !p.category_ids.some(function(cid){ return String(cid) === String(p.category_id); })) {
-                                p.category_ids.push(String(p.category_id));
+                async function fetchNextShopChunk() {
+                    if (!nextChunk || isStreaming) return;
+                    isStreaming = true;
+                    try {
+                        var chunkPath = "/public-data?chunk=" + nextChunk;
+                        var chunkUrl = window.BRAND ? window.BRAND.api(chunkPath) : chunkPath;
+                        var res = null;
+                        try {
+                            res = await fetch(chunkUrl).then(function(r) { return r.json(); });
+                        } catch(e) {
+                            var apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
+                            if (apiBase) {
+                                var pUrl = window.BRAND ? window.BRAND.api(apiBase + chunkPath) : (apiBase + chunkPath);
+                                res = await fetch(pUrl).then(function(r) { return r.json(); });
                             }
-                            return p;
-                        });
-                        allProducts = allProducts.concat(newProds);
-                        applyFilters();
-                        hasMoreChunks = !!res.has_more;
-                        currentChunk++;
-                    } else {
-                        hasMoreChunks = false;
-                    }
-                } catch(e) {
-                    console.warn('Chunk load error:', e);
-                } finally {
-                    isLoadingChunk = false;
-                }
-            }
+                        }
 
-            // Scroll trigger
-            window.addEventListener('scroll', function() {
-                if (hasMoreChunks && !isLoadingChunk) {
-                    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
-                        loadNextChunk();
+                        if (res && res.success && Array.isArray(res.products) && res.products.length > 0) {
+                            var newProds = res.products.map(function(p) {
+                                try { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); } catch(e) { p.gallery_images = []; }
+                                try { p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); } catch(e) { p.variants = []; }
+                                p.category_ids = pc.filter(function(x) { return String(x.product_id) === String(p.id); }).map(function(x) { return String(x.category_id); });
+                                if (p.category_id && !p.category_ids.some(function(cid){ return String(cid) === String(p.category_id); })) {
+                                    p.category_ids.push(String(p.category_id));
+                                }
+                                return p;
+                            });
+
+                            var existingMap = {};
+                            allProducts.forEach(function(x) { existingMap[String(x.id)] = true; });
+                            var freshToAdd = newProds.filter(function(p) { return !existingMap[String(p.id)]; });
+
+                            if (freshToAdd.length > 0) {
+                                allProducts = allProducts.concat(freshToAdd);
+                                if (window.BRAND && typeof window.BRAND.indexProducts === 'function') {
+                                    window.BRAND.indexProducts(freshToAdd);
+                                }
+                                applyFilters();
+                            }
+
+                            if (res.has_more && res.next_chunk) {
+                                nextChunk = res.next_chunk;
+                                isStreaming = false;
+                                setTimeout(fetchNextShopChunk, 80);
+                            } else {
+                                nextChunk = null;
+                                isStreaming = false;
+                            }
+                        } else {
+                            nextChunk = null;
+                            isStreaming = false;
+                        }
+                    } catch(err) {
+                        console.warn('Shop background chunk load error:', err);
+                        isStreaming = false;
                     }
                 }
-            }, { passive: true });
 
-            // Idle prefetch: load next 100 after 1.5 seconds so user doesn't wait
-            setTimeout(function() {
-                if (hasMoreChunks) loadNextChunk();
-            }, 1500);
+                // Start background stream 200ms after initial 20 products render
+                setTimeout(fetchNextShopChunk, 200);
+
+                // Keep scroll trigger as fallback
+                window.addEventListener('scroll', function() {
+                    if (nextChunk && !isStreaming) {
+                        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
+                            fetchNextShopChunk();
+                        }
+                    }
+                }, { passive: true });
+            })();
         }
     }).catch(function(err) {
         console.error('Shop load error:', err);

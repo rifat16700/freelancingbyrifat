@@ -13,8 +13,9 @@ const CF_ACCOUNT_ID     = process.env.CF_ACCOUNT_ID     || 'YOUR_CLOUDFLARE_ACCO
 const CF_D1_DATABASE_ID = process.env.CF_D1_DATABASE_ID || 'YOUR_D1_DATABASE_ID';           // 3. Cloudflare D1 Database ID
 const CF_API_TOKEN      = process.env.CF_API_TOKEN      || 'YOUR_CF_API_TOKEN_D1_READ';     // 4. Cloudflare API Token (D1:Read Permission)
 
-const CACHE_TTL_SECONDS = 300; // Cloudflare 5 মিনিট (300s) Edge Cache TTL
-const CHUNK_SIZE        = 100; // প্রতি চ্যাঙ্কে ১০০টি করে প্রোডাক্ট
+const CACHE_TTL_SECONDS     = 300; // Cloudflare 5 মিনিট (300s) Edge Cache TTL
+const INITIAL_PRODUCT_COUNT = 20;  // ১ম রিকোয়েস্টে ২০টি প্রোডাক্ট (ব্লাজিং ফাস্ট ১ম ইম্প্রেশন)
+const CHUNK_SIZE            = 50;  // ব্যাকগ্রাউন্ডের প্রতি চ্যাঙ্কে ৫০টি করে প্রোডাক্ট
 const PORT              = process.env.PORT || process.env.ALWAYSDATA_HTTPD_PORT || 8100;
 const HOST              = process.env.IP   || process.env.ALWAYSDATA_HTTPD_IP   || '0.0.0.0';
 
@@ -231,26 +232,30 @@ const server = http.createServer(async (req, res) => {
     const activeBrandId = activeBrand ? activeBrand.id : null;
     const filteredCategories = categories.filter(c => isCatVisibleOnBrand(c, activeBrandId));
 
-    const prodChunks = [];
-    for (let i = 0; i < products.length; i += CHUNK_SIZE) {
-        const slice = products.slice(i, i + CHUNK_SIZE);
-        const cNum  = Math.floor(i / CHUNK_SIZE) + 1;
-        prodChunks.push({ chunk: cNum, count: slice.length, products: slice });
-    }
-
+    // A. Subsequent 50-Product Chunk Request (?chunk=1, ?chunk=2, etc.)
     if (chunkNum > 0) {
-        const chosen = prodChunks[chunkNum - 1] || { products: [] };
+        const offset = INITIAL_PRODUCT_COUNT + (chunkNum - 1) * CHUNK_SIZE;
+        const slice  = (offset < products.length) ? products.slice(offset, offset + CHUNK_SIZE) : [];
+        const hasMore = (offset + CHUNK_SIZE) < products.length;
+
         res.writeHead(200, commonHeaders);
         return res.end(JSON.stringify({
             success: true,
             chunk: chunkNum,
-            count: chosen.products.length,
+            count: slice.length,
             total_products: products.length,
-            has_more: chunkNum < prodChunks.length,
-            next_chunk: chunkNum < prodChunks.length ? (chunkNum + 1) : null,
-            products: chosen.products
+            has_more: hasMore,
+            next_chunk: hasMore ? (chunkNum + 1) : null,
+            products: slice
         }));
     }
+
+    // B. Initial Public Data Request (/public-data) -> First 20 products ONLY for instant 1st impression!
+    const loadAll        = (reqUrl.searchParams.get('all') === '1');
+    const initialSlice   = loadAll ? products : products.slice(0, INITIAL_PRODUCT_COUNT);
+    const remainingCount = Math.max(0, products.length - initialSlice.length);
+    const hasMore        = !loadAll && (remainingCount > 0);
+    const totalChunks    = Math.ceil(remainingCount / CHUNK_SIZE);
 
     res.writeHead(200, commonHeaders);
     return res.end(JSON.stringify({
@@ -266,10 +271,13 @@ const server = http.createServer(async (req, res) => {
             brands: allBrands,
             banners,
             categories: filteredCategories,
-            product_chunks: prodChunks,
-            total_products: products.length,
+            products: initialSlice,
+            initial_count: initialSlice.length,
             chunk_size: CHUNK_SIZE,
-            total_chunks: prodChunks.length,
+            total_products: products.length,
+            has_more: hasMore,
+            next_chunk: hasMore ? 1 : null,
+            total_chunks: totalChunks,
             home_sections: sections,
             product_categories: prodCats
         }

@@ -143,22 +143,14 @@ export async function onRequestGet(context) {
         const allProducts = catalog.products;
         const filteredCategories = catalog.categories;
 
-        const CHUNK_SIZE = 100;
-        const productChunks = [];
-        for (let i = 0; i < allProducts.length; i += CHUNK_SIZE) {
-            const slice = allProducts.slice(i, i + CHUNK_SIZE);
-            productChunks.push({
-                chunk: Math.floor(i / CHUNK_SIZE) + 1,
-                count: slice.length,
-                products: slice
-            });
-        }
+        const INITIAL_PRODUCT_COUNT = 20; // ১ম রিকোয়েস্টে ২০টি প্রোডাক্ট (ব্লাজিং ফাস্ট ১ম ইম্প্রেশন)
+        const CHUNK_SIZE = 50;            // পরবর্তী প্রতি চ্যাঙ্কে ৫০টি করে প্রোডাক্ট
 
-        // 2. Individual 100-product chunk endpoint (?chunk=1, ?chunk=2, etc.)
+        // 2. Individual 50-product chunk endpoint (?chunk=1, ?chunk=2, etc.)
         if (chunkParam) {
             const chunkNum = Math.max(1, parseInt(chunkParam, 10) || 1);
-            const offset = (chunkNum - 1) * CHUNK_SIZE;
-            const chunkProducts = allProducts.slice(offset, offset + CHUNK_SIZE);
+            const offset = INITIAL_PRODUCT_COUNT + (chunkNum - 1) * CHUNK_SIZE;
+            const chunkProducts = (offset < allProducts.length) ? allProducts.slice(offset, offset + CHUNK_SIZE) : [];
             const hasMore = (offset + CHUNK_SIZE) < allProducts.length;
 
             return new Response(JSON.stringify({
@@ -178,7 +170,12 @@ export async function onRequestGet(context) {
             });
         }
 
-        // 3. Master JSON load (organizes products in 100-product chunks inside Master JSON)
+        // 3. Master JSON load -> First 20 products ONLY for instant 1st impression!
+        const initialProducts = loadAll ? allProducts : allProducts.slice(0, INITIAL_PRODUCT_COUNT);
+        const remainingCount  = Math.max(0, allProducts.length - initialProducts.length);
+        const hasMore         = !loadAll && (remainingCount > 0);
+        const totalChunks     = Math.ceil(remainingCount / CHUNK_SIZE);
+
         const data = {
             settings: mergedSettings,
             main_settings: {
@@ -190,14 +187,13 @@ export async function onRequestGet(context) {
             brands: allBrands,
             banners: banners.results || [],
             categories: filteredCategories,
-            product_chunks: productChunks,
-            products: allProducts,
-            has_more: false,
-            next_chunk: null,
-            total_products: allProducts.length,
-            initial_count: allProducts.length,
+            products: initialProducts,
+            initial_count: initialProducts.length,
             chunk_size: CHUNK_SIZE,
-            total_chunks: productChunks.length,
+            total_products: allProducts.length,
+            has_more: hasMore,
+            next_chunk: hasMore ? 1 : null,
+            total_chunks: totalChunks,
             home_sections: home_sections.results || [],
             product_categories: product_categories.results || [],
             tawk_widget_url: env.TAWK_WIDGET_URL || null,

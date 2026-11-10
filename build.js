@@ -210,9 +210,9 @@ if (fs.existsSync(redirectsPath)) {
 
     if (rawProxyUrl) {
         const proxyRules = [
-            `/public-data ${rawProxyUrl}/index.php?endpoint=public-data 200`,
-            `/checkout-data ${rawProxyUrl}/index.php?endpoint=checkout-data 200`,
-            `/public-reviews ${rawProxyUrl}/index.php?endpoint=public-reviews 200`
+            `/public-data ${rawProxyUrl}/public-data 200`,
+            `/checkout-data ${rawProxyUrl}/checkout-data 200`,
+            `/public-reviews ${rawProxyUrl}/public-reviews 200`
         ].join('\n');
         redirectsContent = proxyRules + '\n' + redirectsContent;
         console.log(`✅ Proxy 200 rewrites injected into _redirects -> ${rawProxyUrl}`);

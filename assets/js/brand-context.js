@@ -416,7 +416,7 @@
         var origFetch = window.fetch;
         window.fetch = function (input, init) {
             var urlStr = (typeof input === 'string') ? input : (input && input.url ? input.url : '');
-            if (urlStr && (urlStr.indexOf('/api/public-data') !== -1 || urlStr.indexOf('/api/checkout-data') !== -1)) {
+            if (urlStr && (urlStr.indexOf('public-data') !== -1 || urlStr.indexOf('checkout-data') !== -1)) {
                 if (BRAND.slug && urlStr.indexOf('brand=') === -1) {
                     var newUrl = BRAND.api(urlStr);
                     input = (typeof input === 'string') ? newUrl : new Request(newUrl, input);

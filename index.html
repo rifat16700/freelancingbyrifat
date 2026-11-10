@@ -403,32 +403,81 @@ function loadSiteData() {
 
         document.getElementById('pageLoader').style.display = 'none';
 
-        // ── Background Idle Prefetch for Remaining Product Chunks ──
+        // ── Progressive Background Product Streamer (Zero Wait, Auto-Fetch Remaining 50-Product Chunks) ──
         if (window.__pubDataMeta && window.__pubDataMeta.has_more) {
-            setTimeout(async function() {
-                try {
-                    var cRes = await fetch((CONFIG.HF_API_BASE||"") + "/api/public-data?chunk=1").then(r => r.json());
-                    if (cRes && cRes.success && cRes.products && cRes.products.length) {
-                        var newProds = cRes.products.map(function(p) {
-                            try { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); } catch(e) { p.gallery_images = []; }
-                            try { p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); } catch(e) { p.variants = []; }
-                            p.category_ids = prodCats.filter(function(x){ return x.product_id === p.id; }).map(function(x){ return x.category_id; });
-                            if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
-                            return p;
-                        });
-                        allProducts = allProducts.concat(newProds);
-                        if (isV2) {
-                            initV2Theme(banners, cats, homeSects);
-                        } else {
-                            if (!homeSects || !homeSects.length) {
-                                renderProducts(allProducts);
-                            } else {
-                                renderHomeSections(homeSects);
+            (function streamBackgroundChunks() {
+                var nextChunk = window.__pubDataMeta.next_chunk || 1;
+                var isStreaming = false;
+
+                async function fetchNext() {
+                    if (!nextChunk || isStreaming) return;
+                    isStreaming = true;
+                    try {
+                        var chunkPath = "/public-data?chunk=" + nextChunk;
+                        var chunkUrl = window.BRAND ? window.BRAND.api(chunkPath) : chunkPath;
+                        var res = null;
+                        try {
+                            res = await fetch(chunkUrl).then(function(r) { return r.json(); });
+                        } catch(e) {
+                            var apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
+                            if (apiBase) {
+                                var pUrl = window.BRAND ? window.BRAND.api(apiBase + chunkPath) : (apiBase + chunkPath);
+                                res = await fetch(pUrl).then(function(r) { return r.json(); });
                             }
                         }
+
+                        if (res && res.success && Array.isArray(res.products) && res.products.length > 0) {
+                            var newProds = res.products.map(function(p) {
+                                try { p.gallery_images = (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images); } catch(e) { p.gallery_images = []; }
+                                try { p.variants = (typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants); } catch(e) { p.variants = []; }
+                                p.category_ids = prodCats.filter(function(x){ return String(x.product_id) === String(p.id); }).map(function(x){ return String(x.category_id); });
+                                if (p.category_id && !p.category_ids.some(function(cid){ return String(cid) === String(p.category_id); })) {
+                                    p.category_ids.push(String(p.category_id));
+                                }
+                                return p;
+                            });
+
+                            var existingMap = {};
+                            allProducts.forEach(function(x) { existingMap[String(x.id)] = true; });
+                            var freshToAdd = newProds.filter(function(p) { return !existingMap[String(p.id)]; });
+
+                            if (freshToAdd.length > 0) {
+                                allProducts = allProducts.concat(freshToAdd);
+                                if (window.BRAND && typeof window.BRAND.indexProducts === 'function') {
+                                    window.BRAND.indexProducts(freshToAdd);
+                                }
+                                if (isV2) {
+                                    initV2Theme(banners, cats, homeSects);
+                                } else {
+                                    if (!homeSects || !homeSects.length) {
+                                        renderProducts(allProducts);
+                                    } else {
+                                        renderHomeSections(homeSects);
+                                    }
+                                    renderFlashDeals();
+                                }
+                            }
+
+                            if (res.has_more && res.next_chunk) {
+                                nextChunk = res.next_chunk;
+                                isStreaming = false;
+                                setTimeout(fetchNext, 80);
+                            } else {
+                                nextChunk = null;
+                                isStreaming = false;
+                            }
+                        } else {
+                            nextChunk = null;
+                            isStreaming = false;
+                        }
+                    } catch(err) {
+                        console.warn('Background product stream error:', err);
+                        isStreaming = false;
                     }
-                } catch(e) {}
-            }, 1800);
+                }
+
+                setTimeout(fetchNext, 300);
+            })();
         }
     }).catch(function(err) {
         console.error(err);

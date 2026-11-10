@@ -15,7 +15,8 @@ define('CF_D1_DATABASE_ID',  'YOUR_D1_DATABASE_ID');           // 3. Cloudflare 
 define('CF_API_TOKEN',       'YOUR_CF_API_TOKEN_D1_READ');     // 4. Cloudflare API Token (D1:Read Permission)
 
 define('CACHE_TTL_SECONDS',  300);                             // Cloudflare 5 মিনিট (300s) Edge Cache TTL
-define('CHUNK_SIZE',         100);                             // প্রতি চ্যাঙ্কে ১০০টি করে প্রোডাক্ট
+define('INITIAL_PRODUCT_COUNT', 20);                            // ১ম রিকোয়েস্টে ২০টি প্রোডাক্ট (ব্লাজিং ফাস্ট ১ম ইম্প্রেশন)
+define('CHUNK_SIZE',            50);                            // ব্যাকগ্রাউন্ডের প্রতি চ্যাঙ্কে ৫০টি করে প্রোডাক্ট
 
 // ============================================================================
 // 1. STRICT DOMAIN WHITELIST & CORS PROTECTION
@@ -363,31 +364,34 @@ foreach ($products as $p) {
     $filteredProducts[] = $p;
 }
 
-// Organize products into 100-product chunks inside Master JSON
-$rawChunks = array_chunk($filteredProducts, CHUNK_SIZE);
-$productChunks = [];
-foreach ($rawChunks as $idx => $slice) {
-    $cNum = $idx + 1;
-    $productChunks[] = [
-        'chunk'    => $cNum,
-        'count'    => count($slice),
-        'products' => $slice
-    ];
-}
-
+// ============================================================================
+// 5. PROGRESSIVE 20-INITIAL + 50-CHUNK ENGINE
+// ============================================================================
+// A. Subsequent 50-Product Chunk Request (?chunk=1, ?chunk=2, etc.)
 if ($chunkNum > 0) {
-    $slice = $rawChunks[$chunkNum - 1] ?? [];
+    $offset = INITIAL_PRODUCT_COUNT + ($chunkNum - 1) * CHUNK_SIZE;
+    $slice  = ($offset < count($filteredProducts)) ? array_slice($filteredProducts, $offset, CHUNK_SIZE) : [];
+    $hasMore = ($offset + CHUNK_SIZE) < count($filteredProducts);
+
     echo json_encode([
         'success'        => true,
         'chunk'          => $chunkNum,
         'count'          => count($slice),
         'total_products' => count($filteredProducts),
-        'has_more'       => ($chunkNum < count($rawChunks)),
-        'next_chunk'     => ($chunkNum < count($rawChunks)) ? ($chunkNum + 1) : null,
+        'has_more'       => $hasMore,
+        'next_chunk'     => $hasMore ? ($chunkNum + 1) : null,
         'products'       => $slice
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+// B. Initial Public Data Request (/public-data) -> First 20 products ONLY for instant 1st impression!
+$loadAll        = (isset($_GET['all']) && $_GET['all'] == '1');
+$initialSlice   = $loadAll ? $filteredProducts : array_slice($filteredProducts, 0, INITIAL_PRODUCT_COUNT);
+$remainingCount = max(0, count($filteredProducts) - count($initialSlice));
+$hasMore        = !$loadAll && ($remainingCount > 0);
+$totalChunks    = (int)ceil($remainingCount / CHUNK_SIZE);
+$nextChunk      = $hasMore ? 1 : null;
 
 echo json_encode([
     'success' => true,
@@ -402,10 +406,13 @@ echo json_encode([
         'brands'             => $allBrands,
         'banners'            => $banners,
         'categories'         => $filteredCategories,
-        'product_chunks'     => $productChunks,
-        'total_products'     => count($filteredProducts),
+        'products'           => $initialSlice,
+        'initial_count'      => count($initialSlice),
         'chunk_size'         => CHUNK_SIZE,
-        'total_chunks'       => count($productChunks),
+        'total_products'     => count($filteredProducts),
+        'has_more'           => $hasMore,
+        'next_chunk'         => $nextChunk,
+        'total_chunks'       => $totalChunks,
         'home_sections'      => $sections,
         'product_categories' => $prodCats
     ]
