@@ -5,6 +5,13 @@ export async function onRequestGet(context) {
     const { request, env, params } = context;
     const rawSlug = params?.brand || '';
 
+    // If it matches proxy data endpoints, immediately redirect to proxy
+    if (rawSlug === 'public-data' || rawSlug === 'checkout-data' || rawSlug === 'public-reviews') {
+        const proxyBase = (env.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
+        const u = new URL(request.url);
+        return Response.redirect(`${proxyBase}/${rawSlug}${u.search}`, 302);
+    }
+
     // If it matches a reserved route or static asset (e.g., /cart, /checkout, /login), fall through to static assets
     if (isReservedSlug(rawSlug)) {
         return context.next();

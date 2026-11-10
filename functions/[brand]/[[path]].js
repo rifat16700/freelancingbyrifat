@@ -28,6 +28,13 @@ export async function onRequestGet(context) {
     // Filter out empty segments caused by trailing slashes (e.g. /gadgets/ -> [''])
     const pathParts = rawPath.filter(p => p !== undefined && p !== null && String(p).trim() !== '');
 
+    // If it matches proxy data endpoints, immediately redirect to proxy
+    if (rawSlug === 'public-data' || rawSlug === 'checkout-data' || rawSlug === 'public-reviews') {
+        const proxyBase = (env.PROXY_API_URL || 'https://ranonex1.alwaysdata.net').replace(/\/+$/, '');
+        const u = new URL(request.url);
+        return Response.redirect(`${proxyBase}/${rawSlug}${u.search}`, 302);
+    }
+
     if (isReservedSlug(rawSlug)) {
         return context.next();
     }
