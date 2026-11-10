@@ -16,7 +16,7 @@ var CONFIG = {
     DB_PROVIDER: 'cf_db',
     
     // ── Proxy Hosting Base URL (Cloudflare Env Var: PROXY_API_URL) ──
-    PROXY_API_URL: '',
+    PROXY_API_URL: 'https://ranonex1.alwaysdata.net',
     HF_API_BASE: '',
 
     // ── Supabase ─────────────────────────────────────────────

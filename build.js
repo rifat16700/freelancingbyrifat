@@ -14,7 +14,7 @@ const rawBrandColors = (process.env.BRAND_COLORS || process.env.THEME_COLORS || 
 const rawSiteUrl = (process.env.SITE_URL || process.env.CANONICAL_URL || '').toString().trim();
 
 // ── External Proxy Hosting URL from Cloudflare Env Var (PROXY_API_URL বা HF_API_BASE) ──
-const rawProxyUrl = (process.env.PROXY_API_URL || process.env.PROXY_URL || process.env.HF_API_BASE || '').toString().trim().replace(/\/+$/, '');
+const rawProxyUrl = (process.env.PROXY_API_URL || process.env.PROXY_URL || process.env.HF_API_BASE || 'https://ranonex1.alwaysdata.net').toString().trim().replace(/\/+$/, '');
 
 const configJs = `// ============================================================
 // Auto-generated during Cloudflare Build
