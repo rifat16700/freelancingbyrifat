@@ -279,7 +279,7 @@ window.cfDbBatchQuery = function(queries, isMultiple) {
         setTimeout(function() { reject(new Error('Request timeout (10s). Check Cloudflare Functions.')); }, 10000);
     });
 
-    var fetchPromise = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", {
+    var fetchPromise = fetch("/api/d1-query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ queries: queries })
@@ -384,7 +384,7 @@ function showSchemaModal(errStr) {
 }
 // ── D1 Admin Query Helper (For cf_db write operations) ──────────
 function d1AdminQuery(sql, params) {
-    return fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/admin-query', {
+    return fetch('/api/admin-query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
         body: JSON.stringify({ sql: sql, params: params || [] })
@@ -717,8 +717,7 @@ window.loadAdminBrands = function(force) {
     if (typeof CONFIG === 'undefined' || CONFIG.DB_PROVIDER !== 'cf_db') {
         return Promise.resolve([]);
     }
-    var apiBase = (CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '');
-    return fetch(apiBase + '/api/brands')
+    return fetch('/api/brands')
         .then(function(r) { return r.json(); })
         .then(function(d) {
             window.ADMIN_BRANDS = (d && d.success && Array.isArray(d.brands)) ? d.brands : [];

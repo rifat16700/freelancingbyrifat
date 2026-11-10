@@ -35,7 +35,7 @@ var CONFIG = {
     
     // ── Proxy Hosting Base URL (Cloudflare Env Var: PROXY_API_URL) ──
     PROXY_API_URL: '${s(rawProxyUrl)}',
-    HF_API_BASE: '${s(rawProxyUrl)}',
+    HF_API_BASE: '',
 
     // ── Supabase ─────────────────────────────────────────────
     SUPABASE_URL:      '${s(process.env.SUPABASE_URL)}',
@@ -202,7 +202,23 @@ try {
 fs.writeFileSync(layoutConfigPath, layoutConfigJs, 'utf8');
 console.log('✅ assets/js/layout-config.js synced successfully during build!');
 
-// ── Cache Busting for HTML files ──
+// ── Dynamic Proxy Redirects for Cloudflare Pages (Stateless Proxy without Functions) ──
+const redirectsPath = path.join(__dirname, '_redirects');
+if (fs.existsSync(redirectsPath)) {
+    let redirectsContent = fs.readFileSync(redirectsPath, 'utf8');
+    redirectsContent = redirectsContent.split('\n').filter(line => !line.includes('/public-data') && !line.includes('/checkout-data') && !line.includes('/public-reviews')).join('\n').trim();
+
+    if (rawProxyUrl) {
+        const proxyRules = [
+            `/public-data ${rawProxyUrl}/index.php?endpoint=public-data 200`,
+            `/checkout-data ${rawProxyUrl}/index.php?endpoint=checkout-data 200`,
+            `/public-reviews ${rawProxyUrl}/index.php?endpoint=public-reviews 200`
+        ].join('\n');
+        redirectsContent = proxyRules + '\n' + redirectsContent;
+        console.log(`✅ Proxy 200 rewrites injected into _redirects -> ${rawProxyUrl}`);
+    }
+    fs.writeFileSync(redirectsPath, redirectsContent + '\n', 'utf8');
+}
 const timestamp = Date.now();
 const directories = [__dirname, path.join(__dirname, 'admin')];
 

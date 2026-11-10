@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
     <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="/assets/js/config.js?v=1792145528736"></script>
+    <script src="/assets/js/config.js?v=1794330139110"></script>
     <script src="/assets/js/brand-context.js"></script>
     <script src="/assets/js/seo-helper.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -539,10 +539,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch(e) {}
 
-            // 2. যদি Cache Miss হয় (অর্থাৎ প্রোডাক্ট পেজে সরাসরি ঢুকেছে বা ৫ মিনিটের JSON নেই), তখন প্রক্সির কাছে শুধু এই ১টি প্রোডাক্টই ফেচ করার রিকোয়েস্ট যাবে!
-            const apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
-            const singlePath = "/api/public-data?product_id=" + encodeURIComponent(id);
-            const primaryUrl = window.BRAND ? window.BRAND.api(apiBase + singlePath) : (apiBase + singlePath);
+            // 2. যদি Cache Miss হয় (অর্থাৎ প্রোডাক্ট পেজে সরাসরি ঢুকেছে বা ৫ মিনিটের JSON নেই), তখন /public-data থেকে শুধু এই ১টি প্রোডাক্টই ফেচ হবে!
+            // No /api/ prefix => Cloudflare Functions are NEVER triggered!
+            const singleQuery = "/public-data?product_id=" + encodeURIComponent(id);
+            const primaryUrl = window.BRAND ? window.BRAND.api(singleQuery) : singleQuery;
             try {
                 const spRes = await fetch(primaryUrl).then(r => r.json());
                 if (spRes && spRes.success && spRes.product) {
@@ -556,37 +556,65 @@ document.addEventListener('DOMContentLoaded', function() {
                     return spRes;
                 }
             } catch(e) {}
+
+            // Direct proxy fallback if configured
+            const apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
             if (apiBase) {
                 try {
-                    const fbUrl = window.BRAND ? window.BRAND.api(singlePath) : singlePath;
-                    const fbRes = await fetch(fbUrl).then(r => r.json());
-                    if (fbRes && fbRes.success && fbRes.product) {
+                    const pUrl = window.BRAND ? window.BRAND.api(apiBase + singleQuery) : (apiBase + singleQuery);
+                    const pRes = await fetch(pUrl).then(r => r.json());
+                    if (pRes && pRes.success && pRes.product) {
                         if (window.BRAND) {
                             window.BRAND.registerPublicData({
-                                brand: fbRes.brand,
-                                brands: fbRes.brands,
-                                products: [fbRes.product].concat(fbRes.related_products || [])
+                                brand: pRes.brand,
+                                brands: pRes.brands,
+                                products: [pRes.product].concat(pRes.related_products || [])
                             });
                         }
-                        return fbRes;
+                        return pRes;
                     }
                 } catch(e) {}
             }
+
+            // Legacy /api/ fallback
+            try {
+                const legacyPath = "/api/public-data?product_id=" + encodeURIComponent(id);
+                const fbUrl = window.BRAND ? window.BRAND.api(legacyPath) : legacyPath;
+                const fbRes = await fetch(fbUrl).then(r => r.json());
+                if (fbRes && fbRes.success && fbRes.product) {
+                    if (window.BRAND) {
+                        window.BRAND.registerPublicData({
+                            brand: fbRes.brand,
+                            brands: fbRes.brands,
+                            products: [fbRes.product].concat(fbRes.related_products || [])
+                        });
+                    }
+                    return fbRes;
+                }
+            } catch(e) {}
             return null;
         };
         const fetchReviews = async (pid) => {
-            const apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
-            const revPath = "/api/public-reviews?product_id=" + encodeURIComponent(pid);
+            const revQuery = "/public-reviews?product_id=" + encodeURIComponent(pid);
+            const primaryRevUrl = window.BRAND ? window.BRAND.api(revQuery) : revQuery;
             try {
-                const res = await fetch(apiBase + revPath).then(r=>r.json());
+                const res = await fetch(primaryRevUrl).then(r=>r.json());
                 if (res && res.success) return res.data || [];
             } catch(e) {}
+
+            const apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
             if (apiBase) {
                 try {
-                    const fbRes = await fetch(revPath).then(r=>r.json());
-                    if (fbRes && fbRes.success) return fbRes.data || [];
+                    const pRev = window.BRAND ? window.BRAND.api(apiBase + revQuery) : (apiBase + revQuery);
+                    const res = await fetch(pRev).then(r=>r.json());
+                    if (res && res.success) return res.data || [];
                 } catch(e) {}
             }
+            try {
+                const legRev = "/api/public-reviews?product_id=" + encodeURIComponent(pid);
+                const fbRes = await fetch(legRev).then(r=>r.json());
+                if (fbRes && fbRes.success) return fbRes.data || [];
+            } catch(e) {}
             return [];
         };
 

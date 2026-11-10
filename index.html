@@ -273,31 +273,44 @@ function loadSiteData() {
                     }
                 }
             } catch(e) {}
-            const apiBase = (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || "").replace(/\/+$/, "");
-            const targetUrl = window.BRAND ? window.BRAND.api(apiBase + "/api/public-data") : (apiBase + "/api/public-data");
+            // 1. Primary request: call /public-data directly on our own domain (ranonex.shop/public-data)
+            // No /api/ prefix => Cloudflare Functions are NEVER triggered!
+            const primaryUrl = window.BRAND ? window.BRAND.api("/public-data") : "/public-data";
             try {
-                const res = await fetch(targetUrl).then(r => r.json());
+                const res = await fetch(primaryUrl).then(r => r.json());
                 if (res && res.success && res.data) {
                     saveMasterJson5m(res.data);
                     if (window.BRAND) window.BRAND.registerPublicData(res.data);
                     return res.data;
                 }
             } catch(e) {}
+            // 2. Direct proxy fallback if configured
+            const apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
             if (apiBase) {
                 try {
-                    const fbUrl = window.BRAND ? window.BRAND.api("/api/public-data") : "/api/public-data";
-                    const fbRes = await fetch(fbUrl).then(r => r.json());
-                    if (fbRes && fbRes.success && fbRes.data) {
-                        saveMasterJson5m(fbRes.data);
-                        if (window.BRAND) window.BRAND.registerPublicData(fbRes.data);
-                        return fbRes.data;
+                    const pUrl = window.BRAND ? window.BRAND.api(apiBase + "/public-data") : (apiBase + "/public-data");
+                    const pRes = await fetch(pUrl).then(r => r.json());
+                    if (pRes && pRes.success && pRes.data) {
+                        saveMasterJson5m(pRes.data);
+                        if (window.BRAND) window.BRAND.registerPublicData(pRes.data);
+                        return pRes.data;
                     }
                 } catch(e) {}
             }
+            // 3. Fallback to /public_data.json or legacy /api/public-data
             try {
                 const fRes = await fetch("/public_data.json").then(r => r.json());
                 const fData = fRes.data || fRes;
                 if (fData && (fData.products || fData.product_chunks)) return fData;
+            } catch(e) {}
+            try {
+                const fbUrl = window.BRAND ? window.BRAND.api("/api/public-data") : "/api/public-data";
+                const fbRes = await fetch(fbUrl).then(r => r.json());
+                if (fbRes && fbRes.success && fbRes.data) {
+                    saveMasterJson5m(fbRes.data);
+                    if (window.BRAND) window.BRAND.registerPublicData(fbRes.data);
+                    return fbRes.data;
+                }
             } catch(e) {}
             return null;
         };

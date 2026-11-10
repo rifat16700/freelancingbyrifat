@@ -36,6 +36,8 @@ if (!$allowedHost || $allowedHost === 'your-domain.com') {
     $isAllowedOrigin = true;
 } elseif ($reqHost && ($reqHost === $allowedHost || substr($reqHost, -strlen('.' . $allowedHost)) === '.' . $allowedHost)) {
     $isAllowedOrigin = true;
+} elseif ($reqHost && (strpos($reqHost, 'alwaysdata.net') !== false || $reqHost === 'localhost' || $reqHost === '127.0.0.1')) {
+    $isAllowedOrigin = true;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -122,8 +124,9 @@ function mergeBrandSettings($rawSettings, $brand) {
 // ============================================================================
 // 4. ROUTE DISPATCHER (Stateless Fetch -> Return JSON -> Cloudflare Caches It)
 // ============================================================================
+$pathInfo  = $_SERVER['PATH_INFO'] ?? '';
 $reqUri    = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$endpoint  = isset($_GET['endpoint']) ? $_GET['endpoint'] : $reqUri;
+$endpoint  = isset($_GET['endpoint']) ? $_GET['endpoint'] : ($pathInfo ?: $reqUri);
 $brandSlug = trim($_GET['brand'] ?? $_GET['brand_id'] ?? '');
 $productId = trim($_GET['product_id'] ?? '');
 $chunkNum  = isset($_GET['chunk']) ? max(1, (int)$_GET['chunk']) : 0;
