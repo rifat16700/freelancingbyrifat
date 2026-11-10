@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
     <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="/assets/js/config.js?v=1794340025087"></script>
+    <script src="/assets/js/config.js?v=1794340474780"></script>
     <script src="/assets/js/brand-context.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/assets/js/supabase-init.js"></script>
@@ -510,26 +510,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
             }).catch(function() { return { data: [] }; });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            // 1. Primary: call /checkout-data directly on our own domain (ranonex.shop/checkout-data)
-            // No /api/ prefix => Cloudflare Functions are NEVER triggered!
-            var primaryCheckoutUrl = window.BRAND ? window.BRAND.api("/checkout-data") : "/checkout-data";
-            var masterPromise = fetch(primaryCheckoutUrl)
-                .then(function(r){ return r.json(); })
-                .then(function(res){
+            // 1. Direct proxy request if configured (Zero Cloudflare Function invocations!)
+            var apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
+            var fetchPromise = null;
+            if (apiBase) {
+                var pUrl = window.BRAND ? window.BRAND.api(apiBase + "/checkout-data") : (apiBase + "/checkout-data");
+                fetchPromise = fetch(pUrl).then(function(r){ return r.json(); }).then(function(res){
                     if (res && res.success && res.data) return res;
-                    throw new Error('Not found');
-                })
+                    throw new Error('Proxy failed');
+                });
+            } else {
+                fetchPromise = Promise.reject(new Error('No proxy configured'));
+            }
+
+            var masterPromise = fetchPromise
                 .catch(function(){
-                    // 2. Direct proxy fallback if configured
-                    var apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
-                    if (apiBase) {
-                        var pUrl = window.BRAND ? window.BRAND.api(apiBase + "/checkout-data") : (apiBase + "/checkout-data");
-                        return fetch(pUrl).then(function(r){ return r.json(); }).then(function(pRes){
-                            if (pRes && pRes.success && pRes.data) return pRes;
-                            throw new Error('Fallback failed');
-                        });
-                    }
-                    throw new Error('No proxy base');
+                    // 2. Primary fallback on our own domain
+                    var primaryCheckoutUrl = window.BRAND ? window.BRAND.api("/checkout-data") : "/checkout-data";
+                    return fetch(primaryCheckoutUrl).then(function(r){ return r.json(); }).then(function(res){
+                        if (res && res.success && res.data) return res;
+                        throw new Error('Not found');
+                    });
                 })
                 .catch(function(){
                     // 3. Legacy /api/ fallback

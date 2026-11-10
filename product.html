@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
     <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="/assets/js/config.js?v=1794340025087"></script>
+    <script src="/assets/js/config.js?v=1794340474780"></script>
     <script src="/assets/js/brand-context.js"></script>
     <script src="/assets/js/seo-helper.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -539,25 +539,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch(e) {}
 
-            // 2. যদি Cache Miss হয় (অর্থাৎ প্রোডাক্ট পেজে সরাসরি ঢুকেছে বা ৫ মিনিটের JSON নেই), তখন /public-data থেকে শুধু এই ১টি প্রোডাক্টই ফেচ হবে!
-            // No /api/ prefix => Cloudflare Functions are NEVER triggered!
+            // 2. যদি Cache Miss হয় (অর্থাৎ প্রোডাক্ট পেজে সরাসরি ঢুকেছে বা ৫ মিনিটের JSON নেই), তখন সরাসরি প্রক্সি থেকে ১টি প্রোডাক্টই ফেচ হবে!
             const singleQuery = "/public-data?product_id=" + encodeURIComponent(id);
-            const primaryUrl = window.BRAND ? window.BRAND.api(singleQuery) : singleQuery;
-            try {
-                const spRes = await fetch(primaryUrl).then(r => r.json());
-                if (spRes && spRes.success && spRes.product) {
-                    if (window.BRAND) {
-                        window.BRAND.registerPublicData({
-                            brand: spRes.brand,
-                            brands: spRes.brands,
-                            products: [spRes.product].concat(spRes.related_products || [])
-                        });
-                    }
-                    return spRes;
-                }
-            } catch(e) {}
-
-            // Direct proxy fallback if configured
             const apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
             if (apiBase) {
                 try {
@@ -575,6 +558,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } catch(e) {}
             }
+
+            // Primary fallback on our own domain
+            const primaryUrl = window.BRAND ? window.BRAND.api(singleQuery) : singleQuery;
+            try {
+                const spRes = await fetch(primaryUrl).then(r => r.json());
+                if (spRes && spRes.success && spRes.product) {
+                    if (window.BRAND) {
+                        window.BRAND.registerPublicData({
+                            brand: spRes.brand,
+                            brands: spRes.brands,
+                            products: [spRes.product].concat(spRes.related_products || [])
+                        });
+                    }
+                    return spRes;
+                }
+            } catch(e) {}
 
             // Legacy /api/ fallback
             try {

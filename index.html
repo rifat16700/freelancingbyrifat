@@ -273,18 +273,7 @@ function loadSiteData() {
                     }
                 }
             } catch(e) {}
-            // 1. Primary request: call /public-data directly on our own domain (ranonex.shop/public-data)
-            // No /api/ prefix => Cloudflare Functions are NEVER triggered!
-            const primaryUrl = window.BRAND ? window.BRAND.api("/public-data") : "/public-data";
-            try {
-                const res = await fetch(primaryUrl).then(r => r.json());
-                if (res && res.success && res.data) {
-                    saveMasterJson5m(res.data);
-                    if (window.BRAND) window.BRAND.registerPublicData(res.data);
-                    return res.data;
-                }
-            } catch(e) {}
-            // 2. Direct proxy fallback if configured
+            // 1. Direct proxy request if configured (Zero Cloudflare Function invocations!)
             const apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
             if (apiBase) {
                 try {
@@ -297,6 +286,16 @@ function loadSiteData() {
                     }
                 } catch(e) {}
             }
+            // 2. Primary request: call /public-data directly on our own domain
+            const primaryUrl = window.BRAND ? window.BRAND.api("/public-data") : "/public-data";
+            try {
+                const res = await fetch(primaryUrl).then(r => r.json());
+                if (res && res.success && res.data) {
+                    saveMasterJson5m(res.data);
+                    if (window.BRAND) window.BRAND.registerPublicData(res.data);
+                    return res.data;
+                }
+            } catch(e) {}
             // 3. Fallback to /public_data.json or legacy /api/public-data
             try {
                 const fRes = await fetch("/public_data.json").then(r => r.json());
