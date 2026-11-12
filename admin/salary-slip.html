@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Salary Slip — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Courier+Prime:wght@400;700&family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="../assets/js/config.js?v=1794482839918"></script>
+    <script src="assets/js/admin-common.js?v=6"></script>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
+
+    <style>
+        /* ── Page Layout ────────────────────────────────────────────── */
+        .slip-workspace {
+            display: grid;
+            grid-template-columns: 440px 1fr;
+            gap: 24px;
+            align-items: start;
+            margin-top: 20px;
+        }
+        @media (max-width: 1200px) {
+            .slip-workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Editor Form Panel ─────────────────────────────────────── */
+        .editor-panel {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg, 16px);
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+        .form-section-title {
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--primary, #8B1A1A);
+            margin: 18px 0 10px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid rgba(139,26,26,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .form-section-title:first-child { margin-top: 0; }
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .field-single {
+            margin-bottom: 10px;
+        }
+        .field-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary, #64748b);
+            margin-bottom: 4px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .field-input {
+            width: 100%;
+            padding: 7px 10px;
+            font-size: 12.5px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            font-family: inherit;
+            color: var(--text-dark, #0f172a);
+            background: #fff;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .field-input:focus {
+            border-color: var(--primary, #8B1A1A);
+            box-shadow: 0 0 0 3px rgba(139,26,26,0.08);
+        }
+        .field-input.num {
+            text-align: right;
+            font-family: 'Courier Prime', monospace;
+            font-weight: 600;
+        }
+
+        /* ── Preview Stage ─────────────────────────────────────────── */
+        .preview-stage {
+            position: sticky;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .toolbar-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg, 16px);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+        .part-tabs {
+            display: flex;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 10px;
+            gap: 4px;
+        }
+        .part-tab-btn {
+            border: none;
+            background: transparent;
+            padding: 7px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .part-tab-btn.active {
+            background: #fff;
+            color: var(--primary, #8B1A1A);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        /* ── Payslip Paper Simulator (1:1 Physical Replica) ─────────── */
+        .slip-scroll-wrap {
+            overflow-x: auto;
+            background: #cbd5e1;
+            padding: 24px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+        .payslip-sheet {
+            background: #ffffff;
+            color: #111111;
+            width: 215mm;
+            min-height: 140mm;
+            padding: 12mm 14mm;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+            font-family: 'Courier Prime', 'Courier New', Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.35;
+            box-sizing: border-box;
+            position: relative;
+            user-select: text;
+        }
+        .bilingual-sheet {
+            font-family: 'Courier Prime', 'Noto Sans Bengali', 'Courier New', monospace;
+            font-size: 11.5px;
+            line-height: 1.3;
+        }
+
+        /* ── Part 1 (Front) Typography & Structure ──────────────────── */
+        .slip-header-right {
+            text-align: right;
+            font-size: 12.5px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .slip-header-right .top-code {
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+        .slip-month-title {
+            text-align: right;
+            font-size: 12.5px;
+            font-weight: 700;
+            margin: 6px 0 10px;
+        }
+        .slip-divider {
+            border: none;
+            border-top: 1px solid #222;
+            margin: 8px 0;
+        }
+        .slip-emp-meta {
+            display: grid;
+            grid-template-columns: 1.3fr 1.5fr 1.2fr;
+            gap: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .slip-meta-item {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Main 3-column table */
+        .slip-columns-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .slip-columns-table td {
+            vertical-align: top;
+            padding: 0 6px;
+        }
+        .slip-col-left {
+            width: 33%;
+            border-right: 1px solid #333;
+        }
+        .slip-col-mid {
+            width: 37%;
+            border-right: 1px solid #333;
+        }
+        .slip-col-right {
+            width: 30%;
+        }
+
+        .data-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 2.5px 0;
+            font-size: 12px;
+        }
+        .data-label {
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 8px;
+        }
+        .data-val {
+            font-weight: 700;
+            text-align: right;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Bottom boxes */
+        .slip-bottom-row {
+            margin-top: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .slip-bank-box {
+            border: 1px solid #222;
+            padding: 6px 14px;
+            min-width: 200px;
+            line-height: 1.4;
+        }
+        .slip-net-box {
+            border: 1px solid #222;
+            padding: 8px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            min-width: 110px;
+            text-align: right;
+        }
+        .slip-footer-copy {
+            margin-top: 14px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* ── Part 2 (Back / Bilingual) Typography & Structure ────────── */
+        .bilingual-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            border-top: 1px solid #222;
+            padding-top: 8px;
+        }
+        .bilingual-col {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .bilingual-col:not(:last-child) {
+            border-right: 1px solid #333;
+            padding-right: 14px;
+        }
+        .bilingual-item {
+            padding: 2px 0;
+            line-height: 1.25;
+        }
+        .bilingual-en {
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .bilingual-bn {
+            font-size: 11.5px;
+            color: #222;
+            font-family: 'Noto Sans Bengali', sans-serif;
+            font-weight: 600;
+        }
+        .bilingual-bottom-nums {
+            margin-top: 16px;
+            border-top: 1px solid #222;
+            padding-top: 8px;
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* ── Print Styles (@media print) ────────────────────────────── */
+        @media print {
+            body, html {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+            }
+            .no-print,
+            .admin-sidebar,
+            .admin-header,
+            .editor-panel,
+            .toolbar-card,
+            .sidebar-overlay {
+                display: none !important;
+            }
+            .slip-workspace {
+                display: block !important;
+                margin: 0 !important;
+            }
+            .preview-stage {
+                position: static !important;
+            }
+            .slip-scroll-wrap {
+                background: transparent !important;
+                padding: 0 !important;
+                gap: 0 !important;
+                display: block !important;
+            }
+            .payslip-sheet {
+                box-shadow: none !important;
+                width: 100% !important;
+                min-height: auto !important;
+                padding: 4mm 6mm !important;
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+            .payslip-sheet:last-child {
+                page-break-after: auto;
+            }
+            @page {
+                size: auto;
+                margin: 8mm;
+            }
+        }
+    </style>
+</head>
+<body class="admin-page">
+
+<main class="admin-main">
+    <!-- Top Header -->
+    <div class="admin-header no-print">
+        <div class="header-left">
+            <button class="mobile-toggle-btn" onclick="openSidebar()">☰</button>
+            <div>
+                <h1 style="font-size:20px;font-weight:800;color:var(--text-dark);display:flex;align-items:center;gap:8px;">
+                    🧾 Worker Salary Slip Generator
+                </h1>
+                <div style="font-size:12px;color:var(--text-secondary);">
+                    হুবহু বেতন স্লিপ প্রিন্টার ও এডিটর (অফিশিয়াল ২-পার্ট ফরম্যাট)
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-outline btn-sm" onclick="resetDemoData()">🔄 Reset Photo Data</button>
+            <button class="btn btn-outline btn-sm" onclick="clearAllFields()">🧹 Clear</button>
+            <button class="btn btn-primary btn-sm" onclick="printPayslip()">🖨️ Print / Save PDF</button>
+        </div>
+    </div>
+
+    <!-- Workspace -->
+    <div class="slip-workspace">
+
+        <!-- LEFT: EDITABLE FORM CONTROLS -->
+        <div class="editor-panel no-print">
+            
+            <!-- Quick Employee Storage -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:11.5px;font-weight:800;color:#475569;text-transform:uppercase;">📂 Saved Employees</span>
+                    <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;" onclick="saveCurrentEmployee()">💾 Save This</button>
+                </div>
+                <select class="field-input" id="savedEmpDropdown" onchange="loadSavedEmployee(this.value)">
+                    <option value="">-- Select Saved Employee --</option>
+                </select>
+            </div>
+
+            <!-- 1. Header Information -->
+            <div class="form-section-title">🏢 Company & Slip Header</div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Top Code</label>
+                    <input class="field-input" id="inpTopCode" value="262" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Company Name</label>
+                    <input class="field-input" id="inpCompanyName" value="Brandix Casualwear Bangladesh Ltd. Plot#61-71" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Address Line 1</label>
+                    <input class="field-input" id="inpAddress1" value="Export Processing Zone," oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Address Line 2</label>
+                    <input class="field-input" id="inpAddress2" value="Cumilla 3500," oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Country</label>
+                    <input class="field-input" id="inpCountry" value="Bangladesh" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Slip Month Title</label>
+                    <input class="field-input" id="inpMonthTitle" value="Salary Slip for the month of April 2026" oninput="syncFromForm()">
+                </div>
+            </div>
+
+            <!-- 2. Employee Details -->
+            <div class="form-section-title">👤 Employee Details</div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">EMP NO</label>
+                    <input class="field-input" id="inpEmpNo" value="864123" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">NAME</label>
+                    <input class="field-input" id="inpName" value="Sahinoor Begum" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Date of Joined</label>
+                    <input class="field-input" id="inpDateJoined" value="10-Nov-2016" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">DESIG.</label>
+                    <input class="field-input" id="inpDesig" value="Sewing Associate - Jr. Operator" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div>
+                    <label class="field-label">EPF NO</label>
+                    <input class="field-input" id="inpEpfNo" value="14123" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">SEC:</label>
+                    <input class="field-input" id="inpSec" value="Team-05" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">DEPT:</label>
+                    <input class="field-input" id="inpDept" value="Manufacturing" oninput="syncFromForm()">
+                </div>
+            </div>
+
+            <!-- 3. Column 1: Attendance, Rates & Basic -->
+            <div class="form-section-title">📅 Col 1: Attendance & Rates</div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Days Present</label>
+                    <input class="field-input num" id="inpDaysPresent" value="26.00" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">No Pay Days</label>
+                    <input class="field-input num" id="inpNoPayDays" value="0.00" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Late/Early Minutes</label>
+                    <input class="field-input num" id="inpLateEarlyMins" value="0.00" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Overtime Hours</label>
+                    <input class="field-input num" id="inpOvertimeHours" value="45.96" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Basic Salary</label>
+                    <input class="field-input num" id="inpBasicSalary" value="10,063.00" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">House Rent Allowance</label>
+                    <input class="field-input num" id="inpHouseRent" value="5,032.00" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Medical Allowance</label>
+                    <input class="field-input num" id="inpMedicalAllow" value="2,375.00" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Gross Salary</label>
+                    <input class="field-input num" id="inpGrossSalary" value="17,470.00" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div>
+                    <label class="field-label">Daily Rate</label>
+                    <input class="field-input num" id="inpDailyRate" value="335.45" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Hourly Rate</label>
+                    <input class="field-input num" id="inpHourlyRate" value="41.93" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">OT Rate</label>
+                    <input class="field-input num" id="inpOtRate" value="96.76" oninput="syncFromForm()">
+                </div>
+            </div>
+
+            <!-- 4. Column 2: Allowances & Earnings -->
+            <div class="form-section-title">💰 Col 2: Allowances & Earnings</div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Prorated Basic Salary</label>
+                    <input class="field-input num" id="inpProratedBasic" value="10,063.47" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Total for EPF</label>
+                    <input class="field-input num" id="inpTotalEpf" value="10,063.47" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">HOUSE RENT 50% ON BASIC</label>
+                    <input class="field-input num" id="inpHouseRent50" value="5,031.74" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">MEDICAL ALLOWANCE FIXED</label>
+                    <input class="field-input num" id="inpMedicalFixed" value="2,375.00" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Attendance Incentive</label>
+                    <input class="field-input num" id="inpAttIncentive" value="700.00" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Lunch Allowance</label>
+                    <input class="field-input num" id="inpLunchAllow" value="1,170.00" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Overtime Amount</label>
+                    <input class="field-input num" id="inpOtAmount" value="4,447.28" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Production Incentive</label>
+                    <input class="field-input num" id="inpProdIncentive" value="1,227.00" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Transport Allowance</label>
+                    <input class="field-input num" id="inpTransportAllow" value="200.00" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Total Salary</label>
+                    <input class="field-input num" id="inpTotalSalary" value="25,214.49" oninput="syncFromForm()">
+                </div>
+            </div>
+
+            <!-- 5. Column 3: Deductions & Net Pay -->
+            <div class="form-section-title">📉 Col 3: Deductions & Net Pay</div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">PF 8.33% from Employee</label>
+                    <input class="field-input num" id="inpPfEmployee" value="838.29" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Total Deduction</label>
+                    <input class="field-input num" id="inpTotalDeduction" value="838.29" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Coins B/F</label>
+                    <input class="field-input num" id="inpCoinsBf" value="-8.51" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Net Salary</label>
+                    <input class="field-input num" id="inpNetSalary" value="24,367.69" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Coins C/F</label>
+                    <input class="field-input num" id="inpCoinsCf" value="-2.31" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Cheque Paid</label>
+                    <input class="field-input num" id="inpChequePaid" value="24,370.00" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-single">
+                <label class="field-label">PF 8.33% from Employer</label>
+                <input class="field-input num" id="inpPfEmployer" value="838.29" oninput="syncFromForm()">
+            </div>
+
+            <!-- 6. Bank & Payment Box -->
+            <div class="form-section-title">🏦 Bank & Final Payout</div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Bank Name</label>
+                    <input class="field-input" id="inpBankName" value="Dutch-Bangla Bank Limited" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Account Number</label>
+                    <input class="field-input" id="inpBankAcc" value="141.103.232710" oninput="syncFromForm()">
+                </div>
+            </div>
+            <div class="field-row">
+                <div>
+                    <label class="field-label">Bottom Net Box Amount</label>
+                    <input class="field-input num" id="inpBottomTotal" value="24,370.00" oninput="syncFromForm()">
+                </div>
+                <div>
+                    <label class="field-label">Footer Copyright</label>
+                    <input class="field-input" id="inpFooterCopy" value="Copyright - hsenid Software International (Pvt) Ltd." oninput="syncFromForm()">
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT: LIVE PAYSLIP PREVIEW STAGE -->
+        <div class="preview-stage">
+
+            <!-- Toolbar Controls -->
+            <div class="toolbar-card no-print">
+                <div class="part-tabs">
+                    <button class="part-tab-btn active" id="btnTabPart1" onclick="switchPart('part1')">📄 Part 1: Front (আসল স্লিপ)</button>
+                    <button class="part-tab-btn" id="btnTabPart2" onclick="switchPart('part2')">📑 Part 2: Back (বাংলা স্লিপ)</button>
+                    <button class="part-tab-btn" id="btnTabBoth" onclick="switchPart('both')">📖 Both Parts</button>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-outline btn-sm" onclick="resetDemoData()">🔄 Reset</button>
+                    <button class="btn btn-primary btn-sm" onclick="printPayslip()">🖨️ Print / PDF</button>
+                </div>
+            </div>
+
+            <!-- Sheets Canvas Scroll Container -->
+            <div class="slip-scroll-wrap">
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- PART 1: FRONT SIDE (MAIN SALARY SLIP - EXACT REPLICA)    -->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <div class="payslip-sheet" id="sheetPart1">
+                    
+                    <!-- Top Right Company Header -->
+                    <div class="slip-header-right">
+                        <div class="top-code" id="lblTopCode" contenteditable="true">262</div>
+                        <div id="lblCompanyName" contenteditable="true">Brandix Casualwear Bangladesh Ltd. Plot#61-71</div>
+                        <div id="lblAddress1" contenteditable="true">Export Processing Zone,</div>
+                        <div id="lblAddress2" contenteditable="true">Cumilla 3500,</div>
+                        <div id="lblCountry" contenteditable="true">Bangladesh</div>
+                    </div>
+
+                    <div class="slip-month-title" id="lblMonthTitle" contenteditable="true">Salary Slip for the month of April 2026</div>
+
+                    <hr class="slip-divider">
+
+                    <!-- Employee Details Header Row -->
+                    <div class="slip-emp-meta">
+                        <div>
+                            <div class="slip-meta-item">EMP NO : <span id="lblEmpNo" contenteditable="true">864123</span></div>
+                            <div class="slip-meta-item" style="margin-top:4px;">NAME : <span id="lblName" contenteditable="true">Sahinoor Begum</span></div>
+                        </div>
+                        <div>
+                            <div class="slip-meta-item">Date of Joined : <span id="lblDateJoined" contenteditable="true">10-Nov-2016</span></div>
+                            <div class="slip-meta-item" style="margin-top:4px;">DESIG. : <span id="lblDesig" contenteditable="true">Sewing Associate - Jr. Operator</span></div>
+                        </div>
+                        <div>
+                            <div class="slip-meta-item">EPF NO : <span id="lblEpfNo" contenteditable="true">14123</span></div>
+                            <div class="slip-meta-item" style="margin-top:4px;">SEC: <span id="lblSec" contenteditable="true">Team-05</span></div>
+                            <div class="slip-meta-item" style="margin-top:4px;">DEPT: <span id="lblDept" contenteditable="true">Manufacturing</span></div>
+                        </div>
+                    </div>
+
+                    <hr class="slip-divider">
+
+                    <!-- 3-Column Table -->
+                    <table class="slip-columns-table">
+                        <tr>
+                            <!-- Column 1: Attendance & Rates -->
+                            <td class="slip-col-left">
+                                <div class="data-line">
+                                    <span class="data-label">Days Present</span>
+                                    <span class="data-val" id="lblDaysPresent" contenteditable="true">26.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">No Pay Days</span>
+                                    <span class="data-val" id="lblNoPayDays" contenteditable="true">0.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Late/Early Minutes</span>
+                                    <span class="data-val" id="lblLateEarlyMins" contenteditable="true">0.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Overtime Hours</span>
+                                    <span class="data-val" id="lblOvertimeHours" contenteditable="true">45.96</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Basic Salary</span>
+                                    <span class="data-val" id="lblBasicSalary" contenteditable="true">10,063.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">House Rent Allowance</span>
+                                    <span class="data-val" id="lblHouseRent" contenteditable="true">5,032.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Medical Allowance</span>
+                                    <span class="data-val" id="lblMedicalAllow" contenteditable="true">2,375.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Gross Salary</span>
+                                    <span class="data-val" id="lblGrossSalary" contenteditable="true">17,470.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Daily Rate</span>
+                                    <span class="data-val" id="lblDailyRate" contenteditable="true">335.45</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Hourly Rate</span>
+                                    <span class="data-val" id="lblHourlyRate" contenteditable="true">41.93</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">OT Rate</span>
+                                    <span class="data-val" id="lblOtRate" contenteditable="true">96.76</span>
+                                </div>
+                            </td>
+
+                            <!-- Column 2: Allowances & Earnings -->
+                            <td class="slip-col-mid">
+                                <div class="data-line">
+                                    <span class="data-label">Prorated Basic Salary</span>
+                                    <span class="data-val" id="lblProratedBasic" contenteditable="true">10,063.47</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Total for EPF</span>
+                                    <span class="data-val" id="lblTotalEpf" contenteditable="true">10,063.47</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">HOUSE RENT 50% ON BASIC</span>
+                                    <span class="data-val" id="lblHouseRent50" contenteditable="true">5,031.74</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">MEDICAL ALLOWANCE FIXED</span>
+                                    <span class="data-val" id="lblMedicalFixed" contenteditable="true">2,375.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Attendance Incentive</span>
+                                    <span class="data-val" id="lblAttIncentive" contenteditable="true">700.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Lunch Allowance</span>
+                                    <span class="data-val" id="lblLunchAllow" contenteditable="true">1,170.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Overtime Amount</span>
+                                    <span class="data-val" id="lblOtAmount" contenteditable="true">4,447.28</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Production Incentive</span>
+                                    <span class="data-val" id="lblProdIncentive" contenteditable="true">1,227.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Transport Allowance</span>
+                                    <span class="data-val" id="lblTransportAllow" contenteditable="true">200.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Total Salary</span>
+                                    <span class="data-val" id="lblTotalSalary" contenteditable="true">25,214.49</span>
+                                </div>
+                            </td>
+
+                            <!-- Column 3: Deductions & Net Pay -->
+                            <td class="slip-col-right">
+                                <div class="data-line">
+                                    <span class="data-label">PF 8.33% from Employee</span>
+                                    <span class="data-val" id="lblPfEmployee" contenteditable="true">838.29</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Total Deduction</span>
+                                    <span class="data-val" id="lblTotalDeduction" contenteditable="true">838.29</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Coins B/F</span>
+                                    <span class="data-val" id="lblCoinsBf" contenteditable="true">-8.51</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Net Salary</span>
+                                    <span class="data-val" id="lblNetSalary" contenteditable="true">24,367.69</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Coins C/F</span>
+                                    <span class="data-val" id="lblCoinsCf" contenteditable="true">-2.31</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">Cheque Paid</span>
+                                    <span class="data-val" id="lblChequePaid" contenteditable="true">24,370.00</span>
+                                </div>
+                                <div class="data-line">
+                                    <span class="data-label">PF 8.33% from Employer</span>
+                                    <span class="data-val" id="lblPfEmployer" contenteditable="true">838.29</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <hr class="slip-divider">
+
+                    <!-- Bottom Bank and Net Pay Box -->
+                    <div class="slip-bottom-row">
+                        <div class="slip-bank-box">
+                            <div id="lblBankName" contenteditable="true">Dutch-Bangla Bank Limited</div>
+                            <div id="lblBankAcc" contenteditable="true" style="margin-top:2px;">141.103.232710</div>
+                        </div>
+                        <div class="slip-net-box" id="lblBottomTotal" contenteditable="true">
+                            24,370.00
+                        </div>
+                    </div>
+
+                    <div class="slip-footer-copy" id="lblFooterCopy" contenteditable="true">
+                        Copyright - hsenid Software International (Pvt) Ltd.
+                    </div>
+
+                </div>
+
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <!-- PART 2: BACK SIDE (BILINGUAL ENGLISH / BENGALI EXPLANATORY)-->
+                <!-- ══════════════════════════════════════════════════════════ -->
+                <div class="payslip-sheet bilingual-sheet" id="sheetPart2" style="display:none;">
+                    
+                    <div class="bilingual-grid">
+                        
+                        <!-- Column 1 -->
+                        <div class="bilingual-col">
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">EMP NO.</div>
+                                <div class="bilingual-bn">কর্মী নং</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">NAME</div>
+                                <div class="bilingual-bn">নাম</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">DAYS PRESENT</div>
+                                <div class="bilingual-bn">উপস্থিত কার্যদিবস</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">LATE/EARLY HOURS</div>
+                                <div class="bilingual-bn">দেরী/পূর্বে ত্যাগ</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">OT @ 2.0 HRS</div>
+                                <div class="bilingual-bn">ওভারটাইম (২ ঘণ্টা)</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">NOPAY DAYS</div>
+                                <div class="bilingual-bn">বিনা বেতনে ছুটি</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">FRIDAY</div>
+                                <div class="bilingual-bn">শুক্রবার</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">FRIDAY HOURS</div>
+                                <div class="bilingual-bn">শুক্রবার ঘণ্টা</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">GOVT_HOLIDAYS</div>
+                                <div class="bilingual-bn">সরকারি ছুটি</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">COMPANY HOLIDAYS</div>
+                                <div class="bilingual-bn">কোম্পানির কর্তৃক ছুটি</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">NIGHT SHIFT DAYS</div>
+                                <div class="bilingual-bn">নৈশকালীন কার্যদিবস</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">BASIC SALARY 60%</div>
+                                <div class="bilingual-bn">মূল বেতন ৬০%</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">ALLOWANCE 40%</div>
+                                <div class="bilingual-bn">ভাতা ৪০%</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">MEDICAL ALLOWANCE</div>
+                                <div class="bilingual-bn">চিকিৎসা ভাতা</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">GROSS SALARY</div>
+                                <div class="bilingual-bn">সর্বমোট বেতন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">DAILY RATE</div>
+                                <div class="bilingual-bn">দৈনিক (হার/দিন)</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">HOURLY RATE</div>
+                                <div class="bilingual-bn">ঘণ্টাপ্রতি (হার/ঘণ্টা)</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">OT @ 2.0 RATE</div>
+                                <div class="bilingual-bn">ওভারটাইম (২ ঘণ্টা/হার)</div>
+                            </div>
+                        </div>
+
+                        <!-- Column 2 -->
+                        <div class="bilingual-col">
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">EPF NO :</div>
+                                <div class="bilingual-bn">ইপিএফ নং</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">DESIG. :</div>
+                                <div class="bilingual-bn">পদবী</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">PRORATED BASIC SALARY</div>
+                                <div class="bilingual-bn">আনুপাতিক মূল বেতন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">LATE DEDUCTION</div>
+                                <div class="bilingual-bn">দেরীর জন্য কর্তন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">NOPAY DEDUCTION</div>
+                                <div class="bilingual-bn">বিনাবেতনের কর্তন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">TOTAL FOR EPF</div>
+                                <div class="bilingual-bn">ইপিএফ এর মূল</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">ATTENDANCE INCENTIVE</div>
+                                <div class="bilingual-bn">হাজিরা বোনাস</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">MEDICAL ALLOWANCE 10%</div>
+                                <div class="bilingual-bn">চিকিৎসা ভাতা ১০%</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">MEDICAL ALLOWANCE 2375/-</div>
+                                <div class="bilingual-bn">চিকিৎসা ভাতা ২৩৭৫/-</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">HOUSE RENT ALLOWANCE 50%</div>
+                                <div class="bilingual-bn">বাড়ী ভাড়া ভাতা ৫০%</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">OT @ 2.00</div>
+                                <div class="bilingual-bn">ওভারটাইম (২ ঘণ্টা)</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">SALARY ARREARS</div>
+                                <div class="bilingual-bn">বেতন বকেয়া</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">PRODUCTION INCENTIVE</div>
+                                <div class="bilingual-bn">উৎপাদন প্রণোদনা</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">TRANSPORT ALLOWANCE</div>
+                                <div class="bilingual-bn">যাতায়াত ভাতা</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">DAY OFF</div>
+                                <div class="bilingual-bn">কর্মহীন দিন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">DAY WAGE</div>
+                                <div class="bilingual-bn">দৈনিক মজুরি</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">TOTAL SALARY</div>
+                                <div class="bilingual-bn">মোট বেতন</div>
+                            </div>
+                        </div>
+
+                        <!-- Column 3 -->
+                        <div class="bilingual-col">
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">DEPT. :</div>
+                                <div class="bilingual-bn">বিভাগ</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">SEC:</div>
+                                <div class="bilingual-bn">শাখা</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">PAYE TAX</div>
+                                <div class="bilingual-bn">পরিশোধিত কর</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">EPF 8.33%</div>
+                                <div class="bilingual-bn">ইপিএফ ৮.৩৩%</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">STAMP DEDUCTION</div>
+                                <div class="bilingual-bn">স্ট্যাম্প বাবদ কর্তন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">SALARY ADVANCE</div>
+                                <div class="bilingual-bn">অগ্রিম বেতন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">OVER PAY DEDUCTION</div>
+                                <div class="bilingual-bn">অতিরিক্ত দে কর্তন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">TOTAL DEDUCTIONS</div>
+                                <div class="bilingual-bn">মোট কর্তন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">NET SALARY</div>
+                                <div class="bilingual-bn">খাঁটি বেতন</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">COINS B/F</div>
+                                <div class="bilingual-bn">পাওনা (জমা)</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">COINS C/F</div>
+                                <div class="bilingual-bn">পাওনা (হাওলাত)</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">CASH PAID</div>
+                                <div class="bilingual-bn">নগদ প্রদান</div>
+                            </div>
+                            <div class="bilingual-item">
+                                <div class="bilingual-en">CHEQUE PAID</div>
+                                <div class="bilingual-bn">চেক প্রদান</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="bilingual-bottom-nums">
+                        <span>১</span>
+                        <span>২</span>
+                        <span>৩</span>
+                        <span>৪</span>
+                        <span>৫</span>
+                        <span>৬</span>
+                        <span>৭</span>
+                        <span>৮</span>
+                        <span>৯</span>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+// ── Demo Data Preset (1:1 Exact from User Photo) ─────────────────────
+var DEMO_DATA = {
+    topCode: "262",
+    companyName: "Brandix Casualwear Bangladesh Ltd. Plot#61-71",
+    address1: "Export Processing Zone,",
+    address2: "Cumilla 3500,",
+    country: "Bangladesh",
+    monthTitle: "Salary Slip for the month of April 2026",
+
+    empNo: "864123",
+    name: "Sahinoor Begum",
+    dateJoined: "10-Nov-2016",
+    desig: "Sewing Associate - Jr. Operator",
+    epfNo: "14123",
+    sec: "Team-05",
+    dept: "Manufacturing",
+
+    daysPresent: "26.00",
+    noPayDays: "0.00",
+    lateEarlyMins: "0.00",
+    overtimeHours: "45.96",
+    basicSalary: "10,063.00",
+    houseRent: "5,032.00",
+    medicalAllow: "2,375.00",
+    grossSalary: "17,470.00",
+    dailyRate: "335.45",
+    hourlyRate: "41.93",
+    otRate: "96.76",
+
+    proratedBasic: "10,063.47",
+    totalEpf: "10,063.47",
+    houseRent50: "5,031.74",
+    medicalFixed: "2,375.00",
+    attIncentive: "700.00",
+    lunchAllow: "1,170.00",
+    otAmount: "4,447.28",
+    prodIncentive: "1,227.00",
+    transportAllow: "200.00",
+    totalSalary: "25,214.49",
+
+    pfEmployee: "838.29",
+    totalDeduction: "838.29",
+    coinsBf: "-8.51",
+    netSalary: "24,367.69",
+    coinsCf: "-2.31",
+    chequePaid: "24,370.00",
+    pfEmployer: "838.29",
+
+    bankName: "Dutch-Bangla Bank Limited",
+    bankAcc: "141.103.232710",
+    bottomTotal: "24,370.00",
+    footerCopy: "Copyright - hsenid Software International (Pvt) Ltd."
+};
+
+// Map of form input IDs to preview label IDs
+var FIELD_MAP = {
+    inpTopCode: "lblTopCode",
+    inpCompanyName: "lblCompanyName",
+    inpAddress1: "lblAddress1",
+    inpAddress2: "lblAddress2",
+    inpCountry: "lblCountry",
+    inpMonthTitle: "lblMonthTitle",
+
+    inpEmpNo: "lblEmpNo",
+    inpName: "lblName",
+    inpDateJoined: "lblDateJoined",
+    inpDesig: "lblDesig",
+    inpEpfNo: "lblEpfNo",
+    inpSec: "lblSec",
+    inpDept: "lblDept",
+
+    inpDaysPresent: "lblDaysPresent",
+    inpNoPayDays: "lblNoPayDays",
+    inpLateEarlyMins: "lblLateEarlyMins",
+    inpOvertimeHours: "lblOvertimeHours",
+    inpBasicSalary: "lblBasicSalary",
+    inpHouseRent: "lblHouseRent",
+    inpMedicalAllow: "lblMedicalAllow",
+    inpGrossSalary: "lblGrossSalary",
+    inpDailyRate: "lblDailyRate",
+    inpHourlyRate: "lblHourlyRate",
+    inpOtRate: "lblOtRate",
+
+    inpProratedBasic: "lblProratedBasic",
+    inpTotalEpf: "lblTotalEpf",
+    inpHouseRent50: "lblHouseRent50",
+    inpMedicalFixed: "lblMedicalFixed",
+    inpAttIncentive: "lblAttIncentive",
+    inpLunchAllow: "lblLunchAllow",
+    inpOtAmount: "lblOtAmount",
+    inpProdIncentive: "lblProdIncentive",
+    inpTransportAllow: "lblTransportAllow",
+    inpTotalSalary: "lblTotalSalary",
+
+    inpPfEmployee: "lblPfEmployee",
+    inpTotalDeduction: "lblTotalDeduction",
+    inpCoinsBf: "lblCoinsBf",
+    inpNetSalary: "lblNetSalary",
+    inpCoinsCf: "lblCoinsCf",
+    inpChequePaid: "lblChequePaid",
+    inpPfEmployer: "lblPfEmployer",
+
+    inpBankName: "lblBankName",
+    inpBankAcc: "lblBankAcc",
+    inpBottomTotal: "lblBottomTotal",
+    inpFooterCopy: "lblFooterCopy"
+};
+
+// ── Two-way Sync: Form to Preview ────────────────────────────────────
+function syncFromForm() {
+    for (var inpId in FIELD_MAP) {
+        var lblId = FIELD_MAP[inpId];
+        var inp = document.getElementById(inpId);
+        var lbl = document.getElementById(lblId);
+        if (inp && lbl) {
+            lbl.textContent = inp.value;
+        }
+    }
+}
+
+// ── Two-way Sync: Preview in-place edits to Form ─────────────────────
+function initInPlaceEditing() {
+    for (var inpId in FIELD_MAP) {
+        (function(inputElementId, labelElementId) {
+            var lbl = document.getElementById(labelElementId);
+            if (lbl) {
+                lbl.addEventListener('input', function() {
+                    var inp = document.getElementById(inputElementId);
+                    if (inp) inp.value = this.textContent;
+                });
+            }
+        })(inpId, FIELD_MAP[inpId]);
+    }
+}
+
+// ── Apply Data Object to Form & Preview ──────────────────────────────
+function applyData(data) {
+    document.getElementById('inpTopCode').value         = data.topCode || '';
+    document.getElementById('inpCompanyName').value     = data.companyName || '';
+    document.getElementById('inpAddress1').value        = data.address1 || '';
+    document.getElementById('inpAddress2').value        = data.address2 || '';
+    document.getElementById('inpCountry').value         = data.country || '';
+    document.getElementById('inpMonthTitle').value      = data.monthTitle || '';
+
+    document.getElementById('inpEmpNo').value           = data.empNo || '';
+    document.getElementById('inpName').value            = data.name || '';
+    document.getElementById('inpDateJoined').value      = data.dateJoined || '';
+    document.getElementById('inpDesig').value           = data.desig || '';
+    document.getElementById('inpEpfNo').value           = data.epfNo || '';
+    document.getElementById('inpSec').value             = data.sec || '';
+    document.getElementById('inpDept').value            = data.dept || '';
+
+    document.getElementById('inpDaysPresent').value     = data.daysPresent || '';
+    document.getElementById('inpNoPayDays').value       = data.noPayDays || '';
+    document.getElementById('inpLateEarlyMins').value   = data.lateEarlyMins || '';
+    document.getElementById('inpOvertimeHours').value   = data.overtimeHours || '';
+    document.getElementById('inpBasicSalary').value     = data.basicSalary || '';
+    document.getElementById('inpHouseRent').value       = data.houseRent || '';
+    document.getElementById('inpMedicalAllow').value    = data.medicalAllow || '';
+    document.getElementById('inpGrossSalary').value     = data.grossSalary || '';
+    document.getElementById('inpDailyRate').value       = data.dailyRate || '';
+    document.getElementById('inpHourlyRate').value      = data.hourlyRate || '';
+    document.getElementById('inpOtRate').value          = data.otRate || '';
+
+    document.getElementById('inpProratedBasic').value   = data.proratedBasic || '';
+    document.getElementById('inpTotalEpf').value        = data.totalEpf || '';
+    document.getElementById('inpHouseRent50').value     = data.houseRent50 || '';
+    document.getElementById('inpMedicalFixed').value    = data.medicalFixed || '';
+    document.getElementById('inpAttIncentive').value    = data.attIncentive || '';
+    document.getElementById('inpLunchAllow').value      = data.lunchAllow || '';
+    document.getElementById('inpOtAmount').value        = data.otAmount || '';
+    document.getElementById('inpProdIncentive').value   = data.prodIncentive || '';
+    document.getElementById('inpTransportAllow').value  = data.transportAllow || '';
+    document.getElementById('inpTotalSalary').value     = data.totalSalary || '';
+
+    document.getElementById('inpPfEmployee').value      = data.pfEmployee || '';
+    document.getElementById('inpTotalDeduction').value  = data.totalDeduction || '';
+    document.getElementById('inpCoinsBf').value         = data.coinsBf || '';
+    document.getElementById('inpNetSalary').value       = data.netSalary || '';
+    document.getElementById('inpCoinsCf').value         = data.coinsCf || '';
+    document.getElementById('inpChequePaid').value      = data.chequePaid || '';
+    document.getElementById('inpPfEmployer').value      = data.pfEmployer || '';
+
+    document.getElementById('inpBankName').value        = data.bankName || '';
+    document.getElementById('inpBankAcc').value         = data.bankAcc || '';
+    document.getElementById('inpBottomTotal').value     = data.bottomTotal || '';
+    document.getElementById('inpFooterCopy').value      = data.footerCopy || '';
+
+    syncFromForm();
+}
+
+function resetDemoData() {
+    applyData(DEMO_DATA);
+    showToast('✅ ছবির হুবহু ডেমো ডাটা রিস্টোর করা হয়েছে!', 'success');
+}
+
+function clearAllFields() {
+    var emptyData = {};
+    for (var k in DEMO_DATA) {
+        // Keep company and header info intact by default for convenience
+        if (k === 'topCode' || k === 'companyName' || k === 'address1' || k === 'address2' || k === 'country' || k === 'monthTitle' || k === 'footerCopy') {
+            emptyData[k] = DEMO_DATA[k];
+        } else {
+            emptyData[k] = '';
+        }
+    }
+    applyData(emptyData);
+    showToast('🧹 নতুন কর্মীর তথ্যের জন্য ফিল্ডগুলো ক্লিয়ার করা হয়েছে।', 'info');
+}
+
+// ── Switch Part 1 / Part 2 / Both ────────────────────────────────────
+function switchPart(part) {
+    var s1 = document.getElementById('sheetPart1');
+    var s2 = document.getElementById('sheetPart2');
+    var b1 = document.getElementById('btnTabPart1');
+    var b2 = document.getElementById('btnTabPart2');
+    var bb = document.getElementById('btnTabBoth');
+
+    b1.classList.toggle('active', part === 'part1');
+    b2.classList.toggle('active', part === 'part2');
+    bb.classList.toggle('active', part === 'both');
+
+    if (part === 'part1') {
+        s1.style.display = 'block';
+        s2.style.display = 'none';
+    } else if (part === 'part2') {
+        s1.style.display = 'none';
+        s2.style.display = 'block';
+    } else {
+        s1.style.display = 'block';
+        s2.style.display = 'block';
+    }
+}
+
+// ── Print / Save as PDF ──────────────────────────────────────────────
+function printPayslip() {
+    window.print();
+}
+
+// ── Local Storage for Multiple Saved Employees ───────────────────────
+var STORAGE_KEY = 'rn_saved_worker_slips';
+
+function getSavedList() {
+    try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch(e) { return []; }
+}
+
+function refreshSavedDropdown() {
+    var list = getSavedList();
+    var dd = document.getElementById('savedEmpDropdown');
+    dd.innerHTML = '<option value="">-- Select Saved Employee (' + list.length + ') --</option>';
+    list.forEach(function(item, idx) {
+        var opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = (item.empNo || 'No ID') + ' — ' + (item.name || 'Unnamed') + ' (' + (item.desig || '') + ')';
+        dd.appendChild(opt);
+    });
+}
+
+function saveCurrentEmployee() {
+    var current = {};
+    for (var inpId in FIELD_MAP) {
+        var key = inpId.replace(/^inp/, '');
+        key = key.charAt(0).toLowerCase() + key.slice(1);
+        var el = document.getElementById(inpId);
+        current[key] = el ? el.value : '';
+    }
+    var list = getSavedList();
+    // Check if employee with same ID exists
+    var idx = list.findIndex(function(x) { return x.empNo === current.empNo && x.name === current.name; });
+    if (idx !== -1) {
+        list[idx] = current;
+    } else {
+        list.push(current);
+    }
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        refreshSavedDropdown();
+        showToast('✅ কর্মীর তথ্য সংরক্ষণ হয়েছে!', 'success');
+    } catch(e) {
+        showToast('❌ সেভ করতে সমস্যা হয়েছে।', 'error');
+    }
+}
+
+function loadSavedEmployee(idx) {
+    if (idx === '' || idx === null || idx === undefined) return;
+    var list = getSavedList();
+    var item = list[parseInt(idx, 10)];
+    if (item) {
+        applyData(item);
+        showToast('📂 ' + item.name + '-এর স্লিপ লোড হয়েছে!', 'success');
+    }
+}
+
+// ── Initialization on Page Load ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    adminInit('salary-slip', function() {
+        // Ready
+    });
+    initInPlaceEditing();
+    refreshSavedDropdown();
+});
+</script>
+</body>
+</html>
