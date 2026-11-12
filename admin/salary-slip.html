@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Courier+Prime:wght@400;700&family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="../assets/js/config.js?v=1794482839918"></script>
+    <script src="../assets/js/config.js?v=1794487595151"></script>
     <script src="assets/js/admin-common.js?v=6"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 
@@ -166,22 +166,59 @@
         }
 
         /* ── Part 1 (Front) Typography & Structure ──────────────────── */
+        .slip-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            gap: 16px;
+        }
+        .slip-header-left {
+            text-align: left;
+            font-size: 12.5px;
+            font-weight: 700;
+            line-height: 1.3;
+            max-width: 65%;
+        }
+        .slip-header-left .top-code {
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
         .slip-header-right {
             text-align: right;
             font-size: 12.5px;
             font-weight: 700;
-            margin-bottom: 8px;
             line-height: 1.3;
+            flex-shrink: 0;
         }
         .slip-header-right .top-code {
             font-size: 13px;
             margin-bottom: 2px;
         }
         .slip-month-title {
-            text-align: right;
             font-size: 12.5px;
             font-weight: 700;
-            margin: 6px 0 10px;
+            margin: 4px 0 6px;
+        }
+        /* Header alignment modes */
+        .header-layout-split .slip-header-row { display: flex; justify-content: space-between; }
+        .header-layout-left .slip-header-row { display: block; text-align: left; }
+        .header-layout-left .slip-header-right { text-align: left; margin-top: 4px; }
+        .header-layout-right .slip-header-row { display: block; text-align: right; }
+        .header-layout-right .slip-header-left { text-align: right; max-width: 100%; }
+
+        /* Auto-calc toggle badge */
+        .calc-badge {
+            font-size: 10px;
+            font-weight: 700;
+            color: #059669;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 4px;
+            padding: 1px 5px;
+            margin-left: 4px;
+            letter-spacing: 0;
+            text-transform: none;
         }
         .slip-divider {
             border: none;
@@ -393,7 +430,7 @@
         <div class="editor-panel no-print">
             
             <!-- Quick Employee Storage -->
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:16px;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <span style="font-size:11.5px;font-weight:800;color:#475569;text-transform:uppercase;">📂 Saved Employees</span>
                     <button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px;" onclick="saveCurrentEmployee()">💾 Save This</button>
@@ -403,36 +440,68 @@
                 </select>
             </div>
 
+            <!-- Smart Payroll Calculation Engine Box -->
+            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:12px;margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <span style="font-size:12px;font-weight:800;color:#065f46;display:flex;align-items:center;gap:6px;">
+                        ⚡ স্বয়ংক্রিয় পে-রোল ক্যালকুলেটর (Auto-Calculate)
+                    </span>
+                    <label style="display:inline-flex;align-items:center;cursor:pointer;margin:0;">
+                        <input type="checkbox" id="chkAutoCalc" checked onchange="toggleAutoCalc(this.checked)" style="width:16px;height:16px;accent-color:#059669;cursor:pointer;">
+                        <span id="lblAutoCalcStatus" style="font-size:11px;font-weight:700;margin-left:6px;color:#065f46;">সচল (ON)</span>
+                    </label>
+                </div>
+                <div style="font-size:11px;color:#047857;line-height:1.35;margin-bottom:8px;">
+                    মেইন বেতন (Basic Salary) বা ওভারটাইম ঘণ্টা পরিবর্তন করলে রেট, মোট বেতন, প্রভিডেন্ট ফান্ড ও নেট পে অটোমেটিক হিসাব হবে।
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button type="button" class="btn btn-sm" style="background:#059669;color:#fff;border:none;padding:4px 10px;font-size:11px;border-radius:6px;font-weight:700;cursor:pointer;" onclick="triggerFullRecalc()">⚡ এখনই হিসাব করুন</button>
+                    <button type="button" class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:11px;background:#fff;" onclick="toggleAutoRound()">🪙 কয়েন রাউন্ড-অফ</button>
+                </div>
+            </div>
+
+            <!-- Header Alignment Options (Left / Red Box side) -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:12px;">
+                <label class="field-label" style="margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                    <span>📌 হেডার পজিশন (Header Position)</span>
+                </label>
+                <select class="field-input" id="selHeaderLayout" onchange="setHeaderLayout(this.value)">
+                    <option value="split" selected>বাম পাশে কোম্পানির নাম + ডানে মাস (Red Box Side - Recommended)</option>
+                    <option value="left">সম্পূর্ণ বাম পাশে (All on Left)</option>
+                    <option value="right">সম্পূর্ণ ডান পাশে (Original Right)</option>
+                </select>
+            </div>
+
             <!-- 1. Header Information -->
             <div class="form-section-title">🏢 Company & Slip Header</div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Top Code</label>
-                    <input class="field-input" id="inpTopCode" value="262" oninput="syncFromForm()">
+                    <input class="field-input" id="inpTopCode" value="262" oninput="handleFieldChange('inpTopCode')">
                 </div>
                 <div>
                     <label class="field-label">Company Name</label>
-                    <input class="field-input" id="inpCompanyName" value="Brandix Casualwear Bangladesh Ltd. Plot#61-71" oninput="syncFromForm()">
+                    <input class="field-input" id="inpCompanyName" value="Brandix Casualwear Bangladesh Ltd. Plot#61-71" oninput="handleFieldChange('inpCompanyName')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Address Line 1</label>
-                    <input class="field-input" id="inpAddress1" value="Export Processing Zone," oninput="syncFromForm()">
+                    <input class="field-input" id="inpAddress1" value="Export Processing Zone," oninput="handleFieldChange('inpAddress1')">
                 </div>
                 <div>
                     <label class="field-label">Address Line 2</label>
-                    <input class="field-input" id="inpAddress2" value="Cumilla 3500," oninput="syncFromForm()">
+                    <input class="field-input" id="inpAddress2" value="Cumilla 3500," oninput="handleFieldChange('inpAddress2')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Country</label>
-                    <input class="field-input" id="inpCountry" value="Bangladesh" oninput="syncFromForm()">
+                    <input class="field-input" id="inpCountry" value="Bangladesh" oninput="handleFieldChange('inpCountry')">
                 </div>
                 <div>
                     <label class="field-label">Slip Month Title</label>
-                    <input class="field-input" id="inpMonthTitle" value="Salary Slip for the month of April 2026" oninput="syncFromForm()">
+                    <input class="field-input" id="inpMonthTitle" value="Salary Slip for the month of April 2026" oninput="handleFieldChange('inpMonthTitle')">
                 </div>
             </div>
 
@@ -441,183 +510,192 @@
             <div class="field-row">
                 <div>
                     <label class="field-label">EMP NO</label>
-                    <input class="field-input" id="inpEmpNo" value="864123" oninput="syncFromForm()">
+                    <input class="field-input" id="inpEmpNo" value="864123" oninput="handleFieldChange('inpEmpNo')">
                 </div>
                 <div>
                     <label class="field-label">NAME</label>
-                    <input class="field-input" id="inpName" value="Sahinoor Begum" oninput="syncFromForm()">
+                    <input class="field-input" id="inpName" value="Sahinoor Begum" oninput="handleFieldChange('inpName')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Date of Joined</label>
-                    <input class="field-input" id="inpDateJoined" value="10-Nov-2016" oninput="syncFromForm()">
+                    <input class="field-input" id="inpDateJoined" value="10-Nov-2016" oninput="handleFieldChange('inpDateJoined')">
                 </div>
                 <div>
                     <label class="field-label">DESIG.</label>
-                    <input class="field-input" id="inpDesig" value="Sewing Associate - Jr. Operator" oninput="syncFromForm()">
+                    <input class="field-input" id="inpDesig" value="Sewing Associate - Jr. Operator" oninput="handleFieldChange('inpDesig')">
                 </div>
             </div>
             <div class="field-row" style="grid-template-columns: 1fr 1fr 1fr;">
                 <div>
                     <label class="field-label">EPF NO</label>
-                    <input class="field-input" id="inpEpfNo" value="14123" oninput="syncFromForm()">
+                    <input class="field-input" id="inpEpfNo" value="14123" oninput="handleFieldChange('inpEpfNo')">
                 </div>
                 <div>
                     <label class="field-label">SEC:</label>
-                    <input class="field-input" id="inpSec" value="Team-05" oninput="syncFromForm()">
+                    <input class="field-input" id="inpSec" value="Team-05" oninput="handleFieldChange('inpSec')">
                 </div>
                 <div>
                     <label class="field-label">DEPT:</label>
-                    <input class="field-input" id="inpDept" value="Manufacturing" oninput="syncFromForm()">
+                    <input class="field-input" id="inpDept" value="Manufacturing" oninput="handleFieldChange('inpDept')">
                 </div>
             </div>
 
             <!-- 3. Column 1: Attendance, Rates & Basic -->
-            <div class="form-section-title">📅 Col 1: Attendance & Rates</div>
+            <div class="form-section-title">
+                <span>📅 Col 1: Attendance & Rates</span>
+                <span class="calc-badge">⚡ Auto Linked</span>
+            </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Days Present</label>
-                    <input class="field-input num" id="inpDaysPresent" value="26.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpDaysPresent" value="26.00" oninput="handleFieldChange('inpDaysPresent')">
                 </div>
                 <div>
                     <label class="field-label">No Pay Days</label>
-                    <input class="field-input num" id="inpNoPayDays" value="0.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpNoPayDays" value="0.00" oninput="handleFieldChange('inpNoPayDays')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Late/Early Minutes</label>
-                    <input class="field-input num" id="inpLateEarlyMins" value="0.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpLateEarlyMins" value="0.00" oninput="handleFieldChange('inpLateEarlyMins')">
                 </div>
                 <div>
-                    <label class="field-label">Overtime Hours</label>
-                    <input class="field-input num" id="inpOvertimeHours" value="45.96" oninput="syncFromForm()">
+                    <label class="field-label" style="color:#059669;">Overtime Hours (ঘণ্টা)</label>
+                    <input class="field-input num" id="inpOvertimeHours" value="45.96" oninput="handleFieldChange('inpOvertimeHours')" style="border-color:#10b981;">
                 </div>
             </div>
             <div class="field-row">
                 <div>
-                    <label class="field-label">Basic Salary</label>
-                    <input class="field-input num" id="inpBasicSalary" value="10,063.00" oninput="syncFromForm()">
+                    <label class="field-label" style="color:#8B1A1A;">Basic Salary (মূল বেতন)</label>
+                    <input class="field-input num" id="inpBasicSalary" value="10,063.00" oninput="handleFieldChange('inpBasicSalary')" style="font-weight:700;border-color:var(--primary);">
                 </div>
                 <div>
-                    <label class="field-label">House Rent Allowance</label>
-                    <input class="field-input num" id="inpHouseRent" value="5,032.00" oninput="syncFromForm()">
+                    <label class="field-label">House Rent <span class="calc-badge">50%</span></label>
+                    <input class="field-input num" id="inpHouseRent" value="5,032.00" oninput="handleFieldChange('inpHouseRent')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Medical Allowance</label>
-                    <input class="field-input num" id="inpMedicalAllow" value="2,375.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpMedicalAllow" value="2,375.00" oninput="handleFieldChange('inpMedicalAllow')">
                 </div>
                 <div>
-                    <label class="field-label">Gross Salary</label>
-                    <input class="field-input num" id="inpGrossSalary" value="17,470.00" oninput="syncFromForm()">
+                    <label class="field-label">Gross Salary <span class="calc-badge">Basic+HR+Med</span></label>
+                    <input class="field-input num" id="inpGrossSalary" value="17,470.00" oninput="handleFieldChange('inpGrossSalary')">
                 </div>
             </div>
             <div class="field-row" style="grid-template-columns: 1fr 1fr 1fr;">
                 <div>
-                    <label class="field-label">Daily Rate</label>
-                    <input class="field-input num" id="inpDailyRate" value="335.45" oninput="syncFromForm()">
+                    <label class="field-label">Daily Rate <span class="calc-badge">/30</span></label>
+                    <input class="field-input num" id="inpDailyRate" value="335.45" oninput="handleFieldChange('inpDailyRate')">
                 </div>
                 <div>
-                    <label class="field-label">Hourly Rate</label>
-                    <input class="field-input num" id="inpHourlyRate" value="41.93" oninput="syncFromForm()">
+                    <label class="field-label">Hourly <span class="calc-badge">/8</span></label>
+                    <input class="field-input num" id="inpHourlyRate" value="41.93" oninput="handleFieldChange('inpHourlyRate')">
                 </div>
                 <div>
-                    <label class="field-label">OT Rate</label>
-                    <input class="field-input num" id="inpOtRate" value="96.76" oninput="syncFromForm()">
+                    <label class="field-label">OT Rate <span class="calc-badge">/208*2</span></label>
+                    <input class="field-input num" id="inpOtRate" value="96.76" oninput="handleFieldChange('inpOtRate')">
                 </div>
             </div>
 
             <!-- 4. Column 2: Allowances & Earnings -->
-            <div class="form-section-title">💰 Col 2: Allowances & Earnings</div>
+            <div class="form-section-title">
+                <span>💰 Col 2: Allowances & Earnings</span>
+                <span class="calc-badge">⚡ Auto Total</span>
+            </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Prorated Basic Salary</label>
-                    <input class="field-input num" id="inpProratedBasic" value="10,063.47" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpProratedBasic" value="10,063.47" oninput="handleFieldChange('inpProratedBasic')">
                 </div>
                 <div>
                     <label class="field-label">Total for EPF</label>
-                    <input class="field-input num" id="inpTotalEpf" value="10,063.47" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpTotalEpf" value="10,063.47" oninput="handleFieldChange('inpTotalEpf')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">HOUSE RENT 50% ON BASIC</label>
-                    <input class="field-input num" id="inpHouseRent50" value="5,031.74" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpHouseRent50" value="5,031.74" oninput="handleFieldChange('inpHouseRent50')">
                 </div>
                 <div>
                     <label class="field-label">MEDICAL ALLOWANCE FIXED</label>
-                    <input class="field-input num" id="inpMedicalFixed" value="2,375.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpMedicalFixed" value="2,375.00" oninput="handleFieldChange('inpMedicalFixed')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Attendance Incentive</label>
-                    <input class="field-input num" id="inpAttIncentive" value="700.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpAttIncentive" value="700.00" oninput="handleFieldChange('inpAttIncentive')">
                 </div>
                 <div>
                     <label class="field-label">Lunch Allowance</label>
-                    <input class="field-input num" id="inpLunchAllow" value="1,170.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpLunchAllow" value="1,170.00" oninput="handleFieldChange('inpLunchAllow')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
-                    <label class="field-label">Overtime Amount</label>
-                    <input class="field-input num" id="inpOtAmount" value="4,447.28" oninput="syncFromForm()">
+                    <label class="field-label" style="color:#059669;">Overtime Amount <span class="calc-badge">OT×Rate</span></label>
+                    <input class="field-input num" id="inpOtAmount" value="4,447.28" oninput="handleFieldChange('inpOtAmount')">
                 </div>
                 <div>
                     <label class="field-label">Production Incentive</label>
-                    <input class="field-input num" id="inpProdIncentive" value="1,227.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpProdIncentive" value="1,227.00" oninput="handleFieldChange('inpProdIncentive')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Transport Allowance</label>
-                    <input class="field-input num" id="inpTransportAllow" value="200.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpTransportAllow" value="200.00" oninput="handleFieldChange('inpTransportAllow')">
                 </div>
                 <div>
-                    <label class="field-label">Total Salary</label>
-                    <input class="field-input num" id="inpTotalSalary" value="25,214.49" oninput="syncFromForm()">
+                    <label class="field-label" style="font-weight:800;color:var(--primary);">Total Salary (মোট বেতন)</label>
+                    <input class="field-input num" id="inpTotalSalary" value="25,214.49" oninput="handleFieldChange('inpTotalSalary')" style="font-weight:700;">
                 </div>
             </div>
 
             <!-- 5. Column 3: Deductions & Net Pay -->
-            <div class="form-section-title">📉 Col 3: Deductions & Net Pay</div>
+            <div class="form-section-title">
+                <span>📉 Col 3: Deductions & Net Pay</span>
+                <span class="calc-badge">⚡ Auto Net</span>
+            </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">PF 8.33% from Employee</label>
-                    <input class="field-input num" id="inpPfEmployee" value="838.29" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpPfEmployee" value="838.29" oninput="handleFieldChange('inpPfEmployee')">
                 </div>
                 <div>
                     <label class="field-label">Total Deduction</label>
-                    <input class="field-input num" id="inpTotalDeduction" value="838.29" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpTotalDeduction" value="838.29" oninput="handleFieldChange('inpTotalDeduction')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
-                    <label class="field-label">Coins B/F</label>
-                    <input class="field-input num" id="inpCoinsBf" value="-8.51" oninput="syncFromForm()">
+                    <label class="field-label">Coins B/F (পূর্বের কয়েন)</label>
+                    <input class="field-input num" id="inpCoinsBf" value="-8.51" oninput="handleFieldChange('inpCoinsBf')">
                 </div>
                 <div>
-                    <label class="field-label">Net Salary</label>
-                    <input class="field-input num" id="inpNetSalary" value="24,367.69" oninput="syncFromForm()">
+                    <label class="field-label">Net Salary (খাঁটি বেতন)</label>
+                    <input class="field-input num" id="inpNetSalary" value="24,367.69" oninput="handleFieldChange('inpNetSalary')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
-                    <label class="field-label">Coins C/F</label>
-                    <input class="field-input num" id="inpCoinsCf" value="-2.31" oninput="syncFromForm()">
+                    <label class="field-label">Coins C/F (হাওলাত কয়েন)</label>
+                    <input class="field-input num" id="inpCoinsCf" value="-2.31" oninput="handleFieldChange('inpCoinsCf')">
                 </div>
                 <div>
-                    <label class="field-label">Cheque Paid</label>
-                    <input class="field-input num" id="inpChequePaid" value="24,370.00" oninput="syncFromForm()">
+                    <label class="field-label" style="color:#059669;font-weight:800;">Cheque Paid (চূড়ান্ত প্রদেয়)</label>
+                    <input class="field-input num" id="inpChequePaid" value="24,370.00" oninput="handleFieldChange('inpChequePaid')" style="font-weight:700;">
                 </div>
             </div>
             <div class="field-single">
                 <label class="field-label">PF 8.33% from Employer</label>
-                <input class="field-input num" id="inpPfEmployer" value="838.29" oninput="syncFromForm()">
+                <input class="field-input num" id="inpPfEmployer" value="838.29" oninput="handleFieldChange('inpPfEmployer')">
             </div>
 
             <!-- 6. Bank & Payment Box -->
@@ -625,21 +703,21 @@
             <div class="field-row">
                 <div>
                     <label class="field-label">Bank Name</label>
-                    <input class="field-input" id="inpBankName" value="Dutch-Bangla Bank Limited" oninput="syncFromForm()">
+                    <input class="field-input" id="inpBankName" value="Dutch-Bangla Bank Limited" oninput="handleFieldChange('inpBankName')">
                 </div>
                 <div>
                     <label class="field-label">Account Number</label>
-                    <input class="field-input" id="inpBankAcc" value="141.103.232710" oninput="syncFromForm()">
+                    <input class="field-input" id="inpBankAcc" value="141.103.232710" oninput="handleFieldChange('inpBankAcc')">
                 </div>
             </div>
             <div class="field-row">
                 <div>
                     <label class="field-label">Bottom Net Box Amount</label>
-                    <input class="field-input num" id="inpBottomTotal" value="24,370.00" oninput="syncFromForm()">
+                    <input class="field-input num" id="inpBottomTotal" value="24,370.00" oninput="handleFieldChange('inpBottomTotal')">
                 </div>
                 <div>
                     <label class="field-label">Footer Copyright</label>
-                    <input class="field-input" id="inpFooterCopy" value="Copyright - hsenid Software International (Pvt) Ltd." oninput="syncFromForm()">
+                    <input class="field-input" id="inpFooterCopy" value="Copyright - hsenid Software International (Pvt) Ltd." oninput="handleFieldChange('inpFooterCopy')">
                 </div>
             </div>
 
@@ -667,18 +745,21 @@
                 <!-- ══════════════════════════════════════════════════════════ -->
                 <!-- PART 1: FRONT SIDE (MAIN SALARY SLIP - EXACT REPLICA)    -->
                 <!-- ══════════════════════════════════════════════════════════ -->
-                <div class="payslip-sheet" id="sheetPart1">
+                <div class="payslip-sheet header-layout-split" id="sheetPart1">
                     
-                    <!-- Top Right Company Header -->
-                    <div class="slip-header-right">
-                        <div class="top-code" id="lblTopCode" contenteditable="true">262</div>
-                        <div id="lblCompanyName" contenteditable="true">Brandix Casualwear Bangladesh Ltd. Plot#61-71</div>
-                        <div id="lblAddress1" contenteditable="true">Export Processing Zone,</div>
-                        <div id="lblAddress2" contenteditable="true">Cumilla 3500,</div>
-                        <div id="lblCountry" contenteditable="true">Bangladesh</div>
+                    <!-- Top Company & Slip Header (Left: Company Name & Info in Red Box, Right: Month Title) -->
+                    <div class="slip-header-row">
+                        <div class="slip-header-left">
+                            <div class="top-code" id="lblTopCode" contenteditable="true">262</div>
+                            <div id="lblCompanyName" contenteditable="true" style="font-weight:800;">Brandix Casualwear Bangladesh Ltd. Plot#61-71</div>
+                            <div id="lblAddress1" contenteditable="true">Export Processing Zone,</div>
+                            <div id="lblAddress2" contenteditable="true">Cumilla 3500,</div>
+                            <div id="lblCountry" contenteditable="true">Bangladesh</div>
+                        </div>
+                        <div class="slip-header-right">
+                            <div class="slip-month-title" id="lblMonthTitle" contenteditable="true">Salary Slip for the month of April 2026</div>
+                        </div>
                     </div>
-
-                    <div class="slip-month-title" id="lblMonthTitle" contenteditable="true">Salary Slip for the month of April 2026</div>
 
                     <hr class="slip-divider">
 
@@ -1191,6 +1272,220 @@ var FIELD_MAP = {
     inpFooterCopy: "lblFooterCopy"
 };
 
+// ── Number Utilities ────────────────────────────────────────────────
+function parseNum(val) {
+    if (val === null || val === undefined) return 0;
+    var str = String(val).replace(/,/g, '').trim();
+    var n = parseFloat(str);
+    return isNaN(n) ? 0 : n;
+}
+
+function formatMoney(num) {
+    if (isNaN(num)) return "0.00";
+    var isNegative = num < 0;
+    var absVal = Math.abs(num);
+    var parts = absVal.toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return (isNegative ? '-' : '') + parts.join('.');
+}
+
+// ── Auto-Calculation State & Toggle ──────────────────────────────────
+var autoCalcEnabled = true;
+
+function toggleAutoCalc(enabled) {
+    autoCalcEnabled = !!enabled;
+    var lbl = document.getElementById('lblAutoCalcStatus');
+    if (lbl) {
+        lbl.textContent = autoCalcEnabled ? 'সচল (ON)' : 'বন্ধ (OFF)';
+        lbl.style.color = autoCalcEnabled ? '#065f46' : '#991b1b';
+    }
+    if (autoCalcEnabled) {
+        triggerFullRecalc();
+        showToast('⚡ স্বয়ংক্রিয় পে-রোল হিসাব সচল করা হয়েছে।', 'success');
+    } else {
+        showToast('ℹ️ ম্যানুয়াল মোড: আপনি ইচ্ছেমত মান বসাতে পারবেন।', 'info');
+    }
+}
+
+// ── Header Layout Switching ──────────────────────────────────────────
+function setHeaderLayout(mode) {
+    var sheet = document.getElementById('sheetPart1');
+    if (!sheet) return;
+    sheet.classList.remove('header-layout-split', 'header-layout-left', 'header-layout-right');
+    if (mode === 'left') {
+        sheet.classList.add('header-layout-left');
+    } else if (mode === 'right') {
+        sheet.classList.add('header-layout-right');
+    } else {
+        sheet.classList.add('header-layout-split');
+    }
+}
+
+// Helper to safely set an input's value without clobbering active focus
+function setInputSafe(id, formattedVal) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (document.activeElement !== el) {
+        el.value = formattedVal;
+    }
+    var lblId = FIELD_MAP[id];
+    if (lblId) {
+        var lbl = document.getElementById(lblId);
+        if (lbl) lbl.textContent = formattedVal;
+    }
+}
+
+// ── Core Reactive Payroll Calculation Engine ─────────────────────────
+function recalculatePayroll(sourceId) {
+    if (!autoCalcEnabled) return;
+
+    // Read Base Values
+    var basicSalary   = parseNum(document.getElementById('inpBasicSalary').value);
+    var otHours       = parseNum(document.getElementById('inpOvertimeHours').value);
+    var daysPresent   = parseNum(document.getElementById('inpDaysPresent').value);
+    var medicalFixed  = parseNum(document.getElementById('inpMedicalFixed').value) || 2375.00;
+    var medicalAllow  = parseNum(document.getElementById('inpMedicalAllow').value) || medicalFixed;
+
+    // 1. Column 1 Rates:
+    // Daily Rate = Basic / 30
+    var dailyRate = basicSalary > 0 ? (basicSalary / 30) : 0;
+    // Hourly Rate = Daily Rate / 8 = Basic / 240
+    var hourlyRate = dailyRate > 0 ? (dailyRate / 8) : 0;
+    // OT Rate = (Basic / 208) * 2
+    var otRate = (sourceId === 'inpOtRate') 
+        ? parseNum(document.getElementById('inpOtRate').value) 
+        : (basicSalary > 0 ? ((basicSalary / 208) * 2) : 0);
+
+    // House Rent (Col 1) = 50% of Basic
+    var houseRent = (sourceId === 'inpHouseRent')
+        ? parseNum(document.getElementById('inpHouseRent').value)
+        : (basicSalary * 0.5);
+
+    // Gross Salary = Basic + House Rent + Medical Allowance
+    var grossSalary = basicSalary + houseRent + medicalAllow;
+
+    // 2. Column 2 Earnings & Allowances:
+    // Prorated Basic: matches basic by default or prorated by days
+    var proratedBasic = (sourceId === 'inpProratedBasic')
+        ? parseNum(document.getElementById('inpProratedBasic').value)
+        : basicSalary;
+
+    // Total for EPF = Prorated Basic
+    var totalEpf = proratedBasic;
+
+    // HOUSE RENT 50% ON BASIC (Col 2)
+    var houseRent50 = proratedBasic * 0.5;
+
+    // Overtime Amount = OT Hours * OT Rate
+    var otAmount = (sourceId === 'inpOtAmount')
+        ? parseNum(document.getElementById('inpOtAmount').value)
+        : (otHours * otRate);
+
+    var attIncentive   = parseNum(document.getElementById('inpAttIncentive').value);
+    var lunchAllow     = parseNum(document.getElementById('inpLunchAllow').value);
+    var prodIncentive  = parseNum(document.getElementById('inpProdIncentive').value);
+    var transportAllow = parseNum(document.getElementById('inpTransportAllow').value);
+
+    // Total Salary = sum of earnings in Col 2
+    var totalSalary = proratedBasic + houseRent50 + medicalFixed + attIncentive + lunchAllow + otAmount + prodIncentive + transportAllow;
+
+    // 3. Column 3 Deductions & Net Pay:
+    // PF 8.33% from Employee = Total for EPF * 0.0833
+    var pfEmployee = (sourceId === 'inpPfEmployee')
+        ? parseNum(document.getElementById('inpPfEmployee').value)
+        : (totalEpf * 0.0833);
+    var pfEmployer = pfEmployee;
+    var totalDeduction = pfEmployee;
+
+    // Coins B/F
+    var coinsBf = parseNum(document.getElementById('inpCoinsBf').value);
+
+    // Net Salary = Total Salary - Total Deduction + Coins B/F
+    var netSalary = totalSalary - totalDeduction + coinsBf;
+
+    // Coins C/F and Cheque Paid rounding logic:
+    var coinsCf = parseNum(document.getElementById('inpCoinsCf').value);
+    var chequePaid = parseNum(document.getElementById('inpChequePaid').value);
+
+    if (sourceId !== 'inpCoinsCf' && sourceId !== 'inpChequePaid') {
+        var roundedCheque = Math.round(netSalary / 10) * 10;
+        coinsCf = netSalary - roundedCheque; // e.g., 24367.69 - 24370.00 = -2.31
+        chequePaid = roundedCheque;
+    } else if (sourceId === 'inpCoinsCf') {
+        chequePaid = netSalary - coinsCf;
+    } else if (sourceId === 'inpChequePaid') {
+        coinsCf = netSalary - chequePaid;
+    }
+
+    var bottomTotal = chequePaid;
+
+    // Write back calculated values
+    if (sourceId !== 'inpHouseRent')       setInputSafe('inpHouseRent', formatMoney(houseRent));
+    if (sourceId !== 'inpGrossSalary')     setInputSafe('inpGrossSalary', formatMoney(grossSalary));
+    if (sourceId !== 'inpDailyRate')       setInputSafe('inpDailyRate', formatMoney(dailyRate));
+    if (sourceId !== 'inpHourlyRate')      setInputSafe('inpHourlyRate', formatMoney(hourlyRate));
+    if (sourceId !== 'inpOtRate')          setInputSafe('inpOtRate', formatMoney(otRate));
+
+    if (sourceId !== 'inpProratedBasic' && (sourceId === 'inpBasicSalary' || sourceId === 'fullRecalc')) {
+        setInputSafe('inpProratedBasic', formatMoney(proratedBasic));
+    }
+    if (sourceId !== 'inpTotalEpf')        setInputSafe('inpTotalEpf', formatMoney(totalEpf));
+    if (sourceId !== 'inpHouseRent50')     setInputSafe('inpHouseRent50', formatMoney(houseRent50));
+    if (sourceId !== 'inpOtAmount')        setInputSafe('inpOtAmount', formatMoney(otAmount));
+    if (sourceId !== 'inpTotalSalary')     setInputSafe('inpTotalSalary', formatMoney(totalSalary));
+
+    if (sourceId !== 'inpPfEmployee')      setInputSafe('inpPfEmployee', formatMoney(pfEmployee));
+    if (sourceId !== 'inpPfEmployer')      setInputSafe('inpPfEmployer', formatMoney(pfEmployer));
+    if (sourceId !== 'inpTotalDeduction')  setInputSafe('inpTotalDeduction', formatMoney(totalDeduction));
+    if (sourceId !== 'inpNetSalary')       setInputSafe('inpNetSalary', formatMoney(netSalary));
+    if (sourceId !== 'inpCoinsCf')         setInputSafe('inpCoinsCf', formatMoney(coinsCf));
+    if (sourceId !== 'inpChequePaid')      setInputSafe('inpChequePaid', formatMoney(chequePaid));
+    if (sourceId !== 'inpBottomTotal')     setInputSafe('inpBottomTotal', formatMoney(bottomTotal));
+}
+
+// ── Handler when any form field is changed ───────────────────────────
+function handleFieldChange(id) {
+    // Sync field to preview label immediately
+    var lblId = FIELD_MAP[id];
+    if (lblId) {
+        var inp = document.getElementById(id);
+        var lbl = document.getElementById(lblId);
+        if (inp && lbl) lbl.textContent = inp.value;
+    }
+
+    // List of numeric fields that participate in the payroll formula
+    var calcFields = [
+        'inpBasicSalary', 'inpOvertimeHours', 'inpDaysPresent', 'inpDailyRate',
+        'inpHourlyRate', 'inpOtRate', 'inpHouseRent', 'inpMedicalAllow',
+        'inpGrossSalary', 'inpProratedBasic', 'inpTotalEpf', 'inpHouseRent50',
+        'inpMedicalFixed', 'inpAttIncentive', 'inpLunchAllow', 'inpOtAmount',
+        'inpProdIncentive', 'inpTransportAllow', 'inpTotalSalary', 'inpPfEmployee',
+        'inpTotalDeduction', 'inpCoinsBf', 'inpNetSalary', 'inpCoinsCf',
+        'inpChequePaid', 'inpBottomTotal'
+    ];
+
+    if (calcFields.indexOf(id) !== -1) {
+        recalculatePayroll(id);
+    }
+}
+
+function triggerFullRecalc() {
+    recalculatePayroll('fullRecalc');
+    syncFromForm();
+    showToast('⚡ পে-রোল সফলভাবে রিক্যালকুলেট হয়েছে!', 'success');
+}
+
+function toggleAutoRound() {
+    var netSalary = parseNum(document.getElementById('inpNetSalary').value);
+    var rounded = Math.round(netSalary / 10) * 10;
+    var coins = netSalary - rounded;
+    setInputSafe('inpCoinsCf', formatMoney(coins));
+    setInputSafe('inpChequePaid', formatMoney(rounded));
+    setInputSafe('inpBottomTotal', formatMoney(rounded));
+    syncFromForm();
+    showToast('🪙 Coins C/F এবং Cheque Paid রাউন্ড-অফ করা হয়েছে: ' + formatMoney(rounded), 'info');
+}
+
 // ── Two-way Sync: Form to Preview ────────────────────────────────────
 function syncFromForm() {
     for (var inpId in FIELD_MAP) {
@@ -1211,7 +1506,10 @@ function initInPlaceEditing() {
             if (lbl) {
                 lbl.addEventListener('input', function() {
                     var inp = document.getElementById(inputElementId);
-                    if (inp) inp.value = this.textContent;
+                    if (inp) {
+                        inp.value = this.textContent;
+                        handleFieldChange(inputElementId);
+                    }
                 });
             }
         })(inpId, FIELD_MAP[inpId]);
