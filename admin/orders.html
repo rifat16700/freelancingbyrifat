@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="../assets/js/config.js?v=1794489323473"></script>
+    <script src="../assets/js/config.js?v=1794570029121"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
@@ -536,14 +536,17 @@
                     { sql: "SELECT id, name, sku, brand_id, variants FROM products" },
                     { sql: "SELECT * FROM settings WHERE id = 1" },
                     { sql: "SELECT * FROM brands" }
-                ], false).then(function(d) {
+                ], true).then(function(results) {
                     document.getElementById('pageLoader').style.display = 'none';
                     document.getElementById('adminMain').style.display  = 'flex';
 
-                    rawOrders = (d.success && d.result && d.result[0] && d.result[0].results) ? d.result[0].results : [];
-                    var prods = (d.success && d.result && d.result[1] && d.result[1].results) ? d.result[1].results : [];
-                    var sRows = (d.success && d.result && d.result[2] && d.result[2].results) ? d.result[2].results : [];
-                    var bRows = (d.success && d.result && d.result[3] && d.result[3].results) ? d.result[3].results : [];
+                    var safeRows = function(res) {
+                        return (res && res.success && res.result && res.result[0] && Array.isArray(res.result[0].results)) ? res.result[0].results : [];
+                    };
+                    rawOrders = safeRows(results[0]);
+                    var prods = safeRows(results[1]);
+                    var sRows = safeRows(results[2]);
+                    var bRows = safeRows(results[3]);
                     storeSettings = sRows[0] || {};
                     brandsLookup = {};
                     bRows.forEach(function(b) { if (b && b.id) brandsLookup[b.id] = b; });

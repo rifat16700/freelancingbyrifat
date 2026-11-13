@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Invoice</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="assets/js/config.js?v=1794489323473"></script>
+    <script src="assets/js/config.js?v=1794570029121"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -214,28 +214,14 @@ function buildSingleInvoiceHtml(o, printType, opts) {
     var brandInfo = o._brandInfo || {};
 
     // Determine Store / Brand Header Identity
-    var parentStoreName = (storeSettings.main_store_name || storeSettings.store_name || 'Ranonex').trim();
-    var mainSiteHeaderName = /\b(shop|store)\b/i.test(parentStoreName) ? parentStoreName : (parentStoreName + ' Shop');
+    var parentStoreName = (storeSettings.store_name || storeSettings.main_store_name || (window.CONFIG && CONFIG.STORE_NAME) || 'Ranonex').trim();
     var hasCustomBrand = (!isMaster && brandInfo && !brandInfo.is_main && brandInfo.name && !/^brand_\d+$/i.test(String(brandInfo.name).trim()));
-    var headerName = hasCustomBrand ? String(brandInfo.name).trim() : mainSiteHeaderName;
-    var headerLogo = (hasCustomBrand && brandInfo.logo_url) ? brandInfo.logo_url : (storeSettings.logo_url || '');
+    var headerName = hasCustomBrand ? String(brandInfo.name).trim() : parentStoreName;
+    var headerLogo = (hasCustomBrand && brandInfo.logo_url) ? brandInfo.logo_url : (storeSettings.logo_url || storeSettings.main_logo_url || '');
     var headerPhone = (hasCustomBrand && brandInfo.phone) ? brandInfo.phone : (storeSettings.whatsapp_number || '');
     var headerAddr = (hasCustomBrand && brandInfo.address) ? brandInfo.address : (storeSettings.store_address || '');
 
     var bannerHtml = '';
-    if (isMaster && Array.isArray(o._subOrderSummaries) && o._subOrderSummaries.length > 1) {
-        bannerHtml =
-            '<div class="parcel-type-banner master">' +
-                '<span>📦 MASTER PARCEL DELIVERY SLIP — Combines ' + o._subOrderSummaries.length + ' Brand Parcels in 1 Outer Courier Bag</span>' +
-                '<span>Master Order #' + esc(o.id) + '</span>' +
-            '</div>';
-    } else if (isSubParcel) {
-        bannerHtml =
-            '<div class="parcel-type-banner brand-sub">' +
-                '<span>🏷️ DEDICATED BRAND PARCEL (' + esc(headerName) + ') — Inner Parcel ' + (o._parcelIndex || 1) + ' of ' + (o._totalParcels || 1) + '</span>' +
-                '<span>Pack inside Master Order #' + esc(o._masterOrderId || o.order_group_id || o.id) + '</span>' +
-            '</div>';
-    }
 
     var checklistHtml = '';
     if (isMaster && Array.isArray(o._subOrderSummaries) && o._subOrderSummaries.length > 1) {
@@ -316,19 +302,22 @@ function buildSingleInvoiceHtml(o, printType, opts) {
     var dateStr = o.created_at ? new Date(o.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
     return '<div class="invoice-box ' + (opts.pageBreak ? 'page-break' : '') + '">' +
-        bannerHtml +
         '<div class="header">' +
             '<div class="store-info">' +
-                (headerLogo ? '<img src="' + esc(headerLogo) + '" style="max-height:48px;margin-bottom:8px;display:block;object-fit:contain;">' : '') +
-                '<h1>' + esc(headerName) + '</h1>' +
-                (parentStoreName ? '<p style="font-weight:700;color:#0f172a;">An Official Brand of ' + esc(parentStoreName) + '</p>' : '') +
+                '<div style="display:flex;align-items:center;gap:14px;margin-bottom:6px;">' +
+                    (headerLogo ? '<img class="invoice-logo" src="' + esc(headerLogo) + '" alt="' + esc(headerName) + '" style="max-height:54px;max-width:150px;display:block;object-fit:contain;border-radius:6px;">' : '') +
+                    '<div>' +
+                        '<h1>' + esc(headerName) + '</h1>' +
+                        (hasCustomBrand && parentStoreName ? '<p style="font-weight:700;color:#475569;margin-top:2px;">Official Brand of ' + esc(parentStoreName) + '</p>' : '') +
+                    '</div>' +
+                '</div>' +
                 (headerAddr ? '<p>📍 ' + esc(headerAddr) + '</p>' : '') +
                 (headerPhone ? '<p>📞 ' + esc(headerPhone) + '</p>' : '') +
             '</div>' +
             '<div class="invoice-title">' +
                 '<h2>' + (printType === 'bill' ? 'BILL INVOICE' : (isMaster ? 'MASTER DELIVERY SLIP' : 'DELIVERY INVOICE')) + '</h2>' +
                 '<p>Order ID: #' + esc(o.id) + '</p>' +
-                (isSubParcel && o._masterOrderId && o._masterOrderId !== o.id ? '<p style="color:#7e22ce;">Master Order: #' + esc(o._masterOrderId) + '</p>' : '') +
+                (isSubParcel && o._masterOrderId && o._masterOrderId !== o.id ? '<p style="color:#7e22ce;">Master Order: #' + esc(o._masterOrderId) + (o._totalParcels > 1 ? ' (' + (o._parcelIndex || 1) + '/' + o._totalParcels + ')' : '') + '</p>' : '') +
                 '<p>Date: ' + esc(dateStr) + '</p>' +
                 '<div style="margin-top:6px;"><span class="badge-status">' + esc(o.payment_status || 'Unpaid') + ' (' + esc(o.payment_method || 'COD') + ')</span></div>' +
             '</div>' +
@@ -439,13 +428,16 @@ function hydrateInvoiceData(o, brandsMap, globalSettings) {
     if (!o || typeof o !== 'object') return;
     brandsMap = brandsMap || {};
     var gs = Object.assign({}, o._storeSettings || {}, globalSettings || {});
-    if (gs.main_store_name) {
+    if (gs.main_store_name && !gs.store_name) {
         gs.store_name = gs.main_store_name;
+    }
+    if (!gs.logo_url && o._storeSettings && o._storeSettings.logo_url) {
+        gs.logo_url = o._storeSettings.logo_url;
     }
     o._storeSettings = gs;
 
-    var parentName = (gs.store_name || 'Ranonex').trim();
-    var mainShopLabel = /\b(shop|store)\b/i.test(parentName) ? parentName : (parentName + ' Shop');
+    var parentName = (gs.store_name || gs.main_store_name || (window.CONFIG && CONFIG.STORE_NAME) || 'Ranonex').trim();
+    var mainShopLabel = parentName;
 
     function resolveBrandForOrder(ord) {
         var bId = ord.brand_id || (ord._brandInfo && ord._brandInfo.id) || null;
@@ -582,49 +574,68 @@ window.onload = function() {
             JSON.parse(bListRaw).forEach(function(b) { if (b && b.id) brandsMap[b.id] = b; });
         }
     } catch(e){}
+    function mergePublicPayload(pubData) {
+        if (!pubData) return;
+        var baseSettings = Object.assign({}, pubData.settings || {});
+        if (pubData.main_settings) {
+            if (pubData.main_settings.store_name && !baseSettings.store_name) baseSettings.store_name = pubData.main_settings.store_name;
+            if (pubData.main_settings.store_name) baseSettings.main_store_name = pubData.main_settings.store_name;
+            if (pubData.main_settings.logo_url && !baseSettings.logo_url) baseSettings.logo_url = pubData.main_settings.logo_url;
+            if (pubData.main_settings.logo_url) baseSettings.main_logo_url = pubData.main_settings.logo_url;
+        }
+        cachedSettings = Object.assign({}, cachedSettings, baseSettings);
+        if (Array.isArray(pubData.brands)) {
+            pubData.brands.forEach(function(b) { if (b && b.id) brandsMap[b.id] = b; });
+        }
+    }
+
     try {
         var pubRaw = localStorage.getItem('__fbr_public_data');
         if (pubRaw) {
             var pub = JSON.parse(pubRaw);
-            if (pub && pub.data) {
-                if (pub.data.main_settings && pub.data.main_settings.store_name) {
-                    cachedSettings = Object.assign({}, pub.data.settings || {}, { store_name: pub.data.main_settings.store_name });
-                } else if (pub.data.settings) {
-                    cachedSettings = pub.data.settings;
-                }
-                if (Array.isArray(pub.data.brands)) {
-                    pub.data.brands.forEach(function(b) { if (b && b.id) brandsMap[b.id] = b; });
-                }
-            }
+            if (pub && pub.data) mergePublicPayload(pub.data);
         }
     } catch(e){}
 
-    // 2. Fetch fresh brands & main store settings from D1 so neither Admin nor User ever sees raw IDs or wrong store names
-    var apiBase = (window.CONFIG && (CONFIG.HF_API_BASE || CONFIG.API_BASE)) ? (CONFIG.HF_API_BASE || CONFIG.API_BASE) : '';
-    fetch(apiBase + '/api/d1-query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([
-            { sql: "SELECT * FROM settings WHERE id = 1" },
-            { sql: "SELECT * FROM brands" }
-        ])
-    })
+    // 2. Fetch fresh brands & main store settings from /public-data (works publicly for both Admin & Customers)
+    fetch('/public-data')
     .then(function(r) { return r.json(); })
     .then(function(d) {
-        if (d && d.success && Array.isArray(d.result)) {
-            var sRows = (d.result[0] && d.result[0].results) ? d.result[0].results : [];
-            var bRows = (d.result[1] && d.result[1].results) ? d.result[1].results : [];
-            if (sRows[0]) cachedSettings = sRows[0];
-            bRows.forEach(function(b) { if (b && b.id) brandsMap[b.id] = b; });
+        if (d && d.success && d.data) {
+            mergePublicPayload(d.data);
         }
     })
     .catch(function() {})
     .finally(function() {
         hydrateInvoiceData(currentOrderData, brandsMap, cachedSettings);
         renderAllInvoices();
-        setTimeout(function() {
+
+        // Wait for logo images to finish loading before auto-printing (up to 1500ms)
+        var imgs = Array.prototype.slice.call(document.querySelectorAll('#invoicesRoot img.invoice-logo'));
+        var printed = false;
+        function triggerPrint() {
+            if (printed) return;
+            printed = true;
             window.print();
-        }, 500);
+        }
+        if (imgs.length === 0) {
+            setTimeout(triggerPrint, 350);
+            return;
+        }
+        var pending = imgs.length;
+        function onImgDone() {
+            pending--;
+            if (pending <= 0) setTimeout(triggerPrint, 150);
+        }
+        imgs.forEach(function(img) {
+            if (img.complete) {
+                onImgDone();
+            } else {
+                img.addEventListener('load', onImgDone);
+                img.addEventListener('error', onImgDone);
+            }
+        });
+        setTimeout(triggerPrint, 1500);
     });
 };
 </script>
