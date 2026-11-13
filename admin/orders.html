@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
-    <script src="../assets/js/config.js?v=1794570029121"></script>
+    <script src="../assets/js/config.js?v=1794570799956"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
@@ -300,11 +300,18 @@
     // ── Enrich items & Group multi-brand rows into 1 Master Order ──
     var brandsLookup = {};
 
+    function formatMainShopLabel(raw) {
+        var n = String(raw || '').trim();
+        if (!n || /^r[ae]nonex$/i.test(n)) return 'Ranonex Shop';
+        if (/\b(shop|store)\b/i.test(n)) return n;
+        return n + ' Shop';
+    }
+
     function getBrandInfoObj(brandId, fallbackBrandName) {
         if (!brandId) {
             return {
                 id: null,
-                name: (storeSettings && storeSettings.store_name) ? storeSettings.store_name : 'Ranonex Shop',
+                name: formatMainShopLabel((storeSettings && storeSettings.store_name) ? storeSettings.store_name : 'Ranonex Shop'),
                 slug: '',
                 logo_url: (storeSettings && storeSettings.logo_url) ? storeSettings.logo_url : '',
                 phone: (storeSettings && storeSettings.whatsapp_number) ? storeSettings.whatsapp_number : '',

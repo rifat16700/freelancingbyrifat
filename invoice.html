@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Invoice</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="assets/js/config.js?v=1794570029121"></script>
+    <script src="assets/js/config.js?v=1794570799956"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -88,86 +88,215 @@
             justify-content: space-between;
             align-items: flex-start;
             border-bottom: 2px solid #0f172a;
-            padding-bottom: 18px;
-            margin-bottom: 22px;
-            gap: 16px;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+            gap: 12px;
         }
-        .store-info h1 { margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a; }
-        .store-info p { margin: 3px 0 0; font-size: 12px; color: #475569; }
+        .store-info h1 { margin: 0; font-size: 21px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.4px; color: #0f172a; line-height: 1.15; }
+        .store-info p { margin: 2px 0 0; font-size: 11.5px; color: #475569; line-height: 1.3; }
         .invoice-title { text-align: right; }
-        .invoice-title h2 { margin: 0; font-size: 22px; color: #0f172a; font-weight: 900; letter-spacing: 0.5px; }
-        .invoice-title p { margin: 4px 0 0; font-size: 12.5px; font-weight: 700; color: #475569; }
+        .invoice-title h2 { margin: 0; font-size: 19px; color: #0f172a; font-weight: 900; letter-spacing: 0.4px; line-height: 1.15; }
+        .invoice-title p { margin: 2px 0 0; font-size: 11.5px; font-weight: 700; color: #475569; }
         .details-grid {
             display: grid;
             grid-template-columns: 1.2fr 0.8fr;
-            gap: 20px;
-            margin-bottom: 22px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
         .details-box {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 14px 16px;
+            border-radius: 8px;
+            padding: 9px 12px;
         }
         .details-box h3 {
-            margin: 0 0 8px; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;
+            margin: 0 0 5px; font-size: 10.5px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;
         }
-        .details-box p { margin: 4px 0; font-size: 13.5px; font-weight: 500; line-height: 1.45; color: #1e293b; }
+        .details-box p { margin: 2px 0; font-size: 12.5px; font-weight: 500; line-height: 1.35; color: #1e293b; }
         .checklist-box {
             background: #f8fafc;
             border: 1.5px dashed #64748b;
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
         }
         .checklist-box h4 {
-            margin: 0 0 8px; font-size: 12px; text-transform: uppercase; color: #0f172a; letter-spacing: 0.5px;
+            margin: 0 0 5px; font-size: 11px; text-transform: uppercase; color: #0f172a; letter-spacing: 0.4px;
         }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 22px; }
-        th { background: #0f172a; color: #fff; text-align: left; padding: 10px 12px; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { padding: 11px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; vertical-align: top; }
+        .checklist-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 4px;
+        }
+        .checklist-grid.cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px 12px;
+        }
+        .checklist-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px dashed #cbd5e1;
+            font-size: 11.5px;
+            gap: 6px;
+        }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        th { background: #0f172a; color: #fff; text-align: left; padding: 7px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12.5px; vertical-align: top; }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
-        .summary-wrap { display: flex; justify-content: flex-end; align-items: flex-start; gap: 20px; }
-        .summary-table { width: 320px; border-collapse: collapse; }
-        .summary-table td { padding: 6px 10px; font-size: 13px; border: none; }
+
+        /* Adaptive Multi-Column Items Grid (8+ items -> 2, 3, or 4 columns for single-page fit) */
+        .items-grid-header {
+            background: #0f172a;
+            color: #fff;
+            padding: 5px 10px;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            border-radius: 6px 6px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .items-grid {
+            display: grid;
+            gap: 5px;
+            padding: 6px;
+            border: 1px solid #cbd5e1;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            background: #fff;
+            margin-bottom: 10px;
+        }
+        .items-grid.items-grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .items-grid.items-grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 5px; }
+        .items-grid.items-grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding: 4px; }
+        .item-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 5px 7px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 2px;
+            min-width: 0;
+        }
+        .item-card-title {
+            font-weight: 800;
+            color: #0f172a;
+            font-size: 11.5px;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+        .item-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+        }
+        .item-card-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #334155;
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 2px;
+            margin-top: 1px;
+        }
+        .items-grid-cols-3 .item-card { padding: 4px 5px; }
+        .items-grid-cols-3 .item-card-title { font-size: 10.5px; line-height: 1.2; }
+        .items-grid-cols-3 .item-card-foot { font-size: 10px; }
+        .items-grid-cols-3 .var-tag { font-size: 9px; padding: 0 4px; margin-top: 1px; }
+        .items-grid-cols-4 .item-card { padding: 3px 4px; }
+        .items-grid-cols-4 .item-card-title { font-size: 9.5px; line-height: 1.15; }
+        .items-grid-cols-4 .item-card-foot { font-size: 9px; }
+        .items-grid-cols-4 .var-tag { font-size: 8.5px; padding: 0 3px; margin-top: 1px; }
+
+        /* Progressive Page Density for larger orders */
+        .invoice-box.density-3 { padding: 20px; }
+        .invoice-box.density-3 .header { padding-bottom: 7px; margin-bottom: 8px; }
+        .invoice-box.density-3 .details-grid { gap: 8px; margin-bottom: 8px; }
+        .invoice-box.density-3 .details-box { padding: 6px 9px; }
+        .invoice-box.density-3 .details-box p { font-size: 11.5px; margin: 1px 0; }
+        .invoice-box.density-3 .cod-box { margin-top: 8px; padding: 6px 10px; }
+        .invoice-box.density-3 .cod-box h2 { font-size: 16px; }
+        .invoice-box.density-3 .footer { margin-top: 8px; padding-top: 6px; }
+
+        .invoice-box.density-4 { padding: 14px; }
+        .invoice-box.density-4 .header { padding-bottom: 5px; margin-bottom: 6px; }
+        .invoice-box.density-4 .store-info h1 { font-size: 17px; }
+        .invoice-box.density-4 .invoice-title h2 { font-size: 15px; }
+        .invoice-box.density-4 .details-grid { gap: 6px; margin-bottom: 6px; }
+        .invoice-box.density-4 .details-box { padding: 5px 7px; }
+        .invoice-box.density-4 .details-box p { font-size: 10.5px; margin: 1px 0; line-height: 1.25; }
+        .invoice-box.density-4 .checklist-box { padding: 5px 8px; margin-bottom: 6px; }
+        .invoice-box.density-4 .summary-table td { padding: 3px 6px; font-size: 11px; }
+        .invoice-box.density-4 .summary-table tr.total-row td { font-size: 13px; padding: 5px 6px; }
+        .invoice-box.density-4 .cod-box { margin-top: 6px; padding: 5px 8px; }
+        .invoice-box.density-4 .cod-box h2 { font-size: 14px; }
+        .invoice-box.density-4 .footer { margin-top: 6px; padding-top: 4px; font-size: 10px; }
+
+        .summary-wrap { display: flex; justify-content: flex-end; align-items: flex-start; gap: 16px; }
+        .summary-table { width: 290px; border-collapse: collapse; margin-bottom: 0; }
+        .summary-table td { padding: 4px 8px; font-size: 12.5px; border: none; }
         .summary-table tr.total-row td {
             border-top: 2px solid #0f172a;
             border-bottom: 2px solid #0f172a;
-            font-size: 15.5px;
+            font-size: 14.5px;
             font-weight: 900;
-            padding: 10px;
+            padding: 7px 8px;
             color: #0f172a;
         }
         .cod-box {
-            margin-top: 22px;
-            padding: 14px 18px;
+            margin-top: 10px;
+            padding: 9px 14px;
             border: 2px dashed #0f172a;
-            border-radius: 10px;
+            border-radius: 8px;
             text-align: center;
             background: #f8fafc;
         }
-        .cod-box h2 { margin: 0; font-size: 20px; font-weight: 900; }
+        .cod-box h2 { margin: 0; font-size: 17px; font-weight: 900; }
         .footer {
-            margin-top: 28px;
+            margin-top: 12px;
             text-align: center;
-            font-size: 11.5px;
+            font-size: 11px;
             color: #64748b;
             border-top: 1px solid #e2e8f0;
-            padding-top: 14px;
+            padding-top: 8px;
         }
         .badge-status {
-            display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 800; text-transform: uppercase;
+            display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 800; text-transform: uppercase;
             background: #e2e8f0; color: #0f172a;
         }
         .var-tag {
-            display: inline-block; font-size: 11px; font-weight: 700; color: #334155;
-            background: #f1f5f9; border: 1px solid #cbd5e1; padding: 1px 6px; border-radius: 4px; margin-right: 4px; margin-top: 3px;
+            display: inline-block; font-size: 10.5px; font-weight: 700; color: #334155;
+            background: #f1f5f9; border: 1px solid #cbd5e1; padding: 1px 5px; border-radius: 4px; margin-right: 3px; margin-top: 2px;
+        }
+        @page {
+            size: A4;
+            margin: 6mm;
         }
         @media print {
-            body { padding: 0; background: #fff; }
+            body { padding: 0; background: #fff; margin: 0; }
             .no-print { display: none !important; }
-            .invoice-box { border: none; padding: 10px; max-width: 100%; margin: 0; box-shadow: none; }
+            .invoice-box {
+                border: none;
+                padding: 2mm 3mm !important;
+                max-width: 100%;
+                margin: 0;
+                box-shadow: none;
+                border-radius: 0;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .invoice-box.page-break {
+                page-break-before: always;
+                break-before: page;
+            }
         }
     </style>
 </head>
@@ -206,6 +335,20 @@ function togglePrintType() {
     renderAllInvoices();
 }
 
+function formatMainShopName(rawName) {
+    var n = String(rawName || '').trim();
+    if (!n || /^r[ae]nonex$/i.test(n)) return 'Ranonex Shop';
+    if (/\b(shop|store)\b/i.test(n)) return n;
+    return n + ' Shop';
+}
+
+function getAdaptiveCols(itemCount) {
+    if (itemCount >= 28) return 4;
+    if (itemCount >= 17) return 3;
+    if (itemCount >= 8) return 2;
+    return 1;
+}
+
 function buildSingleInvoiceHtml(o, printType, opts) {
     opts = opts || {};
     var isMaster = opts.mode === 'master';
@@ -213,60 +356,112 @@ function buildSingleInvoiceHtml(o, printType, opts) {
     var storeSettings = o._storeSettings || {};
     var brandInfo = o._brandInfo || {};
 
-    // Determine Store / Brand Header Identity
-    var parentStoreName = (storeSettings.store_name || storeSettings.main_store_name || (window.CONFIG && CONFIG.STORE_NAME) || 'Ranonex').trim();
+    // Determine Store / Brand Header Identity (main shop always displays as Ranonex Shop)
+    var parentStoreName = formatMainShopName(storeSettings.store_name || storeSettings.main_store_name || (window.CONFIG && CONFIG.STORE_NAME) || 'Ranonex Shop');
     var hasCustomBrand = (!isMaster && brandInfo && !brandInfo.is_main && brandInfo.name && !/^brand_\d+$/i.test(String(brandInfo.name).trim()));
     var headerName = hasCustomBrand ? String(brandInfo.name).trim() : parentStoreName;
     var headerLogo = (hasCustomBrand && brandInfo.logo_url) ? brandInfo.logo_url : (storeSettings.logo_url || storeSettings.main_logo_url || '');
+    // Combined outer slip hides logo (clean classic header); dedicated single shop / brand invoice shows logo & full details
+    var showLogo = !isMaster && !!headerLogo;
     var headerPhone = (hasCustomBrand && brandInfo.phone) ? brandInfo.phone : (storeSettings.whatsapp_number || '');
     var headerAddr = (hasCustomBrand && brandInfo.address) ? brandInfo.address : (storeSettings.store_address || '');
 
-    var bannerHtml = '';
-
     var checklistHtml = '';
     if (isMaster && Array.isArray(o._subOrderSummaries) && o._subOrderSummaries.length > 1) {
+        var useTwoColChecklist = o._subOrderSummaries.length > 2;
         var rows = o._subOrderSummaries.map(function(so, idx) {
             var cnt = Array.isArray(so.items) ? so.items.reduce(function(s, i) { return s + (Number(i.quantity) || 1); }, 0) : 0;
-            return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #cbd5e1;font-size:12.5px;">' +
-                '<div><b>[ &nbsp; ] Parcel ' + (idx + 1) + ':</b> 🏷️ <b>' + esc(so.brand_name || 'Brand') + '</b> (Sub-Order <code>#' + esc(so.id) + '</code>)</div>' +
-                '<div><b>' + (so.items ? so.items.length : 0) + ' items (Qty: ' + cnt + ')</b> • ৳' + Math.round(so.subtotal || 0) + '</div>' +
+            var bDisplay = (so.brand_id || (so._brandInfo && !so._brandInfo.is_main)) ? (so.brand_name || 'Brand') : formatMainShopName(so.brand_name || parentStoreName);
+            return '<div class="checklist-row">' +
+                '<div><b>[ &nbsp; ] Parcel ' + (idx + 1) + ':</b> 🏷️ <b>' + esc(bDisplay) + '</b> (<code>#' + esc(so.id) + '</code>)</div>' +
+                '<div style="white-space:nowrap;"><b>' + (so.items ? so.items.length : 0) + ' items (Qty: ' + cnt + ')</b> • ৳' + Math.round(so.subtotal || 0) + '</div>' +
             '</div>';
         }).join('');
         checklistHtml =
             '<div class="checklist-box">' +
-                '<h4>✅ Master Parcel Packing Checklist (Pack all inner brand parcels below into 1 Master Bag)</h4>' +
-                rows +
+                '<h4>✅ Included Parcels Checklist (Pack all parcels below together)</h4>' +
+                '<div class="checklist-grid ' + (useTwoColChecklist ? 'cols-2' : '') + '">' + rows + '</div>' +
             '</div>';
     }
 
     var items = Array.isArray(o.items) ? o.items : [];
+    var cols = getAdaptiveCols(items.length);
     var totalQty = 0;
-    var itemsRowsHtml = items.map(function(item, i) {
-        var qty = Number(item.quantity) || 1;
-        totalQty += qty;
-        var price = Number(item.price) || 0;
-        var total = price * qty;
 
+    function buildItemTags(item) {
         var vTags = [];
         if (isMaster && item.brand_name) {
-            vTags.push('<span class="var-tag" style="background:#0f172a;color:#fff;border-color:#0f172a;">🏷️ ' + esc(item.brand_name) + '</span>');
+            var tagBrand = item.brand_id ? item.brand_name : formatMainShopName(item.brand_name);
+            vTags.push('<span class="var-tag" style="background:#0f172a;color:#fff;border-color:#0f172a;">🏷️ ' + esc(tagBrand) + '</span>');
         }
         if (item.color) vTags.push('<span class="var-tag">Color: ' + esc(item.color) + '</span>');
         if (item.size)  vTags.push('<span class="var-tag">Size: ' + esc(item.size) + '</span>');
         if (item.variantCode) vTags.push('<span class="var-tag">Code: ' + esc(item.variantCode) + '</span>');
         if (item.sku)   vTags.push('<span class="var-tag">SKU: ' + esc(item.sku) + '</span>');
+        return vTags;
+    }
 
-        return '<tr>' +
-            '<td>' + (i + 1) + '</td>' +
-            '<td>' +
-                '<div style="font-weight:800;color:#0f172a;font-size:13.5px;">' + esc(item.productName || item.name || 'Product') + '</div>' +
-                (vTags.length ? '<div style="margin-top:3px;">' + vTags.join('') + '</div>' : '') +
-            '</td>' +
-            '<td class="text-center" style="font-weight:900;font-size:14px;">' + qty + '</td>' +
-            '<td class="text-right">৳' + price.toLocaleString('en-IN') + '</td>' +
-            '<td class="text-right" style="font-weight:800;">৳' + total.toLocaleString('en-IN') + '</td>' +
-        '</tr>';
-    }).join('');
+    var itemsSectionHtml = '';
+    if (cols === 1) {
+        var itemsRowsHtml = items.map(function(item, i) {
+            var qty = Number(item.quantity) || 1;
+            totalQty += qty;
+            var price = Number(item.price) || 0;
+            var total = price * qty;
+            var vTags = buildItemTags(item);
+
+            return '<tr>' +
+                '<td>' + (i + 1) + '</td>' +
+                '<td>' +
+                    '<div style="font-weight:800;color:#0f172a;font-size:13px;">' + esc(item.productName || item.name || 'Product') + '</div>' +
+                    (vTags.length ? '<div style="margin-top:2px;">' + vTags.join('') + '</div>' : '') +
+                '</td>' +
+                '<td class="text-center" style="font-weight:900;font-size:13.5px;">' + qty + '</td>' +
+                '<td class="text-right">৳' + price.toLocaleString('en-IN') + '</td>' +
+                '<td class="text-right" style="font-weight:800;">৳' + total.toLocaleString('en-IN') + '</td>' +
+            '</tr>';
+        }).join('');
+
+        itemsSectionHtml =
+            '<table>' +
+                '<thead>' +
+                    '<tr>' +
+                        '<th style="width:32px;">#</th>' +
+                        '<th>Item Description & Variant</th>' +
+                        '<th class="text-center" style="width:55px;">Qty</th>' +
+                        '<th class="text-right" style="width:95px;">Unit Price</th>' +
+                        '<th class="text-right" style="width:105px;">Total</th>' +
+                    '</tr>' +
+                '</thead>' +
+                '<tbody>' + itemsRowsHtml + '</tbody>' +
+            '</table>';
+    } else {
+        var gridCardsHtml = items.map(function(item, i) {
+            var qty = Number(item.quantity) || 1;
+            totalQty += qty;
+            var price = Number(item.price) || 0;
+            var total = price * qty;
+            var vTags = buildItemTags(item);
+
+            return '<div class="item-card">' +
+                '<div>' +
+                    '<div class="item-card-title">' + (i + 1) + '. ' + esc(item.productName || item.name || 'Product') + '</div>' +
+                    (vTags.length ? '<div class="item-card-meta">' + vTags.join('') + '</div>' : '') +
+                '</div>' +
+                '<div class="item-card-foot">' +
+                    '<span>Qty: <b>' + qty + '</b> × ৳' + price.toLocaleString('en-IN') + '</span>' +
+                    '<b style="color:#0f172a;">৳' + total.toLocaleString('en-IN') + '</b>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        itemsSectionHtml =
+            '<div class="items-grid-header">' +
+                '<span>Items Summary (' + items.length + ' Products • ' + cols + '-Column Layout)</span>' +
+                '<span>Total Qty: ' + totalQty + '</span>' +
+            '</div>' +
+            '<div class="items-grid items-grid-cols-' + cols + '">' + gridCardsHtml + '</div>';
+    }
 
     var subtotal = Number(o.subtotal || 0);
     var addonTotal = Number(o.addon_total || 0);
@@ -279,7 +474,7 @@ function buildSingleInvoiceHtml(o, printType, opts) {
     var summaryRows =
         '<tr><td>Subtotal (' + totalQty + ' qty):</td><td class="text-right">৳' + subtotal.toLocaleString('en-IN') + '</td></tr>' +
         (addonTotal > 0 ? '<tr><td>Add-ons:</td><td class="text-right">৳' + addonTotal.toLocaleString('en-IN') + '</td></tr>' : '') +
-        (delivery > 0 || !isSubParcel ? '<tr><td>Delivery Charge:</td><td class="text-right">৳' + delivery.toLocaleString('en-IN') + '</td></tr>' : '<tr><td>Delivery Charge:</td><td class="text-right" style="font-size:11px;color:#64748b;">Included in Master Parcel</td></tr>') +
+        (delivery > 0 || !isSubParcel ? '<tr><td>Delivery Charge:</td><td class="text-right">৳' + delivery.toLocaleString('en-IN') + '</td></tr>' : '<tr><td>Delivery Charge:</td><td class="text-right" style="font-size:11px;color:#64748b;">Combined Shipping</td></tr>') +
         (discount > 0 ? '<tr><td>Discount ' + (o.promo_code ? '(' + esc(o.promo_code) + ')' : '') + ':</td><td class="text-right">-৳' + discount.toLocaleString('en-IN') + '</td></tr>' : '') +
         '<tr class="total-row"><td>Grand Total:</td><td class="text-right">৳' + grandTotal.toLocaleString('en-IN') + '</td></tr>' +
         (advance > 0 ? '<tr><td style="color:#16a34a;font-weight:700;">Advance Paid:</td><td class="text-right" style="color:#16a34a;font-weight:700;">-৳' + advance.toLocaleString('en-IN') + '</td></tr>' : '');
@@ -289,8 +484,8 @@ function buildSingleInvoiceHtml(o, printType, opts) {
         if (isSubParcel && o._totalParcels > 1) {
             codHtml =
                 '<div class="cod-box">' +
-                    '<div style="font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;">Inner Brand Parcel (' + esc(headerName) + ') — Parcel Value: ৳' + grandTotal.toLocaleString('en-IN') + '</div>' +
-                    '<div style="font-size:12px;color:#64748b;margin-top:4px;">Combine inside Master Order <b>#' + esc(o._masterOrderId || o.order_group_id) + '</b> for courier collection.</div>' +
+                    '<div style="font-size:11.5px;font-weight:700;color:#475569;text-transform:uppercase;">Inner Brand Parcel (' + esc(headerName) + ') — Parcel Value: ৳' + grandTotal.toLocaleString('en-IN') + '</div>' +
+                    '<div style="font-size:11.5px;color:#64748b;margin-top:3px;">Pack inside Combined Order <b>#' + esc(o._masterOrderId || o.order_group_id) + '</b> for courier collection.</div>' +
                 '</div>';
         } else if (o.payment_status === 'Paid') {
             codHtml = '<div class="cod-box"><h2 style="color:#16a34a;">✅ FULLY PAID — DO NOT COLLECT CASH (৳0)</h2></div>';
@@ -300,12 +495,13 @@ function buildSingleInvoiceHtml(o, printType, opts) {
     }
 
     var dateStr = o.created_at ? new Date(o.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    var densityClass = 'density-' + cols;
 
-    return '<div class="invoice-box ' + (opts.pageBreak ? 'page-break' : '') + '">' +
+    return '<div class="invoice-box ' + densityClass + ' ' + (opts.pageBreak ? 'page-break' : '') + '">' +
         '<div class="header">' +
             '<div class="store-info">' +
-                '<div style="display:flex;align-items:center;gap:14px;margin-bottom:6px;">' +
-                    (headerLogo ? '<img class="invoice-logo" src="' + esc(headerLogo) + '" alt="' + esc(headerName) + '" style="max-height:54px;max-width:150px;display:block;object-fit:contain;border-radius:6px;">' : '') +
+                '<div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">' +
+                    (showLogo ? '<img class="invoice-logo" src="' + esc(headerLogo) + '" alt="' + esc(headerName) + '" style="max-height:48px;max-width:135px;display:block;object-fit:contain;border-radius:6px;">' : '') +
                     '<div>' +
                         '<h1>' + esc(headerName) + '</h1>' +
                         (hasCustomBrand && parentStoreName ? '<p style="font-weight:700;color:#475569;margin-top:2px;">Official Brand of ' + esc(parentStoreName) + '</p>' : '') +
@@ -315,22 +511,22 @@ function buildSingleInvoiceHtml(o, printType, opts) {
                 (headerPhone ? '<p>📞 ' + esc(headerPhone) + '</p>' : '') +
             '</div>' +
             '<div class="invoice-title">' +
-                '<h2>' + (printType === 'bill' ? 'BILL INVOICE' : (isMaster ? 'MASTER DELIVERY SLIP' : 'DELIVERY INVOICE')) + '</h2>' +
+                '<h2>' + (printType === 'bill' ? 'BILL INVOICE' : (isMaster ? 'DELIVERY SLIP' : 'DELIVERY INVOICE')) + '</h2>' +
                 '<p>Order ID: #' + esc(o.id) + '</p>' +
-                (isSubParcel && o._masterOrderId && o._masterOrderId !== o.id ? '<p style="color:#7e22ce;">Master Order: #' + esc(o._masterOrderId) + (o._totalParcels > 1 ? ' (' + (o._parcelIndex || 1) + '/' + o._totalParcels + ')' : '') + '</p>' : '') +
+                (isSubParcel && o._masterOrderId && o._masterOrderId !== o.id ? '<p style="color:#7e22ce;">Combined Order: #' + esc(o._masterOrderId) + (o._totalParcels > 1 ? ' (' + (o._parcelIndex || 1) + '/' + o._totalParcels + ')' : '') + '</p>' : '') +
                 '<p>Date: ' + esc(dateStr) + '</p>' +
-                '<div style="margin-top:6px;"><span class="badge-status">' + esc(o.payment_status || 'Unpaid') + ' (' + esc(o.payment_method || 'COD') + ')</span></div>' +
+                '<div style="margin-top:4px;"><span class="badge-status">' + esc(o.payment_status || 'Unpaid') + ' (' + esc(o.payment_method || 'COD') + ')</span></div>' +
             '</div>' +
         '</div>' +
 
         '<div class="details-grid">' +
             '<div class="details-box">' +
                 '<h3>📍 Customer & Delivery Address</h3>' +
-                '<p style="font-size:15px;font-weight:800;color:#0f172a;">' + esc(o.customer_name || '—') + '</p>' +
-                '<p style="font-size:14px;font-weight:800;color:#0f172a;">📞 ' + esc(o.customer_phone || '—') + '</p>' +
-                (o.customer_email ? '<p style="font-size:12px;color:#475569;">✉️ ' + esc(o.customer_email) + '</p>' : '') +
-                '<p style="margin-top:6px;font-weight:700;background:#fff;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;">' + esc(o.address || '—') + '</p>' +
-                '<p style="font-size:12.5px;font-weight:700;color:#334155;margin-top:6px;">' +
+                '<p style="font-size:14px;font-weight:800;color:#0f172a;">' + esc(o.customer_name || '—') + '</p>' +
+                '<p style="font-size:13px;font-weight:800;color:#0f172a;">📞 ' + esc(o.customer_phone || '—') + '</p>' +
+                (o.customer_email ? '<p style="font-size:11.5px;color:#475569;">✉️ ' + esc(o.customer_email) + '</p>' : '') +
+                '<p style="margin-top:4px;font-weight:700;background:#fff;padding:4px 7px;border:1px solid #cbd5e1;border-radius:5px;">' + esc(o.address || '—') + '</p>' +
+                '<p style="font-size:11.5px;font-weight:700;color:#334155;margin-top:4px;">' +
                     [o.upazila, o.district, o.division].filter(Boolean).map(esc).join(' • ') +
                 '</p>' +
             '</div>' +
@@ -347,22 +543,11 @@ function buildSingleInvoiceHtml(o, printType, opts) {
 
         checklistHtml +
 
-        '<table>' +
-            '<thead>' +
-                '<tr>' +
-                    '<th style="width:36px;">#</th>' +
-                    '<th>Item Description & Variant</th>' +
-                    '<th class="text-center" style="width:65px;">Qty</th>' +
-                    '<th class="text-right" style="width:105px;">Unit Price</th>' +
-                    '<th class="text-right" style="width:115px;">Total</th>' +
-                '</tr>' +
-            '</thead>' +
-            '<tbody>' + itemsRowsHtml + '</tbody>' +
-        '</table>' +
+        itemsSectionHtml +
 
         '<div class="summary-wrap">' +
             '<div style="flex:1;">' +
-                (o.addons && o.addons !== 'None' ? '<div style="padding:10px 12px;background:#fefce8;border:1px solid #fde047;border-radius:8px;font-size:12.5px;"><b>🎁 Add-ons Included:</b> ' + esc(o.addons) + '</div>' : '') +
+                (o.addons && o.addons !== 'None' ? '<div style="padding:7px 10px;background:#fefce8;border:1px solid #fde047;border-radius:6px;font-size:11.5px;"><b>🎁 Add-ons Included:</b> ' + esc(o.addons) + '</div>' : '') +
             '</div>' +
             '<table class="summary-table">' + summaryRows + '</table>' +
         '</div>' +
@@ -370,7 +555,7 @@ function buildSingleInvoiceHtml(o, printType, opts) {
         codHtml +
 
         '<div class="footer">' +
-            '<p>Thank you for shopping with <b>' + esc(headerName) + '</b>!</p>' +
+            '<p style="margin:0;">Thank you for shopping with <b>' + esc(headerName) + '</b>!</p>' +
         '</div>' +
     '</div>';
 }
@@ -389,10 +574,10 @@ function renderAllInvoices() {
     var htmlParts = [];
 
     if (mode === 'all_pack' && Array.isArray(currentOrderData._subOrderSummaries) && currentOrderData._subOrderSummaries.length > 0) {
-        document.getElementById('toolbarTitle').textContent = '🖨️ Complete Multi-Brand Packing Set (Master Slip + ' + currentOrderData._subOrderSummaries.length + ' Brand Invoices)';
-        document.getElementById('toolbarSub').textContent = 'Page 1: Outer Master Parcel Slip • Pages 2-' + (currentOrderData._subOrderSummaries.length + 1) + ': Dedicated Brand Inner Parcel Invoices';
+        document.getElementById('toolbarTitle').textContent = '🖨️ Complete Multi-Brand Packing Set (Combined Slip + ' + currentOrderData._subOrderSummaries.length + ' Brand Invoices)';
+        document.getElementById('toolbarSub').textContent = 'Page 1: Outer Combined Delivery Slip • Pages 2-' + (currentOrderData._subOrderSummaries.length + 1) + ': Dedicated Brand Inner Parcel Invoices';
 
-        // Page 1: Master Combined Parcel Slip
+        // Page 1: Outer Combined Delivery Slip
         htmlParts.push(buildSingleInvoiceHtml(currentOrderData, currentPrintType, { mode: 'master', pageBreak: false }));
 
         // Subsequent Pages: Each Brand's Dedicated Inner Parcel Invoice
@@ -404,14 +589,14 @@ function renderAllInvoices() {
             htmlParts.push(buildSingleInvoiceHtml(subWithSettings, currentPrintType, { mode: 'brand_sub', pageBreak: true }));
         });
     } else if (mode === 'master') {
-        document.getElementById('toolbarTitle').textContent = '📦 Master Parcel Invoice — #' + currentOrderData.id;
-        document.getElementById('toolbarSub').textContent = 'Combines all brands in this checkout into 1 Master Invoice';
+        document.getElementById('toolbarTitle').textContent = '📦 Combined Delivery Slip — #' + currentOrderData.id;
+        document.getElementById('toolbarSub').textContent = 'Combines all brands in this checkout into 1 Delivery Slip';
         htmlParts.push(buildSingleInvoiceHtml(currentOrderData, currentPrintType, { mode: 'master', pageBreak: false }));
     } else {
         var bName = (currentOrderData._brandInfo && currentOrderData._brandInfo.name) ? currentOrderData._brandInfo.name : 'Order';
         document.getElementById('toolbarTitle').textContent = '🏷️ Dedicated Invoice (' + bName + ') — #' + currentOrderData.id;
         document.getElementById('toolbarSub').textContent = currentOrderData._isSubParcel
-            ? 'Inner Brand Parcel ' + currentOrderData._parcelIndex + ' of ' + currentOrderData._totalParcels + ' (Master Order #' + currentOrderData._masterOrderId + ')'
+            ? 'Inner Brand Parcel ' + currentOrderData._parcelIndex + ' of ' + currentOrderData._totalParcels + ' (Combined Order #' + currentOrderData._masterOrderId + ')'
             : 'Single Brand Invoice';
         htmlParts.push(buildSingleInvoiceHtml(currentOrderData, currentPrintType, { mode: 'brand', pageBreak: false }));
     }
@@ -436,8 +621,8 @@ function hydrateInvoiceData(o, brandsMap, globalSettings) {
     }
     o._storeSettings = gs;
 
-    var parentName = (gs.store_name || gs.main_store_name || (window.CONFIG && CONFIG.STORE_NAME) || 'Ranonex').trim();
-    var mainShopLabel = parentName;
+    var parentName = (gs.store_name || gs.main_store_name || (window.CONFIG && CONFIG.STORE_NAME) || 'Ranonex Shop').trim();
+    var mainShopLabel = formatMainShopName(parentName);
 
     function resolveBrandForOrder(ord) {
         var bId = ord.brand_id || (ord._brandInfo && ord._brandInfo.id) || null;
