@@ -192,12 +192,15 @@
             background: #fff;
             position: relative;
             overflow: hidden;
+            isolation: isolate;
             box-sizing: border-box;
             font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
             color: #0f172a;
             display: flex;
             flex-direction: column;
             user-select: text;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
         /* Front Card */
@@ -290,17 +293,33 @@
         .id-photo-box {
             width: 18mm;
             height: 21.5mm;
-            background: #e2e8f0;
+            position: relative;
+            background: #e2e8f0 !important;
             border: 0.5px solid #cbd5e1;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
-        .id-photo-box img {
+        .id-photo-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .id-photo-box img,
+        .id-photo-box svg:not(.id-photo-bg) {
+            position: relative;
+            z-index: 1;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
         .id-holder-sig {
             width: 18mm;
@@ -406,14 +425,32 @@
             margin-top: 1mm;
         }
         .id-print-badge {
-            background: #0f172a;
-            color: #fff;
+            position: relative;
+            overflow: hidden;
+            background: #0f172a !important;
+            color: #ffffff !important;
             padding: 0.45mm 1.8mm;
             font-size: 6.3pt;
             font-weight: 700;
             line-height: 1.25;
             white-space: nowrap;
             margin-right: -2.8mm;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .id-print-badge-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .id-print-badge > span {
+            position: relative;
+            z-index: 1;
+            color: #ffffff !important;
         }
         .id-back-bottom {
             padding: 1mm 2.8mm 1.5mm;
@@ -519,6 +556,11 @@
             margin: 0;
         }
         @media print {
+            *, .a4-sheet, .id-card, .id-card * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
             body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
             .admin-sidebar, .admin-topbar, .editor-panel, .preview-controls, .page-header, .no-print {
                 display: none !important;
@@ -564,7 +606,9 @@
                     <h1 style="margin:0;font-size:22px;">🪪 Editable Fictional Country ID Prop</h1>
                     <p style="margin:4px 0 0;color:#64748b;font-size:13px;">Educational video & fictional project document studio — default country: <b>Vanilla</b> (100% customizable, batch A4 print)</p>
                 </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <span id="localSaveStatus" style="font-size:11.5px;font-weight:600;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 8px;border-radius:6px;">💾 Auto-save ready</span>
+                    <button class="btn-mini" onclick="saveStudioLocal(true)">💾 Save Now</button>
                     <button class="btn-mini green" onclick="generateRandomCitizen()">🎲 Generate Sample Citizen</button>
                     <button class="btn-mini primary" onclick="addToQueue()">➕ Add to Batch Print (<span id="queueCountTop">0</span>)</button>
                     <button class="btn-mini" style="background:#2563eb;color:#fff;border-color:#2563eb;" onclick="window.print()">🖨️ Print / Save PDF</button>
@@ -1090,12 +1134,126 @@ var DEFAULT_CITIZEN = {
     issueDate: '১৩/১১/২০২৬'
 };
 
+var STUDIO_STORAGE_KEY = 'VANILLA_ID_STUDIO_V1';
 var tplState = Object.assign({}, DEFAULT_TEMPLATE);
 var citizenState = Object.assign({}, DEFAULT_CITIZEN);
 var batchQueue = [];
 var editingQueueIdx = -1;
 var viewMode = 'single'; // 'single' | 'batch'
 var colorMode = 'color'; // 'color' | 'bw'
+var _saveTimer = null;
+var _studioHydrated = false;
+
+function setSaveStatusBadge(msg, warn) {
+    var el = document.getElementById('localSaveStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = warn ? '#b45309' : '#15803d';
+    el.style.background = warn ? '#fef3c7' : '#f0fdf4';
+    el.style.borderColor = warn ? '#fde68a' : '#bbf7d0';
+}
+
+function saveStudioLocal(manual) {
+    if (typeof localStorage === 'undefined') return false;
+    var payload = {
+        tplState: tplState,
+        citizenState: citizenState,
+        batchQueue: batchQueue,
+        editingQueueIdx: editingQueueIdx,
+        viewMode: viewMode,
+        colorMode: colorMode,
+        savedAt: Date.now()
+    };
+    try {
+        localStorage.setItem(STUDIO_STORAGE_KEY, JSON.stringify(payload));
+        var t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setSaveStatusBadge('💾 Saved (' + t + ')', false);
+        if (manual && window.showToast) showToast('💾 সব তথ্য ব্রাউজারে সেভ হয়েছে!', 'success');
+        return true;
+    } catch (e) {
+        // Fallback if huge images exceeded localStorage quota: preserve all text + smaller fields
+        try {
+            var stripImgsTpl = Object.assign({}, tplState, {
+                countryLogo: '', watermarkLogo: '', authSig: '', customBarcode: ''
+            });
+            var stripCit = function(obj) {
+                return Object.assign({}, obj, { photo: '', holderSig: '' });
+            };
+            var litePayload = {
+                tplState: stripImgsTpl,
+                citizenState: stripCit(citizenState),
+                batchQueue: (batchQueue || []).map(stripCit),
+                editingQueueIdx: editingQueueIdx,
+                viewMode: viewMode,
+                colorMode: colorMode,
+                savedAt: Date.now()
+            };
+            localStorage.setItem(STUDIO_STORAGE_KEY, JSON.stringify(litePayload));
+            setSaveStatusBadge('⚠️ Text saved (images too large)', true);
+            if (manual && window.showToast) showToast('⚠️ ছবির সাইজ বড় হওয়ায় লেখাগুলো সেভ হয়েছে।', 'warning');
+            return true;
+        } catch (e2) {
+            setSaveStatusBadge('⚠️ Local storage unavailable', true);
+            return false;
+        }
+    }
+}
+
+function scheduleSaveLocal() {
+    if (!_studioHydrated) return;
+    if (_saveTimer) clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(function() {
+        saveStudioLocal(false);
+    }, 150);
+}
+
+function loadStudioLocal() {
+    if (typeof localStorage === 'undefined') return false;
+    try {
+        var raw = localStorage.getItem(STUDIO_STORAGE_KEY);
+        if (!raw) return false;
+        var saved = JSON.parse(raw);
+        if (!saved || typeof saved !== 'object') return false;
+        if (saved.tplState && typeof saved.tplState === 'object') {
+            tplState = Object.assign({}, DEFAULT_TEMPLATE, saved.tplState);
+        }
+        if (saved.citizenState && typeof saved.citizenState === 'object') {
+            citizenState = Object.assign({}, DEFAULT_CITIZEN, saved.citizenState);
+        }
+        if (Array.isArray(saved.batchQueue)) {
+            batchQueue = saved.batchQueue.map(function(item) {
+                return Object.assign({}, DEFAULT_CITIZEN, item);
+            });
+        }
+        if (typeof saved.editingQueueIdx === 'number' && saved.editingQueueIdx >= 0 && saved.editingQueueIdx < batchQueue.length) {
+            editingQueueIdx = saved.editingQueueIdx;
+        } else {
+            editingQueueIdx = -1;
+        }
+        if (saved.viewMode === 'single' || saved.viewMode === 'batch') {
+            viewMode = saved.viewMode;
+        }
+        if (saved.colorMode === 'color' || saved.colorMode === 'bw') {
+            colorMode = saved.colorMode;
+        }
+        var qEn = document.getElementById('quickCountryEn');
+        var qBn = document.getElementById('quickCountryBn');
+        if (qEn) qEn.value = tplState.countryEnShort || 'Vanilla';
+        if (qBn) qBn.value = tplState.countryBnShort || 'ভ্যানিলা';
+        var btnSingle = document.getElementById('btnViewSingle');
+        var btnBatch = document.getElementById('btnViewBatch');
+        if (btnSingle) btnSingle.classList.toggle('active', viewMode === 'single');
+        if (btnBatch) btnBatch.classList.toggle('active', viewMode === 'batch');
+        var btnColor = document.getElementById('btnColorMode');
+        var btnBw = document.getElementById('btnBwMode');
+        if (btnColor) btnColor.classList.toggle('active', colorMode === 'color');
+        if (btnBw) btnBw.classList.toggle('active', colorMode === 'bw');
+        setSaveStatusBadge('💾 Restored saved data', false);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
 
 function updateEditingBar() {
     var bar = document.getElementById('editingTargetBar');
@@ -1113,6 +1271,7 @@ function exitQueueEdit() {
     editingQueueIdx = -1;
     updateEditingBar();
     refreshQueueUi();
+    scheduleSaveLocal();
 }
 
 function applyCountryQuickSwap() {
@@ -1324,7 +1483,7 @@ function buildFrontCardHtml(c, t, idx) {
         '<div class="id-front-body">' +
             '<div class="id-watermark" style="opacity:' + ((t.watermarkOpacity || 20) / 100) + ';">' + watermarkHtml + '</div>' +
             '<div class="id-photo-col">' +
-                '<div class="id-photo-box">' + photoHtml + '</div>' +
+                '<div class="id-photo-box"><svg class="id-photo-bg" viewBox="0 0 100 120" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="120" fill="#e2e8f0"/></svg>' + photoHtml + '</div>' +
                 '<div class="id-holder-sig">' + sigHtml + '</div>' +
             '</div>' +
             '<div class="id-fields-col">' +
@@ -1397,6 +1556,7 @@ function buildBackCardHtml(c, t, idx) {
                     '<span contenteditable="true" data-bind="' + bindPrefix + ':birthPlace">' + esc(c.birthPlace) + '</span>' +
                 '</div>' +
                 '<div class="id-print-badge">' +
+                    '<svg class="id-print-badge-bg" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="30" fill="#0f172a"/></svg>' +
                     '<span contenteditable="true" data-tpl="lblPrint">' + esc(t.lblPrint) + '</span> ' +
                     '<span contenteditable="true" data-bind="' + bindPrefix + ':printCount">' + esc(c.printCount) + '</span>' +
                 '</div>' +
@@ -1470,6 +1630,7 @@ function renderSheets() {
         container.innerHTML = pagesHtml.join('');
     }
     bindInlineEdits();
+    scheduleSaveLocal();
 }
 
 function applyInlineEdit(el, isBlur) {
@@ -1492,6 +1653,7 @@ function applyInlineEdit(el, isBlur) {
         if (isBlur && viewMode === 'batch' && batchQueue.length > 1) {
             renderSheets();
         }
+        scheduleSaveLocal();
         return;
     }
     if (!bind) return;
@@ -1503,6 +1665,7 @@ function applyInlineEdit(el, isBlur) {
         citizenState[idxOrField] = txt;
         writeInputsFromState();
         liveUpdateBarcodeForCard(-1, citizenState);
+        scheduleSaveLocal();
     } else if (scope === 'queue') {
         var qIdx = parseInt(idxOrField, 10);
         if (batchQueue[qIdx]) {
@@ -1513,6 +1676,7 @@ function applyInlineEdit(el, isBlur) {
             }
             liveUpdateBarcodeForCard(qIdx, batchQueue[qIdx]);
             refreshQueueUi();
+            scheduleSaveLocal();
         }
     }
 }
@@ -1587,6 +1751,7 @@ function addToQueue() {
     updateEditingBar();
     refreshQueueUi();
     if (viewMode === 'batch') renderSheets();
+    else scheduleSaveLocal();
     if (window.showToast) showToast('✅ Batch-এ যোগ হয়েছে! (মোট: ' + batchQueue.length + ')', 'success');
 }
 
@@ -1659,10 +1824,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof adminInit === 'function') {
         adminInit('demo-id-card', function() {});
     }
+    loadStudioLocal();
+    _studioHydrated = true;
     updateEditingBar();
     writeInputsFromState();
     refreshQueueUi();
     renderSheets();
+});
+
+window.addEventListener('beforeunload', function() {
+    if (_studioHydrated) saveStudioLocal(false);
 });
 </script>
 </body>
