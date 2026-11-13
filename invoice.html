@@ -356,22 +356,40 @@ function buildSingleInvoiceHtml(o, printType, opts) {
     var storeSettings = o._storeSettings || {};
     var brandInfo = o._brandInfo || {};
 
-    // Determine Store / Brand Header Identity (main shop always displays as Ranonex Shop)
-    var parentStoreName = formatMainShopName(storeSettings.store_name || storeSettings.main_store_name || (window.CONFIG && CONFIG.STORE_NAME) || 'Ranonex Shop');
+    // Determine Parent Brand ("Ranonex"), Main Shop ("Ranonex Shop"), or Combined Neutral Identity
+    var rawParentName = (storeSettings.main_store_name || storeSettings.store_name || (window.CONFIG && CONFIG.STORE_NAME) || 'Ranonex').trim();
+    var parentBrandName = /^r[ae]nonex(\s+(shop|store))?$/i.test(rawParentName)
+        ? 'Ranonex'
+        : (rawParentName.replace(/\s+(shop|store)$/i, '').trim() || 'Ranonex');
+    var mainShopName = formatMainShopName(rawParentName);
     var hasCustomBrand = (!isMaster && brandInfo && !brandInfo.is_main && brandInfo.name && !/^brand_\d+$/i.test(String(brandInfo.name).trim()));
-    var headerName = hasCustomBrand ? String(brandInfo.name).trim() : parentStoreName;
-    var headerLogo = (hasCustomBrand && brandInfo.logo_url) ? brandInfo.logo_url : (storeSettings.logo_url || storeSettings.main_logo_url || '');
-    // Combined outer slip hides logo (clean classic header); dedicated single shop / brand invoice shows logo & full details
-    var showLogo = !isMaster && !!headerLogo;
-    var headerPhone = (hasCustomBrand && brandInfo.phone) ? brandInfo.phone : (storeSettings.whatsapp_number || '');
-    var headerAddr = (hasCustomBrand && brandInfo.address) ? brandInfo.address : (storeSettings.store_address || '');
+
+    var headerName = '';
+    var headerSub = '';
+    var headerLogo = '';
+    var showLogo = false;
+    var headerPhone = '';
+    var headerAddr = '';
+
+    if (isMaster) {
+        // Outer combined slip stays completely brand-neutral (no logo, no single-brand / Ranonex branding)
+        headerName = (Array.isArray(o._subOrderSummaries) && o._subOrderSummaries.length > 1) ? 'MULTI-BRAND PARCEL' : 'COMBINED PARCEL';
+        headerSub = 'Unified Courier Dispatch Summary';
+    } else {
+        headerName = hasCustomBrand ? String(brandInfo.name).trim() : mainShopName;
+        headerSub = 'Official Brand of ' + parentBrandName;
+        headerLogo = (hasCustomBrand && brandInfo.logo_url) ? brandInfo.logo_url : (storeSettings.logo_url || storeSettings.main_logo_url || '');
+        showLogo = !!headerLogo;
+        headerPhone = (hasCustomBrand && brandInfo.phone) ? brandInfo.phone : (storeSettings.whatsapp_number || '');
+        headerAddr = (hasCustomBrand && brandInfo.address) ? brandInfo.address : (storeSettings.store_address || '');
+    }
 
     var checklistHtml = '';
     if (isMaster && Array.isArray(o._subOrderSummaries) && o._subOrderSummaries.length > 1) {
         var useTwoColChecklist = o._subOrderSummaries.length > 2;
         var rows = o._subOrderSummaries.map(function(so, idx) {
             var cnt = Array.isArray(so.items) ? so.items.reduce(function(s, i) { return s + (Number(i.quantity) || 1); }, 0) : 0;
-            var bDisplay = (so.brand_id || (so._brandInfo && !so._brandInfo.is_main)) ? (so.brand_name || 'Brand') : formatMainShopName(so.brand_name || parentStoreName);
+            var bDisplay = (so.brand_id || (so._brandInfo && !so._brandInfo.is_main)) ? (so.brand_name || 'Brand') : formatMainShopName(so.brand_name || mainShopName);
             return '<div class="checklist-row">' +
                 '<div><b>[ &nbsp; ] Parcel ' + (idx + 1) + ':</b> 🏷️ <b>' + esc(bDisplay) + '</b> (<code>#' + esc(so.id) + '</code>)</div>' +
                 '<div style="white-space:nowrap;"><b>' + (so.items ? so.items.length : 0) + ' items (Qty: ' + cnt + ')</b> • ৳' + Math.round(so.subtotal || 0) + '</div>' +
@@ -504,7 +522,7 @@ function buildSingleInvoiceHtml(o, printType, opts) {
                     (showLogo ? '<img class="invoice-logo" src="' + esc(headerLogo) + '" alt="' + esc(headerName) + '" style="max-height:48px;max-width:135px;display:block;object-fit:contain;border-radius:6px;">' : '') +
                     '<div>' +
                         '<h1>' + esc(headerName) + '</h1>' +
-                        (hasCustomBrand && parentStoreName ? '<p style="font-weight:700;color:#475569;margin-top:2px;">Official Brand of ' + esc(parentStoreName) + '</p>' : '') +
+                        (headerSub ? '<p style="font-weight:700;color:#475569;margin-top:2px;">' + esc(headerSub) + '</p>' : '') +
                     '</div>' +
                 '</div>' +
                 (headerAddr ? '<p>📍 ' + esc(headerAddr) + '</p>' : '') +
@@ -555,7 +573,9 @@ function buildSingleInvoiceHtml(o, printType, opts) {
         codHtml +
 
         '<div class="footer">' +
-            '<p style="margin:0;">Thank you for shopping with <b>' + esc(headerName) + '</b>!</p>' +
+            (isMaster
+                ? '<p style="margin:0;">Thank you for your order! All brand parcels are combined into this shipment.</p>'
+                : '<p style="margin:0;">Thank you for shopping with <b>' + esc(headerName) + '</b>!</p>') +
         '</div>' +
     '</div>';
 }
