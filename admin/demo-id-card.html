@@ -9,7 +9,7 @@
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
     <script src="../assets/js/config.js?v=1794570029121"></script>
     <script src="assets/js/admin-common.js?v=6"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@bwip-js/browser@4/dist/bwip-js-min.js" defer onload="if(window.renderSheets)renderSheets();" onerror="var s=document.createElement('script');s.src='https://unpkg.com/@bwip-js/browser@4/dist/bwip-js-min.js';s.onload=function(){if(window.renderSheets)renderSheets();};document.head.appendChild(s);"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bwip-js@4/dist/bwip-js-min.js" defer onload="if(window.renderSheets)renderSheets();" onerror="var s=document.createElement('script');s.src='https://unpkg.com/bwip-js@4/dist/bwip-js-min.js';s.onload=function(){if(window.renderSheets)renderSheets();};document.head.appendChild(s);"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 
     <style>
@@ -637,7 +637,11 @@
 
                     <div class="form-section-title">
                         <span>2. Citizen Front Details</span>
-                        <span style="font-size:10px;font-weight:600;color:#64748b;">(Click preview text to edit inline too!)</span>
+                        <span style="font-size:10px;font-weight:600;color:#64748b;">(Live Preview + Inline Edit)</span>
+                    </div>
+                    <div id="editingTargetBar" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px;padding:6px 9px;margin-bottom:8px;font-size:11px;align-items:center;justify-content:space-between;gap:6px;">
+                        <span id="editingTargetLabel" style="font-weight:700;color:#1e40af;">Editing Batch Card #1</span>
+                        <button type="button" class="btn-mini" onclick="exitQueueEdit()">Detach / Standalone</button>
                     </div>
                     <div class="field-row">
                         <div>
@@ -764,10 +768,11 @@
                     </div>
 
                     <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:9px 10px;margin-bottom:8px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                             <span style="font-size:11.5px;font-weight:800;color:#0f172a;">📊 Manual Barcode Control (PDF417)</span>
                             <button type="button" class="btn-mini" onclick="randomizeBarcodeSeed()">🎲 New Pattern</button>
                         </div>
+                        <div id="barcodeEngineStatus" style="font-size:10.5px;margin-bottom:6px;color:#475569;">Checking PDF417 engine...</div>
                         <label style="font-size:11px;display:flex;align-items:center;gap:5px;margin-bottom:6px;cursor:pointer;">
                             <input type="checkbox" id="chkBarcodeAuto" checked onchange="syncFromInputs()"> Auto-sync from ID No + Name + DOB
                         </label>
@@ -937,27 +942,36 @@ function generateFallbackPdf417Svg(seedText, opts) {
         x += startPattern[p];
     }
 
-    var dataStartX = x;
-    function split4(total, hSeed) {
+    // Proper Mulberry32 PRNG per cell so no column ever repeats another column
+    function makeRng(seed) {
+        var t = seed >>> 0;
+        return function() {
+            t = (t + 0x6D2B79F5) >>> 0;
+            var r = Math.imul(t ^ (t >>> 15), 1 | t);
+            r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+            return ((r ^ (r >>> 14)) >>> 0);
+        };
+    }
+
+    function split4(total, rng) {
         var arr = [1, 1, 1, 1];
         var rem = total - 4;
-        var hh = hSeed;
         while (rem > 0) {
-            arr[hh & 3]++;
+            arr[(rng() >>> 16) & 3]++;
             rem--;
-            hh = Math.imul(hh ^ 0x9e3779b9, 1664525) >>> 0;
         }
         return arr;
     }
 
+    var dataStartX = x;
     for (var r = 0; r < rows; r++) {
         var cx = dataStartX;
         for (var c = 0; c < numCols; c++) {
-            var h1 = Math.imul(baseHash ^ ((r * 73 + c * 131 + 17) * 2654435761), 1597334677) >>> 0;
-            var h2 = Math.imul(h1 ^ 0x85ebca6b, 2246822519) >>> 0;
-            var targetInk = 7 + ((h1 >>> 8) & 3); // varies 7..10 out of 17 -> continuous seamless texture
-            var bars = split4(targetInk, h1);
-            var spaces = split4(17 - targetInk, h2);
+            var cellSeed = (baseHash ^ Math.imul(r + 11, 0x9e3779b1) ^ Math.imul(c + 37, 0x85ebca77)) >>> 0;
+            var rng = makeRng(cellSeed);
+            var targetInk = 7 + ((rng() >>> 16) & 3);
+            var bars = split4(targetInk, rng);
+            var spaces = split4(17 - targetInk, rng);
             var curX = cx;
             for (var k = 0; k < 4; k++) {
                 rects += '<rect x="' + curX + '" y="' + r + '" width="' + bars[k] + '" height="1.04" fill="#000"/>';
@@ -1079,8 +1093,27 @@ var DEFAULT_CITIZEN = {
 var tplState = Object.assign({}, DEFAULT_TEMPLATE);
 var citizenState = Object.assign({}, DEFAULT_CITIZEN);
 var batchQueue = [];
+var editingQueueIdx = -1;
 var viewMode = 'single'; // 'single' | 'batch'
 var colorMode = 'color'; // 'color' | 'bw'
+
+function updateEditingBar() {
+    var bar = document.getElementById('editingTargetBar');
+    var lbl = document.getElementById('editingTargetLabel');
+    if (!bar || !lbl) return;
+    if (editingQueueIdx >= 0 && batchQueue[editingQueueIdx]) {
+        bar.style.display = 'flex';
+        lbl.textContent = '✏️ Editing Batch Card #' + (editingQueueIdx + 1) + ' (' + (batchQueue[editingQueueIdx].nameEn || 'Citizen') + ')';
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+function exitQueueEdit() {
+    editingQueueIdx = -1;
+    updateEditingBar();
+    refreshQueueUi();
+}
 
 function applyCountryQuickSwap() {
     var en = (document.getElementById('quickCountryEn').value || 'Vanilla').trim();
@@ -1216,6 +1249,12 @@ function syncFromInputs() {
     citizenState.printCount = document.getElementById('inpPrintCount').value;
     citizenState.issueDate = document.getElementById('inpIssueDate').value;
 
+    if (editingQueueIdx >= 0 && batchQueue[editingQueueIdx]) {
+        batchQueue[editingQueueIdx] = Object.assign({}, citizenState);
+        updateEditingBar();
+        refreshQueueUi();
+    }
+
     renderSheets();
 }
 
@@ -1229,6 +1268,9 @@ function handleImageUpload(input, targetKey) {
             tplState[targetKey] = dataUrl;
         } else {
             citizenState[targetKey] = dataUrl;
+            if (editingQueueIdx >= 0 && batchQueue[editingQueueIdx]) {
+                batchQueue[editingQueueIdx] = Object.assign({}, citizenState);
+            }
         }
         renderSheets();
     };
@@ -1240,6 +1282,9 @@ function clearCustomGraphic(targetKey) {
         tplState[targetKey] = '';
     } else {
         citizenState[targetKey] = '';
+        if (editingQueueIdx >= 0 && batchQueue[editingQueueIdx]) {
+            batchQueue[editingQueueIdx] = Object.assign({}, citizenState);
+        }
     }
     renderSheets();
 }
@@ -1254,16 +1299,15 @@ function buildFrontCardHtml(c, t, idx) {
     var photoHtml = c.photo
         ? '<img src="' + esc(c.photo) + '" alt="Photo">'
         : getDefaultSilhouetteSvg();
+    var bindPrefix = idx === -1 ? 'active' : ('queue:' + idx);
     var hZoom = (Number(c.holderSigZoom || 100) / 100).toFixed(2);
     var hY = Number(c.holderSigY || 0).toFixed(1);
     var hStyle = 'transform:translateY(' + hY + 'px) scale(' + hZoom + ');';
     var sigHtml = c.holderSig
         ? '<img src="' + esc(c.holderSig) + '" alt="Signature" style="' + hStyle + '">'
-        : '<div class="id-holder-sig-text" style="transform:translateY(' + hY + 'px) scale(' + hZoom + ') rotate(-3deg);" contenteditable="true" data-bind="citizen:' + idx + ':holderSigText">' + esc(c.holderSigText) + '</div>';
+        : '<div class="id-holder-sig-text" style="transform:translateY(' + hY + 'px) scale(' + hZoom + ') rotate(-3deg);" contenteditable="true" data-bind="' + bindPrefix + ':holderSigText">' + esc(c.holderSigText) + '</div>';
 
-    var bindPrefix = idx === -1 ? 'active' : ('queue:' + idx);
-
-    return '<div class="id-card">' +
+    return '<div class="id-card" data-card-idx="' + idx + '">' +
         (t.showPropStamp ? '<div class="prop-ribbon">DEMO PROP</div>' : '') +
         '<div class="id-front-header">' +
             '<div class="id-country-logo">' + logoHtml + '</div>' +
@@ -1335,7 +1379,7 @@ function buildBackCardHtml(c, t, idx) {
     var bcH = Number(t.bcHeight || 10).toFixed(1) + 'mm';
     var bindPrefix = idx === -1 ? 'active' : ('queue:' + idx);
 
-    return '<div class="id-card">' +
+    return '<div class="id-card" data-card-idx="' + idx + '" data-card-side="back">' +
         (t.showPropStamp ? '<div class="prop-ribbon">DEMO PROP</div>' : '') +
         '<div class="id-back-notice" contenteditable="true" data-tpl="backNotice">' + esc(t.backNotice) + '</div>' +
         '<div class="id-back-address-area">' +
@@ -1374,7 +1418,34 @@ function buildBackCardHtml(c, t, idx) {
     '</div>';
 }
 
+function updateBarcodeEngineStatus() {
+    var st = document.getElementById('barcodeEngineStatus');
+    if (!st) return;
+    if (window.bwipjs && typeof window.bwipjs.toSVG === 'function') {
+        st.textContent = '🟢 Real ISO PDF417 (bwip-js) Active';
+        st.style.color = '#15803d';
+    } else {
+        st.textContent = '🟡 Offline PDF417 Fallback Active';
+        st.style.color = '#b45309';
+    }
+}
+
+function liveUpdateBarcodeForCard(cardIdx, citObj) {
+    if (tplState.customBarcode) return;
+    var backCard = document.querySelector('.id-card[data-card-side="back"][data-card-idx="' + cardIdx + '"]');
+    if (!backCard) return;
+    var wrap = backCard.querySelector('.id-barcode-wrap');
+    if (!wrap) return;
+    var payload = buildNidBarcodePayload(citObj || citizenState, tplState);
+    wrap.innerHTML = generateBarcodeSvg(payload, {
+        ecLevel: tplState.bcRows != null ? tplState.bcRows : 3,
+        cols: tplState.bcCols || 13,
+        rowMult: tplState.bcDensity || 2
+    });
+}
+
 function renderSheets() {
+    updateBarcodeEngineStatus();
     var container = document.getElementById('sheetsContainer');
     var bwClass = colorMode === 'bw' ? ' bw-mode' : '';
 
@@ -1401,33 +1472,56 @@ function renderSheets() {
     bindInlineEdits();
 }
 
+function applyInlineEdit(el, isBlur) {
+    var tplKey = el.getAttribute('data-tpl');
+    var bind = el.getAttribute('data-bind');
+    var txt = isBlur ? el.textContent.trim() : el.textContent;
+    if (tplKey && tplKey in tplState) {
+        tplState[tplKey] = txt;
+        writeInputsFromState();
+        document.querySelectorAll('[data-tpl="' + tplKey + '"]').forEach(function(peer) {
+            if (peer !== el && peer.textContent !== txt) peer.textContent = txt;
+        });
+        if (tplState.barcodeAuto !== false) {
+            if (viewMode === 'single' || !batchQueue.length) {
+                liveUpdateBarcodeForCard(-1, citizenState);
+            } else {
+                batchQueue.forEach(function(item, qIdx) { liveUpdateBarcodeForCard(qIdx, item); });
+            }
+        }
+        if (isBlur && viewMode === 'batch' && batchQueue.length > 1) {
+            renderSheets();
+        }
+        return;
+    }
+    if (!bind) return;
+    var parts = bind.split(':');
+    var scope = parts[0];
+    var idxOrField = parts[1];
+    var field = parts[2];
+    if (scope === 'active') {
+        citizenState[idxOrField] = txt;
+        writeInputsFromState();
+        liveUpdateBarcodeForCard(-1, citizenState);
+    } else if (scope === 'queue') {
+        var qIdx = parseInt(idxOrField, 10);
+        if (batchQueue[qIdx]) {
+            batchQueue[qIdx][field] = txt;
+            if (editingQueueIdx === qIdx) {
+                citizenState[field] = txt;
+                writeInputsFromState();
+            }
+            liveUpdateBarcodeForCard(qIdx, batchQueue[qIdx]);
+            refreshQueueUi();
+        }
+    }
+}
+
 function bindInlineEdits() {
     var container = document.getElementById('sheetsContainer');
     container.querySelectorAll('[contenteditable="true"]').forEach(function(el) {
-        el.addEventListener('blur', function() {
-            var tplKey = el.getAttribute('data-tpl');
-            var bind = el.getAttribute('data-bind');
-            var txt = el.textContent.trim();
-            if (tplKey && tplKey in tplState) {
-                tplState[tplKey] = txt;
-                writeInputsFromState();
-            } else if (bind) {
-                var parts = bind.split(':');
-                var scope = parts[0];
-                var idxOrField = parts[1];
-                var field = parts[2];
-                if (scope === 'active') {
-                    citizenState[idxOrField] = txt;
-                    writeInputsFromState();
-                } else if (scope === 'queue') {
-                    var qIdx = parseInt(idxOrField, 10);
-                    if (batchQueue[qIdx]) {
-                        batchQueue[qIdx][field] = txt;
-                        refreshQueueUi();
-                    }
-                }
-            }
-        });
+        el.addEventListener('input', function() { applyInlineEdit(el, false); });
+        el.addEventListener('blur', function() { applyInlineEdit(el, true); });
     });
 }
 
@@ -1479,21 +1573,32 @@ function buildRandomCitizen() {
 
 function generateRandomCitizen() {
     citizenState = buildRandomCitizen();
+    if (editingQueueIdx >= 0 && batchQueue[editingQueueIdx]) {
+        batchQueue[editingQueueIdx] = Object.assign({}, citizenState);
+        refreshQueueUi();
+    }
     writeInputsFromState();
     renderSheets();
 }
 
 function addToQueue() {
     batchQueue.push(Object.assign({}, citizenState));
+    editingQueueIdx = batchQueue.length - 1;
+    updateEditingBar();
     refreshQueueUi();
     if (viewMode === 'batch') renderSheets();
     if (window.showToast) showToast('✅ Batch-এ যোগ হয়েছে! (মোট: ' + batchQueue.length + ')', 'success');
 }
 
 function addSampleBatch(count) {
+    var startIdx = batchQueue.length;
     for (var i = 0; i < (count || 4); i++) {
         batchQueue.push(buildRandomCitizen());
     }
+    editingQueueIdx = startIdx;
+    citizenState = Object.assign({}, batchQueue[editingQueueIdx]);
+    updateEditingBar();
+    writeInputsFromState();
     refreshQueueUi();
     setViewMode('batch');
     if (window.showToast) showToast('✅ ' + (count || 4) + ' জন নমুনা নাগরিক Batch-এ যোগ হয়েছে!', 'success');
@@ -1501,19 +1606,30 @@ function addSampleBatch(count) {
 
 function loadFromQueue(idx) {
     if (!batchQueue[idx]) return;
+    editingQueueIdx = idx;
     citizenState = Object.assign({}, batchQueue[idx]);
+    updateEditingBar();
     writeInputsFromState();
+    refreshQueueUi();
     renderSheets();
 }
 
 function removeFromQueue(idx) {
     batchQueue.splice(idx, 1);
+    if (editingQueueIdx === idx) {
+        editingQueueIdx = -1;
+    } else if (editingQueueIdx > idx) {
+        editingQueueIdx--;
+    }
+    updateEditingBar();
     refreshQueueUi();
     renderSheets();
 }
 
 function clearQueue() {
     batchQueue = [];
+    editingQueueIdx = -1;
+    updateEditingBar();
     refreshQueueUi();
     renderSheets();
 }
@@ -1527,10 +1643,12 @@ function refreshQueueUi() {
         return;
     }
     ql.innerHTML = batchQueue.map(function(item, i) {
-        return '<div class="queue-item">' +
+        var isEditing = (i === editingQueueIdx);
+        var styleExtra = isEditing ? 'background:#eef2ff;border-color:#818cf8;' : '';
+        return '<div class="queue-item" style="' + styleExtra + '">' +
             '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>#' + (i + 1) + '</b> ' + esc(item.nameEn) + ' <span style="color:#64748b;">(' + esc(item.idNo) + ')</span></div>' +
             '<div style="display:flex;gap:4px;flex-shrink:0;">' +
-                '<button type="button" class="btn-mini" onclick="loadFromQueue(' + i + ')">Edit</button>' +
+                '<button type="button" class="btn-mini" onclick="loadFromQueue(' + i + ')">' + (isEditing ? 'Editing' : 'Edit') + '</button>' +
                 '<button type="button" class="btn-mini danger" onclick="removeFromQueue(' + i + ')">✕</button>' +
             '</div>' +
         '</div>';
@@ -1541,6 +1659,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof adminInit === 'function') {
         adminInit('demo-id-card', function() {});
     }
+    updateEditingBar();
     writeInputsFromState();
     refreshQueueUi();
     renderSheets();
