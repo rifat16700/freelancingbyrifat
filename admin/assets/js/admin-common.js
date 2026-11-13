@@ -85,6 +85,10 @@ var SIDEBAR_HTML = `
             <span class="nav-icon">🧾</span>
             <span>Salary Slip</span>
         </a>
+        <a href="demo-id-card.html" class="nav-item" data-page="demo-id-card">
+            <span class="nav-icon">🪪</span>
+            <span>Demo ID Prop</span>
+        </a>
         <a href="../fraud-chack.html" class="nav-item" data-page="fraud-check">
             <span class="nav-icon">🛡️</span>
             <span>Fraud Checker</span>

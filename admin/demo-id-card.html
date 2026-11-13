@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editable Demo ID Card Prop — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="../assets/js/config.js?v=1794570029121"></script>
+    <script src="assets/js/admin-common.js?v=6"></script>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
+
+    <style>
+        .prop-workspace {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 22px;
+            align-items: start;
+            margin-top: 18px;
+        }
+        @media (max-width: 1200px) {
+            .prop-workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Editor Panel ── */
+        .editor-panel {
+            background: #fff;
+            border: 1px solid var(--border, #e2e8f0);
+            border-radius: var(--radius-lg, 16px);
+            padding: 18px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            max-height: calc(100vh - 110px);
+            overflow-y: auto;
+        }
+        .form-section-title {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--primary, #8B1A1A);
+            margin: 16px 0 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid rgba(139,26,26,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .form-section-title:first-child { margin-top: 0; }
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .field-single {
+            margin-bottom: 8px;
+        }
+        .field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 3px;
+        }
+        .form-ctrl {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 12.5px;
+            font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+            box-sizing: border-box;
+            background: #fff;
+            color: #0f172a;
+        }
+        .form-ctrl:focus {
+            outline: none;
+            border-color: var(--primary, #8B1A1A);
+            box-shadow: 0 0 0 2px rgba(139,26,26,0.1);
+        }
+        .quick-swap-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+        .btn-mini {
+            padding: 5px 10px;
+            font-size: 11.5px;
+            font-weight: 700;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #0f172a;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-mini:hover { background: #e2e8f0; }
+        .btn-mini.primary { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .btn-mini.green { background: #15803d; color: #fff; border-color: #15803d; }
+        .btn-mini.danger { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+
+        /* ── Preview Stage ── */
+        .preview-stage {
+            background: #cbd5e1;
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 760px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            overflow-x: auto;
+        }
+        .preview-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            max-width: 794px;
+            background: #fff;
+            padding: 10px 14px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .toggle-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .pill-btn {
+            padding: 6px 11px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+            cursor: pointer;
+        }
+        .pill-btn.active {
+            background: #0f172a;
+            color: #fff;
+            border-color: #0f172a;
+        }
+
+        /* ── A4 Paper Sheet ── */
+        .a4-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+            padding: 14mm 12mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14mm;
+            position: relative;
+        }
+        .a4-sheet.layout-single {
+            justify-content: center;
+            gap: 18mm;
+        }
+        .a4-sheet.layout-batch {
+            padding: 10mm 8mm;
+            display: grid;
+            grid-template-columns: repeat(2, 85.6mm);
+            justify-content: center;
+            align-content: start;
+            gap: 7mm 8mm;
+        }
+        .a4-sheet.bw-mode .id-card {
+            filter: grayscale(100%) contrast(1.18);
+        }
+
+        /* ── Standard CR80 ID Card (85.6mm × 54mm) ── */
+        .id-card {
+            width: 85.6mm;
+            height: 54mm;
+            border: 1px solid #1e293b;
+            background: #fff;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+            font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+            color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            user-select: text;
+        }
+
+        /* Front Card */
+        .id-front-header {
+            display: flex;
+            align-items: center;
+            gap: 2.2mm;
+            padding: 1.8mm 2.8mm 1.6mm;
+            border-bottom: 1.2px solid #0f172a;
+            background: #fff;
+            z-index: 2;
+        }
+        .id-country-logo {
+            width: 11.2mm;
+            height: 11.2mm;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .id-country-logo img,
+        .id-country-logo svg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .id-header-texts {
+            flex: 1;
+            text-align: center;
+            line-height: 1.18;
+        }
+        .id-country-bn {
+            font-size: 11.5pt;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+        .id-country-en {
+            font-size: 7.4pt;
+            font-weight: 600;
+            color: #15803d;
+            margin: 0.4mm 0 0;
+        }
+        .id-card-subtitle {
+            font-size: 7.2pt;
+            font-weight: 700;
+            margin: 0.4mm 0 0;
+        }
+        .id-card-subtitle .sub-en { color: #dc2626; }
+        .id-card-subtitle .sub-bn { color: #0f172a; }
+
+        .id-front-body {
+            flex: 1;
+            display: flex;
+            padding: 2mm 2.8mm 1.8mm;
+            gap: 2.6mm;
+            position: relative;
+            z-index: 2;
+        }
+        .id-watermark {
+            position: absolute;
+            left: 55%;
+            top: 52%;
+            transform: translate(-50%, -50%);
+            width: 31mm;
+            height: 31mm;
+            opacity: 0.20;
+            pointer-events: none;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .id-watermark img,
+        .id-watermark svg {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .id-photo-col {
+            width: 18.5mm;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            z-index: 2;
+        }
+        .id-photo-box {
+            width: 18mm;
+            height: 21.5mm;
+            background: #e2e8f0;
+            border: 0.5px solid #cbd5e1;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .id-photo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .id-holder-sig {
+            width: 18mm;
+            height: 8.5mm;
+            margin-top: 1.5mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .id-holder-sig img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .id-holder-sig-text {
+            font-family: 'Caveat', cursive;
+            font-size: 12pt;
+            font-weight: 700;
+            color: #0f172a;
+            transform: rotate(-3deg);
+            white-space: nowrap;
+        }
+        .id-fields-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 2;
+            padding-top: 0.3mm;
+        }
+        .id-field-line {
+            display: grid;
+            grid-template-columns: 14mm 1fr;
+            align-items: baseline;
+            font-size: 7.8pt;
+            line-height: 1.25;
+        }
+        .id-field-line.wide-label {
+            grid-template-columns: 20mm 1fr;
+        }
+        .id-f-lbl {
+            color: #1e293b;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .id-f-val {
+            color: #0f172a;
+            font-weight: 500;
+            word-break: break-word;
+        }
+        .id-f-val.bold-bn {
+            font-size: 9pt;
+            font-weight: 700;
+        }
+        .id-f-val.en-caps {
+            font-size: 7.7pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+        .id-f-val.red-accent {
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .id-f-val.id-num {
+            color: #dc2626;
+            font-weight: 800;
+            font-size: 8.8pt;
+            letter-spacing: 0.4px;
+        }
+
+        /* Back Card */
+        .id-back-notice {
+            padding: 1.6mm 2.8mm;
+            border-bottom: 1px solid #1e293b;
+            font-size: 6.7pt;
+            line-height: 1.32;
+            color: #0f172a;
+            font-weight: 500;
+        }
+        .id-back-address-area {
+            flex: 1;
+            padding: 1.8mm 2.8mm 1mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-bottom: 1px solid #1e293b;
+        }
+        .id-back-address-text {
+            font-size: 7.2pt;
+            line-height: 1.35;
+            color: #0f172a;
+        }
+        .id-back-meta-bar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            font-size: 6.7pt;
+            gap: 2mm;
+            margin-top: 1mm;
+        }
+        .id-print-badge {
+            background: #0f172a;
+            color: #fff;
+            padding: 0.4mm 1.6mm;
+            font-size: 6.4pt;
+            font-weight: 700;
+            line-height: 1.25;
+            white-space: nowrap;
+        }
+        .id-back-bottom {
+            padding: 1.4mm 2.8mm 2mm;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2mm;
+        }
+        .id-auth-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            font-size: 6.9pt;
+            color: #0f172a;
+        }
+        .id-auth-sig-block {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .id-auth-sig-art {
+            height: 6.5mm;
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5mm;
+        }
+        .id-auth-sig-art img,
+        .id-auth-sig-art svg {
+            max-height: 100%;
+            max-width: 28mm;
+            object-fit: contain;
+        }
+        .id-barcode-wrap {
+            width: 100%;
+            height: 9mm;
+            display: flex;
+            align-items: stretch;
+        }
+        .id-barcode-wrap svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .prop-ribbon {
+            position: absolute;
+            top: 1.2mm;
+            right: -6mm;
+            background: rgba(15, 23, 42, 0.08);
+            color: #475569;
+            font-size: 5pt;
+            font-weight: 800;
+            padding: 0.3mm 6mm;
+            transform: rotate(32deg);
+            pointer-events: none;
+            z-index: 5;
+            letter-spacing: 0.5px;
+        }
+
+        [contenteditable="true"]:hover {
+            background: rgba(250, 204, 21, 0.16);
+            outline: 1px dashed #ca8a04;
+            border-radius: 2px;
+        }
+        [contenteditable="true"]:focus {
+            background: #fefce8;
+            outline: 1px solid #0f172a;
+            border-radius: 2px;
+        }
+
+        .queue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .queue-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            gap: 8px;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+        @media print {
+            body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+            .admin-sidebar, .admin-topbar, .editor-panel, .preview-controls, .page-header, .no-print {
+                display: none !important;
+            }
+            .admin-layout, .admin-main, .admin-content, .prop-workspace, .preview-stage {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                min-height: auto !important;
+            }
+            .a4-sheet {
+                box-shadow: none !important;
+                margin: 0 auto !important;
+                page-break-after: always;
+                break-after: page;
+            }
+            .a4-sheet:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+            [contenteditable="true"]:hover {
+                background: transparent !important;
+                outline: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-layout">
+    <div id="sidebarContainer"></div>
+
+    <main class="admin-main">
+        <div id="topbarContainer"></div>
+
+        <div class="admin-content">
+            <div class="page-header no-print" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div>
+                    <h1 style="margin:0;font-size:22px;">🪪 Editable Fictional Country ID Prop</h1>
+                    <p style="margin:4px 0 0;color:#64748b;font-size:13px;">Educational video & fictional project document studio — default country: <b>Vanilla</b> (100% customizable, batch A4 print)</p>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn-mini green" onclick="generateRandomCitizen()">🎲 Generate Sample Citizen</button>
+                    <button class="btn-mini primary" onclick="addToQueue()">➕ Add to Batch Print (<span id="queueCountTop">0</span>)</button>
+                    <button class="btn-mini" style="background:#2563eb;color:#fff;border-color:#2563eb;" onclick="window.print()">🖨️ Print / Save PDF</button>
+                </div>
+            </div>
+
+            <div class="prop-workspace">
+                <!-- Left Controls -->
+                <aside class="editor-panel no-print">
+                    <div class="quick-swap-box">
+                        <div style="font-size:11.5px;font-weight:800;color:#166534;margin-bottom:6px;">🌍 Instant Country Swap (1-Click Update Everywhere)</div>
+                        <div class="field-row" style="margin-bottom:6px;">
+                            <input type="text" id="quickCountryEn" class="form-ctrl" value="Vanilla" placeholder="Country Name (EN)">
+                            <input type="text" id="quickCountryBn" class="form-ctrl" value="ভ্যানিলা" placeholder="দেশের নাম (বাংলা)">
+                        </div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button type="button" class="btn-mini green" onclick="applyCountryQuickSwap()">⚡ Apply Country Name</button>
+                            <button type="button" class="btn-mini" onclick="resetVanillaDefaults()">↺ Reset Vanilla Defaults</button>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">
+                        <span>1. Fictional Country & Logo Setup</span>
+                    </div>
+                    <div class="field-single">
+                        <label class="field-label">Country Header (Bengali)</label>
+                        <input type="text" id="inpCountryBn" class="form-ctrl" value="গণপ্রজাতন্ত্রী ভ্যানিলা সরকার" oninput="syncFromInputs()">
+                    </div>
+                    <div class="field-single">
+                        <label class="field-label">Country Header (English)</label>
+                        <input type="text" id="inpCountryEn" class="form-ctrl" value="Government of the People's Republic of Vanilla" oninput="syncFromInputs()">
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">Document Title (EN)</label>
+                            <input type="text" id="inpDocTitleEn" class="form-ctrl" value="National ID Card" oninput="syncFromInputs()">
+                        </div>
+                        <div>
+                            <label class="field-label">Document Title (BN)</label>
+                            <input type="text" id="inpDocTitleBn" class="form-ctrl" value="জাতীয় পরিচয় পত্র" oninput="syncFromInputs()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">Country EN Color</label>
+                            <input type="color" id="inpCountryEnColor" class="form-ctrl" style="height:34px;padding:2px;" value="#15803d" oninput="syncFromInputs()">
+                        </div>
+                        <div>
+                            <label class="field-label">Watermark Opacity</label>
+                            <input type="range" id="inpWatermarkOpacity" min="0" max="45" value="20" style="width:100%;margin-top:8px;" oninput="syncFromInputs()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">Country Logo (PNG/SVG)</label>
+                            <input type="file" id="fileCountryLogo" accept="image/*" class="form-ctrl" style="padding:4px;" onchange="handleImageUpload(this, 'countryLogo')">
+                        </div>
+                        <div>
+                            <label class="field-label">Center Watermark Image</label>
+                            <input type="file" id="fileWatermark" accept="image/*" class="form-ctrl" style="padding:4px;" onchange="handleImageUpload(this, 'watermarkLogo')">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-bottom:8px;">
+                        <button type="button" class="btn-mini" onclick="clearCustomGraphic('countryLogo')">Reset Logo</button>
+                        <button type="button" class="btn-mini" onclick="clearCustomGraphic('watermarkLogo')">Reset Watermark</button>
+                        <label style="font-size:11px;display:flex;align-items:center;gap:4px;margin-left:auto;cursor:pointer;">
+                            <input type="checkbox" id="chkPropStamp" checked onchange="syncFromInputs()"> Show "DEMO PROP" badge
+                        </label>
+                    </div>
+
+                    <div class="form-section-title">
+                        <span>2. Citizen Front Details</span>
+                        <span style="font-size:10px;font-weight:600;color:#64748b;">(Click preview text to edit inline too!)</span>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">Citizen Photo</label>
+                            <input type="file" id="filePhoto" accept="image/*" class="form-ctrl" style="padding:4px;" onchange="handleImageUpload(this, 'photo')">
+                        </div>
+                        <div>
+                            <label class="field-label">Holder Signature Image</label>
+                            <input type="file" id="fileHolderSig" accept="image/*" class="form-ctrl" style="padding:4px;" onchange="handleImageUpload(this, 'holderSig')">
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-bottom:8px;">
+                        <button type="button" class="btn-mini" onclick="clearCustomGraphic('photo')">Silhouette Photo</button>
+                        <button type="button" class="btn-mini" onclick="clearCustomGraphic('holderSig')">Use Typed Signature</button>
+                    </div>
+
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">নাম (BN)</label>
+                            <input type="text" id="inpNameBn" class="form-ctrl" value="আরিয়ান আহমেদ ভ্যানিলা" oninput="syncFromInputs()">
+                        </div>
+                        <div>
+                            <label class="field-label">Name (EN)</label>
+                            <input type="text" id="inpNameEn" class="form-ctrl" value="ARIYAN AHMED VANILLA" oninput="syncFromInputs()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">পিতা / Father</label>
+                            <input type="text" id="inpFather" class="form-ctrl" value="তানভীর আহমেদ ভ্যানিলা" oninput="syncFromInputs()">
+                        </div>
+                        <div>
+                            <label class="field-label">মাতা / Mother</label>
+                            <input type="text" id="inpMother" class="form-ctrl" value="সাদিয়া সুলতানা ভ্যানিলা" oninput="syncFromInputs()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">Date of Birth</label>
+                            <input type="text" id="inpDob" class="form-ctrl" value="15 Aug 1998" oninput="syncFromInputs()">
+                        </div>
+                        <div>
+                            <label class="field-label">ID NO</label>
+                            <input type="text" id="inpIdNo" class="form-ctrl" value="1045908210" oninput="syncFromInputs()">
+                        </div>
+                    </div>
+                    <div class="field-single">
+                        <label class="field-label">Holder Signature Text (when no image uploaded)</label>
+                        <input type="text" id="inpHolderSigText" class="form-ctrl" value="Ariyan" oninput="syncFromInputs()">
+                    </div>
+
+                    <div class="form-section-title">
+                        <span>3. Back Side Details</span>
+                    </div>
+                    <div class="field-single">
+                        <label class="field-label">Back Top Property / Notice Text</label>
+                        <textarea id="inpBackNotice" rows="2" class="form-ctrl" oninput="syncFromInputs()">এই কার্ডটি গণপ্রজাতন্ত্রী ভ্যানিলা সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।</textarea>
+                    </div>
+                    <div class="field-single">
+                        <label class="field-label">ঠিকানা (Address Line)</label>
+                        <textarea id="inpAddress" rows="2" class="form-ctrl" oninput="syncFromInputs()">বাসা/হোল্ডিং: ১০, গ্রাম/রাস্তা: ভ্যানিলা স্ট্রিট, ডাকঘর: ভ্যানিলা সিটি - ১০০০, ভ্যানিলা সদর, ভ্যানিলা</textarea>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">Blood Group</label>
+                            <input type="text" id="inpBloodGroup" class="form-ctrl" value="O+" oninput="syncFromInputs()">
+                        </div>
+                        <div>
+                            <label class="field-label">জন্মস্থান (Birth Place)</label>
+                            <input type="text" id="inpBirthPlace" class="form-ctrl" value="ভ্যানিলা সিটি" oninput="syncFromInputs()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">মুদ্রণ (Print Count)</label>
+                            <input type="text" id="inpPrintCount" class="form-ctrl" value="০১" oninput="syncFromInputs()">
+                        </div>
+                        <div>
+                            <label class="field-label">প্রদানের তারিখ (Issue Date)</label>
+                            <input type="text" id="inpIssueDate" class="form-ctrl" value="১৩/১১/২০২৬" oninput="syncFromInputs()">
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label class="field-label">Authority Sig Image (Optional)</label>
+                            <input type="file" id="fileAuthSig" accept="image/*" class="form-ctrl" style="padding:4px;" onchange="handleImageUpload(this, 'authSig')">
+                        </div>
+                        <div>
+                            <label class="field-label">Authority Title Label</label>
+                            <input type="text" id="inpAuthSigLabel" class="form-ctrl" value="প্রদানকারী কর্তৃপক্ষের স্বাক্ষর" oninput="syncFromInputs()">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">
+                        <span>4. Batch Queue (Many Copies on A4)</span>
+                        <button type="button" class="btn-mini danger" onclick="clearQueue()">🗑️ Clear</button>
+                    </div>
+                    <div style="font-size:11.5px;color:#475569;margin-bottom:6px;">
+                        Save multiple fictional citizens and print 4 pairs (8 cards) per A4 sheet at once.
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+                        <button type="button" class="btn-mini primary" onclick="addToQueue()">➕ Add Current Card</button>
+                        <button type="button" class="btn-mini green" onclick="addSampleBatch(4)">⚡ Auto-Fill 4 Citizens</button>
+                    </div>
+                    <div class="queue-list" id="queueList"></div>
+                </aside>
+
+                <!-- Right Live A4 Preview -->
+                <section class="preview-stage">
+                    <div class="preview-controls no-print">
+                        <div class="toggle-pills">
+                            <button type="button" class="pill-btn active" id="btnViewSingle" onclick="setViewMode('single')">📄 Single A4 (Front + Back)</button>
+                            <button type="button" class="pill-btn" id="btnViewBatch" onclick="setViewMode('batch')">📑 Batch A4 (<span id="queueCountBtn">0</span> in Queue)</button>
+                        </div>
+                        <div class="toggle-pills">
+                            <button type="button" class="pill-btn active" id="btnColorMode" onclick="setColorMode('color')">🎨 Color</button>
+                            <button type="button" class="pill-btn" id="btnBwMode" onclick="setColorMode('bw')">🖨️ B&amp;W Photocopy</button>
+                            <button type="button" class="pill-btn" onclick="window.print()" style="background:#2563eb;color:#fff;border-color:#2563eb;">🖨️ Print PDF</button>
+                        </div>
+                    </div>
+
+                    <div id="sheetsContainer"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+function esc(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// Fictional default geometric SVG seal for "Vanilla" (no real government emblem)
+function getDefaultCountryLogoSvg(labelEn) {
+    var letter = (String(labelEn || 'V').trim().charAt(0) || 'V').toUpperCase();
+    return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' +
+        '<circle cx="50" cy="50" r="46" fill="none" stroke="#15803d" stroke-width="3.5"/>' +
+        '<circle cx="50" cy="50" r="39" fill="none" stroke="#15803d" stroke-width="1.2" stroke-dasharray="3,2"/>' +
+        '<circle cx="50" cy="50" r="24" fill="#dc2626"/>' +
+        '<polygon points="50,31 55,44 68,44 57,52 61,65 50,57 39,65 43,52 32,44 45,44" fill="#facc15" opacity="0.92"/>' +
+        '<text x="50" y="55" text-anchor="middle" font-family="Inter,sans-serif" font-size="17" font-weight="800" fill="#7f1d1d">' + esc(letter) + '</text>' +
+        '<path d="M22,50 A28,28 0 0,1 78,50" fill="none" stroke="#15803d" stroke-width="1.5"/>' +
+        '<text x="50" y="91" text-anchor="middle" font-family="Inter,sans-serif" font-size="8.5" font-weight="800" fill="#15803d">REPUBLIC PROP</text>' +
+    '</svg>';
+}
+
+function getDefaultWatermarkSvg() {
+    return '<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">' +
+        '<circle cx="60" cy="60" r="54" fill="none" stroke="#ca8a04" stroke-width="3.5"/>' +
+        '<circle cx="60" cy="60" r="45" fill="none" stroke="#ca8a04" stroke-width="1.5" stroke-dasharray="4,3"/>' +
+        '<path d="M60 20 C67 36, 78 44, 60 66 C42 44, 53 36, 60 20 Z" fill="#eab308"/>' +
+        '<path d="M60 66 C75 48, 92 50, 96 66 C80 74, 68 72, 60 66 Z" fill="#eab308"/>' +
+        '<path d="M60 66 C45 48, 28 50, 24 66 C40 74, 52 72, 60 66 Z" fill="#eab308"/>' +
+        '<path d="M28 78 Q60 92 92 78" fill="none" stroke="#ca8a04" stroke-width="3"/>' +
+        '<path d="M34 86 Q60 98 86 86" fill="none" stroke="#ca8a04" stroke-width="2.5"/>' +
+    '</svg>';
+}
+
+function getDefaultSilhouetteSvg() {
+    return '<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;background:#dbe4f0;">' +
+        '<circle cx="50" cy="40" r="21" fill="#f8fafc"/>' +
+        '<path d="M16 118 C16 80, 32 68, 50 68 C68 68, 84 80, 84 118 Z" fill="#f8fafc"/>' +
+    '</svg>';
+}
+
+function getDefaultAuthSigSvg() {
+    return '<svg viewBox="0 0 140 42" xmlns="http://www.w3.org/2000/svg">' +
+        '<path d="M10 30 Q26 10 38 26 T62 20 Q72 14 78 24 T106 20 Q120 18 132 23" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>' +
+        '<path d="M18 35 Q68 29 124 34" fill="none" stroke="#0f172a" stroke-width="1.3" stroke-linecap="round"/>' +
+        '<circle cx="52" cy="11" r="2.2" fill="#0f172a"/>' +
+    '</svg>';
+}
+
+// Deterministic PDF417-style 2D matrix barcode SVG generator
+function generateBarcodeSvg(seedText) {
+    var s = String(seedText || 'VANILLA-0000');
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    var cols = 92;
+    var rows = 14;
+    var rects = '';
+    // Start & Stop guard bars
+    rects += '<rect x="0" y="0" width="5" height="' + (rows * 2) + '" fill="#000"/>';
+    rects += '<rect x="7" y="0" width="2" height="' + (rows * 2) + '" fill="#000"/>';
+    rects += '<rect x="11" y="0" width="2" height="' + (rows * 2) + '" fill="#000"/>';
+
+    for (var r = 0; r < rows; r++) {
+        for (var c = 15; c < cols - 14; c++) {
+            // Leave thin vertical cluster dividers for PDF417 visual pattern
+            if (c % 11 === 0) continue;
+            h = (Math.imul(h ^ (r * 31 + c * 17), 1103515245) + 12345) >>> 0;
+            if ((h & 3) < 2) {
+                var w = ((h >> 3) & 1) ? 1.7 : 1.1;
+                rects += '<rect x="' + (c * 2.1).toFixed(1) + '" y="' + (r * 2) + '" width="' + w + '" height="2" fill="#000"/>';
+            }
+        }
+    }
+    var endX = (cols - 12) * 2.1;
+    rects += '<rect x="' + endX.toFixed(1) + '" y="0" width="5" height="' + (rows * 2) + '" fill="#000"/>';
+    rects += '<rect x="' + (endX + 7).toFixed(1) + '" y="0" width="2" height="' + (rows * 2) + '" fill="#000"/>';
+    rects += '<rect x="' + (endX + 11).toFixed(1) + '" y="0" width="2" height="' + (rows * 2) + '" fill="#000"/>';
+
+    var totalW = Math.ceil((cols + 3) * 2.1);
+    return '<svg viewBox="0 0 ' + totalW + ' ' + (rows * 2) + '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' + rects + '</svg>';
+}
+
+var DEFAULT_TEMPLATE = {
+    countryEnShort: 'Vanilla',
+    countryBnShort: 'ভ্যানিলা',
+    countryBn: 'গণপ্রজাতন্ত্রী ভ্যানিলা সরকার',
+    countryEn: "Government of the People's Republic of Vanilla",
+    docTitleEn: 'National ID Card',
+    docTitleBn: 'জাতীয় পরিচয় পত্র',
+    countryEnColor: '#15803d',
+    watermarkOpacity: 20,
+    showPropStamp: true,
+    countryLogo: '',
+    watermarkLogo: '',
+    authSig: '',
+    authSigLabel: 'প্রদানকারী কর্তৃপক্ষের স্বাক্ষর',
+    backNotice: 'এই কার্ডটি গণপ্রজাতন্ত্রী ভ্যানিলা সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।',
+    // Editable labels
+    lblNameBn: 'নাম:',
+    lblNameEn: 'Name:',
+    lblFather: 'পিতা:',
+    lblMother: 'মাতা:',
+    lblDob: 'Date of Birth',
+    lblIdNo: 'ID NO',
+    lblAddress: 'ঠিকানা:',
+    lblBlood: 'রক্তের গ্রুপ / Blood Group:',
+    lblBirthPlace: 'জন্মস্থান:',
+    lblPrint: 'মুদ্রণ:',
+    lblIssueDate: 'প্রদানের তারিখ:'
+};
+
+var DEFAULT_CITIZEN = {
+    nameBn: 'আরিয়ান আহমেদ ভ্যানিলা',
+    nameEn: 'ARIYAN AHMED VANILLA',
+    father: 'তানভীর আহমেদ ভ্যানিলা',
+    mother: 'সাদিয়া সুলতানা ভ্যানিলা',
+    dob: '15 Aug 1998',
+    idNo: '1045908210',
+    holderSigText: 'Ariyan',
+    photo: '',
+    holderSig: '',
+    address: 'বাসা/হোল্ডিং: ১০, গ্রাম/রাস্তা: ভ্যানিলা স্ট্রিট, ডাকঘর: ভ্যানিলা সিটি - ১০০০, ভ্যানিলা সদর, ভ্যানিলা',
+    bloodGroup: 'O+',
+    birthPlace: 'ভ্যানিলা সিটি',
+    printCount: '০১',
+    issueDate: '১৩/১১/২০২৬'
+};
+
+var tplState = Object.assign({}, DEFAULT_TEMPLATE);
+var citizenState = Object.assign({}, DEFAULT_CITIZEN);
+var batchQueue = [];
+var viewMode = 'single'; // 'single' | 'batch'
+var colorMode = 'color'; // 'color' | 'bw'
+
+function applyCountryQuickSwap() {
+    var en = (document.getElementById('quickCountryEn').value || 'Vanilla').trim();
+    var bn = (document.getElementById('quickCountryBn').value || 'ভ্যানিলা').trim();
+    tplState.countryEnShort = en;
+    tplState.countryBnShort = bn;
+    document.getElementById('inpCountryBn').value = 'গণপ্রজাতন্ত্রী ' + bn + ' সরকার';
+    document.getElementById('inpCountryEn').value = "Government of the People's Republic of " + en;
+    document.getElementById('inpBackNotice').value = 'এই কার্ডটি গণপ্রজাতন্ত্রী ' + bn + ' সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।';
+    syncFromInputs();
+    if (window.showToast) showToast('🌍 Country updated to ' + en + ' (' + bn + ')!', 'success');
+}
+
+function resetVanillaDefaults() {
+    tplState = Object.assign({}, DEFAULT_TEMPLATE);
+    citizenState = Object.assign({}, DEFAULT_CITIZEN);
+    document.getElementById('quickCountryEn').value = 'Vanilla';
+    document.getElementById('quickCountryBn').value = 'ভ্যানিলা';
+    writeInputsFromState();
+    renderSheets();
+}
+
+function writeInputsFromState() {
+    document.getElementById('inpCountryBn').value = tplState.countryBn;
+    document.getElementById('inpCountryEn').value = tplState.countryEn;
+    document.getElementById('inpDocTitleEn').value = tplState.docTitleEn;
+    document.getElementById('inpDocTitleBn').value = tplState.docTitleBn;
+    document.getElementById('inpCountryEnColor').value = tplState.countryEnColor;
+    document.getElementById('inpWatermarkOpacity').value = tplState.watermarkOpacity;
+    document.getElementById('chkPropStamp').checked = !!tplState.showPropStamp;
+    document.getElementById('inpAuthSigLabel').value = tplState.authSigLabel;
+    document.getElementById('inpBackNotice').value = tplState.backNotice;
+
+    document.getElementById('inpNameBn').value = citizenState.nameBn;
+    document.getElementById('inpNameEn').value = citizenState.nameEn;
+    document.getElementById('inpFather').value = citizenState.father;
+    document.getElementById('inpMother').value = citizenState.mother;
+    document.getElementById('inpDob').value = citizenState.dob;
+    document.getElementById('inpIdNo').value = citizenState.idNo;
+    document.getElementById('inpHolderSigText').value = citizenState.holderSigText;
+    document.getElementById('inpAddress').value = citizenState.address;
+    document.getElementById('inpBloodGroup').value = citizenState.bloodGroup;
+    document.getElementById('inpBirthPlace').value = citizenState.birthPlace;
+    document.getElementById('inpPrintCount').value = citizenState.printCount;
+    document.getElementById('inpIssueDate').value = citizenState.issueDate;
+}
+
+function syncFromInputs() {
+    tplState.countryBn = document.getElementById('inpCountryBn').value;
+    tplState.countryEn = document.getElementById('inpCountryEn').value;
+    tplState.docTitleEn = document.getElementById('inpDocTitleEn').value;
+    tplState.docTitleBn = document.getElementById('inpDocTitleBn').value;
+    tplState.countryEnColor = document.getElementById('inpCountryEnColor').value;
+    tplState.watermarkOpacity = Number(document.getElementById('inpWatermarkOpacity').value || 20);
+    tplState.showPropStamp = document.getElementById('chkPropStamp').checked;
+    tplState.authSigLabel = document.getElementById('inpAuthSigLabel').value;
+    tplState.backNotice = document.getElementById('inpBackNotice').value;
+
+    citizenState.nameBn = document.getElementById('inpNameBn').value;
+    citizenState.nameEn = document.getElementById('inpNameEn').value;
+    citizenState.father = document.getElementById('inpFather').value;
+    citizenState.mother = document.getElementById('inpMother').value;
+    citizenState.dob = document.getElementById('inpDob').value;
+    citizenState.idNo = document.getElementById('inpIdNo').value;
+    citizenState.holderSigText = document.getElementById('inpHolderSigText').value;
+    citizenState.address = document.getElementById('inpAddress').value;
+    citizenState.bloodGroup = document.getElementById('inpBloodGroup').value;
+    citizenState.birthPlace = document.getElementById('inpBirthPlace').value;
+    citizenState.printCount = document.getElementById('inpPrintCount').value;
+    citizenState.issueDate = document.getElementById('inpIssueDate').value;
+
+    renderSheets();
+}
+
+function handleImageUpload(input, targetKey) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var dataUrl = e.target.result;
+        if (targetKey === 'countryLogo' || targetKey === 'watermarkLogo' || targetKey === 'authSig') {
+            tplState[targetKey] = dataUrl;
+        } else {
+            citizenState[targetKey] = dataUrl;
+        }
+        renderSheets();
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearCustomGraphic(targetKey) {
+    if (targetKey === 'countryLogo' || targetKey === 'watermarkLogo' || targetKey === 'authSig') {
+        tplState[targetKey] = '';
+    } else {
+        citizenState[targetKey] = '';
+    }
+    renderSheets();
+}
+
+function buildFrontCardHtml(c, t, idx) {
+    var logoHtml = t.countryLogo
+        ? '<img src="' + esc(t.countryLogo) + '" alt="Country Logo">'
+        : getDefaultCountryLogoSvg(t.countryEnShort);
+    var watermarkHtml = t.watermarkLogo
+        ? '<img src="' + esc(t.watermarkLogo) + '" alt="Watermark">'
+        : getDefaultWatermarkSvg();
+    var photoHtml = c.photo
+        ? '<img src="' + esc(c.photo) + '" alt="Photo">'
+        : getDefaultSilhouetteSvg();
+    var sigHtml = c.holderSig
+        ? '<img src="' + esc(c.holderSig) + '" alt="Signature">'
+        : '<div class="id-holder-sig-text" contenteditable="true" data-bind="citizen:' + idx + ':holderSigText">' + esc(c.holderSigText) + '</div>';
+
+    var bindPrefix = idx === -1 ? 'active' : ('queue:' + idx);
+
+    return '<div class="id-card">' +
+        (t.showPropStamp ? '<div class="prop-ribbon">DEMO PROP</div>' : '') +
+        '<div class="id-front-header">' +
+            '<div class="id-country-logo">' + logoHtml + '</div>' +
+            '<div class="id-header-texts">' +
+                '<div class="id-country-bn" contenteditable="true" data-tpl="countryBn">' + esc(t.countryBn) + '</div>' +
+                '<div class="id-country-en" style="color:' + esc(t.countryEnColor) + ';" contenteditable="true" data-tpl="countryEn">' + esc(t.countryEn) + '</div>' +
+                '<div class="id-card-subtitle">' +
+                    '<span class="sub-en" contenteditable="true" data-tpl="docTitleEn">' + esc(t.docTitleEn) + '</span>' +
+                    ' / ' +
+                    '<span class="sub-bn" contenteditable="true" data-tpl="docTitleBn">' + esc(t.docTitleBn) + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="id-front-body">' +
+            '<div class="id-watermark" style="opacity:' + ((t.watermarkOpacity || 20) / 100) + ';">' + watermarkHtml + '</div>' +
+            '<div class="id-photo-col">' +
+                '<div class="id-photo-box">' + photoHtml + '</div>' +
+                '<div class="id-holder-sig">' + sigHtml + '</div>' +
+            '</div>' +
+            '<div class="id-fields-col">' +
+                '<div class="id-field-line">' +
+                    '<span class="id-f-lbl" contenteditable="true" data-tpl="lblNameBn">' + esc(t.lblNameBn) + '</span>' +
+                    '<span class="id-f-val bold-bn" contenteditable="true" data-bind="' + bindPrefix + ':nameBn">' + esc(c.nameBn) + '</span>' +
+                '</div>' +
+                '<div class="id-field-line">' +
+                    '<span class="id-f-lbl" contenteditable="true" data-tpl="lblNameEn">' + esc(t.lblNameEn) + '</span>' +
+                    '<span class="id-f-val en-caps" contenteditable="true" data-bind="' + bindPrefix + ':nameEn">' + esc(c.nameEn) + '</span>' +
+                '</div>' +
+                '<div class="id-field-line">' +
+                    '<span class="id-f-lbl" contenteditable="true" data-tpl="lblFather">' + esc(t.lblFather) + '</span>' +
+                    '<span class="id-f-val" contenteditable="true" data-bind="' + bindPrefix + ':father">' + esc(c.father) + '</span>' +
+                '</div>' +
+                '<div class="id-field-line">' +
+                    '<span class="id-f-lbl" contenteditable="true" data-tpl="lblMother">' + esc(t.lblMother) + '</span>' +
+                    '<span class="id-f-val" contenteditable="true" data-bind="' + bindPrefix + ':mother">' + esc(c.mother) + '</span>' +
+                '</div>' +
+                '<div class="id-field-line wide-label">' +
+                    '<span class="id-f-lbl" contenteditable="true" data-tpl="lblDob">' + esc(t.lblDob) + '</span>' +
+                    '<span class="id-f-val red-accent" contenteditable="true" data-bind="' + bindPrefix + ':dob">' + esc(c.dob) + '</span>' +
+                '</div>' +
+                '<div class="id-field-line wide-label">' +
+                    '<span class="id-f-lbl" contenteditable="true" data-tpl="lblIdNo">' + esc(t.lblIdNo) + '</span>' +
+                    '<span class="id-f-val id-num" contenteditable="true" data-bind="' + bindPrefix + ':idNo">' + esc(c.idNo) + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+}
+
+function buildBackCardHtml(c, t, idx) {
+    var authHtml = t.authSig
+        ? '<img src="' + esc(t.authSig) + '" alt="Authority Sig">'
+        : getDefaultAuthSigSvg();
+    var barcodeSvg = generateBarcodeSvg((c.idNo || '') + '|' + (c.nameEn || '') + '|' + (c.dob || ''));
+    var bindPrefix = idx === -1 ? 'active' : ('queue:' + idx);
+
+    return '<div class="id-card">' +
+        (t.showPropStamp ? '<div class="prop-ribbon">DEMO PROP</div>' : '') +
+        '<div class="id-back-notice" contenteditable="true" data-tpl="backNotice">' + esc(t.backNotice) + '</div>' +
+        '<div class="id-back-address-area">' +
+            '<div class="id-back-address-text">' +
+                '<span contenteditable="true" data-tpl="lblAddress">' + esc(t.lblAddress) + '</span> ' +
+                '<span contenteditable="true" data-bind="' + bindPrefix + ':address">' + esc(c.address) + '</span>' +
+            '</div>' +
+            '<div class="id-back-meta-bar">' +
+                '<div>' +
+                    '<span contenteditable="true" data-tpl="lblBlood">' + esc(t.lblBlood) + '</span> ' +
+                    '<b style="color:#dc2626;" contenteditable="true" data-bind="' + bindPrefix + ':bloodGroup">' + esc(c.bloodGroup) + '</b>' +
+                '</div>' +
+                '<div>' +
+                    '<span contenteditable="true" data-tpl="lblBirthPlace">' + esc(t.lblBirthPlace) + '</span> ' +
+                    '<span contenteditable="true" data-bind="' + bindPrefix + ':birthPlace">' + esc(c.birthPlace) + '</span>' +
+                '</div>' +
+                '<div class="id-print-badge">' +
+                    '<span contenteditable="true" data-tpl="lblPrint">' + esc(t.lblPrint) + '</span> ' +
+                    '<span contenteditable="true" data-bind="' + bindPrefix + ':printCount">' + esc(c.printCount) + '</span>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="id-back-bottom">' +
+            '<div class="id-auth-row">' +
+                '<div class="id-auth-sig-block">' +
+                    '<div class="id-auth-sig-art">' + authHtml + '</div>' +
+                    '<div contenteditable="true" data-tpl="authSigLabel">' + esc(t.authSigLabel) + '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<span contenteditable="true" data-tpl="lblIssueDate">' + esc(t.lblIssueDate) + '</span> ' +
+                    '<span contenteditable="true" data-bind="' + bindPrefix + ':issueDate">' + esc(c.issueDate) + '</span>' +
+                '</div>' +
+            '</div>' +
+            '<div class="id-barcode-wrap">' + barcodeSvg + '</div>' +
+        '</div>' +
+    '</div>';
+}
+
+function renderSheets() {
+    var container = document.getElementById('sheetsContainer');
+    var bwClass = colorMode === 'bw' ? ' bw-mode' : '';
+
+    if (viewMode === 'single') {
+        container.innerHTML =
+            '<div class="a4-sheet layout-single' + bwClass + '">' +
+                buildFrontCardHtml(citizenState, tplState, -1) +
+                buildBackCardHtml(citizenState, tplState, -1) +
+            '</div>';
+    } else {
+        var list = batchQueue.length ? batchQueue : [citizenState];
+        var pagesHtml = [];
+        // 4 citizens (Front + Back pairs = 8 CR80 cards) fit cleanly in 2 columns x 4 rows on 1 A4 page!
+        for (var i = 0; i < list.length; i += 4) {
+            var chunk = list.slice(i, i + 4);
+            var cardsHtml = chunk.map(function(cit, offset) {
+                var qIdx = batchQueue.length ? (i + offset) : -1;
+                return buildFrontCardHtml(cit, tplState, qIdx) + buildBackCardHtml(cit, tplState, qIdx);
+            }).join('');
+            pagesHtml.push('<div class="a4-sheet layout-batch' + bwClass + '">' + cardsHtml + '</div>');
+        }
+        container.innerHTML = pagesHtml.join('');
+    }
+    bindInlineEdits();
+}
+
+function bindInlineEdits() {
+    var container = document.getElementById('sheetsContainer');
+    container.querySelectorAll('[contenteditable="true"]').forEach(function(el) {
+        el.addEventListener('blur', function() {
+            var tplKey = el.getAttribute('data-tpl');
+            var bind = el.getAttribute('data-bind');
+            var txt = el.textContent.trim();
+            if (tplKey && tplKey in tplState) {
+                tplState[tplKey] = txt;
+                writeInputsFromState();
+            } else if (bind) {
+                var parts = bind.split(':');
+                var scope = parts[0];
+                var idxOrField = parts[1];
+                var field = parts[2];
+                if (scope === 'active') {
+                    citizenState[idxOrField] = txt;
+                    writeInputsFromState();
+                } else if (scope === 'queue') {
+                    var qIdx = parseInt(idxOrField, 10);
+                    if (batchQueue[qIdx]) {
+                        batchQueue[qIdx][field] = txt;
+                        refreshQueueUi();
+                    }
+                }
+            }
+        });
+    });
+}
+
+function setViewMode(mode) {
+    viewMode = mode;
+    document.getElementById('btnViewSingle').classList.toggle('active', mode === 'single');
+    document.getElementById('btnViewBatch').classList.toggle('active', mode === 'batch');
+    renderSheets();
+}
+
+function setColorMode(mode) {
+    colorMode = mode;
+    document.getElementById('btnColorMode').classList.toggle('active', mode === 'color');
+    document.getElementById('btnBwMode').classList.toggle('active', mode === 'bw');
+    renderSheets();
+}
+
+var SAMPLE_CITIZENS = [
+    { nameBn: 'আরিফুর রহমান ভ্যানিলা', nameEn: 'ARIFUR RAHMAN VANILLA', father: 'কামরুল হাসান ভ্যানিলা', mother: 'নাসরিন আক্তার ভ্যানিলা', dob: '12 Mar 1995', sig: 'Arifur', blood: 'A+' },
+    { nameBn: 'নুসরাত জাহান ভ্যানিলা', nameEn: 'NUSRAT JAHAN VANILLA', father: 'মাহবুব আলম ভ্যানিলা', mother: 'রোকসানা বেগম ভ্যানিলা', dob: '24 Jul 1999', sig: 'Nusrat', blood: 'B+' },
+    { nameBn: 'তাহমিদ ইসলাম ভ্যানিলা', nameEn: 'TAHMID ISLAM VANILLA', father: 'সাইফুল ইসলাম ভ্যানিলা', mother: 'ফারহানা ইয়াসমিন ভ্যানিলা', dob: '05 Nov 1992', sig: 'Tahmid', blood: 'O+' },
+    { nameBn: 'মেহজাবিন চৌধুরী ভ্যানিলা', nameEn: 'MEHJABIN CHOWDHURY VANILLA', father: 'ইমরান চৌধুরী ভ্যানিলা', mother: 'শামীমা নাসরিন ভ্যানিলা', dob: '18 Jan 2001', sig: 'Mehjabin', blood: 'AB+' },
+    { nameBn: 'রাফিউল করিম ভ্যানিলা', nameEn: 'RAFIUL KARIM VANILLA', father: 'মোস্তাফিজুর করিম ভ্যানিলা', mother: 'সালমা খাতুন ভ্যানিলা', dob: '29 Sep 1997', sig: 'Rafiul', blood: 'O-' },
+    { nameBn: 'জান্নাতুল ফেরদৌস ভ্যানিলা', nameEn: 'JANNATUL FERDOUS VANILLA', father: 'আব্দুর রহিম ভ্যানিলা', mother: 'হালিমা বেগম ভ্যানিলা', dob: '09 May 1996', sig: 'Jannatul', blood: 'A-' }
+];
+
+function buildRandomCitizen() {
+    var pick = SAMPLE_CITIZENS[Math.floor(Math.random() * SAMPLE_CITIZENS.length)];
+    var bnCountry = tplState.countryBnShort || 'ভ্যানিলা';
+    var enCountry = (tplState.countryEnShort || 'VANILLA').toUpperCase();
+    var randId = String(Math.floor(1000000000 + Math.random() * 8999999999));
+    return {
+        nameBn: pick.nameBn.replace(/ভ্যানিলা/g, bnCountry),
+        nameEn: pick.nameEn.replace(/VANILLA/g, enCountry),
+        father: pick.father.replace(/ভ্যানিলা/g, bnCountry),
+        mother: pick.mother.replace(/ভ্যানিলা/g, bnCountry),
+        dob: pick.dob,
+        idNo: randId,
+        holderSigText: pick.sig,
+        photo: citizenState.photo || '',
+        holderSig: '',
+        address: 'বাসা/হোল্ডিং: ' + Math.floor(10 + Math.random() * 85) + ', রোড: ০' + Math.floor(1 + Math.random() * 9) + ', গ্রাম/রাস্তা: ' + bnCountry + ' টাউন, ডাকঘর: ' + bnCountry + ' - ১০০০',
+        bloodGroup: pick.blood,
+        birthPlace: bnCountry + ' সিটি',
+        printCount: '০১',
+        issueDate: citizenState.issueDate || '১৩/১১/২০২৬'
+    };
+}
+
+function generateRandomCitizen() {
+    citizenState = buildRandomCitizen();
+    writeInputsFromState();
+    renderSheets();
+}
+
+function addToQueue() {
+    batchQueue.push(Object.assign({}, citizenState));
+    refreshQueueUi();
+    if (viewMode === 'batch') renderSheets();
+    if (window.showToast) showToast('✅ Batch-এ যোগ হয়েছে! (মোট: ' + batchQueue.length + ')', 'success');
+}
+
+function addSampleBatch(count) {
+    for (var i = 0; i < (count || 4); i++) {
+        batchQueue.push(buildRandomCitizen());
+    }
+    refreshQueueUi();
+    setViewMode('batch');
+    if (window.showToast) showToast('✅ ' + (count || 4) + ' জন নমুনা নাগরিক Batch-এ যোগ হয়েছে!', 'success');
+}
+
+function loadFromQueue(idx) {
+    if (!batchQueue[idx]) return;
+    citizenState = Object.assign({}, batchQueue[idx]);
+    writeInputsFromState();
+    renderSheets();
+}
+
+function removeFromQueue(idx) {
+    batchQueue.splice(idx, 1);
+    refreshQueueUi();
+    renderSheets();
+}
+
+function clearQueue() {
+    batchQueue = [];
+    refreshQueueUi();
+    renderSheets();
+}
+
+function refreshQueueUi() {
+    document.getElementById('queueCountTop').textContent = batchQueue.length;
+    document.getElementById('queueCountBtn').textContent = batchQueue.length;
+    var ql = document.getElementById('queueList');
+    if (!batchQueue.length) {
+        ql.innerHTML = '<div style="font-size:11.5px;color:#94a3b8;padding:6px 0;">এখনো কোনো কপি Batch Queue-তে নেই।</div>';
+        return;
+    }
+    ql.innerHTML = batchQueue.map(function(item, i) {
+        return '<div class="queue-item">' +
+            '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>#' + (i + 1) + '</b> ' + esc(item.nameEn) + ' <span style="color:#64748b;">(' + esc(item.idNo) + ')</span></div>' +
+            '<div style="display:flex;gap:4px;flex-shrink:0;">' +
+                '<button type="button" class="btn-mini" onclick="loadFromQueue(' + i + ')">Edit</button>' +
+                '<button type="button" class="btn-mini danger" onclick="removeFromQueue(' + i + ')">✕</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof adminInit === 'function') {
+        adminInit('demo-id-card', function() {});
+    }
+    writeInputsFromState();
+    refreshQueueUi();
+    renderSheets();
+});
+</script>
+</body>
+</html>
