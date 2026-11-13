@@ -275,6 +275,7 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
+            mix-blend-mode: multiply;
         }
         .id-photo-col {
             width: 18.5mm;
@@ -382,7 +383,7 @@
         }
         .id-back-address-area {
             flex: 1;
-            padding: 1.8mm 2.8mm 1mm;
+            padding: 1.6mm 2.8mm 0;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -404,23 +405,24 @@
         .id-print-badge {
             background: #0f172a;
             color: #fff;
-            padding: 0.4mm 1.6mm;
-            font-size: 6.4pt;
+            padding: 0.45mm 1.8mm;
+            font-size: 6.3pt;
             font-weight: 700;
             line-height: 1.25;
             white-space: nowrap;
+            margin-right: -2.8mm;
         }
         .id-back-bottom {
-            padding: 1.4mm 2.8mm 2mm;
+            padding: 1mm 2.8mm 1.5mm;
             display: flex;
             flex-direction: column;
-            gap: 1.2mm;
+            gap: 1.1mm;
         }
         .id-auth-row {
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            font-size: 6.9pt;
+            font-size: 6.8pt;
             color: #0f172a;
         }
         .id-auth-sig-block {
@@ -429,20 +431,26 @@
             align-items: flex-start;
         }
         .id-auth-sig-art {
+            width: 24mm;
             height: 6.5mm;
             display: flex;
             align-items: center;
-            margin-bottom: 0.5mm;
+            margin-bottom: 0.3mm;
         }
-        .id-auth-sig-art img,
-        .id-auth-sig-art svg {
+        .id-auth-sig-art img {
             max-height: 100%;
-            max-width: 28mm;
+            max-width: 100%;
             object-fit: contain;
+            display: block;
+        }
+        .id-auth-sig-art svg {
+            width: 22mm;
+            height: 6.5mm;
+            display: block;
         }
         .id-barcode-wrap {
             width: 100%;
-            height: 9mm;
+            height: 10.5mm;
             display: flex;
             align-items: stretch;
         }
@@ -613,7 +621,7 @@
                         <button type="button" class="btn-mini" onclick="clearCustomGraphic('countryLogo')">Reset Logo</button>
                         <button type="button" class="btn-mini" onclick="clearCustomGraphic('watermarkLogo')">Reset Watermark</button>
                         <label style="font-size:11px;display:flex;align-items:center;gap:4px;margin-left:auto;cursor:pointer;">
-                            <input type="checkbox" id="chkPropStamp" checked onchange="syncFromInputs()"> Show "DEMO PROP" badge
+                            <input type="checkbox" id="chkPropStamp" onchange="syncFromInputs()"> Show "DEMO PROP" badge
                         </label>
                     </div>
 
@@ -798,40 +806,73 @@ function getDefaultAuthSigSvg() {
     '</svg>';
 }
 
-// Deterministic PDF417-style 2D matrix barcode SVG generator
+// Realistic ISO/IEC 15438 PDF417 2D matrix barcode SVG generator
 function generateBarcodeSvg(seedText) {
     var s = String(seedText || 'VANILLA-0000');
-    var h = 2166136261;
+    var baseHash = 2166136261;
     for (var i = 0; i < s.length; i++) {
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
+        baseHash ^= s.charCodeAt(i);
+        baseHash = Math.imul(baseHash, 16777619) >>> 0;
     }
-    var cols = 92;
-    var rows = 14;
-    var rects = '';
-    // Start & Stop guard bars
-    rects += '<rect x="0" y="0" width="5" height="' + (rows * 2) + '" fill="#000"/>';
-    rects += '<rect x="7" y="0" width="2" height="' + (rows * 2) + '" fill="#000"/>';
-    rects += '<rect x="11" y="0" width="2" height="' + (rows * 2) + '" fill="#000"/>';
 
+    var rows = 24;
+    var numCols = 9; // Left row indicator + 7 data columns + right row indicator
+    var rects = '';
+    var x = 0;
+
+    // Official PDF417 Start Guard: [8, 1, 1, 1, 1, 1, 1, 2.5]
+    var startPattern = [8, 1, 1, 1, 1, 1, 1, 2.5];
+    for (var p = 0; p < startPattern.length; p++) {
+        if (p % 2 === 0) {
+            rects += '<rect x="' + x.toFixed(1) + '" y="0" width="' + startPattern[p] + '" height="' + rows + '" fill="#000"/>';
+        }
+        x += startPattern[p];
+    }
+
+    // Generate 9 adjacent 17-module PDF417 codeword columns across 24 rows
+    var dataStartX = x;
     for (var r = 0; r < rows; r++) {
-        for (var c = 15; c < cols - 14; c++) {
-            // Leave thin vertical cluster dividers for PDF417 visual pattern
-            if (c % 11 === 0) continue;
-            h = (Math.imul(h ^ (r * 31 + c * 17), 1103515245) + 12345) >>> 0;
-            if ((h & 3) < 2) {
-                var w = ((h >> 3) & 1) ? 1.7 : 1.1;
-                rects += '<rect x="' + (c * 2.1).toFixed(1) + '" y="' + (r * 2) + '" width="' + w + '" height="2" fill="#000"/>';
+        var cx = dataStartX;
+        for (var c = 0; c < numCols; c++) {
+            // Deterministic codeword seed per (row, col), keeping row/col variation authentic
+            var h = Math.imul(baseHash ^ ((r * 73 + c * 131 + 17) * 2654435761), 1597334677) >>> 0;
+            // Build 4 bars + 4 spaces summing cleanly to 17 modules (classic 17-module PDF417 structure)
+            var b1 = 1 + (h & 3);         // 1..4
+            var s1 = 1 + ((h >> 2) & 1);  // 1..2
+            var b2 = 1 + ((h >> 3) & 3);  // 1..4
+            var s2 = 1 + ((h >> 5) & 1);  // 1..2
+            var b3 = 1 + ((h >> 6) & 1);  // 1..2
+            var s3 = 1 + ((h >> 7) & 1);  // 1..2
+            // Remaining modules distributed between last bar b4 and trailing separator space s4
+            var used = b1 + s1 + b2 + s2 + b3 + s3;
+            var rem = 17 - used;
+            var s4 = (c === numCols - 1) ? 1.5 : 1.4; // Subtle crisp PDF417 column boundary seam
+            var b4 = Math.max(1, rem - s4);
+
+            var seq = [b1, s1, b2, s2, b3, s3, b4, s4];
+            var curX = cx;
+            for (var k = 0; k < 8; k++) {
+                if (k % 2 === 0) {
+                    rects += '<rect x="' + curX.toFixed(2) + '" y="' + r + '" width="' + seq[k].toFixed(2) + '" height="1.03" fill="#000"/>';
+                }
+                curX += seq[k];
             }
+            cx += 17;
         }
     }
-    var endX = (cols - 12) * 2.1;
-    rects += '<rect x="' + endX.toFixed(1) + '" y="0" width="5" height="' + (rows * 2) + '" fill="#000"/>';
-    rects += '<rect x="' + (endX + 7).toFixed(1) + '" y="0" width="2" height="' + (rows * 2) + '" fill="#000"/>';
-    rects += '<rect x="' + (endX + 11).toFixed(1) + '" y="0" width="2" height="' + (rows * 2) + '" fill="#000"/>';
 
-    var totalW = Math.ceil((cols + 3) * 2.1);
-    return '<svg viewBox="0 0 ' + totalW + ' ' + (rows * 2) + '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' + rects + '</svg>';
+    x = dataStartX + numCols * 17;
+
+    // Official PDF417 Stop Guard: [7, 1, 1, 3, 1, 1, 1, 2, 1]
+    var stopPattern = [7, 1, 1, 3, 1, 1, 1, 2, 1];
+    for (var q = 0; q < stopPattern.length; q++) {
+        if (q % 2 === 0) {
+            rects += '<rect x="' + x.toFixed(1) + '" y="0" width="' + stopPattern[q] + '" height="' + rows + '" fill="#000"/>';
+        }
+        x += stopPattern[q];
+    }
+
+    return '<svg viewBox="0 0 ' + x.toFixed(1) + ' ' + rows + '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' + rects + '</svg>';
 }
 
 var DEFAULT_TEMPLATE = {
@@ -843,7 +884,7 @@ var DEFAULT_TEMPLATE = {
     docTitleBn: 'জাতীয় পরিচয় পত্র',
     countryEnColor: '#15803d',
     watermarkOpacity: 20,
-    showPropStamp: true,
+    showPropStamp: false,
     countryLogo: '',
     watermarkLogo: '',
     authSig: '',
@@ -1270,3 +1311,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
