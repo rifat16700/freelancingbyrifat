@@ -9,6 +9,7 @@
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
     <script src="../assets/js/config.js?v=1794570029121"></script>
     <script src="assets/js/admin-common.js?v=6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@bwip-js/browser@4/dist/bwip-js-min.js" defer onload="if(window.renderSheets)renderSheets();" onerror="var s=document.createElement('script');s.src='https://unpkg.com/@bwip-js/browser@4/dist/bwip-js-min.js';s.onload=function(){if(window.renderSheets)renderSheets();};document.head.appendChild(s);"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 
     <style>
@@ -776,22 +777,22 @@
                         </div>
                         <div class="field-row" style="margin-bottom:4px;">
                             <div>
-                                <label class="field-label">Rows: <b id="lblBcRows">16</b></label>
-                                <input type="range" id="inpBcRows" min="10" max="24" value="16" style="width:100%;" oninput="syncFromInputs()">
+                                <label class="field-label">Detail / EC Level: <b id="lblBcRows">3</b></label>
+                                <input type="range" id="inpBcRows" min="1" max="5" value="3" style="width:100%;" oninput="syncFromInputs()">
                             </div>
                             <div>
-                                <label class="field-label">Columns: <b id="lblBcCols">8</b></label>
-                                <input type="range" id="inpBcCols" min="5" max="11" value="8" style="width:100%;" oninput="syncFromInputs()">
+                                <label class="field-label">Columns: <b id="lblBcCols">13</b></label>
+                                <input type="range" id="inpBcCols" min="8" max="18" value="13" style="width:100%;" oninput="syncFromInputs()">
                             </div>
                         </div>
                         <div class="field-row" style="margin-bottom:4px;">
                             <div>
-                                <label class="field-label">Light / Ink: <b id="lblBcDensity">46%</b></label>
-                                <input type="range" id="inpBcDensity" min="30" max="75" value="46" style="width:100%;" oninput="syncFromInputs()">
+                                <label class="field-label">Row Thickness: <b id="lblBcDensity">2</b>x</label>
+                                <input type="range" id="inpBcDensity" min="1" max="4" value="2" style="width:100%;" oninput="syncFromInputs()">
                             </div>
                             <div>
-                                <label class="field-label">Height: <b id="lblBcHeight">9.5mm</b></label>
-                                <input type="range" id="inpBcHeight" min="7" max="13" step="0.5" value="9.5" style="width:100%;" oninput="syncFromInputs()">
+                                <label class="field-label">Height: <b id="lblBcHeight">10mm</b></label>
+                                <input type="range" id="inpBcHeight" min="7" max="13" step="0.5" value="10" style="width:100%;" oninput="syncFromInputs()">
                             </div>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
@@ -885,13 +886,40 @@ function getDefaultAuthSigSvg() {
     '</svg>';
 }
 
-// Realistic customizable ISO-style PDF417 2D barcode SVG generator
-function generateBarcodeSvg(seedText, opts) {
-    opts = opts || {};
-    var rows = Math.max(8, Math.min(28, Number(opts.rows || 16)));
-    var numCols = Math.max(4, Math.min(12, Number(opts.cols || 8)));
-    var densityPct = Math.max(25, Math.min(80, Number(opts.densityPct || 46)));
+function buildNidBarcodePayload(c, t) {
+    if (t.barcodeAuto === false && String(t.barcodeManualText || '').trim()) {
+        return String(t.barcodeManualText || '').trim();
+    }
+    var pin = String(c.idNo || '0000000000').trim();
+    var name = String(c.nameEn || 'CITIZEN').trim().toUpperCase();
+    var dob = String(c.dob || '01 Jan 1990').trim();
+    var bg = String(c.bloodGroup || '').trim();
+    var rawKey = pin + '|' + name + '|' + dob + '|' + bg + '|' + (c.father || '') + '|' + (c.mother || '');
+    var h1 = 0x811c9dc5, h2 = 0x9e3779b9;
+    for (var i = 0; i < rawKey.length; i++) {
+        h1 = Math.imul(h1 ^ rawKey.charCodeAt(i), 0x01000193) >>> 0;
+        h2 = Math.imul(h2 ^ (rawKey.charCodeAt(i) + i), 0x85ebca6b) >>> 0;
+    }
+    var bio = '';
+    for (var k = 0; k < 8; k++) {
+        h1 = Math.imul(h1 ^ ((k + 1) * 0x45d9f3b), 0x27d4eb2d) >>> 0;
+        h2 = Math.imul(h2 ^ ((k + 3) * 0x165667b1), 0x85ebca6b) >>> 0;
+        bio += (h1 >>> 0).toString(36).toUpperCase() + (h2 >>> 0).toString(36).toUpperCase();
+    }
+    // BD-NID style structured XML payload (unique per citizen)
+    return '<pin>' + pin + '</pin>' +
+           '<name>' + name + '</name>' +
+           '<DOB>' + dob + '</DOB>' +
+           '<BG>' + bg + '</BG>' +
+           '<FP>' + bio.slice(0, 88) + '</FP>' +
+           '<F>A</F><TYPE>A</TYPE><V>2.0</V>' +
+           '<ds>' + bio.slice(88, 128) + '</ds>';
+}
 
+function generateFallbackPdf417Svg(seedText, opts) {
+    opts = opts || {};
+    var rows = 24;
+    var numCols = Math.max(8, Math.min(18, Number(opts.cols || 13)));
     var s = String(seedText || 'VANILLA-0000');
     var baseHash = 2166136261;
     for (var i = 0; i < s.length; i++) {
@@ -901,27 +929,21 @@ function generateBarcodeSvg(seedText, opts) {
 
     var rects = '';
     var x = 0;
-
-    // Clean Start Guard: 1 thick solid bar + 2 thin vertical guard bars (matches classic card barcode)
-    var startPattern = [6.5, 1.5, 1.1, 1.4, 1.1, 2.4];
+    var startPattern = [8, 1, 1, 1, 1, 1, 1, 3];
     for (var p = 0; p < startPattern.length; p++) {
         if (p % 2 === 0) {
-            rects += '<rect x="' + x.toFixed(1) + '" y="0" width="' + startPattern[p] + '" height="' + rows + '" fill="#000"/>';
+            rects += '<rect x="' + x + '" y="0" width="' + startPattern[p] + '" height="' + rows + '" fill="#000"/>';
         }
         x += startPattern[p];
     }
 
     var dataStartX = x;
-    var targetInk = Math.max(5, Math.min(13, Math.round(17 * densityPct / 100)));
-    var targetWhite = 17 - targetInk;
-
-    function splitInto4(total, hSeed, minLast) {
-        var arr = [1, 1, 1, minLast || 1];
-        var rem = total - (3 + (minLast || 1));
+    function split4(total, hSeed) {
+        var arr = [1, 1, 1, 1];
+        var rem = total - 4;
         var hh = hSeed;
         while (rem > 0) {
-            var idx = hh & 3;
-            arr[idx]++;
+            arr[hh & 3]++;
             rem--;
             hh = Math.imul(hh ^ 0x9e3779b9, 1664525) >>> 0;
         }
@@ -933,13 +955,12 @@ function generateBarcodeSvg(seedText, opts) {
         for (var c = 0; c < numCols; c++) {
             var h1 = Math.imul(baseHash ^ ((r * 73 + c * 131 + 17) * 2654435761), 1597334677) >>> 0;
             var h2 = Math.imul(h1 ^ 0x85ebca6b, 2246822519) >>> 0;
-
-            var bars = splitInto4(targetInk, h1, 1);
-            var spaces = splitInto4(targetWhite, h2, 1.5);
-
+            var targetInk = 7 + ((h1 >>> 8) & 3); // varies 7..10 out of 17 -> continuous seamless texture
+            var bars = split4(targetInk, h1);
+            var spaces = split4(17 - targetInk, h2);
             var curX = cx;
             for (var k = 0; k < 4; k++) {
-                rects += '<rect x="' + curX.toFixed(2) + '" y="' + r + '" width="' + bars[k].toFixed(2) + '" height="1.03" fill="#000"/>';
+                rects += '<rect x="' + curX + '" y="' + r + '" width="' + bars[k] + '" height="1.04" fill="#000"/>';
                 curX += bars[k] + spaces[k];
             }
             cx += 17;
@@ -947,17 +968,55 @@ function generateBarcodeSvg(seedText, opts) {
     }
 
     x = dataStartX + numCols * 17;
-
-    // Clean Stop Guard: 1 thick solid bar + 2 thin vertical guard bars
-    var stopPattern = [1.0, 6.5, 1.5, 1.1, 1.4, 1.1];
+    var stopPattern = [7, 1, 1, 3, 1, 1, 1, 2, 1];
     for (var q = 0; q < stopPattern.length; q++) {
-        if (q % 2 === 1) {
-            rects += '<rect x="' + x.toFixed(1) + '" y="0" width="' + stopPattern[q] + '" height="' + rows + '" fill="#000"/>';
+        if (q % 2 === 0) {
+            rects += '<rect x="' + x + '" y="0" width="' + stopPattern[q] + '" height="' + rows + '" fill="#000"/>';
         }
         x += stopPattern[q];
     }
 
-    return '<svg viewBox="0 0 ' + x.toFixed(1) + ' ' + rows + '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' + rects + '</svg>';
+    return '<svg viewBox="0 0 ' + x + ' ' + rows + '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' + rects + '</svg>';
+}
+
+// Genuine scannable ISO/IEC 15438 PDF417 via bwip-js (with seamless vector fallback offline)
+function generateBarcodeSvg(payloadText, opts) {
+    opts = opts || {};
+    var cols = Math.max(6, Math.min(18, Number(opts.cols || 13)));
+    var ecLevel = Math.max(0, Math.min(8, Number(opts.ecLevel != null ? opts.ecLevel : 3)));
+    var rowMult = Math.max(1, Math.min(5, Number(opts.rowMult || 2)));
+
+    if (typeof window !== 'undefined' && window.bwipjs && typeof window.bwipjs.toSVG === 'function') {
+        try {
+            var svg = window.bwipjs.toSVG({
+                bcid: 'pdf417',
+                text: String(payloadText || 'VANILLA'),
+                scale: 2,
+                columns: cols,
+                eclevel: ecLevel,
+                rowmult: rowMult,
+                includetext: false,
+                paddingwidth: 0,
+                paddingheight: 0
+            });
+            return svg.replace('<svg ', '<svg preserveAspectRatio="none" ');
+        } catch (e1) {
+            try {
+                var svgAuto = window.bwipjs.toSVG({
+                    bcid: 'pdf417',
+                    text: String(payloadText || 'VANILLA'),
+                    scale: 2,
+                    eclevel: ecLevel,
+                    rowmult: rowMult,
+                    includetext: false,
+                    paddingwidth: 0,
+                    paddingheight: 0
+                });
+                return svgAuto.replace('<svg ', '<svg preserveAspectRatio="none" ');
+            } catch (e2) {}
+        }
+    }
+    return generateFallbackPdf417Svg(payloadText, { cols: cols });
 }
 
 var DEFAULT_TEMPLATE = {
@@ -979,10 +1038,10 @@ var DEFAULT_TEMPLATE = {
     backNotice: 'এই কার্ডটি গণপ্রজাতন্ত্রী ভ্যানিলা সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।',
     barcodeAuto: true,
     barcodeManualText: '',
-    bcRows: 16,
-    bcCols: 8,
-    bcDensity: 46,
-    bcHeight: 9.5,
+    bcRows: 3,
+    bcCols: 13,
+    bcDensity: 2,
+    bcHeight: 10,
     customBarcode: '',
     // Editable labels
     lblNameBn: 'নাম:',
@@ -1090,14 +1149,14 @@ function writeInputsFromState() {
 
     document.getElementById('chkBarcodeAuto').checked = tplState.barcodeAuto !== false;
     document.getElementById('inpBarcodeManualText').value = tplState.barcodeManualText || '';
-    document.getElementById('inpBcRows').value = tplState.bcRows || 16;
-    document.getElementById('inpBcCols').value = tplState.bcCols || 8;
-    document.getElementById('inpBcDensity').value = tplState.bcDensity || 46;
-    document.getElementById('inpBcHeight').value = tplState.bcHeight || 9.5;
-    document.getElementById('lblBcRows').textContent = tplState.bcRows || 16;
-    document.getElementById('lblBcCols').textContent = tplState.bcCols || 8;
-    document.getElementById('lblBcDensity').textContent = (tplState.bcDensity || 46) + '%';
-    document.getElementById('lblBcHeight').textContent = (tplState.bcHeight || 9.5) + 'mm';
+    document.getElementById('inpBcRows').value = tplState.bcRows != null ? tplState.bcRows : 3;
+    document.getElementById('inpBcCols').value = tplState.bcCols || 13;
+    document.getElementById('inpBcDensity').value = tplState.bcDensity || 2;
+    document.getElementById('inpBcHeight').value = tplState.bcHeight || 10;
+    document.getElementById('lblBcRows').textContent = tplState.bcRows != null ? tplState.bcRows : 3;
+    document.getElementById('lblBcCols').textContent = tplState.bcCols || 13;
+    document.getElementById('lblBcDensity').textContent = (tplState.bcDensity || 2) + 'x';
+    document.getElementById('lblBcHeight').textContent = (tplState.bcHeight || 10) + 'mm';
 
     document.getElementById('inpNameBn').value = citizenState.nameBn;
     document.getElementById('inpNameEn').value = citizenState.nameEn;
@@ -1132,13 +1191,13 @@ function syncFromInputs() {
 
     tplState.barcodeAuto = document.getElementById('chkBarcodeAuto').checked;
     tplState.barcodeManualText = document.getElementById('inpBarcodeManualText').value;
-    tplState.bcRows = Number(document.getElementById('inpBcRows').value || 16);
-    tplState.bcCols = Number(document.getElementById('inpBcCols').value || 8);
-    tplState.bcDensity = Number(document.getElementById('inpBcDensity').value || 46);
-    tplState.bcHeight = Number(document.getElementById('inpBcHeight').value || 9.5);
+    tplState.bcRows = Number(document.getElementById('inpBcRows').value || 3);
+    tplState.bcCols = Number(document.getElementById('inpBcCols').value || 13);
+    tplState.bcDensity = Number(document.getElementById('inpBcDensity').value || 2);
+    tplState.bcHeight = Number(document.getElementById('inpBcHeight').value || 10);
     document.getElementById('lblBcRows').textContent = tplState.bcRows;
     document.getElementById('lblBcCols').textContent = tplState.bcCols;
-    document.getElementById('lblBcDensity').textContent = tplState.bcDensity + '%';
+    document.getElementById('lblBcDensity').textContent = tplState.bcDensity + 'x';
     document.getElementById('lblBcHeight').textContent = tplState.bcHeight + 'mm';
 
     citizenState.nameBn = document.getElementById('inpNameBn').value;
@@ -1263,19 +1322,17 @@ function buildBackCardHtml(c, t, idx) {
         ? '<img src="' + esc(t.authSig) + '" alt="Authority Sig" style="' + aStyle + '">'
         : '<div style="' + aStyle + 'transform-origin:left center;">' + getDefaultAuthSigSvg() + '</div>';
 
-    var seed = (t.barcodeAuto !== false || !String(t.barcodeManualText || '').trim())
-        ? ((c.idNo || '') + '|' + (c.nameEn || '') + '|' + (c.dob || ''))
-        : String(t.barcodeManualText || '').trim();
+    var payload = buildNidBarcodePayload(c, t);
 
     var barcodeHtml = t.customBarcode
         ? '<img src="' + esc(t.customBarcode) + '" alt="Barcode">'
-        : generateBarcodeSvg(seed, {
-            rows: t.bcRows || 16,
-            cols: t.bcCols || 8,
-            densityPct: t.bcDensity || 46
+        : generateBarcodeSvg(payload, {
+            ecLevel: t.bcRows != null ? t.bcRows : 3,
+            cols: t.bcCols || 13,
+            rowMult: t.bcDensity || 2
         });
 
-    var bcH = Number(t.bcHeight || 9.5).toFixed(1) + 'mm';
+    var bcH = Number(t.bcHeight || 10).toFixed(1) + 'mm';
     var bindPrefix = idx === -1 ? 'active' : ('queue:' + idx);
 
     return '<div class="id-card">' +
