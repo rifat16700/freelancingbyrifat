@@ -119,6 +119,109 @@ function d1Query($sql, $params = []) {
     return $res['success'] ? $res['results'] : [];
 }
 
+// ============================================================================
+// 2B. ALWAYSDATA PRIVATE STORAGE ENGINE (OUTSIDE PUBLIC WEB ROOT)
+//     Stores: Master Admin hash/PIN, Staff Accounts, Activity Logs, Signing Key
+// ============================================================================
+// TODO [Site Users / Future Customer Auth]:
+// আগে কাস্টমার/সাইট ইউজার একাউন্ট (register/login/OTP/session) তৈরি করার জন্য
+// Cloudflare KV ব্যবহারের পরিকল্পনা ছিল। পরবর্তীতে সাইট ইউজার সিস্টেম চালু করলে
+// KV-এর পরিবর্তে এই AlwaysData প্রাইভেট স্টোরেজ ডিরেক্টরি (ranonex_data/site_users.json
+// বা SQLite) ব্যবহার করা হবে। আপাতত এখানে কোনো সাইট ইউজার কোড লেখা হয়নি।
+// ============================================================================
+function getPrivateDataDir() {
+    static $dir = null;
+    if ($dir !== null) return $dir;
+    $outside = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'ranonex_data';
+    if (!is_dir($outside)) {
+        @mkdir($outside, 0700, true);
+    }
+    if (is_dir($outside) && is_writable($outside)) {
+        $dir = $outside;
+        return $dir;
+    }
+    $fallback = __DIR__ . DIRECTORY_SEPARATOR . '.ranonex_private';
+    if (!is_dir($fallback)) {
+        @mkdir($fallback, 0700, true);
+    }
+    if (is_dir($fallback) && !file_exists($fallback . DIRECTORY_SEPARATOR . '.htaccess')) {
+        @file_put_contents($fallback . DIRECTORY_SEPARATOR . '.htaccess', "Require all denied\nDeny from all\n");
+    }
+    $dir = $fallback;
+    return $dir;
+}
+
+function readJsonStore($fileName, $default = []) {
+    $path = getPrivateDataDir() . DIRECTORY_SEPARATOR . $fileName;
+    if (!file_exists($path)) return $default;
+    $raw = @file_get_contents($path);
+    if (!$raw) return $default;
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : $default;
+}
+
+function writeJsonStore($fileName, $data) {
+    $path = getPrivateDataDir() . DIRECTORY_SEPARATOR . $fileName;
+    $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    return @file_put_contents($path, $json, LOCK_EX) !== false;
+}
+
+function getServerSigningSecret() {
+    $envSec = getenv('ADMIN_SECRET_TOKEN') ?: getenv('JWT_SECRET');
+    if ($envSec && strlen($envSec) >= 16) return $envSec;
+    $keyFile = getPrivateDataDir() . DIRECTORY_SEPARATOR . 'secret.key';
+    if (file_exists($keyFile)) {
+        $k = trim((string)@file_get_contents($keyFile));
+        if (strlen($k) >= 32) return $k;
+    }
+    $newKey = bin2hex(random_bytes(32));
+    @file_put_contents($keyFile, $newKey, LOCK_EX);
+    return $newKey;
+}
+
+function hashSecretPbkdf2($plain) {
+    $salt = random_bytes(16);
+    $saltHex = bin2hex($salt);
+    $hashHex = hash_pbkdf2('sha256', (string)$plain, $salt, 100000, 64, false);
+    return $saltHex . ':' . $hashHex;
+}
+
+function verifySecretPbkdf2($plain, $stored) {
+    $stored = (string)$stored;
+    if ($stored === '') return false;
+    if (strpos($stored, ':') !== false) {
+        list($saltHex, $hashHex) = explode(':', $stored, 2);
+        $saltBin = @hex2bin($saltHex);
+        if ($saltBin === false) return false;
+        $calcHex = hash_pbkdf2('sha256', (string)$plain, $saltBin, 100000, 64, false);
+        return hash_equals(strtolower($hashHex), strtolower($calcHex));
+    }
+    return hash_equals($stored, (string)$plain);
+}
+
+function getClientIpAddr() {
+    return (string)($_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown');
+}
+
+function appendAuditLog($actor, $role, $action, $target = '', $details = '') {
+    $logs = readJsonStore('staff_logs.json', []);
+    if (!is_array($logs)) $logs = [];
+    array_unshift($logs, [
+        'id'         => bin2hex(random_bytes(6)),
+        'actor'      => (string)$actor,
+        'role'       => (string)$role,
+        'action'     => (string)$action,
+        'target'     => mb_substr((string)$target, 0, 120),
+        'details'    => mb_substr((string)$details, 0, 400),
+        'ip'         => getClientIpAddr(),
+        'created_at' => gmdate('c')
+    ]);
+    if (count($logs) > 1000) {
+        $logs = array_slice($logs, 0, 1000);
+    }
+    writeJsonStore('staff_logs.json', $logs);
+}
+
 function b64UrlEncode($str) {
     return rtrim(strtr(base64_encode($str), '+/', '-_'), '=');
 }
@@ -131,7 +234,7 @@ function b64DecodeFlex($str) {
 }
 
 function signAdminToken($payload, $secret = null) {
-    $sec = $secret ?: ADMIN_SECRET_TOKEN;
+    $sec = $secret ?: getServerSigningSecret();
     $data = base64_encode(json_encode($payload));
     $sig = hash_hmac('sha256', $data, $sec, true);
     return $data . '.' . b64UrlEncode($sig);
@@ -139,7 +242,7 @@ function signAdminToken($payload, $secret = null) {
 
 function verifyAdminToken($token, $secret = null) {
     if (!$token || !is_string($token)) return null;
-    $sec = $secret ?: ADMIN_SECRET_TOKEN;
+    $sec = $secret ?: getServerSigningSecret();
     $parts = explode('.', trim($token));
     if (count($parts) === 2) {
         list($data, $sigB64) = $parts;
@@ -160,6 +263,28 @@ function verifyAdminToken($token, $secret = null) {
     $nowMs = round(microtime(true) * 1000);
     if (!empty($payload['exp']) && $nowMs > (float)$payload['exp']) {
         return null;
+    }
+
+    // Live token_version & active-status check against AlwaysData Private Storage
+    $role = $payload['role'] ?? 'master_admin';
+    $tv   = (int)($payload['tv'] ?? 1);
+    if ($role === 'staff' && !empty($payload['sid'])) {
+        $staffList = readJsonStore('staff.json', []);
+        $matchedStaff = null;
+        foreach ($staffList as $st) {
+            if (($st['id'] ?? '') === $payload['sid']) {
+                $matchedStaff = $st;
+                break;
+            }
+        }
+        if (!$matchedStaff || empty($matchedStaff['is_active'])) return null;
+        if ((int)($matchedStaff['token_version'] ?? 1) !== $tv) return null;
+        $payload['permissions'] = is_array($matchedStaff['permissions'] ?? null) ? $matchedStaff['permissions'] : [];
+    } else {
+        $master = readJsonStore('master_admin.json', []);
+        if (!empty($master) && (int)($master['token_version'] ?? 1) !== $tv) {
+            return null;
+        }
     }
     return $payload;
 }
@@ -189,7 +314,7 @@ function getRequestAdminToken($body = []) {
     return '';
 }
 
-function requireAdminAuth($body = []) {
+function requireAdminAuth($body = [], $requiredPerm = null) {
     $token = getRequestAdminToken($body);
     $verified = verifyAdminToken($token);
     if (!$verified) {
@@ -200,6 +325,19 @@ function requireAdminAuth($body = []) {
             'error'   => 'Unauthorized: Valid Admin session token required.'
         ], JSON_UNESCAPED_UNICODE);
         exit;
+    }
+    $role = $verified['role'] ?? 'master_admin';
+    if ($requiredPerm && $role === 'staff') {
+        $perms = is_array($verified['permissions'] ?? null) ? $verified['permissions'] : [];
+        if ($requiredPerm === 'master_only' || !in_array($requiredPerm, $perms, true)) {
+            header('Cache-Control: no-store, no-cache, must-revalidate');
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'error'   => 'Forbidden: Only Master Admin or authorized Staff can perform this action.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
     }
     return $verified;
 }
@@ -257,13 +395,35 @@ $chunkNum  = isset($_GET['chunk']) ? max(1, (int)$_GET['chunk']) : 0;
 $method    = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
 // ----------------------------------------------------------------------------
-// AUTH ROUTE 1: POST /api/admin-login (Stateless HMAC-SHA256 30-Day Token)
+// AUTH ROUTE 1: POST /admin-login (Master Admin + Staff, AlwaysData Storage)
+//               Server-side brute-force lockout + PBKDF2 + Optional Security PIN
 // ----------------------------------------------------------------------------
 if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
-    $body      = readJsonBody();
-    $inputUser = strtolower(trim((string)($body['username'] ?? $body['email'] ?? '')));
-    $inputPass = (string)($body['password'] ?? '');
+    $clientIp = getClientIpAddr();
+    $rlMap    = readJsonStore('login_rl.json', []);
+    if (!is_array($rlMap)) $rlMap = [];
+    $nowSec   = time();
+    foreach ($rlMap as $ipKey => $entry) {
+        if (($entry['reset_at'] ?? 0) < $nowSec && ($entry['lock_until'] ?? 0) < $nowSec) {
+            unset($rlMap[$ipKey]);
+        }
+    }
+    $ipRec = $rlMap[$clientIp] ?? ['fails' => 0, 'reset_at' => $nowSec + 300, 'lock_until' => 0];
+    if (($ipRec['lock_until'] ?? 0) > $nowSec) {
+        $waitSec = $ipRec['lock_until'] - $nowSec;
+        http_response_code(429);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'অনেকবার ভুল চেষ্টা করা হয়েছে! নিরাপত্তার জন্য ' . $waitSec . ' সেকেন্ড অপেক্ষা করুন।'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $body        = readJsonBody();
+    $inputUser   = strtolower(trim((string)($body['username'] ?? $body['email'] ?? '')));
+    $inputPass   = (string)($body['password'] ?? '');
+    $securityPin = trim((string)($body['security_pin'] ?? ''));
 
     if ($inputUser === '' || $inputPass === '') {
         http_response_code(400);
@@ -271,67 +431,143 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
         exit;
     }
 
-    $isValid     = false;
-    $matchedUser = $inputUser;
+    $isValid      = false;
+    $requirePin   = false;
+    $matchedUser  = $inputUser;
+    $matchedRole  = 'master_admin';
+    $matchedPerms = ['*'];
+    $matchedSid   = '';
+    $tokenVersion = 1;
 
-    // 1. Check D1 admins table
-    $adminRows = d1Query("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1", [$inputUser]);
-    if (!empty($adminRows[0]['password_hash'])) {
-        $stored = (string)$adminRows[0]['password_hash'];
-        if (strpos($stored, ':') !== false) {
-            list($saltHex, $hashHex) = explode(':', $stored, 2);
-            $saltBin = @hex2bin($saltHex);
-            if ($saltBin !== false) {
-                $calcHex = hash_pbkdf2('sha256', $inputPass, $saltBin, 100000, 64, false);
-                if (hash_equals(strtolower($hashHex), strtolower($calcHex))) {
-                    $isValid     = true;
-                    $matchedUser = $adminRows[0]['email'];
+    $masterStore = readJsonStore('master_admin.json', []);
+
+    if (!empty($masterStore['username']) && !empty($masterStore['password_hash'])) {
+        // 1A. Existing hardened Master Admin stored on AlwaysData
+        if ($inputUser === strtolower(trim((string)$masterStore['username'])) && verifySecretPbkdf2($inputPass, $masterStore['password_hash'])) {
+            if (!empty($masterStore['pin_hash'])) {
+                if ($securityPin === '') {
+                    $requirePin = true;
+                } elseif (verifySecretPbkdf2($securityPin, $masterStore['pin_hash'])) {
+                    $isValid = true;
                 }
+            } else {
+                $isValid = true;
             }
-        } elseif (hash_equals($stored, $inputPass)) {
+            if ($isValid) {
+                $matchedUser  = $masterStore['username'];
+                $matchedRole  = 'master_admin';
+                $tokenVersion = (int)($masterStore['token_version'] ?? 1);
+            }
+        }
+    } else {
+        // 1B. First-time bootstrap from D1 admins or ADMIN_USERNAME/ADMIN_PASSWORD -> lock into master_admin.json
+        $adminRows = d1Query("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1", [$inputUser]);
+        if (!empty($adminRows[0]['password_hash']) && verifySecretPbkdf2($inputPass, $adminRows[0]['password_hash'])) {
             $isValid     = true;
             $matchedUser = $adminRows[0]['email'];
         }
-    }
-
-    // 2. Fallback to configured ADMIN_USERNAME / ADMIN_PASSWORD
-    if (!$isValid) {
-        $validUser = strtolower(trim((string)ADMIN_USERNAME));
-        $validPass = (string)ADMIN_PASSWORD;
-        if ($inputUser === $validUser && hash_equals($validPass, $inputPass)) {
-            $isValid     = true;
-            $matchedUser = $validUser;
+        if (!$isValid) {
+            $validUser = strtolower(trim((string)ADMIN_USERNAME));
+            $validPass = (string)ADMIN_PASSWORD;
+            if ($inputUser === $validUser && hash_equals($validPass, $inputPass)) {
+                $isValid     = true;
+                $matchedUser = $validUser;
+            }
+        }
+        if ($isValid) {
+            writeJsonStore('master_admin.json', [
+                'username'      => $matchedUser,
+                'password_hash' => hashSecretPbkdf2($inputPass),
+                'pin_hash'      => '',
+                'token_version' => 1,
+                'created_at'    => gmdate('c'),
+                'updated_at'    => gmdate('c')
+            ]);
+            $tokenVersion = 1;
         }
     }
 
-    if (!$isValid) {
+    if ($requirePin) {
         http_response_code(401);
-        echo json_encode(['success' => false, 'error' => 'ভুল ইউজারনেম বা পাসওয়ার্ড প্রদান করা হয়েছে!'], JSON_UNESCAPED_UNICODE);
+        echo json_encode([
+            'success'     => false,
+            'require_pin' => true,
+            'error'       => '🔐 ২য় ধাপ: আপনার Master Security PIN দিন।'
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
+    // 2. Check Staff accounts stored on AlwaysData (only if Master Admin added active Staff)
+    if (!$isValid) {
+        $staffList = readJsonStore('staff.json', []);
+        foreach ($staffList as &$st) {
+            if (strtolower(trim((string)($st['email'] ?? ''))) === $inputUser && !empty($st['is_active'])) {
+                if (verifySecretPbkdf2($inputPass, $st['password_hash'] ?? '')) {
+                    $isValid      = true;
+                    $matchedUser  = $st['email'];
+                    $matchedRole  = 'staff';
+                    $matchedSid   = $st['id'] ?? '';
+                    $matchedPerms = is_array($st['permissions'] ?? null) ? $st['permissions'] : [];
+                    $tokenVersion = (int)($st['token_version'] ?? 1);
+                    $st['last_login'] = gmdate('c');
+                    writeJsonStore('staff.json', $staffList);
+                    break;
+                }
+            }
+        }
+        unset($st);
+    }
+
+    if (!$isValid) {
+        $fails = (($ipRec['reset_at'] ?? 0) > $nowSec) ? (($ipRec['fails'] ?? 0) + 1) : 1;
+        $lockUntil = ($fails >= 5) ? ($nowSec + 300) : 0;
+        $rlMap[$clientIp] = [
+            'fails'      => $lockUntil ? 0 : $fails,
+            'reset_at'   => $nowSec + 300,
+            'lock_until' => $lockUntil
+        ];
+        writeJsonStore('login_rl.json', $rlMap);
+        appendAuditLog($inputUser, 'anonymous', 'LOGIN_FAILED', 'admin-login', 'Failed attempts: ' . $fails);
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'ভুল ইউজারনেম, পাসওয়ার্ড বা PIN প্রদান করা হয়েছে!'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // Clear rate-limit on successful login
+    unset($rlMap[$clientIp]);
+    writeJsonStore('login_rl.json', $rlMap);
+
     $nowMs     = (int)round(microtime(true) * 1000);
-    $expiresAt = $nowMs + (30 * 24 * 60 * 60 * 1000);
+    // Hardened 12-hour session validity (with live server revocation support via token_version)
+    $expiresAt = $nowMs + (12 * 60 * 60 * 1000);
     $payload   = [
-        'sub'  => $matchedUser,
-        'role' => 'admin',
-        'iat'  => $nowMs,
-        'exp'  => $expiresAt
+        'sub'         => $matchedUser,
+        'role'        => $matchedRole,
+        'sid'         => $matchedSid,
+        'permissions' => $matchedPerms,
+        'tv'          => $tokenVersion,
+        'iat'         => $nowMs,
+        'exp'         => $expiresAt
     ];
     $token = signAdminToken($payload);
+    appendAuditLog($matchedUser, $matchedRole, 'LOGIN_SUCCESS', 'admin-login', 'Session issued (12h TTL)');
 
     echo json_encode([
         'success'       => true,
         'token'         => $token,
         'expires_at'    => $expiresAt,
-        'validity_days' => 30,
-        'user'          => ['email' => $matchedUser, 'role' => 'admin']
+        'validity_hours'=> 12,
+        'user'          => [
+            'email'       => $matchedUser,
+            'role'        => $matchedRole,
+            'permissions' => $matchedPerms
+        ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ----------------------------------------------------------------------------
-// AUTH ROUTE 2: POST /api/verify-token (Server-Side Session Verification)
+// AUTH ROUTE 2: POST /verify-token (Server-Side Session + Version Verification)
 // ----------------------------------------------------------------------------
 if (strpos($endpoint, 'verify-token') !== false) {
     header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -344,6 +580,254 @@ if (strpos($endpoint, 'verify-token') !== false) {
         http_response_code(401);
         echo json_encode(['success' => false, 'valid' => false, 'error' => 'Token invalid or expired'], JSON_UNESCAPED_UNICODE);
     }
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// MASTER ADMIN SECURITY ROUTE: POST /master-security (Password, PIN, Logout All)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'master-security') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body      = readJsonBody();
+    $adminUser = requireAdminAuth($body, 'master_only');
+    $action    = strtolower(trim((string)($body['action'] ?? 'status')));
+    $master    = readJsonStore('master_admin.json', []);
+
+    if ($action === 'status') {
+        echo json_encode([
+            'success' => true,
+            'data'    => [
+                'username'      => $master['username'] ?? ($adminUser['sub'] ?? 'admin'),
+                'has_pin'       => !empty($master['pin_hash']),
+                'token_version' => (int)($master['token_version'] ?? 1),
+                'updated_at'    => $master['updated_at'] ?? null
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($action === 'revoke_all') {
+        $master['token_version'] = (int)($master['token_version'] ?? 1) + 1;
+        $master['updated_at']    = gmdate('c');
+        writeJsonStore('master_admin.json', $master);
+        // Rotate signing key too so all previously issued tokens die instantly
+        $newKey = bin2hex(random_bytes(32));
+        @file_put_contents(getPrivateDataDir() . DIRECTORY_SEPARATOR . 'secret.key', $newKey, LOCK_EX);
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'REVOKE_ALL_SESSIONS', 'master_admin.json', 'Rotated signing key & bumped token_version');
+        echo json_encode(['success' => true, 'message' => 'সকল ডিভাইস থেকে লগআউট সম্পন্ন হয়েছে!'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($action === 'update_credentials') {
+        $curPass = (string)($body['current_password'] ?? '');
+        if ($curPass === '' || empty($master['password_hash']) || !verifySecretPbkdf2($curPass, $master['password_hash'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'বর্তমান পাসওয়ার্ড সঠিক নয়।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $newUser = strtolower(trim((string)($body['new_username'] ?? $master['username'])));
+        $newPass = (string)($body['new_password'] ?? '');
+        $newPin  = trim((string)($body['new_pin'] ?? ''));
+        $clearPin = !empty($body['clear_pin']);
+
+        if ($newUser !== '') $master['username'] = $newUser;
+        if ($newPass !== '') {
+            if (strlen($newPass) < 8) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            $master['password_hash'] = hashSecretPbkdf2($newPass);
+        }
+        if ($clearPin) {
+            $master['pin_hash'] = '';
+        } elseif ($newPin !== '') {
+            if (!preg_match('/^\d{4,8}$/', $newPin)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Security PIN ৪ থেকে ৮ সংখ্যার (শুধু ডিজিট) হতে হবে।'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            $master['pin_hash'] = hashSecretPbkdf2($newPin);
+        }
+        $master['token_version'] = (int)($master['token_version'] ?? 1) + 1;
+        $master['updated_at']    = gmdate('c');
+        writeJsonStore('master_admin.json', $master);
+
+        $nowMs     = (int)round(microtime(true) * 1000);
+        $expiresAt = $nowMs + (12 * 60 * 60 * 1000);
+        $newToken  = signAdminToken([
+            'sub'         => $master['username'],
+            'role'        => 'master_admin',
+            'sid'         => '',
+            'permissions' => ['*'],
+            'tv'          => $master['token_version'],
+            'iat'         => $nowMs,
+            'exp'         => $expiresAt
+        ]);
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'UPDATE_MASTER_SECURITY', $master['username'], 'Updated Master Admin credentials/PIN');
+        echo json_encode([
+            'success'    => true,
+            'token'      => $newToken,
+            'expires_at' => $expiresAt,
+            'username'   => $master['username'],
+            'has_pin'    => !empty($master['pin_hash']),
+            'message'    => 'Master Admin সিকিউরিটি আপডেট হয়েছে!'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------------------------
+// STAFF MANAGEMENT ROUTE: GET/POST /staff (AlwaysData Storage — Master Only)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') === false) {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body      = ($method === 'POST') ? readJsonBody() : [];
+    $adminUser = requireAdminAuth($body, 'master_only');
+    $staffList = readJsonStore('staff.json', []);
+    if (!is_array($staffList)) $staffList = [];
+
+    if ($method === 'GET' || (($body['action'] ?? '') === 'list')) {
+        $safeList = array_map(function($s) {
+            unset($s['password_hash']);
+            return $s;
+        }, $staffList);
+        echo json_encode(['success' => true, 'staff' => $safeList], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($method === 'POST') {
+        $action = strtolower(trim((string)($body['action'] ?? 'save')));
+        $validPerms = ['orders', 'products', 'reviews', 'promos', 'categories', 'banners', 'sections', 'delivery', 'addons', 'brands', 'settings'];
+
+        if ($action === 'toggle') {
+            $sid = trim((string)($body['id'] ?? ''));
+            foreach ($staffList as &$st) {
+                if (($st['id'] ?? '') === $sid) {
+                    $st['is_active']     = empty($st['is_active']);
+                    $st['token_version'] = (int)($st['token_version'] ?? 1) + 1;
+                    writeJsonStore('staff.json', $staffList);
+                    appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_TOGGLE', $st['email'] ?? $sid, 'is_active=' . ($st['is_active'] ? '1' : '0'));
+                    echo json_encode(['success' => true, 'is_active' => $st['is_active']], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+            }
+            unset($st);
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Staff not found']);
+            exit;
+        }
+
+        if ($action === 'delete') {
+            $sid = trim((string)($body['id'] ?? ''));
+            $filtered = [];
+            $deletedEmail = $sid;
+            foreach ($staffList as $st) {
+                if (($st['id'] ?? '') === $sid) {
+                    $deletedEmail = $st['email'] ?? $sid;
+                    continue;
+                }
+                $filtered[] = $st;
+            }
+            writeJsonStore('staff.json', $filtered);
+            appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_DELETE', $deletedEmail, 'Staff removed');
+            echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Save (Add or Update Staff)
+        $sid   = trim((string)($body['id'] ?? ''));
+        $name  = mb_substr(trim((string)($body['name'] ?? '')), 0, 80);
+        $email = strtolower(trim((string)($body['email'] ?? '')));
+        $pass  = (string)($body['password'] ?? '');
+        $perms = array_values(array_intersect(is_array($body['permissions'] ?? null) ? $body['permissions'] : [], $validPerms));
+
+        if ($name === '' || $email === '') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'স্টাফের নাম এবং ইমেইল/ইউজারনেম দিন।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $master = readJsonStore('master_admin.json', []);
+        if (!empty($master['username']) && strtolower(trim((string)$master['username'])) === $email) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Master Admin-এর ইমেইল স্টাফ হিসেবে ব্যবহার করা যাবে না।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $foundIdx = -1;
+        foreach ($staffList as $i => $st) {
+            if ($sid !== '' && ($st['id'] ?? '') === $sid) $foundIdx = $i;
+            elseif (($st['email'] ?? '') === $email && ($st['id'] ?? '') !== $sid) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'এই ইমেইলে ইতিমধ্যে স্টাফ অ্যাকাউন্ট রয়েছে।'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+
+        if ($foundIdx >= 0) {
+            $staffList[$foundIdx]['name']        = $name;
+            $staffList[$foundIdx]['email']       = $email;
+            $staffList[$foundIdx]['permissions'] = $perms;
+            if ($pass !== '') {
+                if (strlen($pass) < 6) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+                $staffList[$foundIdx]['password_hash'] = hashSecretPbkdf2($pass);
+                $staffList[$foundIdx]['token_version'] = (int)($staffList[$foundIdx]['token_version'] ?? 1) + 1;
+            }
+            $staffList[$foundIdx]['updated_at'] = gmdate('c');
+            writeJsonStore('staff.json', $staffList);
+            appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_UPDATE', $email, 'Perms: ' . implode(',', $perms));
+            echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (strlen($pass) < 6) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'নতুন স্টাফের পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $newStaff = [
+            'id'            => 'stf_' . bin2hex(random_bytes(5)),
+            'name'          => $name,
+            'email'         => $email,
+            'password_hash' => hashSecretPbkdf2($pass),
+            'permissions'   => $perms,
+            'is_active'     => true,
+            'token_version' => 1,
+            'created_at'    => gmdate('c'),
+            'last_login'    => null
+        ];
+        $staffList[] = $newStaff;
+        writeJsonStore('staff.json', $staffList);
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_CREATE', $email, 'Perms: ' . implode(',', $perms));
+        echo json_encode(['success' => true, 'id' => $newStaff['id']], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------------------------
+// STAFF ACTIVITY LOGS ROUTE: GET/POST /staff-logs (AlwaysData Storage — Master Only)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'staff-logs') !== false) {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body      = ($method === 'POST') ? readJsonBody() : [];
+    $adminUser = requireAdminAuth($body, 'master_only');
+    if ($method === 'POST' && (($body['action'] ?? '') === 'clear')) {
+        writeJsonStore('staff_logs.json', []);
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'LOGS_CLEARED', 'staff_logs.json', 'Master Admin cleared previous logs');
+        echo json_encode(['success' => true]);
+        exit;
+    }
+    $logs  = readJsonStore('staff_logs.json', []);
+    $limit = max(10, min(500, (int)($_GET['limit'] ?? ($body['limit'] ?? 200))));
+    echo json_encode([
+        'success' => true,
+        'logs'    => array_slice(is_array($logs) ? $logs : [], 0, $limit),
+        'total'   => is_array($logs) ? count($logs) : 0
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -552,21 +1036,52 @@ if (strpos($endpoint, 'd1-query') !== false && $method === 'POST') {
 }
 
 // ----------------------------------------------------------------------------
-// ADMIN PROTECTED ROUTE 1: POST /api/admin-query & /api/dev-query
+// ADMIN PROTECTED ROUTE 1: POST /admin-query (Protected + Audited)
 // ----------------------------------------------------------------------------
 if ((strpos($endpoint, 'admin-query') !== false || strpos($endpoint, 'dev-query') !== false) && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
-    $body = readJsonBody();
-    requireAdminAuth($body);
+    $body      = readJsonBody();
+    $adminUser = requireAdminAuth($body);
+    $role      = $adminUser['role'] ?? 'master_admin';
+
+    $checkQueryPerm = function($sqlStr) use ($adminUser, $role) {
+        if ($role !== 'staff') return;
+        $perms = is_array($adminUser['permissions'] ?? null) ? $adminUser['permissions'] : [];
+        $su = strtoupper((string)$sqlStr);
+        $tableMap = [
+            'PRODUCTS' => 'products', 'PRODUCT_CATEGORIES' => 'products',
+            'CATEGORIES' => 'categories', 'BANNERS' => 'banners',
+            'HOME_SECTIONS' => 'sections', 'DELIVERY_ZONES' => 'delivery',
+            'PROMOS' => 'promos', 'ADDONS' => 'addons', 'REVIEWS' => 'reviews',
+            'ORDERS' => 'orders', 'SETTINGS' => 'settings', 'BRANDS' => 'brands'
+        ];
+        if (preg_match('/\b(ADMINS|DEVTOOLS)\b/i', $su)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Forbidden: Master Admin access required.']);
+            exit;
+        }
+        foreach ($tableMap as $tbl => $permKey) {
+            if (preg_match('/\b' . $tbl . '\b/i', $su) && !in_array($permKey, $perms, true)) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => 'Forbidden: Missing permission (' . $permKey . ').']);
+                exit;
+            }
+        }
+    };
 
     if (!empty($body['queries']) && is_array($body['queries'])) {
         $batchOut = [];
         foreach ($body['queries'] as $q) {
-            $r = d1Exec($q['sql'] ?? '', is_array($q['params'] ?? null) ? $q['params'] : []);
+            $qSql = (string)($q['sql'] ?? '');
+            $checkQueryPerm($qSql);
+            $r = d1Exec($qSql, is_array($q['params'] ?? null) ? $q['params'] : []);
             if (!$r['success']) {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'error' => $r['error'] ?? 'Admin batch query failed']);
                 exit;
+            }
+            if (preg_match('/^\s*(INSERT|UPDATE|DELETE|ALTER|DROP)/i', $qSql)) {
+                appendAuditLog($adminUser['sub'] ?? 'admin', $role, 'ADMIN_QUERY_BATCH', substr(trim($qSql), 0, 80), '');
             }
             $batchOut[] = ['results' => $r['results'], 'success' => true];
         }
@@ -576,23 +1091,27 @@ if ((strpos($endpoint, 'admin-query') !== false || strpos($endpoint, 'dev-query'
 
     $sql    = (string)($body['sql'] ?? '');
     $params = is_array($body['params'] ?? null) ? $body['params'] : [];
+    $checkQueryPerm($sql);
     $r      = d1Exec($sql, $params);
     if (!$r['success']) {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => $r['error'] ?? 'Admin query failed']);
         exit;
     }
+    if (preg_match('/^\s*(INSERT|UPDATE|DELETE|ALTER|DROP)/i', $sql)) {
+        appendAuditLog($adminUser['sub'] ?? 'admin', $role, 'ADMIN_QUERY', substr(trim($sql), 0, 80), json_encode($params, JSON_UNESCAPED_UNICODE));
+    }
     echo json_encode(['success' => true, 'result' => [['results' => $r['results']]]], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ----------------------------------------------------------------------------
-// ADMIN PROTECTED ROUTE 2: POST /api/add-product & /api/update-product
+// ADMIN PROTECTED ROUTE 2: POST /add-product & /update-product
 // ----------------------------------------------------------------------------
 if ((strpos($endpoint, 'add-product') !== false || strpos($endpoint, 'update-product') !== false) && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $p = readJsonBody();
-    requireAdminAuth($p);
+    $adminUser = requireAdminAuth($p, 'products');
     $isUpdate = (strpos($endpoint, 'update-product') !== false);
 
     $productId = trim((string)($p['id'] ?? ''));
@@ -703,17 +1222,18 @@ if ((strpos($endpoint, 'add-product') !== false || strpos($endpoint, 'update-pro
         }
     }
 
+    appendAuditLog($adminUser['sub'] ?? 'admin', $adminUser['role'] ?? 'master_admin', $isUpdate ? 'UPDATE_PRODUCT' : 'ADD_PRODUCT', $productId, (string)($p['name'] ?? ''));
     echo json_encode(['success' => true, 'id' => $productId, 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ----------------------------------------------------------------------------
-// ADMIN PROTECTED ROUTE 3: POST /api/delete-product
+// ADMIN PROTECTED ROUTE 3: POST /delete-product
 // ----------------------------------------------------------------------------
 if (strpos($endpoint, 'delete-product') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $body = readJsonBody();
-    requireAdminAuth($body);
+    $adminUser = requireAdminAuth($body, 'products');
     $id = trim((string)($body['id'] ?? ''));
     if ($id === '') {
         http_response_code(400);
@@ -722,17 +1242,18 @@ if (strpos($endpoint, 'delete-product') !== false && $method === 'POST') {
     }
     $res = d1Exec("DELETE FROM products WHERE id = ?", [$id]);
     d1Exec("DELETE FROM product_categories WHERE product_id = ?", [$id]);
+    appendAuditLog($adminUser['sub'] ?? 'admin', $adminUser['role'] ?? 'master_admin', 'DELETE_PRODUCT', $id, '');
     echo json_encode(['success' => $res['success'], 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ----------------------------------------------------------------------------
-// ADMIN PROTECTED ROUTE 4: POST /api/update-order & /api/delete-order
+// ADMIN PROTECTED ROUTE 4: POST /update-order & /delete-order
 // ----------------------------------------------------------------------------
 if (strpos($endpoint, 'update-order') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $body = readJsonBody();
-    requireAdminAuth($body);
+    $adminUser = requireAdminAuth($body, 'orders');
     $upData = (isset($body['upData']) && is_array($body['upData'])) ? $body['upData'] : $body;
     $id     = trim((string)($body['id'] ?? ''));
     if ($id === '') {
@@ -754,6 +1275,7 @@ if (strpos($endpoint, 'update-order') !== false && $method === 'POST') {
         if (!empty($body['order_group_id'])) {
             d1Exec("UPDATE orders SET " . implode(', ', $updates) . " WHERE order_group_id = ?", array_merge($params, [$body['order_group_id']]));
         }
+        appendAuditLog($adminUser['sub'] ?? 'admin', $adminUser['role'] ?? 'master_admin', 'UPDATE_ORDER', $id, json_encode($upData, JSON_UNESCAPED_UNICODE));
     }
     echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
     exit;
@@ -762,7 +1284,7 @@ if (strpos($endpoint, 'update-order') !== false && $method === 'POST') {
 if (strpos($endpoint, 'delete-order') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $body = readJsonBody();
-    requireAdminAuth($body);
+    $adminUser = requireAdminAuth($body, 'orders');
     $id  = trim((string)($body['id'] ?? ''));
     $res = d1Exec("DELETE FROM orders WHERE id = ?", [$id]);
     if (!empty($body['ids']) && is_array($body['ids'])) {
@@ -773,17 +1295,18 @@ if (strpos($endpoint, 'delete-order') !== false && $method === 'POST') {
     if (!empty($body['order_group_id'])) {
         d1Exec("DELETE FROM orders WHERE order_group_id = ?", [$body['order_group_id']]);
     }
+    appendAuditLog($adminUser['sub'] ?? 'admin', $adminUser['role'] ?? 'master_admin', 'DELETE_ORDER', $id, '');
     echo json_encode(['success' => true, 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ----------------------------------------------------------------------------
-// ADMIN PROTECTED ROUTE 5: POST /api/update-settings
+// ADMIN PROTECTED ROUTE 5: POST /update-settings
 // ----------------------------------------------------------------------------
 if (strpos($endpoint, 'update-settings') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $p = readJsonBody();
-    requireAdminAuth($p);
+    $adminUser = requireAdminAuth($p, 'settings');
 
     $sql = "UPDATE settings SET
         store_name=?, logo_url=?, favicon_url=?, footer_text=?, whatsapp_number=?, facebook_url=?, instagram_url=?, youtube_url=?,
@@ -830,12 +1353,13 @@ if (strpos($endpoint, 'update-settings') !== false && $method === 'POST') {
         echo json_encode(['success' => false, 'error' => $res['error'] ?? 'Settings update failed']);
         exit;
     }
+    appendAuditLog($adminUser['sub'] ?? 'admin', $adminUser['role'] ?? 'master_admin', 'UPDATE_SETTINGS', 'settings:1', (string)($p['store_name'] ?? ''));
     echo json_encode(['success' => true, 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ----------------------------------------------------------------------------
-// ADMIN PROTECTED ROUTE 6: GET & POST /api/brands
+// ADMIN PROTECTED ROUTE 6: GET & POST /brands
 // ----------------------------------------------------------------------------
 if (strpos($endpoint, 'brands') !== false) {
     header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -855,7 +1379,7 @@ if (strpos($endpoint, 'brands') !== false) {
     }
     if ($method === 'POST') {
         $body = readJsonBody();
-        requireAdminAuth($body);
+        $adminUser = requireAdminAuth($body, 'brands');
         $action = strtolower(trim((string)($body['action'] ?? 'save')));
         $cleanSlugFn = function($str) {
             $s = strtolower(trim((string)$str));
@@ -904,6 +1428,7 @@ if (strpos($endpoint, 'brands') !== false) {
             d1Exec("UPDATE promos SET brand_id = NULL WHERE brand_id = ?", [$brandId]);
             d1Exec("DELETE FROM brand_slug_history WHERE brand_id = ?", [$brandId]);
             d1Exec("DELETE FROM brands WHERE id = ?", [$brandId]);
+            appendAuditLog($adminUser['sub'] ?? 'admin', $adminUser['role'] ?? 'master_admin', 'DELETE_BRAND', $brandId, '');
             echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
             exit;
         }
@@ -942,6 +1467,7 @@ if (strpos($endpoint, 'brands') !== false) {
                         $brandId
                     ]
                 );
+                appendAuditLog($adminUser['sub'] ?? 'admin', $adminUser['role'] ?? 'master_admin', 'UPDATE_BRAND', $brandId, $name . ' (/' . $slug . ')');
                 $savedRow = d1Query("SELECT * FROM brands WHERE id = ? LIMIT 1", [$brandId]);
                 echo json_encode(['success' => true, 'brand' => $savedRow[0] ?? null], JSON_UNESCAPED_UNICODE);
                 exit;
@@ -958,6 +1484,7 @@ if (strpos($endpoint, 'brands') !== false) {
                 (!isset($body['is_active']) || $body['is_active']) ? 1 : 0, (int)($body['sort_order'] ?? 0)
             ]
         );
+        appendAuditLog($adminUser['sub'] ?? 'admin', $adminUser['role'] ?? 'master_admin', 'CREATE_BRAND', $newId, $name . ' (/' . $slug . ')');
         $savedRow = d1Query("SELECT * FROM brands WHERE id = ? LIMIT 1", [$newId]);
         echo json_encode(['success' => true, 'brand' => $savedRow[0] ?? null], JSON_UNESCAPED_UNICODE);
         exit;

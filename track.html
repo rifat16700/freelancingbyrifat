@@ -128,8 +128,8 @@ function trackOrder() {
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         trackPromise = appwriteDatabases.listDocuments(APP_DB, 'orders', [AppwriteQuery.equal('$id', orderId), AppwriteQuery.equal('customer_phone', phone), AppwriteQuery.limit(1)]).then(function(res) { var doc = res.documents[0]; if (doc) { doc.id=doc.$id; if (typeof doc.items==='string') { try{doc.items=JSON.parse(doc.items);}catch(e){doc.items=[];} } return { data: doc }; } return { data: null }; }).catch(function() { return { data: null }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        var apiBase = (CONFIG.HF_API_BASE || CONFIG.API_BASE || '');
-        trackPromise = fetch(apiBase + '/api/d1-query', {
+        var apiBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || CONFIG.API_BASE || '') + '').replace(/\/+$/, '');
+        trackPromise = fetch(apiBase ? (apiBase + '/d1-query') : '/api/d1-query', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sql: 'SELECT o.*, b.name as brand_name FROM orders o LEFT JOIN brands b ON b.id = o.brand_id WHERE (o.id = ? OR o.order_group_id = ?) AND o.customer_phone = ? ORDER BY CASE WHEN o.id = ? THEN 0 ELSE 1 END', params: [orderId, orderId, phone, orderId] })

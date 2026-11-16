@@ -83,12 +83,14 @@ document.addEventListener('DOMContentLoaded', function() {
         p2 = appwriteDatabases.getDocument(APP_DB, 'orders', orderId).then(function(doc) { doc.id=doc.$id; if (typeof doc.items==='string') { try { doc.items=JSON.parse(doc.items); } catch(e){ doc.items=[]; } } return { data: doc }; }).catch(function() { return { data: null }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         var h = { 'Content-Type': 'application/json' };
-        p1 = fetch((CONFIG.HF_API_BASE||'')+'/api/d1-query', { method: 'POST', headers: h, body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id=1" }) })
+        var pBaseS = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+        var d1Ep = pBaseS ? (pBaseS + '/d1-query') : '/api/d1-query';
+        p1 = fetch(d1Ep, { method: 'POST', headers: h, body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id=1" }) })
             .then(function(r) { return r.json(); })
             .then(function(r) { return { data: (r.success && r.result[0].results.length) ? r.result[0].results[0] : {} }; })
             .catch(function() { return { data: {} }; });
             
-        p2 = fetch((CONFIG.HF_API_BASE||'')+'/api/d1-query', { method: 'POST', headers: h, body: JSON.stringify({ sql: "SELECT o.*, b.name as brand_name FROM orders o LEFT JOIN brands b ON b.id = o.brand_id WHERE o.id=? OR o.order_group_id=? ORDER BY CASE WHEN o.id=? THEN 0 ELSE 1 END", params: [orderId, orderId, orderId] }) })
+        p2 = fetch(d1Ep, { method: 'POST', headers: h, body: JSON.stringify({ sql: "SELECT o.*, b.name as brand_name FROM orders o LEFT JOIN brands b ON b.id = o.brand_id WHERE o.id=? OR o.order_group_id=? ORDER BY CASE WHEN o.id=? THEN 0 ELSE 1 END", params: [orderId, orderId, orderId] }) })
             .then(function(r) { return r.json(); })
             .then(function(r) { 
                 var rows = (r.success && r.result[0].results.length) ? r.result[0].results : [];

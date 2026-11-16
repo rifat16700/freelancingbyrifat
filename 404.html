@@ -38,6 +38,7 @@
     </a>
 </div>
 
+<script src="/assets/js/config.js?v=1794570029121"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script>
     if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -65,7 +66,8 @@
         var firstSeg = rawPath.split('/')[0].toLowerCase().replace(/\.html$/, '');
         if (!firstSeg || firstSeg.indexOf('.') !== -1) return;
 
-        fetch('/api/brands')
+        var pBase404 = (typeof CONFIG !== 'undefined' && (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE) || '').replace(/\/+$/, '');
+        fetch(pBase404 ? (pBase404 + '/brands') : '/api/brands')
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 if (!d || !Array.isArray(d.brands)) return;

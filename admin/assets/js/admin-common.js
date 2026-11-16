@@ -21,28 +21,35 @@
     var _origFetch = window.fetch.bind(window);
     var _recentWrites = {};
 
-    var PROXY_API_ROUTES = [
-        '/api/admin-login',
-        '/api/verify-token',
-        '/api/d1-query',
-        '/api/admin-query',
-        '/api/add-product',
-        '/api/update-product',
-        '/api/delete-product',
-        '/api/update-order',
-        '/api/delete-order',
-        '/api/update-settings',
-        '/api/brands',
-        '/api/save-review',
-        '/api/save-order',
-        '/api/update-payment-status',
-        '/api/clean-nulls'
+    var PROXY_ROUTES = [
+        '/admin-login',
+        '/verify-token',
+        '/master-security',
+        '/staff',
+        '/staff-logs',
+        '/d1-query',
+        '/admin-query',
+        '/add-product',
+        '/update-product',
+        '/delete-product',
+        '/update-order',
+        '/delete-order',
+        '/update-settings',
+        '/brands',
+        '/save-review',
+        '/save-order',
+        '/update-payment-status',
+        '/clean-nulls'
     ];
 
-    function shouldRouteToProxy(relPath) {
-        if (!relPath || !relPath.startsWith('/api/')) return false;
-        var cleanPath = relPath.split('?')[0];
-        return PROXY_API_ROUTES.indexOf(cleanPath) !== -1;
+    function getProxyRoutePath(urlPath) {
+        if (!urlPath) return null;
+        var clean = urlPath.startsWith('/api/') ? urlPath.slice(4) : urlPath;
+        var basePath = clean.split('?')[0];
+        if (PROXY_ROUTES.indexOf(basePath) !== -1) {
+            return clean;
+        }
+        return null;
     }
 
     function getProxyBase() {
@@ -55,13 +62,15 @@
         var opts = init ? Object.assign({}, init) : {};
         var method = String(opts.method || (typeof input !== 'string' && input && input.method) || 'GET').toUpperCase();
 
-        var isRelativeApi = urlStr.startsWith('/api/');
         var proxyBase = getProxyBase();
-        var isProxyUrl = proxyBase && urlStr.startsWith(proxyBase + '/api/');
+        var isRelativeApi = urlStr.startsWith('/api/');
+        var isProxyUrl = proxyBase && urlStr.startsWith(proxyBase + '/');
+        var directRoute = !isRelativeApi && !isProxyUrl ? getProxyRoutePath(urlStr) : null;
 
-        if (isRelativeApi || isProxyUrl) {
+        if (isRelativeApi || isProxyUrl || directRoute) {
             var relPath = isProxyUrl ? urlStr.slice(proxyBase.length) : urlStr;
-            var cleanRel = relPath.split('?')[0];
+            var strippedPath = relPath.startsWith('/api/') ? relPath.slice(4) : relPath;
+            var cleanRel = strippedPath.split('?')[0];
 
             // Attach HMAC Admin Session Token automatically on every admin API call
             var token = localStorage.getItem('admin_token') || '';
@@ -71,11 +80,11 @@
             }
             opts.headers = hdrs;
 
-            // Browser-level rate limiting against rapid accidental/automated duplicate writes (skip batch read queries)
+            // Browser-level rate limiting against rapid accidental/automated duplicate writes (skip read queries)
             var isMutation = (method === 'POST' || method === 'PUT' || method === 'DELETE') &&
-                cleanRel !== '/api/d1-query' &&
-                cleanRel !== '/api/verify-token' &&
-                cleanRel !== '/api/admin-login';
+                cleanRel !== '/d1-query' &&
+                cleanRel !== '/verify-token' &&
+                cleanRel !== '/admin-login';
             if (isMutation && typeof opts.body === 'string' && opts.body.length < 4096) {
                 var rlKey = cleanRel + ':' + opts.body.slice(0, 120);
                 var now = Date.now();
@@ -88,30 +97,17 @@
                 _recentWrites[rlKey] = now;
             }
 
-            // Route supported CRUD & DB routes through AlwaysData Proxy first (Unlimited Requests, 0 Storage)
+            // Route directly to AlwaysData WITHOUT /api/ prefix and WITHOUT hitting Cloudflare Functions!
+            var matchedProxyPath = getProxyRoutePath(relPath);
             var targetUrl = urlStr;
-            var fallbackUrl = null;
-            if (isRelativeApi && proxyBase && shouldRouteToProxy(relPath)) {
-                targetUrl = proxyBase + relPath;
-                fallbackUrl = relPath;
+            if (proxyBase && matchedProxyPath) {
+                targetUrl = proxyBase + matchedProxyPath;
             }
 
-            var res;
-            try {
-                res = await _origFetch(targetUrl, opts);
-                if (fallbackUrl && (res.status === 404 || res.status >= 502)) {
-                    res = await _origFetch(fallbackUrl, opts);
-                }
-            } catch (netErr) {
-                if (fallbackUrl) {
-                    res = await _origFetch(fallbackUrl, opts);
-                } else {
-                    throw netErr;
-                }
-            }
+            var res = await _origFetch(targetUrl, opts);
 
             // Auto-clear tampered/expired token on 401 from server
-            if (res && res.status === 401 && cleanRel !== '/api/admin-login' && cleanRel !== '/api/verify-token') {
+            if (res && res.status === 401 && cleanRel !== '/admin-login' && cleanRel !== '/verify-token') {
                 localStorage.removeItem('admin_token');
                 localStorage.removeItem('admin_token_exp');
                 if (!window.location.pathname.endsWith('/admin/') && !window.location.pathname.endsWith('/admin/index.html')) {
@@ -206,6 +202,10 @@ var SIDEBAR_HTML = `
         </a>
 
         <div class="nav-section-label">Config</div>
+        <a href="staff.html" class="nav-item" data-page="staff" id="navStaffSecurity">
+            <span class="nav-icon">🛡️</span>
+            <span>Master Security & Staff</span>
+        </a>
         <a href="env-setup.html" class="nav-item" data-page="env-setup">
             <span class="nav-icon">🔐</span>
             <span>ENV Setup</span>
@@ -233,7 +233,7 @@ var SIDEBAR_HTML = `
             <div class="user-avatar" id="userAvatar">A</div>
             <div>
                 <div class="user-email" id="adminUserEmail">Loading...</div>
-                <div class="user-role">Administrator</div>
+                <div class="user-role" id="adminUserRole">Master Admin</div>
             </div>
         </div>
         <button class="logout-btn" onclick="adminLogout()">🚪 Logout</button>
@@ -344,12 +344,19 @@ function adminInit(activePage, onReady) {
             return;
         }
 
-        var email   = localStorage.getItem('fbr_admin_email') || '';
+        var email   = (session && session.sub) || localStorage.getItem('fbr_admin_email') || '';
+        var role    = (session && session.role) || localStorage.getItem('fbr_admin_role') || 'master_admin';
         var initial = email.charAt(0).toUpperCase() || 'A';
         var emailEl  = document.getElementById('adminUserEmail');
         var avatarEl = document.getElementById('userAvatar');
+        var roleEl   = document.getElementById('adminUserRole');
         if (emailEl)  emailEl.textContent  = email || 'Admin';
         if (avatarEl) avatarEl.textContent = initial;
+        if (roleEl)   roleEl.textContent   = (role === 'staff') ? 'Staff Account' : 'Master Admin';
+        if (role === 'staff') {
+            var staffLink = document.getElementById('navStaffSecurity');
+            if (staffLink) staffLink.style.display = 'none';
+        }
 
         if (activePage) {
             var items = document.querySelectorAll('.nav-item[data-page="' + activePage + '"]');

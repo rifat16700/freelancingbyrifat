@@ -1692,18 +1692,12 @@ function placeOrder() {
             return;
         }
         var proxyBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
-        var saveOrderUrl = (proxyBase ? proxyBase : '') + '/api/save-order';
+        var saveOrderUrl = proxyBase ? (proxyBase + '/save-order') : '/api/save-order';
         var orderPayloadStr = JSON.stringify({ orderData: orderData, orders: splitOrders });
         insertPromise = fetch(saveOrderUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: orderPayloadStr
-        }).catch(function() {
-            return fetch('/api/save-order', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: orderPayloadStr
-            });
         }).then(function(res) {
             return res.json().then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Failed to save order');
@@ -1769,18 +1763,12 @@ function initiateGatewayPayment(orderId, total, orderData, splitOrders) {
             return Object.assign({}, o, { payment_status: 'Unpaid', status: 'Pending' });
         });
         var proxyBase2 = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
-        var saveOrderUrl2 = (proxyBase2 ? proxyBase2 : '') + '/api/save-order';
+        var saveOrderUrl2 = proxyBase2 ? (proxyBase2 + '/save-order') : '/api/save-order';
         var bodyStr2 = JSON.stringify({ orderData: ordersPayload[0], orders: ordersPayload });
         insertPromise = fetch(saveOrderUrl2, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: bodyStr2
-        }).catch(function() {
-            return fetch('/api/save-order', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: bodyStr2
-            });
         }).then(function(res) {
             return res.json().then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Failed to save order');
@@ -1849,8 +1837,7 @@ function verifyGatewayPayment(orderId, trxId) {
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         var pBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
         var qBody = JSON.stringify({ sql: "SELECT * FROM orders WHERE id = ?", params: [orderId] });
-        selectPromise = fetch((pBase || '') + '/api/d1-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: qBody })
-            .catch(function() { return fetch('/api/d1-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: qBody }); })
+        selectPromise = fetch(pBase ? (pBase + '/d1-query') : '/api/d1-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: qBody })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var obj = (d.success && d.result && d.result[0] && d.result[0].results && d.result[0].results.length) ? d.result[0].results[0] : null;
@@ -1927,8 +1914,7 @@ function verifyGatewayPayment(orderId, trxId) {
                         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
                             var pBaseUp = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
                             var upBodyStr = JSON.stringify({ id: orderId, payment_status: newPayStatus, payment_trx_id: trxId || 'AUTO', status: 'Confirmed' });
-                            updatePromise = fetch((pBaseUp || '') + '/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: upBodyStr })
-                                .catch(function() { return fetch('/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: upBodyStr }); })
+                            updatePromise = fetch(pBaseUp ? (pBaseUp + '/update-payment-status') : '/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: upBodyStr })
                                 .then(function(r) { return r.json(); })
                                 .then(function(d) { return d.success ? { error: null } : { error: new Error(d.error || 'Update failed') }; })
                                 .catch(function(e) { return { error: e }; });
@@ -2844,8 +2830,7 @@ function placeCryptoOrder(txid, usdt, isBackup) {
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         var pBaseCr = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
         var crBodyStr = JSON.stringify({ orderData: orderData, orders: [orderData] });
-        insertOrderPromise = fetch((pBaseCr || '') + '/api/save-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: crBodyStr })
-            .catch(function() { return fetch('/api/save-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: crBodyStr }); })
+        insertOrderPromise = fetch(pBaseCr ? (pBaseCr + '/save-order') : '/api/save-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: crBodyStr })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 if (!d.success) throw new Error(d.error || 'Failed to save order');

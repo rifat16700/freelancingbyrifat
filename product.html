@@ -2082,17 +2082,11 @@ function submitReview() {
         insPromise = appwriteDatabases.createDocument(APP_DB, 'reviews', AppwriteID.unique(), awRv).then(function() { return { error: null }; }).catch(function(err) { return { error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         var proxyBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
-        var primaryUrl = (proxyBase ? proxyBase : '') + '/api/save-review';
+        var primaryUrl = proxyBase ? (proxyBase + '/save-review') : '/api/save-review';
         insPromise = fetch(primaryUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rvData)
-        }).catch(function() {
-            return fetch('/api/save-review', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(rvData)
-            });
         }).then(function(res) {
             return res.json().then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Failed to save review');

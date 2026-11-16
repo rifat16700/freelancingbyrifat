@@ -226,7 +226,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     return { data: doc };
                 }).catch(function() { return { data: {} }; });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            settingsPromise = fetch((CONFIG.HF_API_BASE || '') + '/api/public-data')
+            var pBaseCart = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+            settingsPromise = fetch(pBaseCart ? (pBaseCart + '/public-data') : '/api/public-data')
                 .then(function(r) { return r.json(); })
                 .then(function(res) {
                     var s = (res && res.success && res.data && res.data.settings) ? res.data.settings : {};
