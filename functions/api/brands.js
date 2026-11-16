@@ -6,6 +6,7 @@ import {
     normalizeBrandRow
 } from '../_lib/brand.js';
 import { purgeAndWarmup } from './cache-helper.js';
+import { verifyAdminRequest } from './_auth-helper.js';
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -49,9 +50,14 @@ export async function onRequestPost(context) {
     if (!env.DB) return jsonRes({ success: false, error: "Database not configured" }, 500);
 
     try {
+        const body = await request.json();
+        const adminUser = await verifyAdminRequest(request, env, body);
+        if (!adminUser) {
+            return jsonRes({ success: false, error: "Unauthorized: Valid Admin session token required." }, 401);
+        }
+
         await ensureBrandSchema(env);
 
-        const body = await request.json();
         const action = (body.action || 'save').toLowerCase();
 
         // 1. Validate slug availability without saving

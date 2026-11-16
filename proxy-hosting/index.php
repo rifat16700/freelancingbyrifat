@@ -12,7 +12,11 @@
 define('ALLOWED_SITE_URL',   'https://ranonex.shop');          // 1. আপনার মেইন সাইটের URL (Whitelist)
 define('CF_ACCOUNT_ID',      'YOUR_CLOUDFLARE_ACCOUNT_ID');    // 2. Cloudflare Account ID
 define('CF_D1_DATABASE_ID',  'YOUR_D1_DATABASE_ID');           // 3. Cloudflare D1 Database ID
-define('CF_API_TOKEN',       'YOUR_CF_API_TOKEN_D1_READ');     // 4. Cloudflare API Token (D1:Read Permission)
+define('CF_API_TOKEN',       'YOUR_CF_API_TOKEN_D1_READ');     // 4. Cloudflare API Token (D1 Read + Write Permission)
+
+define('ADMIN_USERNAME',     getenv('ADMIN_USERNAME') ?: 'admin');
+define('ADMIN_PASSWORD',     getenv('ADMIN_PASSWORD') ?: 'admin123');
+define('ADMIN_SECRET_TOKEN', getenv('ADMIN_SECRET_TOKEN') ?: (getenv('JWT_SECRET') ?: 'fbr-secure-ecommerce-secret-key-2026'));
 
 define('CACHE_TTL_SECONDS',  300);                             // Cloudflare 5 মিনিট (300s) Edge Cache TTL
 define('INITIAL_PRODUCT_COUNT', 20);                            // ১ম রিকোয়েস্টে ২০টি প্রোডাক্ট (ব্লাজিং ফাস্ট ১ম ইম্প্রেশন)
@@ -37,14 +41,14 @@ if (!$allowedHost || $allowedHost === 'your-domain.com') {
     $isAllowedOrigin = true;
 } elseif ($reqHost && ($reqHost === $allowedHost || substr($reqHost, -strlen('.' . $allowedHost)) === '.' . $allowedHost)) {
     $isAllowedOrigin = true;
-} elseif ($reqHost && (strpos($reqHost, 'alwaysdata.net') !== false || $reqHost === 'localhost' || $reqHost === '127.0.0.1')) {
+} elseif ($reqHost && (strpos($reqHost, 'alwaysdata.net') !== false || strpos($reqHost, 'pages.dev') !== false || $reqHost === 'localhost' || $reqHost === '127.0.0.1')) {
     $isAllowedOrigin = true;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     header('Access-Control-Allow-Origin: ' . ($origin && $isAllowedOrigin ? $origin : ALLOWED_SITE_URL));
-    header('Access-Control-Allow-Methods: GET, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Admin-Token, X-Requested-With');
     header('Access-Control-Max-Age: 86400');
     http_response_code(204);
     exit;
@@ -62,19 +66,22 @@ if (($origin || $referer) && !$isAllowedOrigin) {
 }
 
 header('Access-Control-Allow-Origin: ' . ($origin && $isAllowedOrigin ? $origin : ALLOWED_SITE_URL));
-header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Admin-Token, X-Requested-With');
 header('Content-Type: application/json; charset=utf-8');
 header('X-Data-Source: alwaysdata_proxy');
 header('X-Proxy-Engine: Ranonex-AlwaysData-PHP');
-// Cloudflare Edge & Browser caches this JSON response for 5 minutes (300 seconds)
-header('Cache-Control: public, max-age=' . CACHE_TTL_SECONDS . ', s-maxage=' . CACHE_TTL_SECONDS . ', stale-while-revalidate=600');
 
 // ============================================================================
-// 2. CLOUDFLARE D1 REST API QUERY ENGINE (WITH D1:READ TOKEN)
+// 2. CLOUDFLARE D1 REST API QUERY & WRITE ENGINE + STATELESS HMAC AUTH
 // ============================================================================
-function d1Query($sql, $params = []) {
+function d1Exec($sql, $params = []) {
+    $cleanParams = [];
+    foreach (array_values($params) as $v) {
+        $cleanParams[] = ($v === null || $v === false) ? ($v === false ? 0 : null) : $v;
+    }
     $url = 'https://api.cloudflare.com/client/v4/accounts/' . CF_ACCOUNT_ID . '/d1/database/' . CF_D1_DATABASE_ID . '/query';
-    $payload = json_encode(['sql' => $sql, 'params' => array_values($params)]);
+    $payload = json_encode(['sql' => $sql, 'params' => $cleanParams]);
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -85,16 +92,130 @@ function d1Query($sql, $params = []) {
             'Authorization: Bearer ' . CF_API_TOKEN,
             'Content-Type: application/json'
         ],
-        CURLOPT_TIMEOUT        => 15
+        CURLOPT_TIMEOUT        => 20
     ]);
     $res  = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($code !== 200 || !$res) return [];
+    if (!$res) {
+        return ['success' => false, 'results' => [], 'error' => 'D1 connection failed'];
+    }
     $decoded = json_decode($res, true);
-    if (empty($decoded['success']) || empty($decoded['result'][0]['results'])) return [];
-    return $decoded['result'][0]['results'];
+    if ($code !== 200 || empty($decoded['success'])) {
+        $errMsg = $decoded['errors'][0]['message'] ?? ('D1 HTTP ' . $code);
+        return ['success' => false, 'results' => [], 'error' => $errMsg];
+    }
+    $first = $decoded['result'][0] ?? [];
+    return [
+        'success' => true,
+        'results' => $first['results'] ?? [],
+        'meta'    => $first['meta'] ?? []
+    ];
+}
+
+function d1Query($sql, $params = []) {
+    $res = d1Exec($sql, $params);
+    return $res['success'] ? $res['results'] : [];
+}
+
+function b64UrlEncode($str) {
+    return rtrim(strtr(base64_encode($str), '+/', '-_'), '=');
+}
+
+function b64DecodeFlex($str) {
+    $b64 = strtr($str, '-_', '+/');
+    $pad = strlen($b64) % 4;
+    if ($pad) $b64 .= str_repeat('=', 4 - $pad);
+    return base64_decode($b64);
+}
+
+function signAdminToken($payload, $secret = null) {
+    $sec = $secret ?: ADMIN_SECRET_TOKEN;
+    $data = base64_encode(json_encode($payload));
+    $sig = hash_hmac('sha256', $data, $sec, true);
+    return $data . '.' . b64UrlEncode($sig);
+}
+
+function verifyAdminToken($token, $secret = null) {
+    if (!$token || !is_string($token)) return null;
+    $sec = $secret ?: ADMIN_SECRET_TOKEN;
+    $parts = explode('.', trim($token));
+    if (count($parts) === 2) {
+        list($data, $sigB64) = $parts;
+        $bodyB64 = $data;
+    } elseif (count($parts) === 3) {
+        list($hdrB64, $bodyB64, $sigB64) = $parts;
+        $data = $hdrB64 . '.' . $bodyB64;
+    } else {
+        return null;
+    }
+    $expectedSig = hash_hmac('sha256', $data, $sec, true);
+    $actualSig   = b64DecodeFlex($sigB64);
+    if (!$actualSig || !hash_equals($expectedSig, $actualSig)) {
+        return null;
+    }
+    $payload = json_decode(b64DecodeFlex($bodyB64), true);
+    if (!is_array($payload)) return null;
+    $nowMs = round(microtime(true) * 1000);
+    if (!empty($payload['exp']) && $nowMs > (float)$payload['exp']) {
+        return null;
+    }
+    return $payload;
+}
+
+function getRequestAdminToken($body = []) {
+    $auth = $_SERVER['HTTP_AUTHORIZATION']
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+        ?? $_SERVER['HTTP_X_ADMIN_TOKEN']
+        ?? '';
+    if (!$auth && function_exists('getallheaders')) {
+        foreach (getallheaders() as $k => $v) {
+            $kl = strtolower($k);
+            if ($kl === 'authorization' || $kl === 'x-admin-token') {
+                $auth = $v;
+                break;
+            }
+        }
+    }
+    $auth = trim((string)$auth);
+    if (stripos($auth, 'Bearer ') === 0) {
+        return trim(substr($auth, 7));
+    }
+    if ($auth !== '') return $auth;
+    if (is_array($body) && !empty($body['_token'])) {
+        return trim((string)$body['_token']);
+    }
+    return '';
+}
+
+function requireAdminAuth($body = []) {
+    $token = getRequestAdminToken($body);
+    $verified = verifyAdminToken($token);
+    if (!$verified) {
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Unauthorized: Valid Admin session token required.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    return $verified;
+}
+
+function generateUuidV4() {
+    $data = random_bytes(16);
+    $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+    $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
+function readJsonBody() {
+    $raw = file_get_contents('php://input');
+    if (!$raw) return [];
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
 }
 
 // ============================================================================
@@ -125,7 +246,7 @@ function mergeBrandSettings($rawSettings, $brand) {
 }
 
 // ============================================================================
-// 4. ROUTE DISPATCHER (Stateless Fetch -> Return JSON -> Cloudflare Caches It)
+// 4. ROUTE DISPATCHER (Stateless Auth + User Writes + Admin Writes + Edge Reads)
 // ============================================================================
 $pathInfo  = $_SERVER['PATH_INFO'] ?? '';
 $reqUri    = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -133,6 +254,729 @@ $endpoint  = isset($_GET['endpoint']) ? $_GET['endpoint'] : ($pathInfo ?: $reqUr
 $brandSlug = trim($_GET['brand'] ?? $_GET['brand_id'] ?? '');
 $productId = trim($_GET['product_id'] ?? '');
 $chunkNum  = isset($_GET['chunk']) ? max(1, (int)$_GET['chunk']) : 0;
+$method    = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+
+// ----------------------------------------------------------------------------
+// AUTH ROUTE 1: POST /api/admin-login (Stateless HMAC-SHA256 30-Day Token)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body      = readJsonBody();
+    $inputUser = strtolower(trim((string)($body['username'] ?? $body['email'] ?? '')));
+    $inputPass = (string)($body['password'] ?? '');
+
+    if ($inputUser === '' || $inputPass === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'ইউজারনেম এবং পাসওয়ার্ড প্রদান করুন।'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $isValid     = false;
+    $matchedUser = $inputUser;
+
+    // 1. Check D1 admins table
+    $adminRows = d1Query("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1", [$inputUser]);
+    if (!empty($adminRows[0]['password_hash'])) {
+        $stored = (string)$adminRows[0]['password_hash'];
+        if (strpos($stored, ':') !== false) {
+            list($saltHex, $hashHex) = explode(':', $stored, 2);
+            $saltBin = @hex2bin($saltHex);
+            if ($saltBin !== false) {
+                $calcHex = hash_pbkdf2('sha256', $inputPass, $saltBin, 100000, 64, false);
+                if (hash_equals(strtolower($hashHex), strtolower($calcHex))) {
+                    $isValid     = true;
+                    $matchedUser = $adminRows[0]['email'];
+                }
+            }
+        } elseif (hash_equals($stored, $inputPass)) {
+            $isValid     = true;
+            $matchedUser = $adminRows[0]['email'];
+        }
+    }
+
+    // 2. Fallback to configured ADMIN_USERNAME / ADMIN_PASSWORD
+    if (!$isValid) {
+        $validUser = strtolower(trim((string)ADMIN_USERNAME));
+        $validPass = (string)ADMIN_PASSWORD;
+        if ($inputUser === $validUser && hash_equals($validPass, $inputPass)) {
+            $isValid     = true;
+            $matchedUser = $validUser;
+        }
+    }
+
+    if (!$isValid) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'ভুল ইউজারনেম বা পাসওয়ার্ড প্রদান করা হয়েছে!'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $nowMs     = (int)round(microtime(true) * 1000);
+    $expiresAt = $nowMs + (30 * 24 * 60 * 60 * 1000);
+    $payload   = [
+        'sub'  => $matchedUser,
+        'role' => 'admin',
+        'iat'  => $nowMs,
+        'exp'  => $expiresAt
+    ];
+    $token = signAdminToken($payload);
+
+    echo json_encode([
+        'success'       => true,
+        'token'         => $token,
+        'expires_at'    => $expiresAt,
+        'validity_days' => 30,
+        'user'          => ['email' => $matchedUser, 'role' => 'admin']
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// AUTH ROUTE 2: POST /api/verify-token (Server-Side Session Verification)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'verify-token') !== false) {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body     = readJsonBody();
+    $token    = getRequestAdminToken($body);
+    $verified = verifyAdminToken($token);
+    if ($verified) {
+        echo json_encode(['success' => true, 'valid' => true, 'user' => $verified], JSON_UNESCAPED_UNICODE);
+    } else {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'valid' => false, 'error' => 'Token invalid or expired'], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// USER WRITE ROUTE 1: POST /api/save-review (Customer Review — Forced Unapproved!)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'save-review') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body      = readJsonBody();
+    $prodId    = trim((string)($body['product_id'] ?? ''));
+    $custName  = mb_substr(trim((string)($body['customer_name'] ?? '')), 0, 120);
+    $custPhone = mb_substr(trim((string)($body['customer_phone'] ?? '')), 0, 40);
+    $rating    = max(1, min(5, (int)($body['rating'] ?? 5)));
+    $revText   = mb_substr(trim((string)($body['review_text'] ?? '')), 0, 2000);
+    $revImg    = trim((string)($body['review_image'] ?? ''));
+    if ($revImg !== '' && !preg_match('/^(https?:\/\/|data:image\/)/i', $revImg)) {
+        $revImg = '';
+    }
+
+    if ($prodId === '' || $custName === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Product ID and customer name are required.']);
+        exit;
+    }
+
+    // SECURITY FIX: Customers can NEVER self-approve reviews! Only valid Admin token may set is_approved=1.
+    $adminPayload = verifyAdminToken(getRequestAdminToken($body));
+    $isApproved   = ($adminPayload && !empty($body['is_approved'])) ? 1 : 0;
+    $reviewId     = generateUuidV4();
+
+    $res = d1Exec(
+        "INSERT INTO reviews (id, product_id, customer_name, customer_phone, rating, review_text, review_image, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [$reviewId, $prodId, $custName, $custPhone ?: null, $rating, $revText ?: null, $revImg ?: null, $isApproved]
+    );
+    if (!$res['success']) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $res['error'] ?? 'Failed to save review']);
+        exit;
+    }
+    echo json_encode(['success' => true, 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// USER WRITE ROUTE 2: POST /api/save-order (Customer Order Placement)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'save-order') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $rawBody    = readJsonBody();
+    $ordersList = (!empty($rawBody['orders']) && is_array($rawBody['orders']))
+        ? $rawBody['orders']
+        : [($rawBody['orderData'] ?? $rawBody)];
+
+    $adminPayload = verifyAdminToken(getRequestAdminToken($rawBody));
+    $sql = "INSERT INTO orders (
+        id, customer_name, customer_phone, customer_email, division, district, upazila, address,
+        items, addons, subtotal, addon_total, delivery_charge, promo_code, promo_discount,
+        grand_total, advance_payable, payment_method, payment_status, payment_trx_id, payment_sender,
+        status, order_type, brand_id, order_group_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    $savedIds = [];
+    foreach ($ordersList as $ord) {
+        if (!is_array($ord) || empty($ord['id'])) continue;
+        $ordId     = trim((string)$ord['id']);
+        $itemsStr  = is_string($ord['items'] ?? null) ? $ord['items'] : json_encode($ord['items'] ?? [], JSON_UNESCAPED_UNICODE);
+        $addonsStr = is_string($ord['addons'] ?? null) ? $ord['addons'] : json_encode($ord['addons'] ?? [], JSON_UNESCAPED_UNICODE);
+        $statusVal = $adminPayload ? ($ord['status'] ?? 'Pending') : 'Pending';
+        $payStatus = $ord['payment_status'] ?? 'Unpaid';
+        if (!$adminPayload && !in_array($payStatus, ['Unpaid', 'Paid', 'Advance Paid', 'Pending Verification'], true)) {
+            $payStatus = 'Unpaid';
+        }
+
+        $params = [
+            $ordId,
+            mb_substr(trim((string)($ord['customer_name'] ?? '')), 0, 150),
+            mb_substr(trim((string)($ord['customer_phone'] ?? '')), 0, 50),
+            !empty($ord['customer_email']) ? mb_substr(trim((string)$ord['customer_email']), 0, 150) : null,
+            $ord['division'] ?? null,
+            $ord['district'] ?? '',
+            $ord['upazila'] ?? '',
+            $ord['address'] ?? '',
+            $itemsStr,
+            $addonsStr,
+            (float)($ord['subtotal'] ?? 0),
+            (float)($ord['addon_total'] ?? 0),
+            (float)($ord['delivery_charge'] ?? 0),
+            !empty($ord['promo_code']) ? (string)$ord['promo_code'] : null,
+            (float)($ord['promo_discount'] ?? 0),
+            (float)($ord['grand_total'] ?? 0),
+            (float)($ord['advance_payable'] ?? 0),
+            (string)($ord['payment_method'] ?? 'COD'),
+            $payStatus,
+            !empty($ord['payment_trx_id']) ? (string)$ord['payment_trx_id'] : null,
+            !empty($ord['payment_sender']) ? (string)$ord['payment_sender'] : null,
+            $statusVal,
+            (string)($ord['order_type'] ?? 'delivery'),
+            !empty($ord['brand_id']) ? (string)$ord['brand_id'] : null,
+            !empty($ord['order_group_id']) ? (string)$ord['order_group_id'] : null
+        ];
+        $res = d1Exec($sql, $params);
+        if (!$res['success']) {
+            // Auto-add brand_id / order_group_id if missing and retry once
+            d1Exec("ALTER TABLE orders ADD COLUMN brand_id TEXT DEFAULT NULL");
+            d1Exec("ALTER TABLE orders ADD COLUMN order_group_id TEXT DEFAULT NULL");
+            $res = d1Exec($sql, $params);
+            if (!$res['success']) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $res['error'] ?? 'Order insert failed']);
+                exit;
+            }
+        }
+        $savedIds[] = $ordId;
+    }
+
+    echo json_encode([
+        'success'   => true,
+        'order_ids' => $savedIds,
+        'result'    => [['results' => $savedIds]]
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// USER WRITE ROUTE 3: POST /api/update-payment-status (Gateway/Payment Update)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'update-payment-status') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body   = readJsonBody();
+    $upData = (isset($body['upData']) && is_array($body['upData'])) ? $body['upData'] : $body;
+    $id     = trim((string)($body['id'] ?? ''));
+    if ($id === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Order ID required']);
+        exit;
+    }
+    $payStatus = (string)($upData['payment_status'] ?? 'Paid');
+    $payTrx    = (string)($upData['payment_trx_id'] ?? '');
+    $status    = (string)($upData['status'] ?? 'Confirmed');
+    if (!in_array($status, ['Pending', 'Confirmed'], true)) {
+        $status = 'Confirmed';
+    }
+    $res = d1Exec(
+        "UPDATE orders SET payment_status = ?, payment_trx_id = ?, status = ? WHERE id = ?",
+        [$payStatus, $payTrx, $status, $id]
+    );
+    echo json_encode(['success' => $res['success'], 'result' => [['results' => $res['results']]], 'error' => $res['error'] ?? null]);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// READ-ONLY SELECT ROUTE: POST /api/d1-query (Strictly SELECT Only!)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'd1-query') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body         = readJsonBody();
+    $adminPayload = verifyAdminToken(getRequestAdminToken($body));
+
+    $validateSelect = function($sqlStr) use ($adminPayload) {
+        $trim = ltrim((string)$sqlStr);
+        if (stripos($trim, 'SELECT') !== 0) return 'Only SELECT queries are allowed on this endpoint.';
+        if (strpos($trim, ';') !== false && substr(rtrim($trim), -1) !== ';') return 'Stacked queries are not allowed.';
+        if (!$adminPayload && preg_match('/\badmins\b/i', $trim)) return 'Unauthorized table access.';
+        return null;
+    };
+
+    if (!empty($body['queries']) && is_array($body['queries'])) {
+        $batchOut = [];
+        foreach ($body['queries'] as $q) {
+            $qSql    = $q['sql'] ?? '';
+            $qParams = is_array($q['params'] ?? null) ? $q['params'] : [];
+            $errMsg  = $validateSelect($qSql);
+            if ($errMsg) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => $errMsg]);
+                exit;
+            }
+            $r = d1Exec($qSql, $qParams);
+            if (!$r['success']) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $r['error'] ?? 'Query failed']);
+                exit;
+            }
+            $batchOut[] = ['results' => $r['results'], 'success' => true];
+        }
+        echo json_encode(['success' => true, 'result' => $batchOut], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $sql    = $body['sql'] ?? '';
+    $params = is_array($body['params'] ?? null) ? $body['params'] : [];
+    $errMsg = $validateSelect($sql);
+    if ($errMsg) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => $errMsg]);
+        exit;
+    }
+    $r = d1Exec($sql, $params);
+    if (!$r['success']) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $r['error'] ?? 'Query failed']);
+        exit;
+    }
+    echo json_encode(['success' => true, 'result' => [['results' => $r['results']]]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// ADMIN PROTECTED ROUTE 1: POST /api/admin-query & /api/dev-query
+// ----------------------------------------------------------------------------
+if ((strpos($endpoint, 'admin-query') !== false || strpos($endpoint, 'dev-query') !== false) && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body = readJsonBody();
+    requireAdminAuth($body);
+
+    if (!empty($body['queries']) && is_array($body['queries'])) {
+        $batchOut = [];
+        foreach ($body['queries'] as $q) {
+            $r = d1Exec($q['sql'] ?? '', is_array($q['params'] ?? null) ? $q['params'] : []);
+            if (!$r['success']) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => $r['error'] ?? 'Admin batch query failed']);
+                exit;
+            }
+            $batchOut[] = ['results' => $r['results'], 'success' => true];
+        }
+        echo json_encode(['success' => true, 'result' => $batchOut], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $sql    = (string)($body['sql'] ?? '');
+    $params = is_array($body['params'] ?? null) ? $body['params'] : [];
+    $r      = d1Exec($sql, $params);
+    if (!$r['success']) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $r['error'] ?? 'Admin query failed']);
+        exit;
+    }
+    echo json_encode(['success' => true, 'result' => [['results' => $r['results']]]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// ADMIN PROTECTED ROUTE 2: POST /api/add-product & /api/update-product
+// ----------------------------------------------------------------------------
+if ((strpos($endpoint, 'add-product') !== false || strpos($endpoint, 'update-product') !== false) && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $p = readJsonBody();
+    requireAdminAuth($p);
+    $isUpdate = (strpos($endpoint, 'update-product') !== false);
+
+    $productId = trim((string)($p['id'] ?? ''));
+    if ($isUpdate && $productId === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Product ID is required for update.']);
+        exit;
+    }
+    if (!$isUpdate && $productId === '') {
+        $skuRaw = trim((string)($p['sku'] ?? ''));
+        if ($skuRaw !== '') {
+            $productId = strtolower(trim(preg_replace('/-+/', '-', preg_replace('/[^a-zA-Z0-9_-]/', '-', $skuRaw)), '-'));
+            $ex = d1Query("SELECT id FROM products WHERE id = ? LIMIT 1", [$productId]);
+            if (!empty($ex)) $productId .= '-' . rand(100, 999);
+        } else {
+            $maxRows = d1Query("SELECT id FROM products WHERE id LIKE 'prod_%'");
+            $maxNum  = 0;
+            foreach ($maxRows as $r) {
+                $n = (int)str_replace('prod_', '', (string)($r['id'] ?? ''));
+                if ($n > $maxNum) $maxNum = $n;
+            }
+            $productId = 'prod_' . ($maxNum + 1);
+        }
+    }
+
+    $brandId    = (!empty($p['brand_id']) && trim((string)$p['brand_id']) !== '') ? trim((string)$p['brand_id']) : null;
+    $showOnMain = ($brandId && !empty($p['show_on_main'])) ? 1 : 0;
+    $galleryStr = is_string($p['gallery_images'] ?? null) ? $p['gallery_images'] : json_encode($p['gallery_images'] ?? [], JSON_UNESCAPED_UNICODE);
+    $variantStr = is_string($p['variants'] ?? null) ? $p['variants'] : json_encode($p['variants'] ?? [], JSON_UNESCAPED_UNICODE);
+
+    if ($isUpdate) {
+        $sql = "UPDATE products SET
+            name=?, description=?, base_price=?, flash_sale_price=?, flash_sale_end=?,
+            gallery_images=?, video_url=?, video_type=?, sku=?, variants=?,
+            is_active=?, is_featured=?, is_add_once=?,
+            tags=?, seo_keywords=?, seo_title=?, seo_description=?, slug=?,
+            brand_id=?, show_on_main=?
+            WHERE id=?";
+        $params = [
+            $p['name'] ?? '',
+            $p['description'] ?? '',
+            (float)($p['base_price'] ?? 0),
+            (float)($p['flash_sale_price'] ?? 0),
+            !empty($p['flash_sale_end']) ? $p['flash_sale_end'] : null,
+            $galleryStr,
+            $p['video_url'] ?? '',
+            $p['video_type'] ?? 'auto',
+            !empty($p['sku']) ? $p['sku'] : null,
+            $variantStr,
+            !empty($p['is_active']) ? 1 : 0,
+            !empty($p['is_featured']) ? 1 : 0,
+            !empty($p['is_add_once']) ? 1 : 0,
+            $p['tags'] ?? '',
+            $p['seo_keywords'] ?? ($p['tags'] ?? ''),
+            !empty($p['seo_title']) ? $p['seo_title'] : null,
+            !empty($p['seo_description']) ? $p['seo_description'] : null,
+            !empty($p['slug']) ? $p['slug'] : null,
+            $brandId,
+            $showOnMain,
+            $productId
+        ];
+    } else {
+        $sql = "INSERT INTO products (
+            id, name, description, base_price, flash_sale_price, flash_sale_end,
+            gallery_images, video_url, video_type, sku, variants,
+            is_active, is_featured, is_add_once,
+            tags, seo_keywords, seo_title, seo_description, slug,
+            brand_id, show_on_main, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+        $params = [
+            $productId,
+            $p['name'] ?? '',
+            $p['description'] ?? '',
+            (float)($p['base_price'] ?? 0),
+            (float)($p['flash_sale_price'] ?? 0),
+            !empty($p['flash_sale_end']) ? $p['flash_sale_end'] : null,
+            $galleryStr,
+            $p['video_url'] ?? '',
+            $p['video_type'] ?? 'auto',
+            !empty($p['sku']) ? $p['sku'] : null,
+            $variantStr,
+            !empty($p['is_active']) ? 1 : 0,
+            !empty($p['is_featured']) ? 1 : 0,
+            !empty($p['is_add_once']) ? 1 : 0,
+            $p['tags'] ?? '',
+            $p['seo_keywords'] ?? ($p['tags'] ?? ''),
+            !empty($p['seo_title']) ? $p['seo_title'] : null,
+            !empty($p['seo_description']) ? $p['seo_description'] : null,
+            !empty($p['slug']) ? $p['slug'] : null,
+            $brandId,
+            $showOnMain
+        ];
+    }
+
+    $res = d1Exec($sql, $params);
+    if (!$res['success']) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $res['error'] ?? 'Product save failed']);
+        exit;
+    }
+
+    if ($isUpdate) {
+        d1Exec("DELETE FROM product_categories WHERE product_id = ?", [$productId]);
+    }
+    if (!empty($p['category_ids']) && is_array($p['category_ids'])) {
+        foreach ($p['category_ids'] as $cid) {
+            d1Exec("INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)", [$productId, $cid]);
+        }
+    }
+
+    echo json_encode(['success' => true, 'id' => $productId, 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// ADMIN PROTECTED ROUTE 3: POST /api/delete-product
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'delete-product') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body = readJsonBody();
+    requireAdminAuth($body);
+    $id = trim((string)($body['id'] ?? ''));
+    if ($id === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Product ID required']);
+        exit;
+    }
+    $res = d1Exec("DELETE FROM products WHERE id = ?", [$id]);
+    d1Exec("DELETE FROM product_categories WHERE product_id = ?", [$id]);
+    echo json_encode(['success' => $res['success'], 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// ADMIN PROTECTED ROUTE 4: POST /api/update-order & /api/delete-order
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'update-order') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body = readJsonBody();
+    requireAdminAuth($body);
+    $upData = (isset($body['upData']) && is_array($body['upData'])) ? $body['upData'] : $body;
+    $id     = trim((string)($body['id'] ?? ''));
+    if ($id === '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'order id দিন']);
+        exit;
+    }
+    $updates = [];
+    $params  = [];
+    if (array_key_exists('status', $upData))         { $updates[] = 'status=?';         $params[] = $upData['status']; }
+    if (array_key_exists('payment_status', $upData)) { $updates[] = 'payment_status=?'; $params[] = $upData['payment_status']; }
+    if (array_key_exists('payment_trx_id', $upData)) { $updates[] = 'payment_trx_id=?'; $params[] = $upData['payment_trx_id']; }
+
+    if (!empty($updates)) {
+        $targetIds = (!empty($body['ids']) && is_array($body['ids'])) ? $body['ids'] : [$id];
+        foreach ($targetIds as $tid) {
+            d1Exec("UPDATE orders SET " . implode(', ', $updates) . " WHERE id = ?", array_merge($params, [$tid]));
+        }
+        if (!empty($body['order_group_id'])) {
+            d1Exec("UPDATE orders SET " . implode(', ', $updates) . " WHERE order_group_id = ?", array_merge($params, [$body['order_group_id']]));
+        }
+    }
+    echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if (strpos($endpoint, 'delete-order') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body = readJsonBody();
+    requireAdminAuth($body);
+    $id  = trim((string)($body['id'] ?? ''));
+    $res = d1Exec("DELETE FROM orders WHERE id = ?", [$id]);
+    if (!empty($body['ids']) && is_array($body['ids'])) {
+        foreach ($body['ids'] as $subId) {
+            if ($subId && $subId !== $id) d1Exec("DELETE FROM orders WHERE id = ?", [$subId]);
+        }
+    }
+    if (!empty($body['order_group_id'])) {
+        d1Exec("DELETE FROM orders WHERE order_group_id = ?", [$body['order_group_id']]);
+    }
+    echo json_encode(['success' => true, 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// ADMIN PROTECTED ROUTE 5: POST /api/update-settings
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'update-settings') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $p = readJsonBody();
+    requireAdminAuth($p);
+
+    $sql = "UPDATE settings SET
+        store_name=?, logo_url=?, favicon_url=?, footer_text=?, whatsapp_number=?, facebook_url=?, instagram_url=?, youtube_url=?,
+        bkash_number=?, nagad_number=?, binance_manual_uid=?, gateway_api_key=?, gateway_api_key_v2=?, gateway_version=?,
+        allow_cod=?, enable_fun_checkbox=?, allow_whatsapp_order=?, allow_msg_order=?, advance_amount=?, advance_method=?,
+        telegram_main_bot=?, telegram_main_chats=?, telegram_draft_bot=?, telegram_draft_chat=?, messaging_apps=?,
+        allow_pickup=?, store_address=?, store_map_link=?, pickup_bot_token=?, pickup_chat_id=?, binance_pay_uid=?,
+        binance_proxy_url=?, binance_api_key=?, binance_api_secret=?, usd_to_bdt_rate=?, verify_mode=?, supabase_edge_url=?,
+        hf_api_url=?, crypto_coins=?, review_imgbb_key=?,
+        seo_title=?, seo_description=?, seo_keywords=?, seo_og_image=?, google_site_verification=?, site_url=?, ai_config=?
+        WHERE id=1";
+
+    $siteUrlRaw = trim((string)($p['site_url'] ?? ''));
+    if ($siteUrlRaw !== '' && strpos($siteUrlRaw, 'http') !== 0) $siteUrlRaw = 'https://' . $siteUrlRaw;
+    $siteUrlRaw = rtrim($siteUrlRaw, '/');
+
+    $params = [
+        $p['store_name'] ?? '', $p['logo_url'] ?? '', $p['favicon_url'] ?? '', $p['footer_text'] ?? '',
+        $p['whatsapp_number'] ?? '', $p['facebook_url'] ?? '', $p['instagram_url'] ?? '', $p['youtube_url'] ?? '',
+        $p['bkash_number'] ?? '', $p['nagad_number'] ?? '', $p['binance_manual_uid'] ?? '', $p['gateway_api_key'] ?? '',
+        $p['gateway_api_key_v2'] ?? '', $p['gateway_version'] ?? '',
+        !empty($p['allow_cod']) ? 1 : 0, !empty($p['enable_fun_checkbox']) ? 1 : 0,
+        !empty($p['allow_whatsapp_order']) ? 1 : 0, !empty($p['allow_msg_order']) ? 1 : 0,
+        $p['advance_amount'] ?? 0, $p['advance_method'] ?? '',
+        $p['telegram_main_bot'] ?? '',
+        is_string($p['telegram_main_chats'] ?? null) ? $p['telegram_main_chats'] : json_encode($p['telegram_main_chats'] ?? []),
+        $p['telegram_draft_bot'] ?? '', $p['telegram_draft_chat'] ?? '',
+        is_string($p['messaging_apps'] ?? null) ? $p['messaging_apps'] : json_encode($p['messaging_apps'] ?? []),
+        !empty($p['allow_pickup']) ? 1 : 0, $p['store_address'] ?? '', $p['store_map_link'] ?? '',
+        $p['pickup_bot_token'] ?? '', $p['pickup_chat_id'] ?? '', $p['binance_pay_uid'] ?? '',
+        $p['binance_proxy_url'] ?? '', $p['binance_api_key'] ?? '', $p['binance_api_secret'] ?? '',
+        $p['usd_to_bdt_rate'] ?? 120, $p['verify_mode'] ?? '', $p['supabase_edge_url'] ?? '',
+        $p['hf_api_url'] ?? '',
+        is_string($p['crypto_coins'] ?? null) ? $p['crypto_coins'] : json_encode($p['crypto_coins'] ?? []),
+        $p['review_imgbb_key'] ?? '',
+        $p['seo_title'] ?? '', $p['seo_description'] ?? '', $p['seo_keywords'] ?? '',
+        $p['seo_og_image'] ?? '', $p['google_site_verification'] ?? '', $siteUrlRaw,
+        is_string($p['ai_config'] ?? null) ? $p['ai_config'] : json_encode($p['ai_config'] ?? new stdClass())
+    ];
+
+    $res = d1Exec($sql, $params);
+    if (!$res['success']) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => $res['error'] ?? 'Settings update failed']);
+        exit;
+    }
+    echo json_encode(['success' => true, 'result' => [['results' => $res['results']]]], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// ADMIN PROTECTED ROUTE 6: GET & POST /api/brands
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'brands') !== false) {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    if ($method === 'GET') {
+        $brandsRows = d1Query("SELECT * FROM brands ORDER BY sort_order ASC, created_at ASC");
+        $countRows  = d1Query("SELECT brand_id, COUNT(*) as cnt FROM products WHERE brand_id IS NOT NULL AND brand_id != '' GROUP BY brand_id");
+        $countMap   = [];
+        foreach ($countRows as $cr) {
+            $countMap[$cr['brand_id']] = (int)($cr['cnt'] ?? 0);
+        }
+        foreach ($brandsRows as &$br) {
+            $br['is_active']     = !empty($br['is_active']);
+            $br['product_count'] = $countMap[$br['id']] ?? 0;
+        }
+        echo json_encode(['success' => true, 'brands' => $brandsRows], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    if ($method === 'POST') {
+        $body = readJsonBody();
+        requireAdminAuth($body);
+        $action = strtolower(trim((string)($body['action'] ?? 'save')));
+        $cleanSlugFn = function($str) {
+            $s = strtolower(trim((string)$str));
+            $s = preg_replace('/^\/+|\/+$/', '', $s);
+            $s = preg_replace('/[^a-z0-9-]+/', '-', $s);
+            return trim(preg_replace('/-+/', '-', $s), '-');
+        };
+        $reservedSlugs = ['admin','api','assets','cart','checkout','invoice','login','register','forgot-password','profile','product','shop','success','track','policies','team','worker','stup-site','public-data','checkout-data','public-reviews'];
+
+        if ($action === 'check_slug') {
+            $slug      = $cleanSlugFn($body['slug'] ?? '');
+            $excludeId = trim((string)($body['exclude_id'] ?? ''));
+            if ($slug === '' || strlen($slug) < 2 || strlen($slug) > 40) {
+                echo json_encode(['success' => true, 'valid' => false, 'available' => false, 'reason' => 'Slug ২-৪০ অক্ষরের হতে হবে।'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            if (in_array($slug, $reservedSlugs, true)) {
+                echo json_encode(['success' => true, 'valid' => false, 'available' => false, 'reason' => 'এটি একটি সংরক্ষিত (reserved) পাথ।'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            $ex = d1Query("SELECT id FROM brands WHERE lower(slug) = ? LIMIT 1", [$slug]);
+            if (!empty($ex) && ($ex[0]['id'] ?? '') !== $excludeId) {
+                echo json_encode(['success' => true, 'valid' => false, 'available' => false, 'reason' => 'এই পাথটি ইতিমধ্যে অন্য ব্র্যান্ডে ব্যবহৃত হচ্ছে।'], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            echo json_encode(['success' => true, 'valid' => true, 'available' => true, 'slug' => $slug], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if ($action === 'delete') {
+            $brandId = trim((string)($body['id'] ?? ''));
+            $delProds = (!empty($body['delete_products']) || ($body['product_mode'] ?? '') === 'delete_products');
+            if ($brandId === '') {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Brand ID required']);
+                exit;
+            }
+            if ($delProds) {
+                d1Exec("DELETE FROM products WHERE brand_id = ?", [$brandId]);
+            } else {
+                d1Exec("UPDATE products SET brand_id = NULL, show_on_main = 0 WHERE brand_id = ?", [$brandId]);
+            }
+            d1Exec("UPDATE categories SET brand_id = NULL WHERE brand_id = ?", [$brandId]);
+            d1Exec("DELETE FROM banners WHERE brand_id = ?", [$brandId]);
+            d1Exec("DELETE FROM home_sections WHERE brand_id = ?", [$brandId]);
+            d1Exec("UPDATE promos SET brand_id = NULL WHERE brand_id = ?", [$brandId]);
+            d1Exec("DELETE FROM brand_slug_history WHERE brand_id = ?", [$brandId]);
+            d1Exec("DELETE FROM brands WHERE id = ?", [$brandId]);
+            echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Save (Insert or Update) Brand
+        $name = trim((string)($body['name'] ?? ''));
+        $slug = $cleanSlugFn($body['slug'] ?? $name);
+        if ($name === '' || $slug === '' || in_array($slug, $reservedSlugs, true)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'বৈধ ব্র্যান্ডের নাম ও Slug দিন।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $brandId = trim((string)($body['id'] ?? ''));
+        $dup = d1Query("SELECT id FROM brands WHERE lower(slug) = ? LIMIT 1", [$slug]);
+        if (!empty($dup) && ($dup[0]['id'] ?? '') !== $brandId) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'এই Slug অন্য ব্র্যান্ডে ব্যবহৃত হচ্ছে।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $themeStr = is_string($body['theme_colors'] ?? null) ? $body['theme_colors'] : json_encode($body['theme_colors'] ?? new stdClass(), JSON_UNESCAPED_UNICODE);
+        if ($brandId !== '') {
+            $oldRows = d1Query("SELECT * FROM brands WHERE id = ? LIMIT 1", [$brandId]);
+            if (!empty($oldRows)) {
+                $oldSlug = strtolower($oldRows[0]['slug'] ?? '');
+                if ($oldSlug && $oldSlug !== $slug) {
+                    d1Exec("INSERT OR REPLACE INTO brand_slug_history (old_slug, brand_id) VALUES (?, ?)", [$oldSlug, $brandId]);
+                }
+                d1Exec(
+                    "UPDATE brands SET slug=?, name=?, tagline=?, logo_url=?, favicon_url=?, theme_colors=?, footer_text=?, support_phone=?, whatsapp_number=?, facebook_url=?, instagram_url=?, youtube_url=?, seo_title=?, seo_description=?, seo_keywords=?, seo_og_image=?, is_active=?, sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                    [
+                        $slug, $name, $body['tagline'] ?? '', $body['logo_url'] ?? '', $body['favicon_url'] ?? '',
+                        $themeStr, $body['footer_text'] ?? '', $body['support_phone'] ?? '', $body['whatsapp_number'] ?? '',
+                        $body['facebook_url'] ?? '', $body['instagram_url'] ?? '', $body['youtube_url'] ?? '',
+                        $body['seo_title'] ?? '', $body['seo_description'] ?? '', $body['seo_keywords'] ?? '', $body['seo_og_image'] ?? '',
+                        (!isset($body['is_active']) || $body['is_active']) ? 1 : 0, (int)($body['sort_order'] ?? 0),
+                        $brandId
+                    ]
+                );
+                $savedRow = d1Query("SELECT * FROM brands WHERE id = ? LIMIT 1", [$brandId]);
+                echo json_encode(['success' => true, 'brand' => $savedRow[0] ?? null], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+        $newId = $brandId ?: ('brand_' . time() . '_' . rand(100, 999));
+        d1Exec(
+            "INSERT INTO brands (id, slug, name, tagline, logo_url, favicon_url, theme_colors, footer_text, support_phone, whatsapp_number, facebook_url, instagram_url, youtube_url, seo_title, seo_description, seo_keywords, seo_og_image, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                $newId, $slug, $name, $body['tagline'] ?? '', $body['logo_url'] ?? '', $body['favicon_url'] ?? '',
+                $themeStr, $body['footer_text'] ?? '', $body['support_phone'] ?? '', $body['whatsapp_number'] ?? '',
+                $body['facebook_url'] ?? '', $body['instagram_url'] ?? '', $body['youtube_url'] ?? '',
+                $body['seo_title'] ?? '', $body['seo_description'] ?? '', $body['seo_keywords'] ?? '', $body['seo_og_image'] ?? '',
+                (!isset($body['is_active']) || $body['is_active']) ? 1 : 0, (int)($body['sort_order'] ?? 0)
+            ]
+        );
+        $savedRow = d1Query("SELECT * FROM brands WHERE id = ? LIMIT 1", [$newId]);
+        echo json_encode(['success' => true, 'brand' => $savedRow[0] ?? null], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// ----------------------------------------------------------------------------
+// ADMIN PROTECTED ROUTE 7: POST /api/clear-cache & /api/clean-nulls
+// ----------------------------------------------------------------------------
+if ((strpos($endpoint, 'clear-cache') !== false || strpos($endpoint, 'clean-nulls') !== false) && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body = readJsonBody();
+    requireAdminAuth($body);
+    echo json_encode(['success' => true, 'message' => 'Cache operation acknowledged.']);
+    exit;
+}
+
+// Cloudflare Edge & Browser caches public GET responses for 5 minutes (300 seconds)
+header('Cache-Control: public, max-age=' . CACHE_TTL_SECONDS . ', s-maxage=' . CACHE_TTL_SECONDS . ', stale-while-revalidate=600');
 
 // ----------------------------------------------------------------------------
 // ROUTE A: /api/public-reviews?product_id=<id> (Targeted Product Reviews Only)

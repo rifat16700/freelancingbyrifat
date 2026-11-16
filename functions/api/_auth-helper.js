@@ -47,7 +47,19 @@ export async function signToken(payload, secret) {
 
 export async function verifyToken(token, secret) {
     try {
-        const [data, sigB64] = token.split('.');
+        if (!token || typeof token !== 'string') return null;
+        const parts = token.trim().split('.');
+        let data, bodyB64, sigB64;
+        if (parts.length === 2) {
+            [data, sigB64] = parts;
+            bodyB64 = data;
+        } else if (parts.length === 3) {
+            data = `${parts[0]}.${parts[1]}`;
+            bodyB64 = parts[1];
+            sigB64 = parts[2];
+        } else {
+            return null;
+        }
         if (!data || !sigB64) return null;
 
         const key = await crypto.subtle.importKey(
@@ -57,17 +69,32 @@ export async function verifyToken(token, secret) {
             false,
             ['verify']
         );
-        const sig = Uint8Array.from(atob(sigB64), c => c.charCodeAt(0));
+        let stdB64 = sigB64.replace(/-/g, '+').replace(/_/g, '/');
+        while (stdB64.length % 4) stdB64 += '=';
+        const sig = Uint8Array.from(atob(stdB64), c => c.charCodeAt(0));
         const valid = await crypto.subtle.verify('HMAC', key, sig, new TextEncoder().encode(data));
         if (!valid) return null;
 
-        const payload = JSON.parse(atob(data));
+        let bodyStd = bodyB64.replace(/-/g, '+').replace(/_/g, '/');
+        while (bodyStd.length % 4) bodyStd += '=';
+        const payload = JSON.parse(atob(bodyStd));
         // Check expiry
         if (payload.exp && Date.now() > payload.exp) return null;
         return payload;
     } catch {
         return null;
     }
+}
+
+export async function verifyAdminRequest(request, env, body = null) {
+    const authHeader = request.headers.get('Authorization') || request.headers.get('X-Admin-Token') || '';
+    let token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim();
+    if (!token && body && typeof body === 'object' && body._token) {
+        token = String(body._token).trim();
+    }
+    if (!token) return null;
+    const secret = (env && (env.ADMIN_SECRET_TOKEN || env.JWT_SECRET)) || 'fbr-secure-ecommerce-secret-key-2026';
+    return await verifyToken(token, secret);
 }
 
 // ── Password Hash (PBKDF2 — no bcrypt needed, Web Crypto built-in) ──

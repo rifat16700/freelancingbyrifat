@@ -1,5 +1,6 @@
 import { purgeAndWarmup } from './cache-helper.js';
 import { ensureBrandSchema, resolveBrand, autoShareCategoriesForProduct } from '../_lib/brand.js';
+import { verifyAdminRequest } from './_auth-helper.js';
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -7,13 +8,20 @@ export async function onRequestPost(context) {
     const CORS_HEADERS = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
     };
 
     try {
-        await ensureBrandSchema(env);
-
         const p = await request.json();
+        const adminUser = await verifyAdminRequest(request, env, p);
+        if (!adminUser) {
+            return new Response(JSON.stringify({ success: false, error: "Unauthorized: Valid Admin session token required." }), {
+                status: 401,
+                headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+            });
+        }
+
+        await ensureBrandSchema(env);
 
         let productId = p.id;
         if (!productId) {

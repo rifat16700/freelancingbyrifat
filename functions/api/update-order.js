@@ -6,11 +6,12 @@
 // Email via Cloudflare Email Workers (no 3rd party)
 // ─────────────────────────────────────────────
 import { sendEmail, buildStatusUpdateEmail, buildOrderConfirmEmail } from './_email-helper.js';
+import { verifyAdminRequest } from './_auth-helper.js';
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
 };
 
 export async function onRequestOptions() {
@@ -22,6 +23,12 @@ export async function onRequestPost(context) {
 
     try {
         const body = await request.json();
+        const adminUser = await verifyAdminRequest(request, env, body);
+        if (!adminUser) {
+            return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Valid Admin session token required.' }), {
+                status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+            });
+        }
         const { id, upData } = body;
         const status = upData ? upData.status : body.status;
         const payment_status = upData ? upData.payment_status : body.payment_status;

@@ -14,6 +14,117 @@
     meta.content = 'noindex, nofollow, noarchive, nosnippet';
 })();
 
+// ── Global Admin Fetch Wrapper: Proxy Routing + Auth Header + Browser Rate Limit ──
+(function() {
+    if (typeof window === 'undefined' || !window.fetch || window.__fbrAdminFetchPatched) return;
+    window.__fbrAdminFetchPatched = true;
+    var _origFetch = window.fetch.bind(window);
+    var _recentWrites = {};
+
+    var PROXY_API_ROUTES = [
+        '/api/admin-login',
+        '/api/verify-token',
+        '/api/d1-query',
+        '/api/admin-query',
+        '/api/add-product',
+        '/api/update-product',
+        '/api/delete-product',
+        '/api/update-order',
+        '/api/delete-order',
+        '/api/update-settings',
+        '/api/brands',
+        '/api/save-review',
+        '/api/save-order',
+        '/api/update-payment-status',
+        '/api/clean-nulls'
+    ];
+
+    function shouldRouteToProxy(relPath) {
+        if (!relPath || !relPath.startsWith('/api/')) return false;
+        var cleanPath = relPath.split('?')[0];
+        return PROXY_API_ROUTES.indexOf(cleanPath) !== -1;
+    }
+
+    function getProxyBase() {
+        var b = (typeof CONFIG !== 'undefined' && (CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE)) || '';
+        return String(b).trim().replace(/\/+$/, '');
+    }
+
+    window.fetch = async function(input, init) {
+        var urlStr = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+        var opts = init ? Object.assign({}, init) : {};
+        var method = String(opts.method || (typeof input !== 'string' && input && input.method) || 'GET').toUpperCase();
+
+        var isRelativeApi = urlStr.startsWith('/api/');
+        var proxyBase = getProxyBase();
+        var isProxyUrl = proxyBase && urlStr.startsWith(proxyBase + '/api/');
+
+        if (isRelativeApi || isProxyUrl) {
+            var relPath = isProxyUrl ? urlStr.slice(proxyBase.length) : urlStr;
+            var cleanRel = relPath.split('?')[0];
+
+            // Attach HMAC Admin Session Token automatically on every admin API call
+            var token = localStorage.getItem('admin_token') || '';
+            var hdrs = new Headers(opts.headers || (typeof input !== 'string' && input ? input.headers : undefined) || {});
+            if (token && !hdrs.has('Authorization')) {
+                hdrs.set('Authorization', 'Bearer ' + token);
+            }
+            opts.headers = hdrs;
+
+            // Browser-level rate limiting against rapid accidental/automated duplicate writes (skip batch read queries)
+            var isMutation = (method === 'POST' || method === 'PUT' || method === 'DELETE') &&
+                cleanRel !== '/api/d1-query' &&
+                cleanRel !== '/api/verify-token' &&
+                cleanRel !== '/api/admin-login';
+            if (isMutation && typeof opts.body === 'string' && opts.body.length < 4096) {
+                var rlKey = cleanRel + ':' + opts.body.slice(0, 120);
+                var now = Date.now();
+                if (_recentWrites[rlKey] && (now - _recentWrites[rlKey]) < 350) {
+                    return new Response(JSON.stringify({ success: false, error: 'Too many requests — please wait a moment.' }), {
+                        status: 429,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                }
+                _recentWrites[rlKey] = now;
+            }
+
+            // Route supported CRUD & DB routes through AlwaysData Proxy first (Unlimited Requests, 0 Storage)
+            var targetUrl = urlStr;
+            var fallbackUrl = null;
+            if (isRelativeApi && proxyBase && shouldRouteToProxy(relPath)) {
+                targetUrl = proxyBase + relPath;
+                fallbackUrl = relPath;
+            }
+
+            var res;
+            try {
+                res = await _origFetch(targetUrl, opts);
+                if (fallbackUrl && (res.status === 404 || res.status >= 502)) {
+                    res = await _origFetch(fallbackUrl, opts);
+                }
+            } catch (netErr) {
+                if (fallbackUrl) {
+                    res = await _origFetch(fallbackUrl, opts);
+                } else {
+                    throw netErr;
+                }
+            }
+
+            // Auto-clear tampered/expired token on 401 from server
+            if (res && res.status === 401 && cleanRel !== '/api/admin-login' && cleanRel !== '/api/verify-token') {
+                localStorage.removeItem('admin_token');
+                localStorage.removeItem('admin_token_exp');
+                if (!window.location.pathname.endsWith('/admin/') && !window.location.pathname.endsWith('/admin/index.html')) {
+                    window.location.href = 'index.html';
+                }
+            }
+            return res;
+        }
+
+        return _origFetch(input, init);
+    };
+})();
+
 // ── Sidebar HTML Template ────────────────────────────────────
 var SIDEBAR_HTML = `
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -194,36 +305,35 @@ function adminInit(activePage, onReady) {
         .catch(function() { return null; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         var token = localStorage.getItem('admin_token');
-        var exp = parseInt(localStorage.getItem('admin_token_exp') || '0');
-        var isValid = false;
+        var exp = parseInt(localStorage.getItem('admin_token_exp') || '0', 10);
 
-        if (token) {
-            if (exp > 0) {
-                if (Date.now() < exp) {
-                    isValid = true;
-                } else {
+        if (!token || (exp > 0 && Date.now() > exp)) {
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_token_exp');
+            sessionPromise = Promise.resolve(null);
+        } else {
+            // Mandatory Server-Side Session Token Verification (via Proxy first -> CF fallback)
+            sessionPromise = fetch('/api/verify-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({})
+            }).then(function(r) {
+                if (r.status === 401 || r.status === 403) {
                     localStorage.removeItem('admin_token');
                     localStorage.removeItem('admin_token_exp');
+                    return null;
                 }
-            } else {
-                try {
-                    var parts = token.split('.');
-                    if (parts.length >= 2) {
-                        var payload = JSON.parse(atob(parts[1] || parts[0]));
-                        if (!payload.exp || Date.now() < payload.exp) {
-                            isValid = true;
-                        } else {
-                            localStorage.removeItem('admin_token');
-                        }
-                    } else {
-                        isValid = true;
-                    }
-                } catch(e) {
-                    isValid = true;
-                }
-            }
+                return r.json().then(function(d) {
+                    if (d && d.valid) return d.user || { user: 'admin' };
+                    localStorage.removeItem('admin_token');
+                    localStorage.removeItem('admin_token_exp');
+                    return null;
+                });
+            }).catch(function() {
+                // Offline/network fallback only when server is unreachable and local expiry is valid
+                return (exp > 0 && Date.now() < exp) ? { user: 'admin', offline: true } : null;
+            });
         }
-        sessionPromise = Promise.resolve(isValid ? { user: 'admin' } : null);
     } else {
         sessionPromise = Promise.resolve(null);
     }

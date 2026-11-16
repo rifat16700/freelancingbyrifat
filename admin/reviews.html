@@ -125,6 +125,21 @@ function filterReviews() {
     renderReviews(filtered);
 }
 
+function escReviewHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function safeReviewImg(url) {
+    var s = String(url || '').trim();
+    if (/^(https?:\/\/|data:image\/)/i.test(s)) return escReviewHtml(s);
+    return '';
+}
+
 function renderReviews(reviews) {
     var list = document.getElementById('reviewsList');
     if (!reviews.length) {
@@ -135,31 +150,41 @@ function renderReviews(reviews) {
     list.innerHTML = '';
     reviews.forEach(function(rv) {
         var stars = '';
-        for (var i = 0; i < 5; i++) { stars += i < rv.rating ? '<i data-lucide="star" class="lucide-icon icon-warning"></i>' : '☆'; }
-        var productName = rv.products ? rv.products.name : '—';
+        var ratingNum = Math.max(0, Math.min(5, parseInt(rv.rating, 10) || 0));
+        for (var i = 0; i < 5; i++) { stars += i < ratingNum ? '<i data-lucide="star" class="lucide-icon icon-warning"></i>' : '☆'; }
+        var productName = escReviewHtml(rv.products ? rv.products.name : '—');
+        var custName = escReviewHtml(rv.customer_name || 'Anonymous');
+        var custPhone = rv.customer_phone ? escReviewHtml(rv.customer_phone) : '';
+        var revText = rv.review_text ? escReviewHtml(rv.review_text) : '';
+        var revImg = safeReviewImg(rv.review_image);
+        var safeId = escReviewHtml(rv.id);
 
         var card = document.createElement('div'); card.className = 'review-card';
         card.innerHTML =
             '<div class="review-header">' +
                 '<div>' +
                     (!rv.is_approved ? '<span class="pending-indicator"></span>' : '') +
-                    '<b style="color:var(--text-dark);">' + (rv.customer_name || 'Anonymous') + '</b>' +
-                    (rv.customer_phone ? ' <span style="font-size:12px;color:var(--text-muted);">(' + rv.customer_phone + ')</span>' : '') +
+                    '<b style="color:var(--text-dark);">' + custName + '</b>' +
+                    (custPhone ? ' <span style="font-size:12px;color:var(--text-muted);">(' + custPhone + ')</span>' : '') +
                     '<div class="stars" style="margin-top:2px;">' + stars + '</div>' +
                 '</div>' +
                 '<div style="text-align:right;">' +
                     '<div style="font-size:12px;color:var(--primary);font-weight:700;">' + productName + ' ' + (window.getAdminBrandBadge ? window.getAdminBrandBadge(rv.brand_id) : '') + '</div>' +
-                    '<div style="font-size:11px;color:var(--text-muted);">' + formatDate(rv.created_at) + '</div>' +
+                    '<div style="font-size:11px;color:var(--text-muted);">' + escReviewHtml(formatDate(rv.created_at)) + '</div>' +
                 '</div>' +
             '</div>' +
-            (rv.review_text ? '<div style="font-size:13.5px;line-height:1.6;margin-bottom:8px;color:var(--text-body);">' + rv.review_text + '</div>' : '') +
-            (rv.review_image ? '<img src="' + rv.review_image + '" class="review-img">' : '') +
+            (revText ? '<div style="font-size:13.5px;line-height:1.6;margin-bottom:8px;color:var(--text-body);">' + revText + '</div>' : '') +
+            (revImg ? '<img src="' + revImg + '" class="review-img">' : '') +
             '<div style="display:flex;gap:8px;margin-top:12px;">' +
                 (!rv.is_approved
-                    ? '<button class="btn btn-success btn-sm" onclick="approveReview(\'' + rv.id + '\')"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Approve</button>'
+                    ? '<button class="btn btn-success btn-sm" data-rv-approve="' + safeId + '"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Approve</button>'
                     : '<span class="badge badge-delivered"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Approved</span>') +
-                '<button class="btn btn-danger btn-sm" onclick="deleteReview(\'' + rv.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i> Delete</button>' +
+                '<button class="btn btn-danger btn-sm" data-rv-delete="' + safeId + '"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i> Delete</button>' +
             '</div>';
+        var appBtn = card.querySelector('[data-rv-approve]');
+        if (appBtn) appBtn.addEventListener('click', function() { approveReview(rv.id); });
+        var delBtn = card.querySelector('[data-rv-delete]');
+        if (delBtn) delBtn.addEventListener('click', function() { deleteReview(rv.id); });
         list.appendChild(card);
     });
     if (typeof lucide !== 'undefined') lucide.createIcons();

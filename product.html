@@ -1967,15 +1967,29 @@ function renderReviews(ratings, initialReviews) {
     }
 }
 
+function escProdReviewHtml(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function buildReviewCard(r) {
-    var stars = '★'.repeat(r.rating) + '☆'.repeat(5-r.rating);
+    var ratingNum = Math.max(0, Math.min(5, parseInt(r.rating, 10) || 0));
+    var stars = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
+    var safeName = escProdReviewHtml(r.customer_name || 'Anonymous');
+    var safeText = r.review_text ? escProdReviewHtml(r.review_text) : '';
+    var rawImg = String(r.review_image || '').trim();
+    var safeImg = /^(https?:\/\/|data:image\/)/i.test(rawImg) ? escProdReviewHtml(rawImg) : '';
     return '<div class="review-card-user" style="animation:fadeInUp 0.3s ease;">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
-            '<div><b>' + (r.customer_name||'Anonymous') + '</b><div class="review-stars">' + stars + '</div></div>' +
-            '<div style="font-size:11px;color:#aaa;">' + new Date(r.created_at).toLocaleDateString() + '</div>' +
+            '<div><b>' + safeName + '</b><div class="review-stars">' + stars + '</div></div>' +
+            '<div style="font-size:11px;color:#aaa;">' + escProdReviewHtml(new Date(r.created_at).toLocaleDateString()) + '</div>' +
         '</div>' +
-        (r.review_text ? '<p style="font-size:13.5px;line-height:1.6;">' + r.review_text + '</p>' : '') +
-        (r.review_image ? '<img src="' + r.review_image + '" style="width:80px;height:80px;border-radius:10px;object-fit:cover;margin-top:8px;cursor:pointer;" onclick="window.open(this.src)">' : '') +
+        (safeText ? '<p style="font-size:13.5px;line-height:1.6;">' + safeText + '</p>' : '') +
+        (safeImg ? '<img src="' + safeImg + '" style="width:80px;height:80px;border-radius:10px;object-fit:cover;margin-top:8px;cursor:pointer;" onclick="window.open(this.src)">' : '') +
     '</div>';
 }
 
@@ -2047,24 +2061,42 @@ function submitReview() {
     if (!name) { alert('Please enter your name'); return; }
     if (!rating) { alert('Please select a rating'); return; }
 
+    // Browser-level rate limiting (30s cooldown per product)
+    var rlKey = 'fbr_rv_rl_' + (product && product.id ? product.id : 'global');
+    var lastTs = parseInt(localStorage.getItem(rlKey) || '0', 10);
+    if (Date.now() - lastTs < 30000) {
+        var waitSec = Math.ceil((30000 - (Date.now() - lastTs)) / 1000);
+        alert('অনুগ্রহ করে ' + waitSec + ' সেকেন্ড পর আবার চেষ্টা করুন।');
+        return;
+    }
+
     var insPromise;
     var rvData = {
         product_id: product.id, customer_name: name, customer_phone: phone,
-        rating: rating, review_text: text, review_image: img || null, is_approved: false
+        rating: rating, review_text: text, review_image: img || null
     };
     if (CONFIG.DB_PROVIDER === 'supabase') {
-        insPromise = supabaseClient.from('reviews').insert([rvData]);
+        insPromise = supabaseClient.from('reviews').insert([Object.assign({}, rvData, { is_approved: false })]);
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        var awRv = Object.assign({}, rvData); awRv.created_at = awRv.created_at || new Date().toISOString(); delete awRv.id;
+        var awRv = Object.assign({}, rvData, { is_approved: false }); awRv.created_at = awRv.created_at || new Date().toISOString(); delete awRv.id;
         insPromise = appwriteDatabases.createDocument(APP_DB, 'reviews', AppwriteID.unique(), awRv).then(function() { return { error: null }; }).catch(function(err) { return { error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insPromise = fetch((CONFIG.HF_API_BASE || '') + '/api/save-review', {
+        var proxyBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+        var primaryUrl = (proxyBase ? proxyBase : '') + '/api/save-review';
+        insPromise = fetch(primaryUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rvData)
+        }).catch(function() {
+            return fetch('/api/save-review', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rvData)
+            });
         }).then(function(res) {
             return res.json().then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Failed to save review');
+                localStorage.setItem(rlKey, String(Date.now()));
                 return { data: null, error: null };
             });
         }).catch(function(err) {

@@ -1,11 +1,28 @@
+import { verifyAdminRequest } from '../_auth-helper.js';
+
+export async function onRequestOptions() {
+    return new Response(null, {
+        status: 204,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
+        }
+    });
+}
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
     try {
-        // Authenticate admin request if needed here (e.g. check session cookie)
-        // For now, we proceed assuming authorization is handled elsewhere or is simple
-
         const payload = await request.json();
+        const adminUser = await verifyAdminRequest(request, env, payload);
+        if (!adminUser) {
+            return new Response(JSON.stringify({ error: "Unauthorized: Valid Admin session token required." }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
 
         // Environment variables needed:
         // GITHUB_TOKEN - A Personal Access Token with repo access

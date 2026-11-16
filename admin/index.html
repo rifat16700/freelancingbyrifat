@@ -609,19 +609,41 @@
             });
         }
 
-        // ── Check session automatically ─────────────────────────
+        // ── Check session automatically (Server-Verified) ────────
         function checkSession() {
             if (CONFIG.DB_PROVIDER === 'cf_db') {
                 var token = localStorage.getItem('admin_token');
-                var exp = parseInt(localStorage.getItem('admin_token_exp') || '0');
+                var exp = parseInt(localStorage.getItem('admin_token_exp') || '0', 10);
                 if (token) {
                     if (exp && Date.now() > exp) {
                         localStorage.removeItem('admin_token');
                         localStorage.removeItem('admin_token_exp');
                     } else {
-                        document.getElementById('loginForm').style.display = 'none';
-                        document.getElementById('redirectMsg').classList.add('show');
-                        window.location.href = 'dashboard.html';
+                        var proxyBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+                        var verifyUrl = (proxyBase ? proxyBase : '') + '/api/verify-token';
+                        fetch(verifyUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify({})
+                        }).catch(function() {
+                            return fetch('/api/verify-token', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                                body: JSON.stringify({})
+                            });
+                        }).then(function(r) {
+                            if (!r || !r.ok) throw new Error('Invalid');
+                            return r.json();
+                        }).then(function(d) {
+                            if (d && d.valid) {
+                                document.getElementById('loginForm').style.display = 'none';
+                                document.getElementById('redirectMsg').classList.add('show');
+                                window.location.href = 'dashboard.html';
+                            }
+                        }).catch(function() {
+                            localStorage.removeItem('admin_token');
+                            localStorage.removeItem('admin_token_exp');
+                        });
                         return;
                     }
                 }
@@ -668,12 +690,21 @@
             inp.type = inp.type === 'password' ? 'text' : 'password';
         }
 
-        // ══ Email / Password Login ────────────────────────────────
+        // ══ Email / Password Login (with Browser Rate Limiting) ────
         async function loginWithEmail() {
             var email = document.getElementById('emailInput').value.trim();
             var pass  = document.getElementById('passInput').value;
             var btn   = document.getElementById('emailBtn');
             if (!email || !pass) { showToast('⚠️ Please enter email and password.', 'error'); return; }
+
+            var rlData = { fails: 0, lockUntil: 0 };
+            try { rlData = JSON.parse(localStorage.getItem('fbr_admin_login_rl') || '{}') || {}; } catch(e) {}
+            if (rlData.lockUntil && Date.now() < rlData.lockUntil) {
+                var waitSec = Math.ceil((rlData.lockUntil - Date.now()) / 1000);
+                showToast('🛡️ অনেকবার ভুল চেষ্টা করা হয়েছে! ' + waitSec + ' সেকেন্ড পরে আবার চেষ্টা করুন।', 'error');
+                return;
+            }
+
             var orig = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div><span>Signing in...</span>';
@@ -681,19 +712,40 @@
             var res, res2;
             if (CONFIG.DB_PROVIDER === 'cf_db') {
                 try {
-                    const loginEndpoint = (CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/admin-login';
-                    const response = await fetch(loginEndpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: email, password: pass })
-                    });
+                    const proxyBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+                    const loginEndpoint = (proxyBase ? proxyBase : '') + '/api/admin-login';
+                    let response;
+                    try {
+                        response = await fetch(loginEndpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: email, password: pass })
+                        });
+                        if (proxyBase && (response.status === 404 || response.status >= 502)) {
+                            response = await fetch('/api/admin-login', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username: email, password: pass })
+                            });
+                        }
+                    } catch (proxyErr) {
+                        response = await fetch('/api/admin-login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: email, password: pass })
+                        });
+                    }
                     const data = await response.json();
                     if (data.success && data.token) {
+                        localStorage.removeItem('fbr_admin_login_rl');
                         localStorage.setItem('admin_token', data.token);
                         if (data.expires_at) localStorage.setItem('admin_token_exp', data.expires_at.toString());
                         if (data.user && data.user.email) localStorage.setItem('fbr_admin_email', data.user.email);
                         res = { error: null };
                     } else {
+                        var fails = (rlData.fails || 0) + 1;
+                        var lockUntil = fails >= 5 ? (Date.now() + 60000) : 0;
+                        localStorage.setItem('fbr_admin_login_rl', JSON.stringify({ fails: lockUntil ? 0 : fails, lockUntil: lockUntil }));
                         res = { error: { message: data.error || 'Login failed' } };
                     }
                 } catch(e) {

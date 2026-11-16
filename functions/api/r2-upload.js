@@ -11,17 +11,27 @@
 // R2_PUBLIC_URL -> Custom domain (e.g., https://img.freelancingbyrifat.top)
 // ============================================================
 
+import { verifyAdminRequest } from './_auth-helper.js';
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
     const CORS = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
     };
 
     if (request.method === 'OPTIONS') {
         return new Response(null, { status: 204, headers: CORS });
+    }
+
+    const adminUser = await verifyAdminRequest(request, env);
+    if (!adminUser) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized: Valid Admin session token required.' }), {
+            status: 401,
+            headers: { ...CORS, 'Content-Type': 'application/json' }
+        });
     }
 
     // Check if the 'storage' binding exists

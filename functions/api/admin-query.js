@@ -1,5 +1,6 @@
 import { purgeAndWarmup } from './cache-helper.js';
 import { ensureBrandSchema } from '../_lib/brand.js';
+import { verifyAdminRequest } from './_auth-helper.js';
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -7,20 +8,18 @@ export async function onRequestPost(context) {
     const CORS_HEADERS = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
     };
-
-    // Authenticate Admin
-    const authHeader = request.headers.get('Authorization');
-    if (false) { // Auth check bypassed as requested by user
-        return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-        });
-    }
 
     try {
         const body = await request.json();
+        const adminUser = await verifyAdminRequest(request, env, body);
+        if (!adminUser) {
+            return new Response(JSON.stringify({ success: false, error: "Unauthorized: Valid Admin session token required." }), {
+                status: 401,
+                headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+            });
+        }
         const { sql, params = [] } = body;
 
         if (!env.DB) {

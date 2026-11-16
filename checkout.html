@@ -1684,13 +1684,30 @@ function placeOrder() {
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insertPromise = fetch('/api/save-order', {
+        var lastOrdTs = parseInt(localStorage.getItem('fbr_order_rl') || '0', 10);
+        if (Date.now() - lastOrdTs < 8000) {
+            alert('আপনার অর্ডারটি প্রসেস হচ্ছে, অনুগ্রহ করে কয়েক সেকেন্ড অপেক্ষা করুন।');
+            var btn0 = document.getElementById('placeOrderBtn');
+            if (btn0) { btn0.disabled = false; btn0.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; }
+            return;
+        }
+        var proxyBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+        var saveOrderUrl = (proxyBase ? proxyBase : '') + '/api/save-order';
+        var orderPayloadStr = JSON.stringify({ orderData: orderData, orders: splitOrders });
+        insertPromise = fetch(saveOrderUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderData: orderData, orders: splitOrders })
+            body: orderPayloadStr
+        }).catch(function() {
+            return fetch('/api/save-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: orderPayloadStr
+            });
         }).then(function(res) {
             return res.json().then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Failed to save order');
+                localStorage.setItem('fbr_order_rl', String(Date.now()));
                 return { data: [{ id: orderId }], error: null };
             });
         }).catch(function(err) {
@@ -1751,10 +1768,19 @@ function initiateGatewayPayment(orderId, total, orderData, splitOrders) {
         var ordersPayload = (Array.isArray(splitOrders) && splitOrders.length > 0 ? splitOrders : [orderData]).map(function(o) {
             return Object.assign({}, o, { payment_status: 'Unpaid', status: 'Pending' });
         });
-        insertPromise = fetch('/api/save-order', {
+        var proxyBase2 = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+        var saveOrderUrl2 = (proxyBase2 ? proxyBase2 : '') + '/api/save-order';
+        var bodyStr2 = JSON.stringify({ orderData: ordersPayload[0], orders: ordersPayload });
+        insertPromise = fetch(saveOrderUrl2, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderData: ordersPayload[0], orders: ordersPayload })
+            body: bodyStr2
+        }).catch(function() {
+            return fetch('/api/save-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: bodyStr2
+            });
         }).then(function(res) {
             return res.json().then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Failed to save order');
@@ -1820,6 +1846,18 @@ function verifyGatewayPayment(orderId, trxId) {
                 if (typeof doc.addons === 'string') { try { doc.addons = JSON.parse(doc.addons); } catch(e) { doc.addons = []; } }
                 return { data: doc, error: null };
             }).catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var pBase = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+        var qBody = JSON.stringify({ sql: "SELECT * FROM orders WHERE id = ?", params: [orderId] });
+        selectPromise = fetch((pBase || '') + '/api/d1-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: qBody })
+            .catch(function() { return fetch('/api/d1-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: qBody }); })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var obj = (d.success && d.result && d.result[0] && d.result[0].results && d.result[0].results.length) ? d.result[0].results[0] : null;
+                if (obj && typeof obj.items === 'string') { try { obj.items = JSON.parse(obj.items); } catch(e) {} }
+                if (obj && typeof obj.addons === 'string') { try { obj.addons = JSON.parse(obj.addons); } catch(e) {} }
+                return { data: obj, error: null };
+            }).catch(function(e) { return { data: null, error: e }; });
     }
     selectPromise.then(function(oRes) {
         if (oRes.error || !oRes.data) {
@@ -1886,6 +1924,14 @@ function verifyGatewayPayment(orderId, trxId) {
                             updatePromise = appwriteDatabases.updateDocument(APP_DB, 'orders', orderId, upData)
                                 .then(function() { return { error: null }; })
                                 .catch(function(err) { return { error: err }; });
+                        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+                            var pBaseUp = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+                            var upBodyStr = JSON.stringify({ id: orderId, payment_status: newPayStatus, payment_trx_id: trxId || 'AUTO', status: 'Confirmed' });
+                            updatePromise = fetch((pBaseUp || '') + '/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: upBodyStr })
+                                .catch(function() { return fetch('/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: upBodyStr }); })
+                                .then(function(r) { return r.json(); })
+                                .then(function(d) { return d.success ? { error: null } : { error: new Error(d.error || 'Update failed') }; })
+                                .catch(function(e) { return { error: e }; });
                         } else {
                             updatePromise = Promise.resolve({ data: null });
                         }
@@ -2795,6 +2841,16 @@ function placeCryptoOrder(txid, usdt, isBackup) {
         insertOrderPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awCryptoOrder)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var pBaseCr = ((CONFIG.PROXY_API_URL || CONFIG.HF_API_BASE || '') + '').replace(/\/+$/, '');
+        var crBodyStr = JSON.stringify({ orderData: orderData, orders: [orderData] });
+        insertOrderPromise = fetch((pBaseCr || '') + '/api/save-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: crBodyStr })
+            .catch(function() { return fetch('/api/save-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: crBodyStr }); })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (!d.success) throw new Error(d.error || 'Failed to save order');
+                return { data: [{ id: orderId }], error: null };
+            }).catch(function(e) { return { data: null, error: e }; });
     } else {
         insertOrderPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
     }

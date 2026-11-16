@@ -1,6 +1,6 @@
 // functions/api/admin/update-theme.js
 
-import { getBearerToken, verifyToken, CORS } from '../_auth-helper.js';
+import { verifyAdminRequest, CORS } from '../_auth-helper.js';
 
 export const onRequestOptions = () => new Response(null, { status: 204, headers: CORS });
 
@@ -8,10 +8,11 @@ export async function onRequestPost(context) {
     const { request, env } = context;
 
     try {
-        // Admin auth is handled client-side via Appwrite/Web3.
-        // Bypassing strict server-side JWT for this rebuild hook to match tracking page logic.
-
         const body = await request.json();
+        const adminUser = await verifyAdminRequest(request, env, body);
+        if (!adminUser) {
+            return new Response(JSON.stringify({ error: "Unauthorized: Valid Admin session token required." }), { status: 401, headers: { ...CORS, 'Content-Type': 'application/json' } });
+        }
         const cssPayload = body.css_payload;
         const layoutPayload = body.layout_payload || "window.THEME_LAYOUT = { hero: (typeof CONFIG !== 'undefined' && CONFIG.TEMPLATE_VERSION) ? CONFIG.TEMPLATE_VERSION : 'v1' };";
 

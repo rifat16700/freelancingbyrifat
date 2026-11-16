@@ -1,4 +1,5 @@
 import { ensureBrandSchema } from '../_lib/brand.js';
+import { verifyAdminRequest } from './_auth-helper.js';
 
 export async function onRequestPost(context) {
     const { request, env } = context;
@@ -6,11 +7,12 @@ export async function onRequestPost(context) {
     const CORS_HEADERS = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token',
     };
 
     try {
         const body = await request.json();
+        const adminUser = await verifyAdminRequest(request, env, body);
         if (env.DB) {
             await ensureBrandSchema(env);
         }
@@ -24,8 +26,15 @@ export async function onRequestPost(context) {
                 });
             }
             for (let q of body.queries) {
-                if (!q.sql || !q.sql.toUpperCase().trim().startsWith("SELECT")) {
+                const sqlStr = (q.sql || '').trim();
+                if (!sqlStr || !sqlStr.toUpperCase().startsWith("SELECT")) {
                     return new Response(JSON.stringify({ success: false, error: "Only SELECT queries are allowed on this endpoint." }), {
+                        status: 403,
+                        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+                    });
+                }
+                if (!adminUser && /\badmins\b/i.test(sqlStr)) {
+                    return new Response(JSON.stringify({ success: false, error: "Unauthorized table access." }), {
                         status: 403,
                         headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
                     });
@@ -48,6 +57,12 @@ export async function onRequestPost(context) {
 
         if (!sql || !sql.toUpperCase().trim().startsWith("SELECT")) {
             return new Response(JSON.stringify({ success: false, error: "Only SELECT queries are allowed on this endpoint." }), {
+                status: 403,
+                headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+            });
+        }
+        if (!adminUser && /\badmins\b/i.test(sql)) {
+            return new Response(JSON.stringify({ success: false, error: "Unauthorized table access." }), {
                 status: 403,
                 headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
             });
