@@ -203,6 +203,77 @@ function getClientIpAddr() {
     return (string)($_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown');
 }
 
+function getClientUaHash() {
+    $ua = trim((string)($_SERVER['HTTP_USER_AGENT'] ?? 'unknown'));
+    return substr(hash('sha256', $ua), 0, 24);
+}
+
+function getClientUaLabel() {
+    return mb_substr(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? 'Unknown Browser')), 0, 120);
+}
+
+// Admin-Only Server Session Store (AlwaysData ranonex_data/admin_sessions.json)
+// Never created for regular storefront visitors — strictly only after Admin/Staff login!
+function createAdminSession($actor, $role, $sid, $perms, $tv, $ttlMs = 43200000) {
+    $sessions = readJsonStore('admin_sessions.json', []);
+    if (!is_array($sessions)) $sessions = [];
+    $nowMs = (int)round(microtime(true) * 1000);
+    // Prune expired sessions
+    $active = [];
+    foreach ($sessions as $s) {
+        if (is_array($s) && !empty($s['jti']) && (float)($s['expires_at'] ?? 0) > $nowMs) {
+            $active[] = $s;
+        }
+    }
+    $jti       = bin2hex(random_bytes(16));
+    $expiresAt = $nowMs + $ttlMs;
+    array_unshift($active, [
+        'jti'        => $jti,
+        'sub'        => (string)$actor,
+        'role'       => (string)$role,
+        'sid'        => (string)$sid,
+        'ua_hash'    => getClientUaHash(),
+        'ua_label'   => getClientUaLabel(),
+        'ip'         => getClientIpAddr(),
+        'created_at' => gmdate('c'),
+        'last_seen'  => gmdate('c'),
+        'expires_at' => $expiresAt
+    ]);
+    if (count($active) > 25) {
+        $active = array_slice($active, 0, 25);
+    }
+    writeJsonStore('admin_sessions.json', $active);
+
+    $payload = [
+        'jti'         => $jti,
+        'sub'         => (string)$actor,
+        'role'        => (string)$role,
+        'sid'         => (string)$sid,
+        'permissions' => $perms,
+        'tv'          => (int)$tv,
+        'iat'         => $nowMs,
+        'exp'         => $expiresAt
+    ];
+    return ['token' => signAdminToken($payload), 'expires_at' => $expiresAt, 'jti' => $jti];
+}
+
+function revokeAdminSessionByJti($jti) {
+    if (!$jti) return false;
+    $sessions = readJsonStore('admin_sessions.json', []);
+    if (!is_array($sessions)) return false;
+    $next = [];
+    $removed = false;
+    foreach ($sessions as $s) {
+        if (($s['jti'] ?? '') === $jti) {
+            $removed = true;
+            continue;
+        }
+        $next[] = $s;
+    }
+    if ($removed) writeJsonStore('admin_sessions.json', $next);
+    return $removed;
+}
+
 function appendAuditLog($actor, $role, $action, $target = '', $details = '') {
     $logs = readJsonStore('staff_logs.json', []);
     if (!is_array($logs)) $logs = [];
@@ -262,6 +333,22 @@ function verifyAdminToken($token, $secret = null) {
     if (!is_array($payload)) return null;
     $nowMs = round(microtime(true) * 1000);
     if (!empty($payload['exp']) && $nowMs > (float)$payload['exp']) {
+        return null;
+    }
+
+    // Strict Server-Side Admin Session Check + Browser UA Binding (ranonex_data/admin_sessions.json)
+    $jti = (string)($payload['jti'] ?? '');
+    if ($jti === '') return null;
+    $sessions = readJsonStore('admin_sessions.json', []);
+    $sessRec = null;
+    foreach ($sessions as $s) {
+        if (($s['jti'] ?? '') === $jti && (float)($s['expires_at'] ?? 0) > $nowMs) {
+            $sessRec = $s;
+            break;
+        }
+    }
+    if (!$sessRec) return null;
+    if (!empty($sessRec['ua_hash']) && !hash_equals($sessRec['ua_hash'], getClientUaHash())) {
         return null;
     }
 
@@ -537,20 +624,11 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
     unset($rlMap[$clientIp]);
     writeJsonStore('login_rl.json', $rlMap);
 
-    $nowMs     = (int)round(microtime(true) * 1000);
-    // Hardened 12-hour session validity (with live server revocation support via token_version)
-    $expiresAt = $nowMs + (12 * 60 * 60 * 1000);
-    $payload   = [
-        'sub'         => $matchedUser,
-        'role'        => $matchedRole,
-        'sid'         => $matchedSid,
-        'permissions' => $matchedPerms,
-        'tv'          => $tokenVersion,
-        'iat'         => $nowMs,
-        'exp'         => $expiresAt
-    ];
-    $token = signAdminToken($payload);
-    appendAuditLog($matchedUser, $matchedRole, 'LOGIN_SUCCESS', 'admin-login', 'Session issued (12h TTL)');
+    // Issue Admin-Only Session inside AlwaysData ranonex_data/admin_sessions.json (12h TTL, UA-bound)
+    $sessInfo  = createAdminSession($matchedUser, $matchedRole, $matchedSid, $matchedPerms, $tokenVersion, 12 * 60 * 60 * 1000);
+    $token     = $sessInfo['token'];
+    $expiresAt = $sessInfo['expires_at'];
+    appendAuditLog($matchedUser, $matchedRole, 'LOGIN_SUCCESS', 'admin-login', 'Session ' . substr($sessInfo['jti'], 0, 8) . ' (12h TTL)');
 
     echo json_encode([
         'success'       => true,
@@ -563,6 +641,21 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
             'permissions' => $matchedPerms
         ]
     ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ----------------------------------------------------------------------------
+// AUTH ROUTE 1B: POST /admin-logout (Revoke Current Session Immediately)
+// ----------------------------------------------------------------------------
+if (strpos($endpoint, 'admin-logout') !== false && $method === 'POST') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    $body     = readJsonBody();
+    $verified = verifyAdminToken(getRequestAdminToken($body));
+    if ($verified && !empty($verified['jti'])) {
+        revokeAdminSessionByJti($verified['jti']);
+        appendAuditLog($verified['sub'] ?? 'admin', $verified['role'] ?? 'master_admin', 'LOGOUT', 'admin-logout', 'Session revoked');
+    }
+    echo json_encode(['success' => true]);
     exit;
 }
 
@@ -606,14 +699,45 @@ if (strpos($endpoint, 'master-security') !== false && $method === 'POST') {
         exit;
     }
 
+    if ($action === 'list_sessions') {
+        $sessions = readJsonStore('admin_sessions.json', []);
+        $nowMs    = round(microtime(true) * 1000);
+        $curJti   = $adminUser['jti'] ?? '';
+        $out      = [];
+        foreach ($sessions as $s) {
+            if ((float)($s['expires_at'] ?? 0) <= $nowMs) continue;
+            $out[] = [
+                'jti'        => $s['jti'],
+                'sub'        => $s['sub'] ?? '',
+                'role'       => $s['role'] ?? '',
+                'ip'         => $s['ip'] ?? '',
+                'ua_label'   => $s['ua_label'] ?? '',
+                'created_at' => $s['created_at'] ?? '',
+                'expires_at' => $s['expires_at'] ?? 0,
+                'is_current' => (($s['jti'] ?? '') === $curJti)
+            ];
+        }
+        echo json_encode(['success' => true, 'sessions' => $out], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($action === 'revoke_session') {
+        $targetJti = trim((string)($body['jti'] ?? ''));
+        $okRev = revokeAdminSessionByJti($targetJti);
+        if ($okRev) appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'REVOKE_SESSION', substr($targetJti, 0, 10), '');
+        echo json_encode(['success' => true, 'revoked' => $okRev], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($action === 'revoke_all') {
         $master['token_version'] = (int)($master['token_version'] ?? 1) + 1;
         $master['updated_at']    = gmdate('c');
         writeJsonStore('master_admin.json', $master);
+        writeJsonStore('admin_sessions.json', []);
         // Rotate signing key too so all previously issued tokens die instantly
         $newKey = bin2hex(random_bytes(32));
         @file_put_contents(getPrivateDataDir() . DIRECTORY_SEPARATOR . 'secret.key', $newKey, LOCK_EX);
-        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'REVOKE_ALL_SESSIONS', 'master_admin.json', 'Rotated signing key & bumped token_version');
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'REVOKE_ALL_SESSIONS', 'admin_sessions.json', 'Cleared sessions, rotated secret & bumped token_version');
         echo json_encode(['success' => true, 'message' => 'সকল ডিভাইস থেকে লগআউট সম্পন্ন হয়েছে!'], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -652,18 +776,11 @@ if (strpos($endpoint, 'master-security') !== false && $method === 'POST') {
         $master['token_version'] = (int)($master['token_version'] ?? 1) + 1;
         $master['updated_at']    = gmdate('c');
         writeJsonStore('master_admin.json', $master);
-
-        $nowMs     = (int)round(microtime(true) * 1000);
-        $expiresAt = $nowMs + (12 * 60 * 60 * 1000);
-        $newToken  = signAdminToken([
-            'sub'         => $master['username'],
-            'role'        => 'master_admin',
-            'sid'         => '',
-            'permissions' => ['*'],
-            'tv'          => $master['token_version'],
-            'iat'         => $nowMs,
-            'exp'         => $expiresAt
-        ]);
+        // Replace active Master Admin sessions with a single fresh session on current device
+        writeJsonStore('admin_sessions.json', []);
+        $sessInfo  = createAdminSession($master['username'], 'master_admin', '', ['*'], $master['token_version'], 12 * 60 * 60 * 1000);
+        $newToken  = $sessInfo['token'];
+        $expiresAt = $sessInfo['expires_at'];
         appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'UPDATE_MASTER_SECURITY', $master['username'], 'Updated Master Admin credentials/PIN');
         echo json_encode([
             'success'    => true,

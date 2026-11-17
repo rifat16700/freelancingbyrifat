@@ -128,6 +128,32 @@
                     </div>
                 </div>
 
+                <!-- Card 3B: Active Admin-Only Server Sessions -->
+                <div class="card" style="margin-bottom:24px;">
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <div class="card-title">🔑 Active Admin-Only Sessions (AlwaysData <code>admin_sessions.json</code>)</div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="loadActiveSessions()">🔄 Refresh</button>
+                    </div>
+                    <div class="card-body" style="overflow-x:auto;">
+                        <p style="font-size:12px;color:var(--text-muted);margin-top:0;">সাধারণ ভিজিটরদের জন্য কোনো সেশন তৈরি হয় না — শুধুমাত্র যাচাইকৃত Admin লগইন করলেই ব্রাউজার-বাউন্ড (<code>UA-Hash</code>) সেশন তৈরি হয়।</p>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Admin / Staff</th>
+                                    <th>Role</th>
+                                    <th>IP Address</th>
+                                    <th>Browser / Device</th>
+                                    <th>Expires</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessionsTableBody">
+                                <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Loading sessions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Card 4: Staff & Admin Activity Logs -->
                 <div class="card">
                     <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
@@ -195,6 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         loadMasterStatus();
+        loadActiveSessions();
         loadStaffList();
         loadLogs();
     });
@@ -217,6 +244,49 @@ function loadMasterStatus() {
             pinBadge.className = 'status-pill warn';
         }
     }).catch(function() {});
+}
+
+function loadActiveSessions() {
+    fetch(getProxyEp('/master-security'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_sessions' })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        var rows = (d && d.success && Array.isArray(d.sessions)) ? d.sessions : [];
+        var tb = document.getElementById('sessionsTableBody');
+        if (!tb) return;
+        if (!rows.length) {
+            tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">No active sessions recorded.</td></tr>';
+            return;
+        }
+        tb.innerHTML = rows.map(function(s) {
+            var curBadge = s.is_current ? ' <span class="status-pill ok">This Browser</span>' : '';
+            var roleCls = s.role === 'staff' ? 'staff' : 'master';
+            return '<tr>' +
+                '<td><b>' + escHtml(s.sub) + '</b>' + curBadge + '</td>' +
+                '<td><span class="log-badge ' + roleCls + '">' + escHtml(s.role) + '</span></td>' +
+                '<td>' + escHtml(s.ip || '—') + '</td>' +
+                '<td style="font-size:11.5px;max-width:260px;word-break:break-word;">' + escHtml(s.ua_label || '—') + '</td>' +
+                '<td style="font-size:12px;">' + (s.expires_at ? escHtml(new Date(s.expires_at).toLocaleString()) : '—') + '</td>' +
+                '<td><button type="button" class="btn btn-danger btn-sm" onclick="revokeOneSession(\'' + escHtml(s.jti) + '\')">Revoke</button></td>' +
+            '</tr>';
+        }).join('');
+    }).catch(function() {});
+}
+
+function revokeOneSession(jti) {
+    if (!confirm('এই সেশনটি বাতিল করবেন?')) return;
+    fetch(getProxyEp('/master-security'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'revoke_session', jti: jti })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d && d.success) {
+            showToast('Session revoked!', 'success');
+            loadActiveSessions();
+            loadLogs();
+        }
+    });
 }
 
 function saveMasterSecurity() {

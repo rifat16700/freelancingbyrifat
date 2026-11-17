@@ -23,6 +23,7 @@
 
     var PROXY_ROUTES = [
         '/admin-login',
+        '/admin-logout',
         '/verify-token',
         '/master-security',
         '/staff',
@@ -585,7 +586,21 @@ function adminLogout() {
             window.location.href = 'index.html';
         });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var curTok = localStorage.getItem('admin_token');
         localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_token_exp');
+        localStorage.removeItem('fbr_admin_role');
+        localStorage.removeItem('fbr_admin_perms');
+        if (curTok) {
+            fetch('/api/admin-logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + curTok },
+                body: '{}'
+            }).catch(function() {}).finally(function() {
+                window.location.href = 'index.html';
+            });
+            return;
+        }
         window.location.href = 'index.html';
     } else {
         window.location.href = 'index.html';
