@@ -14,6 +14,11 @@
         .sec-grid > .card, .admin-content .card { max-width: 100%; min-width: 0; }
         .card-header { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-light); }
         .card-header .card-title { margin-bottom: 0; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { padding: 11px 14px; text-align: left; }
+        .data-table tbody td { white-space: normal; overflow-wrap: anywhere; word-break: break-word; vertical-align: middle; }
+        .data-table tbody td.nowrap-col { white-space: nowrap; word-break: normal; overflow-wrap: normal; }
+        .data-table tbody td.wrap-col { min-width: 200px; max-width: 340px; white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height: 1.45; font-size: 12px; }
         .perm-matrix-wrap { border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; max-width: 100%; margin-top: 8px; background: #fff; -webkit-overflow-scrolling: touch; }
         .perm-matrix { width: 100%; min-width: 0 !important; border-collapse: collapse; font-size: 12.5px; }
         .perm-matrix th { background: #f8fafc; padding: 8px 6px; text-align: center; font-weight: 700; color: #334155; border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -180,8 +185,9 @@
                         <div class="card-title">🔑 Active Admin-Only Sessions (AlwaysData <code>admin_sessions.json</code>)</div>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="loadActiveSessions()">🔄 Refresh</button>
                     </div>
-                    <div class="card-body table-wrap">
-                        <p style="font-size:12px;color:var(--text-muted);margin-top:0;">সাধারণ ভিজিটরদের জন্য কোনো সেশন তৈরি হয় না — শুধুমাত্র যাচাইকৃত Admin লগইন করলেই ব্রাউজার-বাউন্ড (<code>UA-Hash</code>) সেশন তৈরি হয়।</p>
+                    <div class="card-body">
+                        <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px 0;">সাধারণ ভিজিটরদের জন্য কোনো সেশন তৈরি হয় না — শুধুমাত্র যাচাইকৃত Admin লগইন করলেই ব্রাউজার-বাউন্ড (<code>UA-Hash</code>) সেশন তৈরি হয়।</p>
+                        <div class="table-wrap">
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -197,6 +203,7 @@
                                 <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Loading sessions...</td></tr>
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
 
@@ -450,12 +457,12 @@ function loadActiveSessions() {
             var curBadge = s.is_current ? ' <span class="status-pill ok">This Browser</span>' : '';
             var roleCls = s.role === 'staff' ? 'staff' : 'master';
             return '<tr>' +
-                '<td><b>' + escHtml(s.sub) + '</b>' + curBadge + '</td>' +
-                '<td><span class="log-badge ' + roleCls + '">' + escHtml(s.role) + '</span></td>' +
-                '<td>' + escHtml(s.ip || '—') + '</td>' +
-                '<td style="font-size:11.5px;max-width:260px;word-break:break-word;">' + escHtml(s.ua_label || '—') + '</td>' +
-                '<td style="font-size:12px;">' + (s.expires_at ? escHtml(new Date(s.expires_at).toLocaleString()) : '—') + '</td>' +
-                '<td><button type="button" class="btn btn-danger btn-sm" onclick="revokeOneSession(\'' + escHtml(s.jti) + '\')">Revoke</button></td>' +
+                '<td class="nowrap-col"><b>' + escHtml(s.sub) + '</b>' + curBadge + '</td>' +
+                '<td class="nowrap-col"><span class="log-badge ' + roleCls + '">' + escHtml(s.role) + '</span></td>' +
+                '<td class="nowrap-col">' + escHtml(s.ip || '—') + '</td>' +
+                '<td class="wrap-col">' + escHtml(s.ua_label || '—') + '</td>' +
+                '<td class="nowrap-col" style="font-size:12px;">' + (s.expires_at ? escHtml(new Date(s.expires_at).toLocaleString()) : '—') + '</td>' +
+                '<td class="nowrap-col"><button type="button" class="btn btn-danger btn-sm" onclick="revokeOneSession(\'' + escHtml(s.jti) + '\')">Revoke</button></td>' +
             '</tr>';
         }).join('');
     }).catch(function() {});
@@ -684,12 +691,12 @@ function renderLogsTable() {
     tb.innerHTML = filtered.map(function(l) {
         var roleCls = l.role === 'master_admin' ? 'master' : (l.role === 'staff' ? 'staff' : 'anon');
         return '<tr>' +
-            '<td style="font-size:11.5px;white-space:nowrap;">' + escHtml(new Date(l.created_at).toLocaleString()) + '</td>' +
-            '<td><b>' + escHtml(l.actor || '—') + '</b></td>' +
-            '<td><span class="log-badge ' + roleCls + '">' + escHtml(l.role || '') + '</span></td>' +
-            '<td><code style="font-size:11.5px;">' + escHtml(l.action || '') + '</code></td>' +
-            '<td style="font-size:12px;max-width:340px;word-break:break-word;">' + escHtml(l.target || '') + (l.details ? ' <span style="color:#64748b;">(' + escHtml(l.details) + ')</span>' : '') + '</td>' +
-            '<td style="font-size:11.5px;color:#64748b;">' + escHtml(l.ip || '') + '</td>' +
+            '<td class="nowrap-col" style="font-size:11.5px;">' + escHtml(new Date(l.created_at).toLocaleString()) + '</td>' +
+            '<td class="nowrap-col"><b>' + escHtml(l.actor || '—') + '</b></td>' +
+            '<td class="nowrap-col"><span class="log-badge ' + roleCls + '">' + escHtml(l.role || '') + '</span></td>' +
+            '<td class="nowrap-col"><code style="font-size:11.5px;">' + escHtml(l.action || '') + '</code></td>' +
+            '<td class="wrap-col">' + escHtml(l.target || '') + (l.details ? ' <span style="color:#64748b;">(' + escHtml(l.details) + ')</span>' : '') + '</td>' +
+            '<td class="nowrap-col" style="font-size:11.5px;color:#64748b;">' + escHtml(l.ip || '') + '</td>' +
         '</tr>';
     }).join('');
 }
