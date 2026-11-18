@@ -547,20 +547,49 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
             }
         }
     } else {
-        // 1B. First-time bootstrap from D1 admins or ADMIN_USERNAME/ADMIN_PASSWORD -> lock into master_admin.json
-        $adminRows = d1Query("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1", [$inputUser]);
-        if (!empty($adminRows[0]['password_hash']) && verifySecretPbkdf2($inputPass, $adminRows[0]['password_hash'])) {
-            $isValid     = true;
-            $matchedUser = $adminRows[0]['email'];
+        // 1B. First-time bootstrap (runs ONLY ONCE until master_admin.json is created!)
+        // Step 1: Verify once server-to-server against Cloudflare Pages Env Vars (ADMIN_USERNAME / ADMIN_PASSWORD)
+        $cfSiteUrl = rtrim((string)ALLOWED_SITE_URL, '/');
+        if ($cfSiteUrl !== '' && strpos($cfSiteUrl, 'your-domain.com') === false) {
+            $ch = curl_init($cfSiteUrl . '/api/admin-login');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => json_encode(['username' => $inputUser, 'password' => $inputPass]),
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_TIMEOUT        => 10
+            ]);
+            $cfRes  = curl_exec($ch);
+            $cfCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            $cfJson = $cfRes ? json_decode($cfRes, true) : null;
+            if ($cfCode === 200 && !empty($cfJson['success'])) {
+                $isValid     = true;
+                $matchedUser = $cfJson['user']['email'] ?? $inputUser;
+            }
         }
+
+        // Step 2: Check non-placeholder D1 admins row
         if (!$isValid) {
-            $validUser = strtolower(trim((string)ADMIN_USERNAME));
-            $validPass = (string)ADMIN_PASSWORD;
+            $adminRows = d1Query("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1", [$inputUser]);
+            if (!empty($adminRows[0]['password_hash']) && strtolower($adminRows[0]['email'] ?? '') !== 'admin@example.com') {
+                if (verifySecretPbkdf2($inputPass, $adminRows[0]['password_hash'])) {
+                    $isValid     = true;
+                    $matchedUser = $adminRows[0]['email'];
+                }
+            }
+        }
+
+        // Step 3: Explicit AlwaysData env vars (never generic hardcoded defaults in production)
+        if (!$isValid && getenv('ADMIN_USERNAME') && getenv('ADMIN_PASSWORD')) {
+            $validUser = strtolower(trim((string)getenv('ADMIN_USERNAME')));
+            $validPass = (string)getenv('ADMIN_PASSWORD');
             if ($inputUser === $validUser && hash_equals($validPass, $inputPass)) {
                 $isValid     = true;
                 $matchedUser = $validUser;
             }
         }
+
         if ($isValid) {
             writeJsonStore('master_admin.json', [
                 'username'      => $matchedUser,
