@@ -23,6 +23,7 @@
 
     var PROXY_ROUTES = [
         '/admin-login',
+        '/verify-admin-otp',
         '/admin-logout',
         '/verify-token',
         '/master-security',

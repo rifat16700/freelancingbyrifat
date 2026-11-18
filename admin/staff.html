@@ -50,20 +50,23 @@
                 <div class="sec-grid">
                     <!-- Card 1: Master Admin Credentials & 2FA PIN -->
                     <div class="card">
-                        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
                             <div class="card-title">🔐 Master Admin Login Security</div>
-                            <span id="pinStatusBadge" class="status-pill warn">PIN: Off</span>
+                            <div style="display:flex;gap:6px;align-items:center;">
+                                <span id="tgStatusBadge" class="status-pill warn">TG 2FA: Checking...</span>
+                                <span id="pinStatusBadge" class="status-pill warn">PIN: Off</span>
+                            </div>
                         </div>
                         <div class="card-body">
                             <p style="font-size:12.5px;color:var(--text-muted);margin-top:0;">
-                                পাসওয়ার্ড এবং ২FA Security PIN AlwaysData প্রাইভেট স্টোরেজে (<code>PBKDF2-SHA256</code>) হ্যাশ করে সংরক্ষিত থাকে। পাসওয়ার্ড বদলালে বা <b>Logout All Devices</b> চাপলে সব চুরি যাওয়া টোকেন সাথে সাথে বাতিল হয়।
+                                পাসওয়ার্ড এবং ২FA Security PIN AlwaysData প্রাইভেট স্টোরেজে (<code>PBKDF2-SHA256</code>) হ্যাশ করে সংরক্ষিত থাকে। পাসওয়ার্ড বদলালে বা <b>Logout All Devices</b> চাপলে সব চুরি যাওয়া টোকেন সাথে সাথে বাতিল হয়। একটি সাইটে একবারই Master ID তৈরি হয় — ডিলিট না করা পর্যন্ত নতুন করে খোলা যায় না।
                             </p>
                             <div class="form-group">
                                 <label class="form-label">Master Username / Email</label>
                                 <input class="form-input" id="mUsername" placeholder="admin">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Current Password (যাচাইয়ের জন্য বাধ্যতামূলক)</label>
+                                <label class="form-label">Current Password (যেকোনো সিকিউরিটি পরিবর্তনের জন্য বাধ্যতামূলক)</label>
                                 <input class="form-input" type="password" id="mCurPass" placeholder="••••••••">
                             </div>
                             <div class="form-group">
@@ -77,7 +80,20 @@
                                     <button type="button" class="btn btn-secondary btn-sm" onclick="clearMasterPin()">Clear PIN</button>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="saveMasterSecurity()">💾 Update Master Security</button>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+                                <button type="button" class="btn btn-primary" onclick="saveMasterSecurity()">💾 Update Master Security</button>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="deleteMasterAdminFlow()">🗑️ Delete Master ID</button>
+                            </div>
+                            <div style="border-top:1px solid var(--border);padding-top:12px;">
+                                <div style="font-weight:700;font-size:12.5px;margin-bottom:6px;">📲 Master Telegram 2FA Settings <span id="tgSourceInfo" style="font-weight:500;color:var(--text-muted);font-size:11.5px;"></span></div>
+                                <div class="form-group" style="margin-bottom:8px;">
+                                    <input class="form-input" type="password" id="mTgBotToken" placeholder="Telegram Bot Token (পরিবর্তন না করলে খালি রাখুন)">
+                                </div>
+                                <div class="form-group" style="margin-bottom:8px;">
+                                    <input class="form-input" id="mTgChatId" placeholder="Master Telegram Chat ID (যেমন: 123456789)">
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="saveTelegram2Fa()">📲 Save & Test Telegram OTP</button>
+                            </div>
                         </div>
                     </div>
 
@@ -96,6 +112,10 @@
                             <div class="form-group">
                                 <label class="form-label">Staff Login Email / Username</label>
                                 <input class="form-input" id="sEmail" placeholder="e.g. rahim@ranonex.shop">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Staff Telegram Chat ID <span style="color:#b91c1c;">*</span> <span style="font-weight:400;color:var(--text-muted);font-size:11.5px;">(স্টাফ লগইন করলে এই ID-তে OTP যাবে)</span></label>
+                                <input class="form-input" id="sTelegramChatId" placeholder="e.g. 5829104721">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Password (নতুন হলে বাধ্যতামূলক, এডিটে পরিবর্তন না করলে খালি রাখুন)</label>
@@ -122,6 +142,7 @@
                                 <tr>
                                     <th>Name</th>
                                     <th>Email / Username</th>
+                                    <th>Telegram Chat ID</th>
                                     <th>Permissions</th>
                                     <th>Last Login</th>
                                     <th>Status</th>
@@ -129,7 +150,7 @@
                                 </tr>
                             </thead>
                             <tbody id="staffTableBody">
-                                <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">Loading staff...</td></tr>
+                                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">Loading staff...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -323,7 +344,76 @@ function loadMasterStatus() {
             pinBadge.textContent = 'PIN: Off';
             pinBadge.className = 'status-pill warn';
         }
+        var tgBadge = document.getElementById('tgStatusBadge');
+        var tgInfo = document.getElementById('tgSourceInfo');
+        var tg = d.data.telegram || {};
+        if (tgBadge) {
+            if (tg.configured) {
+                tgBadge.textContent = 'TG 2FA: Active';
+                tgBadge.className = 'status-pill ok';
+            } else {
+                tgBadge.textContent = 'TG 2FA: Missing';
+                tgBadge.className = 'status-pill warn';
+            }
+        }
+        if (tgInfo) {
+            tgInfo.textContent = tg.configured ? ('(Chat: ' + (tg.master_chat_masked || 'Set') + ', Source: ' + (tg.source || 'env') + ')') : '(AlwaysData Env বা এখান থেকে সেট করুন)';
+        }
     }).catch(function() {});
+}
+
+function saveTelegram2Fa() {
+    var curPass = document.getElementById('mCurPass').value;
+    if (!curPass) { showToast('উপরে Current Password দিন', 'error'); return; }
+    var botTok = document.getElementById('mTgBotToken').value.trim();
+    var chatId = document.getElementById('mTgChatId').value.trim();
+    fetch(getProxyEp('/master-security'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'save_telegram',
+            current_password: curPass,
+            bot_token: botTok,
+            master_chat_id: chatId
+        })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.success) { showToast(d.error || 'Failed', 'error'); return; }
+        document.getElementById('mTgBotToken').value = '';
+        showToast(d.message || 'Telegram 2FA updated!', 'success');
+        loadMasterStatus();
+        loadLogs();
+    });
+}
+
+function deleteMasterAdminFlow() {
+    var curPass = document.getElementById('mCurPass').value;
+    if (!curPass) { showToast('Master ID ডিলিট করতে উপরে Current Password দিন', 'error'); return; }
+    if (!confirm('সতর্কতা! Master Admin ID ডিলিট করলে আপনি বর্তমান সেশন থেকে লগআউট হবেন এবং সাইটে পুনরায় ১ বার নতুন Master Admin সেট করা যাবে। এগোবেন?')) return;
+    fetch(getProxyEp('/master-security'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'request_delete_otp', current_password: curPass })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.success || !d.challenge_id) { showToast(d.error || 'OTP পাঠানো যায়নি', 'error'); return; }
+        var otp = prompt('আপনার Telegram-এ পাঠানো ৬-ডিজিটের OTP কোডটি লিখুন (Master ID ডিলিট নিশ্চিত করতে):');
+        if (!otp) return;
+        fetch(getProxyEp('/master-security'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'delete_master',
+                current_password: curPass,
+                challenge_id: d.challenge_id,
+                otp_code: otp.trim()
+            })
+        }).then(function(r2) { return r2.json(); }).then(function(d2) {
+            if (!d2.success) { showToast(d2.error || 'Delete failed', 'error'); return; }
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_token_exp');
+            showToast(d2.message || 'Master ID deleted!', 'success');
+            setTimeout(function() { window.location.href = 'index.html'; }, 1000);
+        });
+    });
 }
 
 function loadActiveSessions() {
@@ -443,7 +533,7 @@ function loadStaffList() {
         staffRows = (d && d.success && Array.isArray(d.staff)) ? d.staff : [];
         var tb = document.getElementById('staffTableBody');
         if (!staffRows.length) {
-            tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">কোনো স্টাফ যোগ করা হয়নি (এখন শুধুমাত্র Master Admin সক্রিয়)।</td></tr>';
+            tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">কোনো স্টাফ যোগ করা হয়নি (এখন শুধুমাত্র Master Admin সক্রিয়)।</td></tr>';
             return;
         }
         tb.innerHTML = staffRows.map(function(s) {
@@ -458,6 +548,7 @@ function loadStaffList() {
             return '<tr>' +
                 '<td><b>' + escHtml(s.name) + '</b></td>' +
                 '<td>' + escHtml(s.email) + '</td>' +
+                '<td style="font-family:monospace;font-size:12px;">' + (s.telegram_chat_id ? escHtml(s.telegram_chat_id) : '<span style="color:#dc2626;font-weight:700;">Not Set</span>') + '</td>' +
                 '<td>' + (perms || '<span style="color:#94a3b8;font-size:12px;">None</span>') + '</td>' +
                 '<td style="font-size:12px;">' + (s.last_login ? escHtml(new Date(s.last_login).toLocaleString()) : '—') + '</td>' +
                 '<td>' + (s.is_active ? '<span class="badge badge-delivered">Active</span>' : '<span class="badge badge-cancelled">Disabled</span>') + '</td>' +
@@ -475,6 +566,7 @@ function resetStaffForm() {
     document.getElementById('sEditId').value = '';
     document.getElementById('sName').value = '';
     document.getElementById('sEmail').value = '';
+    document.getElementById('sTelegramChatId').value = '';
     document.getElementById('sPassword').value = '';
     document.getElementById('staffFormTitle').textContent = '➕ Add Staff Account';
     document.getElementById('staffResetBtn').style.display = 'none';
@@ -487,6 +579,7 @@ function editStaff(id) {
     document.getElementById('sEditId').value = st.id;
     document.getElementById('sName').value = st.name || '';
     document.getElementById('sEmail').value = st.email || '';
+    document.getElementById('sTelegramChatId').value = st.telegram_chat_id || '';
     document.getElementById('sPassword').value = '';
     document.getElementById('staffFormTitle').textContent = '✏️ Edit Staff: ' + st.name;
     document.getElementById('staffResetBtn').style.display = 'inline-flex';
@@ -507,6 +600,7 @@ function saveStaffMember() {
         id: document.getElementById('sEditId').value,
         name: document.getElementById('sName').value.trim(),
         email: document.getElementById('sEmail').value.trim(),
+        telegram_chat_id: document.getElementById('sTelegramChatId').value.trim(),
         password: document.getElementById('sPassword').value,
         permissions: perms
     };

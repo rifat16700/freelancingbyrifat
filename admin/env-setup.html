@@ -125,6 +125,16 @@
                         <td><button class="tooltip-btn" onclick="showInfo('ADMIN_SECRET_TOKEN', 'Admin Auth Token', 'Used in the frontend to securely verify the admin session.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
                     </tr>
                     <tr>
+                        <td><span class="var-name">TELEGRAM_BOT_TOKEN</span><span class="badge-core">AlwaysData 2FA</span></td>
+                        <td><span class="var-example">123456:ABC-DEF...</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('TELEGRAM_BOT_TOKEN', 'Telegram Bot API Token (AlwaysData Env)', 'AlwaysData Hosting-এর Environment variables-এ এটি সেট করুন। Master Creation, Master Login ও Staff Login-এ এই বট দিয়েই OTP যাবে।')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td><span class="var-name">TELEGRAM_CHAT_ID</span><span class="badge-core">AlwaysData 2FA</span></td>
+                        <td><span class="var-example">123456789</span></td>
+                        <td><button class="tooltip-btn" onclick="showInfo('TELEGRAM_CHAT_ID', 'Master Admin Telegram Chat ID (AlwaysData Env)', 'AlwaysData Hosting-এর Environment variables-এ আপনার নিজের Telegram Chat ID সেট করুন। Master Admin তৈরি ও লগইন OTP এখানে যাবে।')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>
+                    </tr>
+                    <tr>
                         <td><span class="var-name">CLOUDFLARE_ZONE_ID</span><span class="badge-core">Core</span></td>
                         <td><span class="var-example">023e105f4ecef8ad9...</span></td>
                         <td><button class="tooltip-btn" onclick="showInfo('CLOUDFLARE_ZONE_ID', 'Cloudflare Zone ID', 'Required for Cache Purging when adding/updating products. Find it on the Overview page of your domain in Cloudflare.')"><i data-lucide="help-circle" class="lucide-icon"></i></button></td>

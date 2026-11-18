@@ -17,6 +17,8 @@ define('CF_API_TOKEN',       'YOUR_CF_API_TOKEN_D1_READ');     // 4. Cloudflare 
 define('ADMIN_USERNAME',     getenv('ADMIN_USERNAME') ?: 'admin');
 define('ADMIN_PASSWORD',     getenv('ADMIN_PASSWORD') ?: 'admin123');
 define('ADMIN_SECRET_TOKEN', getenv('ADMIN_SECRET_TOKEN') ?: (getenv('JWT_SECRET') ?: 'fbr-secure-ecommerce-secret-key-2026'));
+define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN') ?: ($_ENV['TELEGRAM_BOT_TOKEN'] ?? ($_SERVER['TELEGRAM_BOT_TOKEN'] ?? '')));
+define('TELEGRAM_CHAT_ID',   getenv('TELEGRAM_CHAT_ID') ?: ($_ENV['TELEGRAM_CHAT_ID'] ?? ($_SERVER['TELEGRAM_CHAT_ID'] ?? '')));
 
 define('CACHE_TTL_SECONDS',  300);                             // Cloudflare 5 মিনিট (300s) Edge Cache TTL
 define('INITIAL_PRODUCT_COUNT', 20);                            // ১ম রিকোয়েস্টে ২০টি প্রোডাক্ট (ব্লাজিং ফাস্ট ১ম ইম্প্রেশন)
@@ -210,6 +212,187 @@ function getClientUaHash() {
 
 function getClientUaLabel() {
     return mb_substr(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? 'Unknown Browser')), 0, 120);
+}
+
+// ============================================================================
+// 2C. TELEGRAM 2FA OTP ENGINE (Master Creation, Master Login & Staff Login)
+// ============================================================================
+function getEnvAny($keys) {
+    foreach ($keys as $k) {
+        if (defined($k)) {
+            $v = trim((string)constant($k));
+            if ($v !== '') return $v;
+        }
+        $v = getenv($k);
+        if ($v !== false && trim((string)$v) !== '') return trim((string)$v);
+        if (isset($_ENV[$k]) && trim((string)$_ENV[$k]) !== '') return trim((string)$_ENV[$k]);
+        if (isset($_SERVER[$k]) && trim((string)$_SERVER[$k]) !== '') return trim((string)$_SERVER[$k]);
+    }
+    return '';
+}
+
+function getTelegram2FaConfig() {
+    $envBot  = getEnvAny(['TELEGRAM_BOT_TOKEN', 'ADMIN_TELEGRAM_BOT_TOKEN', 'TG_BOT_TOKEN', 'TELEGRAM_BOT_API', 'BOT_TOKEN']);
+    $envChat = getEnvAny(['TELEGRAM_CHAT_ID', 'ADMIN_TELEGRAM_CHAT_ID', 'TG_CHAT_ID', 'MASTER_TELEGRAM_CHAT_ID', 'ADMIN_CHAT_ID', 'CHAT_ID']);
+    $saved   = readJsonStore('telegram_config.json', []);
+    if (!is_array($saved)) $saved = [];
+
+    $botToken     = $envBot !== '' ? $envBot : trim((string)($saved['bot_token'] ?? ''));
+    $masterChatId = $envChat !== '' ? $envChat : trim((string)($saved['master_chat_id'] ?? ''));
+    $source       = ($envBot !== '' && $envChat !== '') ? 'env' : (($botToken !== '' && $masterChatId !== '') ? 'alwaysdata_storage' : 'partial');
+
+    // Optional fallback from D1 settings table if ENV / AlwaysData storage is not set yet
+    if ($botToken === '' || $masterChatId === '') {
+        $rows = d1Query("SELECT telegram_main_bot, telegram_main_chats FROM settings WHERE id = 1 LIMIT 1");
+        if (!empty($rows[0])) {
+            if ($botToken === '' && !empty($rows[0]['telegram_main_bot'])) {
+                $botToken = trim((string)$rows[0]['telegram_main_bot']);
+                $source = 'd1_settings_fallback';
+            }
+            if ($masterChatId === '' && !empty($rows[0]['telegram_main_chats'])) {
+                $rawChats = trim((string)$rows[0]['telegram_main_chats']);
+                $decoded = json_decode($rawChats, true);
+                if (is_array($decoded) && !empty($decoded[0])) {
+                    $masterChatId = trim((string)$decoded[0]);
+                } elseif ($rawChats !== '' && $rawChats[0] !== '[') {
+                    $parts = array_map('trim', explode(',', $rawChats));
+                    if (!empty($parts[0])) $masterChatId = $parts[0];
+                }
+            }
+        }
+    }
+
+    return [
+        'bot_token'      => $botToken,
+        'master_chat_id' => $masterChatId,
+        'env_locked'     => ($envBot !== '' && $envChat !== ''),
+        'source'         => $source
+    ];
+}
+
+function sendTelegramOtpMessage($botToken, $chatId, $otp, $purposeLabel, $accountEmail, $clientIp) {
+    if ($botToken === '' || $chatId === '') {
+        return ['success' => false, 'error' => 'Telegram Bot Token বা Chat ID পাওয়া যায়নি।'];
+    }
+    $siteUrl = rtrim((string)ALLOWED_SITE_URL, '/');
+    $safeEmail = htmlspecialchars((string)$accountEmail, ENT_QUOTES, 'UTF-8');
+    $safePurpose = htmlspecialchars((string)$purposeLabel, ENT_QUOTES, 'UTF-8');
+    $safeIp = htmlspecialchars((string)$clientIp, ENT_QUOTES, 'UTF-8');
+    $safeSite = htmlspecialchars($siteUrl ?: 'Admin Panel', ENT_QUOTES, 'UTF-8');
+
+    $text = "🔐 <b>Admin 2FA Verification Code</b>\n\n"
+          . "📌 <b>Action:</b> {$safePurpose}\n"
+          . "👤 <b>Account:</b> <code>{$safeEmail}</code>\n"
+          . "🌐 <b>Site:</b> {$safeSite}\n"
+          . "📡 <b>IP:</b> <code>{$safeIp}</code>\n\n"
+          . "🔢 <b>Your OTP Code:</b> <code>{$otp}</code>\n"
+          . "⏳ <i>Valid for 5 minutes. কাউকে এই কোড শেয়ার করবেন না।</i>";
+
+    $ch = curl_init("https://api.telegram.org/bot" . $botToken . "/sendMessage");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode([
+            'chat_id'                  => (string)$chatId,
+            'text'                     => $text,
+            'parse_mode'               => 'HTML',
+            'disable_web_page_preview' => true
+        ], JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_TIMEOUT        => 12
+    ]);
+    $res  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $cerr = curl_error($ch);
+    curl_close($ch);
+
+    if (!$res) {
+        return ['success' => false, 'error' => 'Telegram API সংযোগ ব্যর্থ: ' . ($cerr ?: 'Network error')];
+    }
+    $decoded = json_decode($res, true);
+    if ($code !== 200 || empty($decoded['ok'])) {
+        $desc = $decoded['description'] ?? ('HTTP ' . $code);
+        return ['success' => false, 'error' => 'Telegram OTP পাঠানো যায়নি: ' . $desc];
+    }
+    return ['success' => true];
+}
+
+function createOtpChallenge($meta) {
+    $list = readJsonStore('otp_challenges.json', []);
+    if (!is_array($list)) $list = [];
+    $now = time();
+    $active = [];
+    foreach ($list as $c) {
+        if (is_array($c) && !empty($c['challenge_id']) && (int)($c['expires_at'] ?? 0) > $now) {
+            $active[] = $c;
+        }
+    }
+    $otp         = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $challengeId = bin2hex(random_bytes(16));
+    $rec = array_merge($meta, [
+        'challenge_id' => $challengeId,
+        'otp_hash'     => hashSecretPbkdf2($otp),
+        'ua_hash'      => getClientUaHash(),
+        'ip'           => getClientIpAddr(),
+        'attempts'     => 0,
+        'created_at'   => $now,
+        'expires_at'   => $now + 300
+    ]);
+    array_unshift($active, $rec);
+    if (count($active) > 50) $active = array_slice($active, 0, 50);
+    writeJsonStore('otp_challenges.json', $active);
+    return ['challenge_id' => $challengeId, 'otp' => $otp, 'expires_in' => 300];
+}
+
+function verifyOtpChallenge($challengeId, $otpCode, $expectedPurpose = null) {
+    $challengeId = trim((string)$challengeId);
+    $otpCode     = preg_replace('/\s+/', '', (string)$otpCode);
+    if ($challengeId === '' || !preg_match('/^\d{6}$/', $otpCode)) {
+        return ['ok' => false, 'error' => 'সঠিক ৬-ডিজিটের Telegram OTP কোড দিন।'];
+    }
+    $list = readJsonStore('otp_challenges.json', []);
+    if (!is_array($list)) $list = [];
+    $now     = time();
+    $matched = null;
+    $outList = [];
+    $errOut  = 'OTP মেয়াদোত্তীর্ণ বা সঠিক নয়। অনুগ্রহ করে আবার চেষ্টা করুন।';
+
+    foreach ($list as $c) {
+        if (!is_array($c) || empty($c['challenge_id']) || (int)($c['expires_at'] ?? 0) <= $now) {
+            continue;
+        }
+        if (($c['challenge_id'] ?? '') === $challengeId) {
+            if ($expectedPurpose && ($c['purpose'] ?? '') !== $expectedPurpose) {
+                $errOut = 'OTP উদ্দেশ্য সঠিক নয়।';
+                continue;
+            }
+            if (!empty($c['ua_hash']) && !hash_equals($c['ua_hash'], getClientUaHash())) {
+                $errOut = 'ভিন্ন ব্রাউজার থেকে OTP ব্যবহার করা যাবে না।';
+                continue;
+            }
+            if (verifySecretPbkdf2($otpCode, $c['otp_hash'] ?? '')) {
+                $matched = $c;
+                continue; // Consume one-time OTP immediately
+            } else {
+                $attempts = (int)($c['attempts'] ?? 0) + 1;
+                if ($attempts < 5) {
+                    $c['attempts'] = $attempts;
+                    $outList[] = $c;
+                    $errOut = 'ভুল OTP কোড! বাকি চেষ্টা: ' . (5 - $attempts);
+                } else {
+                    $errOut = 'অনেকবার ভুল OTP দেওয়া হয়েছে। আবার নতুন করে লগইন করুন।';
+                }
+                continue;
+            }
+        }
+        $outList[] = $c;
+    }
+
+    writeJsonStore('otp_challenges.json', $outList);
+    if ($matched) {
+        return ['ok' => true, 'data' => $matched];
+    }
+    return ['ok' => false, 'error' => $errOut];
 }
 
 // Admin-Only Server Session Store (AlwaysData ranonex_data/admin_sessions.json)
@@ -581,10 +764,11 @@ $chunkNum  = isset($_GET['chunk']) ? max(1, (int)$_GET['chunk']) : 0;
 $method    = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
 // ----------------------------------------------------------------------------
-// AUTH ROUTE 1: POST /admin-login (Master Admin + Staff, AlwaysData Storage)
-//               Server-side brute-force lockout + PBKDF2 + Optional Security PIN
+// AUTH ROUTE 1: POST /admin-login & /verify-admin-otp (Master Admin + Staff)
+//   - Strict 1-time Master Admin creation lock (until deleted)
+//   - Mandatory Telegram Bot OTP 2FA for Master Creation, Master Login & Staff Login
 // ----------------------------------------------------------------------------
-if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
+if ((strpos($endpoint, 'admin-login') !== false || strpos($endpoint, 'verify-admin-otp') !== false) && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $clientIp = getClientIpAddr();
     $rlMap    = readJsonStore('login_rl.json', []);
@@ -607,6 +791,97 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
     }
 
     $body        = readJsonBody();
+    $challengeId = trim((string)($body['challenge_id'] ?? ''));
+    $otpCode     = trim((string)($body['otp_code'] ?? ''));
+
+    // ------------------------------------------------------------------------
+    // PHASE 2: Verify Telegram OTP & Complete Login / 1-Time Master Creation
+    // ------------------------------------------------------------------------
+    if ($challengeId !== '' || strpos($endpoint, 'verify-admin-otp') !== false) {
+        $ver = verifyOtpChallenge($challengeId, $otpCode);
+        if (empty($ver['ok'])) {
+            $fails = (($ipRec['reset_at'] ?? 0) > $nowSec) ? (($ipRec['fails'] ?? 0) + 1) : 1;
+            $lockUntil = ($fails >= 5) ? ($nowSec + 300) : 0;
+            $rlMap[$clientIp] = [
+                'fails'      => $lockUntil ? 0 : $fails,
+                'reset_at'   => $nowSec + 300,
+                'lock_until' => $lockUntil
+            ];
+            writeJsonStore('login_rl.json', $rlMap);
+            appendAuditLog('anonymous', 'anonymous', 'LOGIN_OTP_FAILED', 'admin-login', $ver['error'] ?? 'Invalid OTP');
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => $ver['error'] ?? 'ভুল OTP কোড।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $chRec        = $ver['data'];
+        $purpose      = $chRec['purpose'] ?? 'login_master';
+        $matchedUser  = $chRec['username'] ?? 'admin';
+        $matchedRole  = $chRec['role'] ?? 'master_admin';
+        $matchedSid   = $chRec['sid'] ?? '';
+        $tokenVersion = (int)($chRec['token_version'] ?? 1);
+        $matchedPerms = ($matchedRole === 'staff')
+            ? normalizeStaffPermissions($chRec['permissions'] ?? null, true)
+            : ['*'];
+
+        if ($purpose === 'bootstrap_master') {
+            $existingMaster = readJsonStore('master_admin.json', []);
+            if (!empty($existingMaster['username']) && !empty($existingMaster['password_hash'])) {
+                http_response_code(403);
+                echo json_encode([
+                    'success' => false,
+                    'error'   => 'এই সাইটে ইতিমধ্যে Master Admin তৈরি আছে! পুরনো Master ID ডিলিট না করা পর্যন্ত নতুন Master Admin খোলা যাবে না।'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            writeJsonStore('master_admin.json', [
+                'username'      => $matchedUser,
+                'password_hash' => $chRec['password_hash'],
+                'pin_hash'      => '',
+                'token_version' => 1,
+                'created_at'    => gmdate('c'),
+                'updated_at'    => gmdate('c')
+            ]);
+            appendAuditLog($matchedUser, 'master_admin', 'MASTER_CREATED', $matchedUser, '1-time Master Admin created with Telegram 2FA');
+        } elseif ($purpose === 'login_staff' && $matchedSid !== '') {
+            $staffList = readJsonStore('staff.json', []);
+            foreach ($staffList as &$st) {
+                if (($st['id'] ?? '') === $matchedSid) {
+                    $st['last_login'] = gmdate('c');
+                    $matchedPerms = normalizeStaffPermissions($st['permissions'] ?? null, true);
+                    $tokenVersion = (int)($st['token_version'] ?? 1);
+                    break;
+                }
+            }
+            unset($st);
+            writeJsonStore('staff.json', $staffList);
+        }
+
+        unset($rlMap[$clientIp]);
+        writeJsonStore('login_rl.json', $rlMap);
+
+        $sessInfo  = createAdminSession($matchedUser, $matchedRole, $matchedSid, $matchedPerms, $tokenVersion, 12 * 60 * 60 * 1000);
+        $token     = $sessInfo['token'];
+        $expiresAt = $sessInfo['expires_at'];
+        appendAuditLog($matchedUser, $matchedRole, 'LOGIN_SUCCESS', 'admin-login', 'Telegram 2FA verified | Session ' . substr($sessInfo['jti'], 0, 8));
+
+        echo json_encode([
+            'success'        => true,
+            'token'          => $token,
+            'expires_at'     => $expiresAt,
+            'validity_hours' => 12,
+            'user'           => [
+                'email'       => $matchedUser,
+                'role'        => $matchedRole,
+                'permissions' => $matchedPerms
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // ------------------------------------------------------------------------
+    // PHASE 1: Verify Credentials & Send Mandatory Telegram Bot OTP
+    // ------------------------------------------------------------------------
     $inputUser   = strtolower(trim((string)($body['username'] ?? $body['email'] ?? '')));
     $inputPass   = (string)($body['password'] ?? '');
     $securityPin = trim((string)($body['security_pin'] ?? ''));
@@ -624,11 +899,15 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
     $matchedPerms = ['*'];
     $matchedSid   = '';
     $tokenVersion = 1;
+    $otpPurpose   = 'login_master';
+    $targetChatId = '';
+    $bootstrapHash = '';
 
-    $masterStore = readJsonStore('master_admin.json', []);
+    $masterStore  = readJsonStore('master_admin.json', []);
+    $masterExists = !empty($masterStore['username']) && !empty($masterStore['password_hash']);
 
-    if (!empty($masterStore['username']) && !empty($masterStore['password_hash'])) {
-        // 1A. Existing hardened Master Admin stored on AlwaysData
+    if ($masterExists) {
+        // 1A. Existing Master Admin (Strictly 1 per site — bootstrap NEVER runs again until deleted!)
         if ($inputUser === strtolower(trim((string)$masterStore['username'])) && verifySecretPbkdf2($inputPass, $masterStore['password_hash'])) {
             if (!empty($masterStore['pin_hash'])) {
                 if ($securityPin === '') {
@@ -643,12 +922,43 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
                 $matchedUser  = $masterStore['username'];
                 $matchedRole  = 'master_admin';
                 $tokenVersion = (int)($masterStore['token_version'] ?? 1);
+                $otpPurpose   = 'login_master';
             }
         }
-    } else {
-        // 1B. First-time bootstrap (runs ONLY ONCE until master_admin.json is created!)
-        // Master ID is determined dynamically from the initial configured credentials (never hardcoded).
+    }
 
+    if ($requirePin) {
+        http_response_code(401);
+        echo json_encode([
+            'success'     => false,
+            'require_pin' => true,
+            'error'       => '🔐 ২য় ধাপ: আপনার Master Security PIN দিন।'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // 2. Check Staff accounts stored in AlwaysData database (ranonex_data/staff.json)
+    if (!$isValid) {
+        $staffList = readJsonStore('staff.json', []);
+        foreach ($staffList as $st) {
+            if (strtolower(trim((string)($st['email'] ?? ''))) === $inputUser && !empty($st['is_active'])) {
+                if (verifySecretPbkdf2($inputPass, $st['password_hash'] ?? '')) {
+                    $isValid      = true;
+                    $matchedUser  = $st['email'];
+                    $matchedRole  = 'staff';
+                    $matchedSid   = $st['id'] ?? '';
+                    $matchedPerms = normalizeStaffPermissions($st['permissions'] ?? null, true);
+                    $tokenVersion = (int)($st['token_version'] ?? 1);
+                    $targetChatId = trim((string)($st['telegram_chat_id'] ?? ''));
+                    $otpPurpose   = 'login_staff';
+                    break;
+                }
+            }
+        }
+    }
+
+    // 3. First-time Master Bootstrap ONLY when NO Master Admin exists yet
+    if (!$isValid && !$masterExists) {
         // Step 1: Check explicit AlwaysData env vars first if configured
         if (getenv('ADMIN_USERNAME') && getenv('ADMIN_PASSWORD')) {
             $validUser = strtolower(trim((string)getenv('ADMIN_USERNAME')));
@@ -659,7 +969,7 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
             }
         }
 
-        // Step 2: Verify once server-to-server against Cloudflare Pages /api/admin-login (prioritizes CF Env Vars over D1)
+        // Step 2: Verify once server-to-server against Cloudflare Pages /api/admin-login
         if (!$isValid) {
             $cfSiteUrl = rtrim((string)ALLOWED_SITE_URL, '/');
             if ($cfSiteUrl !== '' && strpos($cfSiteUrl, 'your-domain.com') === false) {
@@ -682,7 +992,7 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
             }
         }
 
-        // Step 3: Fallback check against D1 admins table (only if previous steps didn't match)
+        // Step 3: Fallback check against D1 admins table
         if (!$isValid) {
             $adminRows = d1Query("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1", [$inputUser]);
             if (!empty($adminRows[0]['password_hash'])) {
@@ -695,47 +1005,11 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
         }
 
         if ($isValid) {
-            writeJsonStore('master_admin.json', [
-                'username'      => $matchedUser,
-                'password_hash' => hashSecretPbkdf2($inputPass),
-                'pin_hash'      => '',
-                'token_version' => 1,
-                'created_at'    => gmdate('c'),
-                'updated_at'    => gmdate('c')
-            ]);
-            $tokenVersion = 1;
+            $matchedRole   = 'master_admin';
+            $tokenVersion  = 1;
+            $otpPurpose    = 'bootstrap_master';
+            $bootstrapHash = hashSecretPbkdf2($inputPass);
         }
-    }
-
-    if ($requirePin) {
-        http_response_code(401);
-        echo json_encode([
-            'success'     => false,
-            'require_pin' => true,
-            'error'       => '🔐 ২য় ধাপ: আপনার Master Security PIN দিন।'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    // 2. Check Staff accounts stored on AlwaysData (only if Master Admin added active Staff)
-    if (!$isValid) {
-        $staffList = readJsonStore('staff.json', []);
-        foreach ($staffList as &$st) {
-            if (strtolower(trim((string)($st['email'] ?? ''))) === $inputUser && !empty($st['is_active'])) {
-                if (verifySecretPbkdf2($inputPass, $st['password_hash'] ?? '')) {
-                    $isValid      = true;
-                    $matchedUser  = $st['email'];
-                    $matchedRole  = 'staff';
-                    $matchedSid   = $st['id'] ?? '';
-                    $matchedPerms = normalizeStaffPermissions($st['permissions'] ?? null, true);
-                    $tokenVersion = (int)($st['token_version'] ?? 1);
-                    $st['last_login'] = gmdate('c');
-                    writeJsonStore('staff.json', $staffList);
-                    break;
-                }
-            }
-        }
-        unset($st);
     }
 
     if (!$isValid) {
@@ -753,26 +1027,78 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
         exit;
     }
 
-    // Clear rate-limit on successful login
+    // Credentials matched! Now MANDATORY Telegram Bot OTP (Master Creation / Master Login / Staff Login)
+    $tg = getTelegram2FaConfig();
+    if ($tg['bot_token'] === '') {
+        http_response_code(503);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'Telegram Bot API Token (TELEGRAM_BOT_TOKEN) AlwaysData-তে কনফিগার করা নেই! অনুগ্রহ করে AlwaysData Env-এ TELEGRAM_BOT_TOKEN এবং TELEGRAM_CHAT_ID সেট করুন।'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($matchedRole === 'staff') {
+        if ($targetChatId === '') {
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'error'   => 'এই Staff অ্যাকাউন্টের জন্য Telegram Chat ID সেট করা নেই। Master Admin-কে AlwaysData Staff ডাটাবেসে আপনার Telegram Chat ID যোগ করতে বলুন।'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    } else {
+        $targetChatId = $tg['master_chat_id'];
+        if ($targetChatId === '') {
+            http_response_code(503);
+            echo json_encode([
+                'success' => false,
+                'error'   => 'Master Admin-এর Telegram Chat ID (TELEGRAM_CHAT_ID) AlwaysData-তে সেট করা নেই! Env-এ TELEGRAM_CHAT_ID সেট করুন।'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
+    $purposeLabel = ($otpPurpose === 'bootstrap_master')
+        ? 'New Master Admin Creation (1-Time)'
+        : (($otpPurpose === 'login_staff') ? 'Staff Admin Login' : 'Master Admin Login');
+
+    $chInfo = createOtpChallenge([
+        'purpose'       => $otpPurpose,
+        'username'      => $matchedUser,
+        'password_hash' => $bootstrapHash,
+        'role'          => $matchedRole,
+        'sid'           => $matchedSid,
+        'permissions'   => $matchedPerms,
+        'token_version' => $tokenVersion,
+        'chat_id'       => $targetChatId
+    ]);
+
+    $tgSend = sendTelegramOtpMessage($tg['bot_token'], $targetChatId, $chInfo['otp'], $purposeLabel, $matchedUser, $clientIp);
+    if (empty($tgSend['success'])) {
+        http_response_code(502);
+        echo json_encode([
+            'success' => false,
+            'error'   => $tgSend['error'] ?? 'Telegram OTP পাঠানো সম্ভব হয়নি!'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     unset($rlMap[$clientIp]);
     writeJsonStore('login_rl.json', $rlMap);
+    appendAuditLog($matchedUser, $matchedRole, 'OTP_SENT', $otpPurpose, 'Sent 2FA OTP to Telegram');
 
-    // Issue Admin-Only Session inside AlwaysData ranonex_data/admin_sessions.json (12h TTL, UA-bound)
-    $sessInfo  = createAdminSession($matchedUser, $matchedRole, $matchedSid, $matchedPerms, $tokenVersion, 12 * 60 * 60 * 1000);
-    $token     = $sessInfo['token'];
-    $expiresAt = $sessInfo['expires_at'];
-    appendAuditLog($matchedUser, $matchedRole, 'LOGIN_SUCCESS', 'admin-login', 'Session ' . substr($sessInfo['jti'], 0, 8) . ' (12h TTL)');
-
+    $maskedChat = strlen($targetChatId) > 4 ? (str_repeat('•', strlen($targetChatId) - 4) . substr($targetChatId, -4)) : $targetChatId;
     echo json_encode([
-        'success'       => true,
-        'token'         => $token,
-        'expires_at'    => $expiresAt,
-        'validity_hours'=> 12,
-        'user'          => [
-            'email'       => $matchedUser,
-            'role'        => $matchedRole,
-            'permissions' => $matchedPerms
-        ]
+        'success'      => false,
+        'require_otp'  => true,
+        'is_bootstrap' => ($otpPurpose === 'bootstrap_master'),
+        'challenge_id' => $chInfo['challenge_id'],
+        'otp_target'   => 'Telegram (' . $maskedChat . ')',
+        'expires_in'   => $chInfo['expires_in'],
+        'message'      => ($otpPurpose === 'bootstrap_master')
+            ? '📲 প্রথমবার Master Admin তৈরির জন্য আপনার Telegram-এ 6-ডিজিটের OTP পাঠানো হয়েছে!'
+            : '📲 আপনার Telegram-এ 6-ডিজিটের OTP পাঠানো হয়েছে! কোডটি দিয়ে ভেরিফাই করুন।'
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -820,15 +1146,106 @@ if (strpos($endpoint, 'master-security') !== false && $method === 'POST') {
     $master    = readJsonStore('master_admin.json', []);
 
     if ($action === 'status') {
+        $tg = getTelegram2FaConfig();
+        $mc = $tg['master_chat_id'] ?? '';
+        $mcMask = strlen($mc) > 4 ? (str_repeat('•', strlen($mc) - 4) . substr($mc, -4)) : $mc;
         echo json_encode([
             'success' => true,
             'data'    => [
                 'username'      => $master['username'] ?? ($adminUser['sub'] ?? 'admin'),
                 'has_pin'       => !empty($master['pin_hash']),
                 'token_version' => (int)($master['token_version'] ?? 1),
-                'updated_at'    => $master['updated_at'] ?? null
+                'updated_at'    => $master['updated_at'] ?? null,
+                'telegram'      => [
+                    'configured'         => ($tg['bot_token'] !== '' && $mc !== ''),
+                    'has_bot_token'      => ($tg['bot_token'] !== ''),
+                    'master_chat_masked' => $mcMask,
+                    'env_locked'         => !empty($tg['env_locked']),
+                    'source'             => $tg['source'] ?? 'none'
+                ]
             ]
         ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($action === 'save_telegram') {
+        $curPass = (string)($body['current_password'] ?? '');
+        if ($curPass === '' || empty($master['password_hash']) || !verifySecretPbkdf2($curPass, $master['password_hash'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'বর্তমান Master পাসওয়ার্ড সঠিক নয়।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $existingSaved = readJsonStore('telegram_config.json', []);
+        $botTok = trim((string)($body['bot_token'] ?? ''));
+        $chatId = trim((string)($body['master_chat_id'] ?? ''));
+        if ($botTok === '' && !empty($existingSaved['bot_token'])) $botTok = $existingSaved['bot_token'];
+        if ($chatId === '' && !empty($existingSaved['master_chat_id'])) $chatId = $existingSaved['master_chat_id'];
+        if ($botTok === '' || $chatId === '' || !preg_match('/^-?\d{5,20}$/', $chatId)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'সঠিক Telegram Bot Token এবং Numeric Chat ID দিন।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $ping = sendTelegramOtpMessage($botTok, $chatId, 'TEST-OK', 'Master Telegram 2FA Test', $master['username'] ?? 'master', getClientIpAddr());
+        if (empty($ping['success'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => $ping['error'] ?? 'Telegram টেস্ট মেসেজ পাঠানো যায়নি!'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        writeJsonStore('telegram_config.json', [
+            'bot_token'      => $botTok,
+            'master_chat_id' => $chatId,
+            'updated_at'     => gmdate('c')
+        ]);
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'UPDATE_TELEGRAM_2FA', $chatId, 'Updated & verified Telegram Bot 2FA');
+        echo json_encode(['success' => true, 'message' => 'Telegram 2FA সেটআপ সেভ ও টেস্ট সম্পন্ন হয়েছে! আপনার Telegram চেক করুন।'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($action === 'request_delete_otp') {
+        $curPass = (string)($body['current_password'] ?? '');
+        if ($curPass === '' || empty($master['password_hash']) || !verifySecretPbkdf2($curPass, $master['password_hash'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'বর্তমান Master পাসওয়ার্ড সঠিক নয়।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $tg = getTelegram2FaConfig();
+        if ($tg['bot_token'] === '' || $tg['master_chat_id'] === '') {
+            http_response_code(503);
+            echo json_encode(['success' => false, 'error' => 'Master Telegram 2FA কনফিগার করা নেই!'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $chInfo = createOtpChallenge([
+            'purpose'  => 'delete_master',
+            'username' => $master['username'] ?? 'master'
+        ]);
+        $tgSend = sendTelegramOtpMessage($tg['bot_token'], $tg['master_chat_id'], $chInfo['otp'], 'DELETE Master Admin ID', $master['username'] ?? 'master', getClientIpAddr());
+        if (empty($tgSend['success'])) {
+            http_response_code(502);
+            echo json_encode(['success' => false, 'error' => $tgSend['error'] ?? 'Telegram OTP পাঠানো যায়নি!'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        echo json_encode(['success' => true, 'challenge_id' => $chInfo['challenge_id'], 'message' => 'Master ID ডিলিটের OTP আপনার Telegram-এ পাঠানো হয়েছে।'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($action === 'delete_master') {
+        $curPass = (string)($body['current_password'] ?? '');
+        if ($curPass === '' || empty($master['password_hash']) || !verifySecretPbkdf2($curPass, $master['password_hash'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'বর্তমান Master পাসওয়ার্ড সঠিক নয়।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $ver = verifyOtpChallenge($body['challenge_id'] ?? '', $body['otp_code'] ?? '', 'delete_master');
+        if (empty($ver['ok'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => $ver['error'] ?? 'সঠিক Telegram OTP দিন।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $masterPath = getPrivateDataDir() . DIRECTORY_SEPARATOR . 'master_admin.json';
+        if (file_exists($masterPath)) @unlink($masterPath);
+        writeJsonStore('admin_sessions.json', []);
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'MASTER_DELETED', $master['username'] ?? 'master', 'Master Admin ID deleted — 1-time bootstrap unlocked');
+        echo json_encode(['success' => true, 'message' => 'Master Admin ID ডিলিট করা হয়েছে। এখন ১ বার নতুন Master Admin সেট করা যাবে।'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -995,11 +1412,17 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
         $name  = mb_substr(trim((string)($body['name'] ?? '')), 0, 80);
         $email = strtolower(trim((string)($body['email'] ?? '')));
         $pass  = (string)($body['password'] ?? '');
+        $tgChatId = trim((string)($body['telegram_chat_id'] ?? ''));
         $hasExplicitPerms = array_key_exists('permissions', $body) && is_array($body['permissions']);
 
         if ($name === '' || $email === '') {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'স্টাফের নাম এবং ইমেইল/ইউজারনেম দিন।'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if ($tgChatId === '' || !preg_match('/^-?\d{5,20}$/', $tgChatId)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'স্টাফের 2FA OTP পাঠানোর জন্য সঠিক numeric Telegram Chat ID দিন (যেমন: 123456789)।'], JSON_UNESCAPED_UNICODE);
             exit;
         }
         $master = readJsonStore('master_admin.json', []);
@@ -1023,9 +1446,10 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
             $perms = $hasExplicitPerms
                 ? normalizeStaffPermissions($body['permissions'], false)
                 : normalizeStaffPermissions($staffList[$foundIdx]['permissions'] ?? null, true);
-            $staffList[$foundIdx]['name']        = $name;
-            $staffList[$foundIdx]['email']       = $email;
-            $staffList[$foundIdx]['permissions'] = $perms;
+            $staffList[$foundIdx]['name']             = $name;
+            $staffList[$foundIdx]['email']            = $email;
+            $staffList[$foundIdx]['telegram_chat_id'] = $tgChatId;
+            $staffList[$foundIdx]['permissions']      = $perms;
             if ($pass !== '') {
                 if (strlen($pass) < 6) {
                     http_response_code(400);
@@ -1037,7 +1461,7 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
             }
             $staffList[$foundIdx]['updated_at'] = gmdate('c');
             writeJsonStore('staff.json', $staffList);
-            appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_UPDATE', $email, 'Perms: ' . summarizePermissionsForLog($perms));
+            appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_UPDATE', $email, 'TG:' . $tgChatId . ' | Perms: ' . summarizePermissionsForLog($perms));
             echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
             exit;
         }
@@ -1051,19 +1475,20 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
             ? normalizeStaffPermissions($body['permissions'], false)
             : getDefaultStaffPermissions();
         $newStaff = [
-            'id'            => 'stf_' . bin2hex(random_bytes(5)),
-            'name'          => $name,
-            'email'         => $email,
-            'password_hash' => hashSecretPbkdf2($pass),
-            'permissions'   => $perms,
-            'is_active'     => true,
-            'token_version' => 1,
-            'created_at'    => gmdate('c'),
-            'last_login'    => null
+            'id'               => 'stf_' . bin2hex(random_bytes(5)),
+            'name'             => $name,
+            'email'            => $email,
+            'telegram_chat_id' => $tgChatId,
+            'password_hash'    => hashSecretPbkdf2($pass),
+            'permissions'      => $perms,
+            'is_active'        => true,
+            'token_version'    => 1,
+            'created_at'       => gmdate('c'),
+            'last_login'       => null
         ];
         $staffList[] = $newStaff;
         writeJsonStore('staff.json', $staffList);
-        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_CREATE', $email, 'Perms: ' . summarizePermissionsForLog($perms));
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_CREATE', $email, 'TG:' . $tgChatId . ' | Perms: ' . summarizePermissionsForLog($perms));
         echo json_encode(['success' => true, 'id' => $newStaff['id']], JSON_UNESCAPED_UNICODE);
         exit;
     }
