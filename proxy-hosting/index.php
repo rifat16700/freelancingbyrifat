@@ -548,6 +548,12 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
         }
     } else {
         // 1B. First-time bootstrap (runs ONLY ONCE until master_admin.json is created!)
+        // Block known public placeholder seed account
+        if ($inputUser === 'admin@example.com') {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Placeholder seed account is disabled. Use your real Master Admin credentials.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         // Step 1: Verify once server-to-server against Cloudflare Pages Env Vars (ADMIN_USERNAME / ADMIN_PASSWORD)
         $cfSiteUrl = rtrim((string)ALLOWED_SITE_URL, '/');
         if ($cfSiteUrl !== '' && strpos($cfSiteUrl, 'your-domain.com') === false) {
@@ -563,7 +569,8 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
             $cfCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
             $cfJson = $cfRes ? json_decode($cfRes, true) : null;
-            if ($cfCode === 200 && !empty($cfJson['success'])) {
+            $cfEmail = strtolower(trim((string)($cfJson['user']['email'] ?? $inputUser)));
+            if ($cfCode === 200 && !empty($cfJson['success']) && $cfEmail !== 'admin@example.com') {
                 $isValid     = true;
                 $matchedUser = $cfJson['user']['email'] ?? $inputUser;
             }

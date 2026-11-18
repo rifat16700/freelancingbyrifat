@@ -27,8 +27,8 @@ export async function onRequestPost(context) {
         let isValid = false;
         let matchedUser = inputUser;
 
-        // 1. Check Cloudflare D1 Database if DB binding is available
-        if (env.DB) {
+        // 1. Check Cloudflare D1 Database if DB binding is available (skip public placeholder seed account)
+        if (env.DB && inputUser !== 'admin@example.com') {
             try {
                 const adminRow = await env.DB.prepare("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1").bind(inputUser).first();
                 if (adminRow && adminRow.password_hash) {
