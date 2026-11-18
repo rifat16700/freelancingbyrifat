@@ -347,6 +347,10 @@ function adminInit(activePage, onReady) {
 
         var email   = (session && session.sub) || localStorage.getItem('fbr_admin_email') || '';
         var role    = (session && session.role) || localStorage.getItem('fbr_admin_role') || 'master_admin';
+        if (session && session.role) localStorage.setItem('fbr_admin_role', session.role);
+        if (session && session.permissions !== undefined) {
+            localStorage.setItem('fbr_admin_perms', JSON.stringify(session.permissions || {}));
+        }
         var initial = email.charAt(0).toUpperCase() || 'A';
         var emailEl  = document.getElementById('adminUserEmail');
         var avatarEl = document.getElementById('userAvatar');
@@ -354,9 +358,34 @@ function adminInit(activePage, onReady) {
         if (emailEl)  emailEl.textContent  = email || 'Admin';
         if (avatarEl) avatarEl.textContent = initial;
         if (roleEl)   roleEl.textContent   = (role === 'staff') ? 'Staff Account' : 'Master Admin';
+
         if (role === 'staff') {
-            var staffLink = document.getElementById('navStaffSecurity');
-            if (staffLink) staffLink.style.display = 'none';
+            var permModules = ['orders', 'products', 'reviews', 'categories', 'promos', 'banners', 'sections', 'delivery', 'addons', 'brands', 'settings'];
+            var pageToMod = function(p) { return (p === 'theme') ? 'settings' : p; };
+            var masterOnlyPages = ['staff', 'env-setup', 'worker'];
+
+            document.querySelectorAll('.sidebar-nav .nav-item[data-page]').forEach(function(link) {
+                var p = link.getAttribute('data-page');
+                var mod = pageToMod(p);
+                if (masterOnlyPages.indexOf(p) !== -1) {
+                    link.style.display = 'none';
+                } else if (permModules.indexOf(mod) !== -1 && !window.hasAdminPerm(mod, 'view')) {
+                    link.style.display = 'none';
+                }
+            });
+
+            var curMod = pageToMod(activePage || '');
+            if (masterOnlyPages.indexOf(activePage) !== -1 || (permModules.indexOf(curMod) !== -1 && !window.hasAdminPerm(curMod, 'view'))) {
+                var firstAllowed = 'dashboard.html';
+                for (var mi = 0; mi < permModules.length; mi++) {
+                    if (window.hasAdminPerm(permModules[mi], 'view')) {
+                        firstAllowed = permModules[mi] + '.html';
+                        break;
+                    }
+                }
+                window.location.href = firstAllowed;
+                return;
+            }
         }
 
         if (activePage) {
@@ -371,6 +400,29 @@ function adminInit(activePage, onReady) {
         });
     });
 }
+
+// ── Granular Role & Permission Helpers ────────────────────────
+window.getAdminRole = function() {
+    return localStorage.getItem('fbr_admin_role') || 'master_admin';
+};
+window.getAdminPerms = function() {
+    try { return JSON.parse(localStorage.getItem('fbr_admin_perms') || '{}') || {}; }
+    catch(e) { return {}; }
+};
+window.hasAdminPerm = function(mod, action) {
+    if (window.getAdminRole() !== 'staff') return true;
+    var act = action || 'view';
+    var perms = window.getAdminPerms();
+    if (Array.isArray(perms)) {
+        if (perms.indexOf(mod) === -1) return false;
+        if (mod === 'orders') return (act === 'view' || act === 'edit');
+        return act !== 'delete';
+    }
+    if (perms && perms[mod] && typeof perms[mod] === 'object') {
+        return !!perms[mod][act];
+    }
+    return false;
+};
 
 
 // ── Load sidebar store name ───────────────────────────────────

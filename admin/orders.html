@@ -12,7 +12,7 @@
     <script src="../assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
     <script src="../assets/js/appwrite-init.js"></script>
-    <script src="assets/js/admin-common.js?v=5"></script>
+    <script src="assets/js/admin-common.js?v=9"></script>
     <style>
         .order-detail-row { padding: 20px; background: var(--bg-card); border-radius: var(--radius-md); }
         .detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
@@ -610,6 +610,7 @@
     });
 
     function autoCleanupOrders() {
+        if (typeof hasAdminPerm === 'function' && !hasAdminPerm('orders', 'delete')) return;
         var thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         var dateStr = thirtyDaysAgo.toISOString();
@@ -734,7 +735,7 @@
                         '<button class="btn btn-ghost btn-sm" onclick="printMasterInvoice(\'' + escHtml(o.id) + '\', \'bill\')" title="Master Bill Invoice"><i data-lucide="file-text" class="lucide-icon" style="width:15px;height:15px;color:#007AFF;"></i></button>' +
                         '<button class="btn btn-ghost btn-sm" onclick="printMasterInvoice(\'' + escHtml(o.id) + '\', \'full\')" title="Master Parcel Delivery Slip"><i data-lucide="truck" class="lucide-icon" style="width:15px;height:15px;color:#34C759;"></i></button>' +
                         (o._isMultiBrand ? '<button class="btn btn-ghost btn-sm" onclick="printAllBrandPackSet(\'' + escHtml(o.id) + '\')" title="Print Master Slip + Every Brand Dedicated Invoice" style="color:#7e22ce;font-weight:700;font-size:11px;padding:4px 7px;">🖨️ All (' + o._subOrders.length + ')</button>' : '') +
-                        '<button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:4px 7px;" onclick="deleteOrder(\'' + escHtml(o.id) + '\')" title="Delete Order"><i data-lucide="trash-2" class="lucide-icon" style="width:15px;height:15px;"></i></button>' +
+                        ((typeof hasAdminPerm !== 'function' || hasAdminPerm('orders', 'delete')) ? '<button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:4px 7px;" onclick="deleteOrder(\'' + escHtml(o.id) + '\')" title="Delete Order"><i data-lucide="trash-2" class="lucide-icon" style="width:15px;height:15px;"></i></button>' : '') +
                     '</div>' +
                 '</td>' +
             '</tr>';
@@ -1126,7 +1127,9 @@
                 '</div>' +
                 '<input class="form-input" id="updateTrackUrl" placeholder="Tracking URL (optional)" value="' + escHtml(activeOrder.tracking_url || '') + '" style="margin-bottom:10px;">' +
                 '<input class="form-input" id="updateNote" placeholder="Admin note (private)" value="' + escHtml(activeOrder.admin_note || '') + '" style="margin-bottom:10px;">' +
-                '<button class="btn btn-primary btn-full" onclick="updateOrder(\'' + escHtml(o.id) + '\')">💾 Save & Update ' + (currentModalBrandKey === 'all' && isMulti ? 'Master Order (All Brands)' : 'Order') + '</button>' +
+                ((typeof hasAdminPerm !== 'function' || hasAdminPerm('orders', 'edit'))
+                    ? '<button class="btn btn-primary btn-full" onclick="updateOrder(\'' + escHtml(o.id) + '\')">💾 Save & Update ' + (currentModalBrandKey === 'all' && isMulti ? 'Master Order (All Brands)' : 'Order') + '</button>'
+                    : '<div style="text-align:center;padding:10px;background:#fef2f2;color:#991b1b;border-radius:8px;font-size:12px;font-weight:700;">🔒 View-only mode (Edit permission নেই)</div>') +
             '</div>';
 
         document.getElementById('orderModalContent').innerHTML = content;
@@ -1134,6 +1137,10 @@
     }
 
     function deleteOrder(masterId) {
+        if (typeof hasAdminPerm === 'function' && !hasAdminPerm('orders', 'delete')) {
+            showToast('অর্ডার ডিলিট করার অনুমতি আপনার নেই।', 'error');
+            return;
+        }
         var m = masterOrderMap[masterId];
         var idsToDelete = m ? (m._dbIds || [masterId]) : [masterId];
         var msg = (idsToDelete.length > 1)

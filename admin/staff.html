@@ -7,13 +7,20 @@
     <link rel="stylesheet" href="assets/css/admin.css">
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
     <script src="../assets/js/config.js?v=1794570029121"></script>
-    <script src="assets/js/admin-common.js?v=8"></script>
+    <script src="assets/js/admin-common.js?v=9"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
         .sec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; margin-bottom: 24px; }
-        .perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 8px; margin-top: 8px; }
-        .perm-chip { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: #f8fafc; }
-        .perm-chip input { margin: 0; }
+        .perm-matrix-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 8px; background: #fff; }
+        .perm-matrix { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        .perm-matrix th { background: #f8fafc; padding: 8px 10px; text-align: center; font-weight: 700; color: #334155; border-bottom: 1px solid var(--border); }
+        .perm-matrix th:first-child { text-align: left; }
+        .perm-matrix td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+        .perm-matrix td:first-child { text-align: left; font-weight: 600; color: #1e293b; text-transform: capitalize; }
+        .perm-matrix tr:last-child td { border-bottom: none; }
+        .perm-matrix input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: #800000; }
+        .perm-badge { display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; color: #334155; font-size: 11px; padding: 3px 8px; border-radius: 6px; margin: 2px; font-weight: 600; }
+        .perm-badge.has-del { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
         .log-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
         .log-badge.master { background: #fee2e2; color: #b91c1c; }
         .log-badge.staff { background: #dbeafe; color: #1d4ed8; }
@@ -95,8 +102,8 @@
                                 <input class="form-input" type="password" id="sPassword" placeholder="Min 6 characters">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Allowed Permissions</label>
-                                <div class="perm-grid" id="sPermGrid"></div>
+                                <label class="form-label">Granular Module Permissions <span style="font-weight:400;color:var(--text-muted);font-size:11.5px;">(ডিফল্ট: শুধু Orders View + Edit, Delete নয়)</span></label>
+                                <div class="perm-matrix-wrap" id="sPermGrid"></div>
                             </div>
                             <button type="button" class="btn btn-primary" onclick="saveStaffMember()">✅ Save Staff Account</button>
                         </div>
@@ -188,9 +195,58 @@
 </div>
 
 <script>
-var ALL_PERMS = ['orders', 'products', 'reviews', 'promos', 'categories', 'banners', 'sections', 'delivery', 'addons', 'brands', 'settings'];
+var PERM_SCHEMA = {
+    orders:     ['view', 'edit', 'delete'],
+    products:   ['view', 'create', 'edit', 'delete'],
+    reviews:    ['view', 'edit', 'delete'],
+    categories: ['view', 'create', 'edit', 'delete'],
+    promos:     ['view', 'create', 'edit', 'delete'],
+    banners:    ['view', 'create', 'edit', 'delete'],
+    sections:   ['view', 'create', 'edit', 'delete'],
+    delivery:   ['view', 'create', 'edit', 'delete'],
+    addons:     ['view', 'create', 'edit', 'delete'],
+    brands:     ['view', 'create', 'edit', 'delete'],
+    settings:   ['view', 'edit']
+};
+var PERM_MODULES = Object.keys(PERM_SCHEMA);
+var ACTION_COLS  = ['view', 'create', 'edit', 'delete'];
 var staffRows = [];
 var allLogs = [];
+
+function getDefaultStaffPerms() {
+    var def = {};
+    PERM_MODULES.forEach(function(mod) {
+        def[mod] = {};
+        PERM_SCHEMA[mod].forEach(function(act) {
+            def[mod][act] = (mod === 'orders' && (act === 'view' || act === 'edit'));
+        });
+    });
+    return def;
+}
+
+function normalizeClientPerms(raw) {
+    if (!raw) return getDefaultStaffPerms();
+    if (Array.isArray(raw)) {
+        var outArr = {};
+        PERM_MODULES.forEach(function(mod) {
+            var has = raw.indexOf(mod) !== -1;
+            outArr[mod] = {};
+            PERM_SCHEMA[mod].forEach(function(act) {
+                outArr[mod][act] = (mod === 'orders') ? (has && (act === 'view' || act === 'edit')) : (has && act !== 'delete');
+            });
+        });
+        return outArr;
+    }
+    var out = {};
+    PERM_MODULES.forEach(function(mod) {
+        out[mod] = {};
+        var m = (raw && typeof raw[mod] === 'object') ? raw[mod] : {};
+        PERM_SCHEMA[mod].forEach(function(act) {
+            out[mod][act] = !!m[act];
+        });
+    });
+    return out;
+}
 
 function escHtml(s) {
     return String(s == null ? '' : s)
@@ -203,16 +259,40 @@ function getProxyEp(path) {
     return (base || '') + path;
 }
 
+function onPermCellChange(cb) {
+    var mod = cb.getAttribute('data-mod');
+    var act = cb.getAttribute('data-act');
+    if (!mod || !act) return;
+    if (act === 'view' && !cb.checked) {
+        document.querySelectorAll('input[name="sPermCell"][data-mod="' + mod + '"]').forEach(function(el) {
+            el.checked = false;
+        });
+    } else if (act !== 'view' && cb.checked) {
+        var viewCb = document.querySelector('input[name="sPermCell"][data-mod="' + mod + '"][data-act="view"]');
+        if (viewCb) viewCb.checked = true;
+    }
+}
+
 function renderPermCheckboxes(selected) {
-    var sel = Array.isArray(selected) ? selected : [];
-    document.getElementById('sPermGrid').innerHTML = ALL_PERMS.map(function(p) {
-        var checked = sel.indexOf(p) !== -1 ? 'checked' : '';
-        return '<label class="perm-chip"><input type="checkbox" name="sPerm" value="' + p + '" ' + checked + '><span>' + p + '</span></label>';
+    var perms = normalizeClientPerms(selected);
+    var rowsHtml = PERM_MODULES.map(function(mod) {
+        var allowed = PERM_SCHEMA[mod];
+        var cells = ACTION_COLS.map(function(act) {
+            if (allowed.indexOf(act) === -1) return '<td style="color:#cbd5e1;">—</td>';
+            var checked = perms[mod] && perms[mod][act] ? 'checked' : '';
+            return '<td><input type="checkbox" name="sPermCell" data-mod="' + mod + '" data-act="' + act + '" ' + checked + ' onchange="onPermCellChange(this)"></td>';
+        }).join('');
+        return '<tr><td>' + escHtml(mod) + '</td>' + cells + '</tr>';
     }).join('');
+    document.getElementById('sPermGrid').innerHTML =
+        '<table class="perm-matrix">' +
+            '<thead><tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr></thead>' +
+            '<tbody>' + rowsHtml + '</tbody>' +
+        '</table>';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    renderPermCheckboxes(['orders', 'products', 'reviews']);
+    renderPermCheckboxes(getDefaultStaffPerms());
     adminInit('staff', function() {
         var role = localStorage.getItem('fbr_admin_role') || 'master_admin';
         if (role === 'staff') {
@@ -367,9 +447,14 @@ function loadStaffList() {
             return;
         }
         tb.innerHTML = staffRows.map(function(s) {
-            var perms = (s.permissions || []).map(function(p) {
-                return '<span class="badge" style="background:#f1f5f9;color:#334155;font-size:11px;margin:2px;">' + escHtml(p) + '</span>';
-            }).join('');
+            var normP = normalizeClientPerms(s.permissions);
+            var perms = PERM_MODULES.map(function(mod) {
+                var acts = normP[mod] || {};
+                var on = ACTION_COLS.filter(function(a) { return !!acts[a]; });
+                if (!on.length) return '';
+                var hasDel = !!acts.delete;
+                return '<span class="perm-badge ' + (hasDel ? 'has-del' : '') + '">' + escHtml(mod) + ': ' + escHtml(on.join('/')) + '</span>';
+            }).filter(Boolean).join('');
             return '<tr>' +
                 '<td><b>' + escHtml(s.name) + '</b></td>' +
                 '<td>' + escHtml(s.email) + '</td>' +
@@ -393,7 +478,7 @@ function resetStaffForm() {
     document.getElementById('sPassword').value = '';
     document.getElementById('staffFormTitle').textContent = '➕ Add Staff Account';
     document.getElementById('staffResetBtn').style.display = 'none';
-    renderPermCheckboxes(['orders', 'products', 'reviews']);
+    renderPermCheckboxes(getDefaultStaffPerms());
 }
 
 function editStaff(id) {
@@ -405,11 +490,18 @@ function editStaff(id) {
     document.getElementById('sPassword').value = '';
     document.getElementById('staffFormTitle').textContent = '✏️ Edit Staff: ' + st.name;
     document.getElementById('staffResetBtn').style.display = 'inline-flex';
-    renderPermCheckboxes(st.permissions || []);
+    renderPermCheckboxes(st.permissions || getDefaultStaffPerms());
 }
 
 function saveStaffMember() {
-    var perms = Array.from(document.querySelectorAll('input[name="sPerm"]:checked')).map(function(cb) { return cb.value; });
+    var perms = {};
+    PERM_MODULES.forEach(function(mod) {
+        perms[mod] = {};
+        PERM_SCHEMA[mod].forEach(function(act) {
+            var cb = document.querySelector('input[name="sPermCell"][data-mod="' + mod + '"][data-act="' + act + '"]');
+            perms[mod][act] = !!(cb && cb.checked);
+        });
+    });
     var payload = {
         action: 'save',
         id: document.getElementById('sEditId').value,

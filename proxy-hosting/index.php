@@ -366,7 +366,7 @@ function verifyAdminToken($token, $secret = null) {
         }
         if (!$matchedStaff || empty($matchedStaff['is_active'])) return null;
         if ((int)($matchedStaff['token_version'] ?? 1) !== $tv) return null;
-        $payload['permissions'] = is_array($matchedStaff['permissions'] ?? null) ? $matchedStaff['permissions'] : [];
+        $payload['permissions'] = normalizeStaffPermissions($matchedStaff['permissions'] ?? null, true);
     } else {
         $master = readJsonStore('master_admin.json', []);
         if (!empty($master) && (int)($master['token_version'] ?? 1) !== $tv) {
@@ -401,7 +401,118 @@ function getRequestAdminToken($body = []) {
     return '';
 }
 
-function requireAdminAuth($body = [], $requiredPerm = null) {
+function getPermissionSchema() {
+    return [
+        'orders'     => ['view', 'edit', 'delete'],
+        'products'   => ['view', 'create', 'edit', 'delete'],
+        'reviews'    => ['view', 'edit', 'delete'],
+        'categories' => ['view', 'create', 'edit', 'delete'],
+        'promos'     => ['view', 'create', 'edit', 'delete'],
+        'banners'    => ['view', 'create', 'edit', 'delete'],
+        'sections'   => ['view', 'create', 'edit', 'delete'],
+        'delivery'   => ['view', 'create', 'edit', 'delete'],
+        'addons'     => ['view', 'create', 'edit', 'delete'],
+        'brands'     => ['view', 'create', 'edit', 'delete'],
+        'settings'   => ['view', 'edit']
+    ];
+}
+
+function getDefaultStaffPermissions() {
+    $out = [];
+    foreach (getPermissionSchema() as $mod => $actions) {
+        $out[$mod] = [];
+        foreach ($actions as $act) {
+            // Default Staff policy: ONLY Orders has view + edit enabled; delete is OFF by default.
+            $out[$mod][$act] = ($mod === 'orders' && ($act === 'view' || $act === 'edit'));
+        }
+    }
+    return $out;
+}
+
+function normalizeStaffPermissions($raw, $useDefaultIfMissing = false) {
+    $schema = getPermissionSchema();
+    if (!is_array($raw)) {
+        return $useDefaultIfMissing ? getDefaultStaffPermissions() : array_map(function($acts) {
+            return array_fill_keys($acts, false);
+        }, $schema);
+    }
+    // Support legacy flat module lists e.g. ['orders', 'products']
+    $isSeqList = (empty($raw) || array_keys($raw) === range(0, count($raw) - 1));
+    if ($isSeqList) {
+        if (empty($raw) && $useDefaultIfMissing) {
+            return getDefaultStaffPermissions();
+        }
+        $out = [];
+        foreach ($schema as $mod => $acts) {
+            $hasMod = in_array($mod, $raw, true);
+            $out[$mod] = [];
+            foreach ($acts as $act) {
+                if ($mod === 'orders') {
+                    $out[$mod][$act] = ($hasMod && ($act === 'view' || $act === 'edit'));
+                } else {
+                    $out[$mod][$act] = ($hasMod && $act !== 'delete');
+                }
+            }
+        }
+        return $out;
+    }
+
+    $out = [];
+    foreach ($schema as $mod => $acts) {
+        $modIn = isset($raw[$mod]) && is_array($raw[$mod]) ? $raw[$mod] : [];
+        $out[$mod] = [];
+        foreach ($acts as $act) {
+            $out[$mod][$act] = !empty($modIn[$act]);
+        }
+        // Any write permission implies read/view access so staff can load that screen
+        if (!empty($out[$mod]['create']) || !empty($out[$mod]['edit']) || !empty($out[$mod]['delete'])) {
+            $out[$mod]['view'] = true;
+        }
+    }
+    return $out;
+}
+
+function hasStaffPermission($user, $module, $action = 'view') {
+    $role = is_array($user) ? ($user['role'] ?? 'master_admin') : 'master_admin';
+    if ($role !== 'staff') return true;
+    if ($module === 'master_only') return false;
+    $perms = is_array($user['permissions'] ?? null) ? $user['permissions'] : [];
+    if (isset($perms[$module]) && is_array($perms[$module])) {
+        return !empty($perms[$module][$action]);
+    }
+    return false;
+}
+
+function assertAdminPermission($adminUser, $requiredPerm, $requiredAction = 'view') {
+    $role = $adminUser['role'] ?? 'master_admin';
+    if ($requiredPerm && $role === 'staff') {
+        if ($requiredPerm === 'master_only' || !hasStaffPermission($adminUser, $requiredPerm, $requiredAction)) {
+            header('Cache-Control: no-store, no-cache, must-revalidate');
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'error'   => 'Forbidden: Missing permission (' . $requiredPerm . '.' . $requiredAction . ').'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+}
+
+function summarizePermissionsForLog($perms) {
+    $parts = [];
+    if (!is_array($perms)) return '';
+    foreach ($perms as $mod => $acts) {
+        if (!is_array($acts)) continue;
+        $on = [];
+        foreach ($acts as $a => $v) {
+            if (!empty($v)) $on[] = $a;
+        }
+        if (!empty($on)) $parts[] = $mod . '[' . implode('/', $on) . ']';
+    }
+    return implode(', ', $parts);
+}
+
+function requireAdminAuth($body = [], $requiredPerm = null, $requiredAction = 'view') {
     $token = getRequestAdminToken($body);
     $verified = verifyAdminToken($token);
     if (!$verified) {
@@ -413,19 +524,7 @@ function requireAdminAuth($body = [], $requiredPerm = null) {
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
-    $role = $verified['role'] ?? 'master_admin';
-    if ($requiredPerm && $role === 'staff') {
-        $perms = is_array($verified['permissions'] ?? null) ? $verified['permissions'] : [];
-        if ($requiredPerm === 'master_only' || !in_array($requiredPerm, $perms, true)) {
-            header('Cache-Control: no-store, no-cache, must-revalidate');
-            http_response_code(403);
-            echo json_encode([
-                'success' => false,
-                'error'   => 'Forbidden: Only Master Admin or authorized Staff can perform this action.'
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
+    assertAdminPermission($verified, $requiredPerm, $requiredAction);
     return $verified;
 }
 
@@ -548,52 +647,50 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
         }
     } else {
         // 1B. First-time bootstrap (runs ONLY ONCE until master_admin.json is created!)
-        // Block known public placeholder seed account
-        if ($inputUser === 'admin@example.com') {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Placeholder seed account is disabled. Use your real Master Admin credentials.'], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-        // Step 1: Verify once server-to-server against Cloudflare Pages Env Vars (ADMIN_USERNAME / ADMIN_PASSWORD)
-        $cfSiteUrl = rtrim((string)ALLOWED_SITE_URL, '/');
-        if ($cfSiteUrl !== '' && strpos($cfSiteUrl, 'your-domain.com') === false) {
-            $ch = curl_init($cfSiteUrl . '/api/admin-login');
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST           => true,
-                CURLOPT_POSTFIELDS     => json_encode(['username' => $inputUser, 'password' => $inputPass]),
-                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-                CURLOPT_TIMEOUT        => 10
-            ]);
-            $cfRes  = curl_exec($ch);
-            $cfCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            $cfJson = $cfRes ? json_decode($cfRes, true) : null;
-            $cfEmail = strtolower(trim((string)($cfJson['user']['email'] ?? $inputUser)));
-            if ($cfCode === 200 && !empty($cfJson['success']) && $cfEmail !== 'admin@example.com') {
-                $isValid     = true;
-                $matchedUser = $cfJson['user']['email'] ?? $inputUser;
-            }
-        }
+        // Master ID is determined dynamically from the initial configured credentials (never hardcoded).
 
-        // Step 2: Check non-placeholder D1 admins row
-        if (!$isValid) {
-            $adminRows = d1Query("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1", [$inputUser]);
-            if (!empty($adminRows[0]['password_hash']) && strtolower($adminRows[0]['email'] ?? '') !== 'admin@example.com') {
-                if (verifySecretPbkdf2($inputPass, $adminRows[0]['password_hash'])) {
-                    $isValid     = true;
-                    $matchedUser = $adminRows[0]['email'];
-                }
-            }
-        }
-
-        // Step 3: Explicit AlwaysData env vars (never generic hardcoded defaults in production)
-        if (!$isValid && getenv('ADMIN_USERNAME') && getenv('ADMIN_PASSWORD')) {
+        // Step 1: Check explicit AlwaysData env vars first if configured
+        if (getenv('ADMIN_USERNAME') && getenv('ADMIN_PASSWORD')) {
             $validUser = strtolower(trim((string)getenv('ADMIN_USERNAME')));
             $validPass = (string)getenv('ADMIN_PASSWORD');
             if ($inputUser === $validUser && hash_equals($validPass, $inputPass)) {
                 $isValid     = true;
-                $matchedUser = $validUser;
+                $matchedUser = trim((string)getenv('ADMIN_USERNAME'));
+            }
+        }
+
+        // Step 2: Verify once server-to-server against Cloudflare Pages /api/admin-login (prioritizes CF Env Vars over D1)
+        if (!$isValid) {
+            $cfSiteUrl = rtrim((string)ALLOWED_SITE_URL, '/');
+            if ($cfSiteUrl !== '' && strpos($cfSiteUrl, 'your-domain.com') === false) {
+                $ch = curl_init($cfSiteUrl . '/api/admin-login');
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => json_encode(['username' => $inputUser, 'password' => $inputPass]),
+                    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                    CURLOPT_TIMEOUT        => 10
+                ]);
+                $cfRes  = curl_exec($ch);
+                $cfCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                $cfJson = $cfRes ? json_decode($cfRes, true) : null;
+                if ($cfCode === 200 && !empty($cfJson['success'])) {
+                    $isValid     = true;
+                    $matchedUser = $cfJson['user']['email'] ?? $inputUser;
+                }
+            }
+        }
+
+        // Step 3: Fallback check against D1 admins table (only if previous steps didn't match)
+        if (!$isValid) {
+            $adminRows = d1Query("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1", [$inputUser]);
+            if (!empty($adminRows[0]['password_hash'])) {
+                $storedHash = (string)$adminRows[0]['password_hash'];
+                if (verifySecretPbkdf2($inputPass, $storedHash) || hash_equals($storedHash, $inputPass)) {
+                    $isValid     = true;
+                    $matchedUser = $adminRows[0]['email'];
+                }
             }
         }
 
@@ -630,7 +727,7 @@ if (strpos($endpoint, 'admin-login') !== false && $method === 'POST') {
                     $matchedUser  = $st['email'];
                     $matchedRole  = 'staff';
                     $matchedSid   = $st['id'] ?? '';
-                    $matchedPerms = is_array($st['permissions'] ?? null) ? $st['permissions'] : [];
+                    $matchedPerms = normalizeStaffPermissions($st['permissions'] ?? null, true);
                     $tokenVersion = (int)($st['token_version'] ?? 1);
                     $st['last_login'] = gmdate('c');
                     writeJsonStore('staff.json', $staffList);
@@ -843,15 +940,20 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
     if ($method === 'GET' || (($body['action'] ?? '') === 'list')) {
         $safeList = array_map(function($s) {
             unset($s['password_hash']);
+            $s['permissions'] = normalizeStaffPermissions($s['permissions'] ?? null, true);
             return $s;
         }, $staffList);
-        echo json_encode(['success' => true, 'staff' => $safeList], JSON_UNESCAPED_UNICODE);
+        echo json_encode([
+            'success'             => true,
+            'staff'               => $safeList,
+            'default_permissions' => getDefaultStaffPermissions(),
+            'permission_schema'   => getPermissionSchema()
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     if ($method === 'POST') {
         $action = strtolower(trim((string)($body['action'] ?? 'save')));
-        $validPerms = ['orders', 'products', 'reviews', 'promos', 'categories', 'banners', 'sections', 'delivery', 'addons', 'brands', 'settings'];
 
         if ($action === 'toggle') {
             $sid = trim((string)($body['id'] ?? ''));
@@ -893,7 +995,7 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
         $name  = mb_substr(trim((string)($body['name'] ?? '')), 0, 80);
         $email = strtolower(trim((string)($body['email'] ?? '')));
         $pass  = (string)($body['password'] ?? '');
-        $perms = array_values(array_intersect(is_array($body['permissions'] ?? null) ? $body['permissions'] : [], $validPerms));
+        $hasExplicitPerms = array_key_exists('permissions', $body) && is_array($body['permissions']);
 
         if ($name === '' || $email === '') {
             http_response_code(400);
@@ -918,6 +1020,9 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
         }
 
         if ($foundIdx >= 0) {
+            $perms = $hasExplicitPerms
+                ? normalizeStaffPermissions($body['permissions'], false)
+                : normalizeStaffPermissions($staffList[$foundIdx]['permissions'] ?? null, true);
             $staffList[$foundIdx]['name']        = $name;
             $staffList[$foundIdx]['email']       = $email;
             $staffList[$foundIdx]['permissions'] = $perms;
@@ -932,7 +1037,7 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
             }
             $staffList[$foundIdx]['updated_at'] = gmdate('c');
             writeJsonStore('staff.json', $staffList);
-            appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_UPDATE', $email, 'Perms: ' . implode(',', $perms));
+            appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_UPDATE', $email, 'Perms: ' . summarizePermissionsForLog($perms));
             echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
             exit;
         }
@@ -942,6 +1047,9 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
             echo json_encode(['success' => false, 'error' => 'নতুন স্টাফের পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।'], JSON_UNESCAPED_UNICODE);
             exit;
         }
+        $perms = $hasExplicitPerms
+            ? normalizeStaffPermissions($body['permissions'], false)
+            : getDefaultStaffPermissions();
         $newStaff = [
             'id'            => 'stf_' . bin2hex(random_bytes(5)),
             'name'          => $name,
@@ -955,7 +1063,7 @@ if (strpos($endpoint, '/staff') !== false && strpos($endpoint, 'staff-logs') ===
         ];
         $staffList[] = $newStaff;
         writeJsonStore('staff.json', $staffList);
-        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_CREATE', $email, 'Perms: ' . implode(',', $perms));
+        appendAuditLog($adminUser['sub'] ?? 'master', 'master_admin', 'STAFF_CREATE', $email, 'Perms: ' . summarizePermissionsForLog($perms));
         echo json_encode(['success' => true, 'id' => $newStaff['id']], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -1143,7 +1251,14 @@ if (strpos($endpoint, 'd1-query') !== false && $method === 'POST') {
         $trim = ltrim((string)$sqlStr);
         if (stripos($trim, 'SELECT') !== 0) return 'Only SELECT queries are allowed on this endpoint.';
         if (strpos($trim, ';') !== false && substr(rtrim($trim), -1) !== ';') return 'Stacked queries are not allowed.';
-        if (!$adminPayload && preg_match('/\badmins\b/i', $trim)) return 'Unauthorized table access.';
+        if ((!$adminPayload || ($adminPayload['role'] ?? '') === 'staff') && preg_match('/\b(admins|devtools)\b/i', $trim)) {
+            return 'Unauthorized table access.';
+        }
+        if ($adminPayload && ($adminPayload['role'] ?? '') === 'staff') {
+            if (preg_match('/\b(FROM|JOIN)\s+orders\b/i', $trim) && !hasStaffPermission($adminPayload, 'orders', 'view')) {
+                return 'Forbidden: Missing permission (orders.view).';
+            }
+        }
         return null;
     };
 
@@ -1199,8 +1314,7 @@ if ((strpos($endpoint, 'admin-query') !== false || strpos($endpoint, 'dev-query'
 
     $checkQueryPerm = function($sqlStr) use ($adminUser, $role) {
         if ($role !== 'staff') return;
-        $perms = is_array($adminUser['permissions'] ?? null) ? $adminUser['permissions'] : [];
-        $su = strtoupper((string)$sqlStr);
+        $su = strtoupper(ltrim((string)$sqlStr));
         $tableMap = [
             'PRODUCTS' => 'products', 'PRODUCT_CATEGORIES' => 'products',
             'CATEGORIES' => 'categories', 'BANNERS' => 'banners',
@@ -1208,17 +1322,31 @@ if ((strpos($endpoint, 'admin-query') !== false || strpos($endpoint, 'dev-query'
             'PROMOS' => 'promos', 'ADDONS' => 'addons', 'REVIEWS' => 'reviews',
             'ORDERS' => 'orders', 'SETTINGS' => 'settings', 'BRANDS' => 'brands'
         ];
-        if (preg_match('/\b(ADMINS|DEVTOOLS)\b/i', $su)) {
+        if (preg_match('/\b(ADMINS|DEVTOOLS)\b/i', $su) || preg_match('/^\s*(DROP|ALTER|TRUNCATE|PRAGMA|CREATE)\b/i', $su)) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Forbidden: Master Admin access required.']);
             exit;
         }
+        $sqlAct = 'view';
+        if (preg_match('/^\s*(INSERT|REPLACE)\b/i', $su)) $sqlAct = 'create';
+        elseif (preg_match('/^\s*UPDATE\b/i', $su)) $sqlAct = 'edit';
+        elseif (preg_match('/^\s*DELETE\b/i', $su)) $sqlAct = 'delete';
+
+        $matchedAny = false;
         foreach ($tableMap as $tbl => $permKey) {
-            if (preg_match('/\b' . $tbl . '\b/i', $su) && !in_array($permKey, $perms, true)) {
-                http_response_code(403);
-                echo json_encode(['success' => false, 'error' => 'Forbidden: Missing permission (' . $permKey . ').']);
-                exit;
+            if (preg_match('/\b' . $tbl . '\b/i', $su)) {
+                $matchedAny = true;
+                if (!hasStaffPermission($adminUser, $permKey, $sqlAct)) {
+                    http_response_code(403);
+                    echo json_encode(['success' => false, 'error' => 'Forbidden: Missing permission (' . $permKey . '.' . $sqlAct . ').']);
+                    exit;
+                }
             }
+        }
+        if (!$matchedAny) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Forbidden: Unrecognized table in Staff query.']);
+            exit;
         }
     };
 
@@ -1264,8 +1392,8 @@ if ((strpos($endpoint, 'admin-query') !== false || strpos($endpoint, 'dev-query'
 if ((strpos($endpoint, 'add-product') !== false || strpos($endpoint, 'update-product') !== false) && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $p = readJsonBody();
-    $adminUser = requireAdminAuth($p, 'products');
     $isUpdate = (strpos($endpoint, 'update-product') !== false);
+    $adminUser = requireAdminAuth($p, 'products', $isUpdate ? 'edit' : 'create');
 
     $productId = trim((string)($p['id'] ?? ''));
     if ($isUpdate && $productId === '') {
@@ -1386,7 +1514,7 @@ if ((strpos($endpoint, 'add-product') !== false || strpos($endpoint, 'update-pro
 if (strpos($endpoint, 'delete-product') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $body = readJsonBody();
-    $adminUser = requireAdminAuth($body, 'products');
+    $adminUser = requireAdminAuth($body, 'products', 'delete');
     $id = trim((string)($body['id'] ?? ''));
     if ($id === '') {
         http_response_code(400);
@@ -1406,7 +1534,7 @@ if (strpos($endpoint, 'delete-product') !== false && $method === 'POST') {
 if (strpos($endpoint, 'update-order') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $body = readJsonBody();
-    $adminUser = requireAdminAuth($body, 'orders');
+    $adminUser = requireAdminAuth($body, 'orders', 'edit');
     $upData = (isset($body['upData']) && is_array($body['upData'])) ? $body['upData'] : $body;
     $id     = trim((string)($body['id'] ?? ''));
     if ($id === '') {
@@ -1437,7 +1565,7 @@ if (strpos($endpoint, 'update-order') !== false && $method === 'POST') {
 if (strpos($endpoint, 'delete-order') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $body = readJsonBody();
-    $adminUser = requireAdminAuth($body, 'orders');
+    $adminUser = requireAdminAuth($body, 'orders', 'delete');
     $id  = trim((string)($body['id'] ?? ''));
     $res = d1Exec("DELETE FROM orders WHERE id = ?", [$id]);
     if (!empty($body['ids']) && is_array($body['ids'])) {
@@ -1459,7 +1587,7 @@ if (strpos($endpoint, 'delete-order') !== false && $method === 'POST') {
 if (strpos($endpoint, 'update-settings') !== false && $method === 'POST') {
     header('Cache-Control: no-store, no-cache, must-revalidate');
     $p = readJsonBody();
-    $adminUser = requireAdminAuth($p, 'settings');
+    $adminUser = requireAdminAuth($p, 'settings', 'edit');
 
     $sql = "UPDATE settings SET
         store_name=?, logo_url=?, favicon_url=?, footer_text=?, whatsapp_number=?, facebook_url=?, instagram_url=?, youtube_url=?,
@@ -1532,8 +1660,19 @@ if (strpos($endpoint, 'brands') !== false) {
     }
     if ($method === 'POST') {
         $body = readJsonBody();
-        $adminUser = requireAdminAuth($body, 'brands');
+        $adminUser = requireAdminAuth($body, 'brands', 'view');
         $action = strtolower(trim((string)($body['action'] ?? 'save')));
+        if ($action === 'delete') {
+            assertAdminPermission($adminUser, 'brands', 'delete');
+        } elseif ($action !== 'check_slug') {
+            $tmpBrandId = trim((string)($body['id'] ?? ''));
+            $isBrandEdit = false;
+            if ($tmpBrandId !== '') {
+                $chkB = d1Query("SELECT id FROM brands WHERE id = ? LIMIT 1", [$tmpBrandId]);
+                $isBrandEdit = !empty($chkB);
+            }
+            assertAdminPermission($adminUser, 'brands', $isBrandEdit ? 'edit' : 'create');
+        }
         $cleanSlugFn = function($str) {
             $s = strtolower(trim((string)$str));
             $s = preg_replace('/^\/+|\/+$/', '', $s);

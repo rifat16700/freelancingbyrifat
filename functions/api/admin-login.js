@@ -27,30 +27,49 @@ export async function onRequestPost(context) {
         let isValid = false;
         let matchedUser = inputUser;
 
-        // 1. Check Cloudflare D1 Database if DB binding is available (skip public placeholder seed account)
-        if (env.DB && inputUser !== 'admin@example.com') {
+        const hasEnvCreds = Boolean(env.ADMIN_USERNAME && env.ADMIN_PASSWORD);
+
+        // 1. Prioritize explicitly configured Environment Variables (initial Master ID)
+        if (hasEnvCreds) {
+            const validUser = String(env.ADMIN_USERNAME).trim().toLowerCase();
+            const validPass = String(env.ADMIN_PASSWORD);
+            if (inputUser === validUser && inputPass === validPass) {
+                isValid = true;
+                matchedUser = String(env.ADMIN_USERNAME).trim();
+            }
+        }
+
+        // 2. Fallback to D1 admins table (only when explicit Env Vars are not configured)
+        if (!hasEnvCreds && env.DB) {
             try {
                 const adminRow = await env.DB.prepare("SELECT * FROM admins WHERE LOWER(email) = ? LIMIT 1").bind(inputUser).first();
                 if (adminRow && adminRow.password_hash) {
-                    // Match plain text or hash
                     if (adminRow.password_hash === inputPass) {
                         isValid = true;
                         matchedUser = adminRow.email;
                     }
                 }
             } catch (e) {
-                // Table doesn't exist or DB not configured, continue to fallback
+                // Table doesn't exist or DB not configured, continue to default fallback
             }
         }
 
-        // 2. Check Environment Variables or Zero-Setup Fallback
-        if (!isValid) {
-            const validUser = (env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
-            const validPass = (env.ADMIN_PASSWORD || 'admin123');
-
-            if (inputUser === validUser && inputPass === validPass) {
-                isValid = true;
-                matchedUser = validUser;
+        // 3. Zero-Setup Fallback only when neither Env Vars nor any D1 admins row is configured
+        if (!isValid && !hasEnvCreds) {
+            let hasAnyD1Admin = false;
+            if (env.DB) {
+                try {
+                    const anyRow = await env.DB.prepare("SELECT id FROM admins LIMIT 1").first();
+                    hasAnyD1Admin = Boolean(anyRow);
+                } catch (e) {}
+            }
+            if (!hasAnyD1Admin) {
+                const fallbackUser = String(env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
+                const fallbackPass = String(env.ADMIN_PASSWORD || 'admin123');
+                if (inputUser === fallbackUser && inputPass === fallbackPass) {
+                    isValid = true;
+                    matchedUser = String(env.ADMIN_USERNAME || 'admin').trim();
+                }
             }
         }
 
