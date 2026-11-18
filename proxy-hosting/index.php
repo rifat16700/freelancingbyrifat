@@ -217,7 +217,37 @@ function getClientUaLabel() {
 // ============================================================================
 // 2C. TELEGRAM 2FA OTP ENGINE (Master Creation, Master Login & Staff Login)
 // ============================================================================
+function loadPrivateEnvMap() {
+    static $envMap = null;
+    if ($envMap !== null) return $envMap;
+    $envMap = [];
+    $candidates = [
+        getPrivateDataDir() . DIRECTORY_SEPARATOR . '.env',
+        dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env'
+    ];
+    foreach ($candidates as $envFile) {
+        if (!file_exists($envFile)) continue;
+        $lines = @file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!is_array($lines)) continue;
+        foreach ($lines as $line) {
+            $t = trim($line);
+            if ($t === '' || $t[0] === '#' || strpos($t, '=') === false) continue;
+            list($k, $v) = explode('=', $t, 2);
+            $k = trim($k);
+            $v = trim($v);
+            if (strlen($v) >= 2 && (($v[0] === '"' && substr($v, -1) === '"') || ($v[0] === "'" && substr($v, -1) === "'"))) {
+                $v = substr($v, 1, -1);
+            }
+            if ($k !== '' && $v !== '' && !isset($envMap[$k])) {
+                $envMap[$k] = $v;
+            }
+        }
+    }
+    return $envMap;
+}
+
 function getEnvAny($keys) {
+    $dotEnv = loadPrivateEnvMap();
     foreach ($keys as $k) {
         if (defined($k)) {
             $v = trim((string)constant($k));
@@ -227,6 +257,7 @@ function getEnvAny($keys) {
         if ($v !== false && trim((string)$v) !== '') return trim((string)$v);
         if (isset($_ENV[$k]) && trim((string)$_ENV[$k]) !== '') return trim((string)$_ENV[$k]);
         if (isset($_SERVER[$k]) && trim((string)$_SERVER[$k]) !== '') return trim((string)$_SERVER[$k]);
+        if (isset($dotEnv[$k]) && trim((string)$dotEnv[$k]) !== '') return trim((string)$dotEnv[$k]);
     }
     return '';
 }

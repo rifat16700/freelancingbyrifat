@@ -20,3 +20,8 @@ node_modules/
 # Ignore workspace agent skills directory
 .agents/
 
+# Local secrets / environment files
+.env
+.env.*
+!.env.example
+
