@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Products — Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/admin.css?v=10">
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
     <script src="../assets/js/config.js?v=1794570029121"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
     <script src="../assets/js/appwrite-init.js"></script>
-    <script src="assets/js/admin-common.js?v=5"></script>
+    <script src="assets/js/admin-common.js?v=10"></script>
     <script src="../assets/js/imgbb-uploader.js?v=1791100000002"></script>
     <script src="../assets/js/r2-uploader.js"></script>
     <script src="../assets/js/piexif.js"></script>
@@ -22,7 +22,7 @@
     <style>
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
         .product-card {
-            background: #FFFFFF; border: 1px solid var(--border);
+            background: var(--bg-card); border: 1px solid var(--border);
             border-radius: var(--radius-md); overflow: hidden; transition: var(--transition);
             box-shadow: var(--shadow-sm);
         }
@@ -46,14 +46,14 @@
         .gallery-url-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 
         /* -- Rich Text Editor ---------------------------------- */
-        .rte-wrap { border: 1.5px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: #FFFFFF; transition: var(--transition); }
+        .rte-wrap { border: 1.5px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-card); transition: var(--transition); }
         .rte-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--border-focus-ring); }
         .rte-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 8px 10px; background: var(--bg-card-subtle); border-bottom: 1px solid var(--border); }
         .rte-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; border-radius: 6px; border: none; background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0 8px; transition: var(--transition); font-family: inherit; }
         .rte-btn:hover { background: var(--bg-card-hover); color: var(--accent); }
         .rte-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
-        .rte-select { height: 32px; border-radius: 6px; border: 1px solid var(--border); background: #FFFFFF; color: var(--text-primary); font-size: 12px; padding: 0 6px; cursor: pointer; font-family: inherit; }
-        .rte-select option { background: #FFFFFF; color: var(--text-primary); }
+        .rte-select { height: 32px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-size: 12px; padding: 0 6px; cursor: pointer; font-family: inherit; }
+        .rte-select option { background: var(--bg-card); color: var(--text-primary); }
         .rte-editor { min-height: 130px; max-height: 300px; overflow-y: auto; padding: 12px 14px; font-size: 14px; line-height: 1.8; color: var(--text-primary); outline: none; }
         .rte-editor:empty:before { content: attr(data-placeholder); color: var(--text-muted); pointer-events: none; }
         .rte-editor b, .rte-editor strong { font-weight: 700; }

@@ -12,7 +12,33 @@
     <!-- Explicit CSP to allow Supabase, external scripts, and eval -->
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
     <script src="../assets/js/config.js?v=1794570029121"></script>
+    <script>
+        (function() {
+            var m = 'light';
+            try { m = localStorage.getItem('fbr_admin_theme') === 'dark' ? 'dark' : 'light'; } catch(e) {}
+            document.documentElement.setAttribute('data-admin-theme', m);
+            if (typeof CONFIG !== 'undefined' && CONFIG.BRAND_COLORS) {
+                try {
+                    var bc = typeof CONFIG.BRAND_COLORS === 'object' ? CONFIG.BRAND_COLORS : JSON.parse(String(CONFIG.BRAND_COLORS).trim());
+                    if (bc && typeof bc === 'object') {
+                        var s = document.documentElement.style;
+                        if (bc.primary) s.setProperty('--primary', bc.primary);
+                        if (bc.primary_light) s.setProperty('--primary-light', bc.primary_light);
+                        if (bc.primary_dark || bc.primaryDark) s.setProperty('--primary-dark', bc.primary_dark || bc.primaryDark);
+                    }
+                } catch(e) {}
+            }
+            window.toggleLoginTheme = function() {
+                var next = document.documentElement.getAttribute('data-admin-theme') === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-admin-theme', next);
+                try { localStorage.setItem('fbr_admin_theme', next); } catch(e) {}
+                var b = document.getElementById('loginThemeBtn');
+                if (b) b.textContent = next === 'dark' ? '☀️ Light' : '🌙 Dark';
+            };
+        })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
@@ -21,99 +47,115 @@
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --maroon:        #800000;
-            --maroon-light:  #A52A2A;
-            --maroon-dark:   #5C0000;
-            --maroon-soft:   rgba(128, 0, 0, 0.12);
+            --maroon:        var(--primary, #8b1a1a);
+            --maroon-light:  var(--primary-light, #b03535);
+            --maroon-dark:   var(--primary-dark, #680000);
+            --maroon-soft:   color-mix(in srgb, var(--primary, #8b1a1a) 12%, transparent);
             --white:         #FFFFFF;
-            --off-white:     #FAF8F8;
-            --text-dark:     #1A0A0A;
-            --text-mid:      #5C3A3A;
-            --text-light:    #9E7070;
-            --border:        rgba(128, 0, 0, 0.15);
+            --off-white:     #f8fafc;
+            --text-dark:     #0f172a;
+            --text-mid:      #475569;
+            --text-light:    #64748b;
+            --border:        #e2e8f0;
+            --login-bg:      #f8fafc;
+            --card-bg:       #ffffff;
+            --input-bg:      #ffffff;
+        }
+        html[data-admin-theme="dark"] {
+            color-scheme: dark;
+            --maroon:        var(--primary-light, #c73e3e);
+            --maroon-light:  var(--primary-light, #d84b4b);
+            --maroon-dark:   var(--primary, #8b1a1a);
+            --white:         #0f172a;
+            --off-white:     #090d16;
+            --text-dark:     #f8fafc;
+            --text-mid:      #cbd5e1;
+            --text-light:    #94a3b8;
+            --border:        rgba(148, 163, 184, 0.20);
+            --login-bg:      #090d16;
+            --card-bg:       #0f172a;
+            --input-bg:      #111c30;
         }
 
         body {
             font-family: 'Inter', -apple-system, sans-serif;
-            background-color: #F5EDED;
+            background-color: var(--login-bg);
+            color: var(--text-dark);
             min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr;
+            position: relative;
+            overflow-x: hidden;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        @media (min-width: 960px) {
+            body { grid-template-columns: 1.05fr 1fr; }
+        }
+        .login-hero {
+            display: none;
+            position: relative;
+            overflow: hidden;
+            background: #020617;
+            color: #ffffff;
+            padding: 48px;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        @media (min-width: 960px) { .login-hero { display: flex; } }
+        .login-hero-glow-1 {
+            position: absolute; left: -100px; top: 24%; width: 380px; height: 380px; border-radius: 50%;
+            background: var(--primary, #8b1a1a); opacity: 0.36; filter: blur(95px); pointer-events: none;
+        }
+        .login-hero-glow-2 {
+            position: absolute; right: -60px; bottom: -40px; width: 320px; height: 320px; border-radius: 50%;
+            background: var(--primary-light, #b03535); opacity: 0.28; filter: blur(90px); pointer-events: none;
+        }
+        .login-right-pane {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
+            padding: 28px 20px;
+            min-height: 100vh;
         }
-
-        /* ── Animated Maroon Blur Orbs ── */
-        .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(90px);
-            pointer-events: none;
-            animation: floatOrb 10s ease-in-out infinite;
+        .login-theme-btn {
+            position: fixed; top: 16px; right: 16px; z-index: 20;
+            border: 1px solid var(--border); background: var(--card-bg); color: var(--text-dark);
+            padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 14px rgba(15,23,42,0.08);
         }
-        .orb-1 {
-            width: 480px; height: 480px;
-            background: radial-gradient(circle, rgba(128,0,0,0.30) 0%, rgba(128,0,0,0.08) 50%, transparent 70%);
-            top: -140px; left: -140px;
-            animation-delay: 0s;
+        .auth-stepper {
+            display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px;
         }
-        .orb-2 {
-            width: 380px; height: 380px;
-            background: radial-gradient(circle, rgba(165,42,42,0.25) 0%, rgba(92,0,0,0.06) 50%, transparent 70%);
-            bottom: -120px; right: -120px;
-            animation-delay: -5s;
+        .auth-step-dot {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700;
+            color: var(--text-light); padding: 4px 10px; border-radius: 999px; background: var(--card-bg);
+            border: 1px solid var(--border);
         }
-        .orb-3 {
-            width: 260px; height: 260px;
-            background: radial-gradient(circle, rgba(128,0,0,0.18) 0%, transparent 70%);
-            top: 40%; left: 60%;
-            animation-delay: -2.5s;
-            animation-duration: 13s;
+        .auth-step-dot.active {
+            background: var(--primary, #8b1a1a); color: #fff; border-color: var(--primary, #8b1a1a);
         }
-        .orb-4 {
-            width: 200px; height: 200px;
-            background: radial-gradient(circle, rgba(165,42,42,0.20) 0%, transparent 70%);
-            top: 20%; right: 25%;
-            animation-delay: -7s;
-            animation-duration: 8s;
+        .auth-step-dot.done {
+            background: #10b981; color: #fff; border-color: #10b981;
         }
-        @keyframes floatOrb {
-            0%, 100% { transform: translateY(0px) scale(1); }
-            33%       { transform: translateY(-25px) scale(1.04); }
-            66%       { transform: translateY(15px) scale(0.97); }
-        }
-
-        /* subtle dot grid */
-        body::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: radial-gradient(circle, rgba(128,0,0,0.12) 1px, transparent 1px);
-            background-size: 28px 28px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ── Login Card ── */
+        .orb { display: none; }
+        body::before { display: none; }
         .login-card {
             position: relative;
             z-index: 1;
             width: 100%;
-            max-width: 430px;
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.7);
-            border-radius: 28px;
-            padding: 46px 40px 40px;
-            box-shadow:
-                0 4px 6px rgba(128,0,0,0.04),
-                0 20px 60px rgba(128,0,0,0.12),
-                0 0 0 1px rgba(128,0,0,0.06);
+            max-width: 440px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 36px 32px 32px;
+            box-shadow: 0 20px 50px -15px rgba(15, 23, 42, 0.14);
             overflow: hidden;
         }
+        .form-input { background: var(--input-bg) !important; color: var(--text-dark) !important; border-color: var(--border) !important; }
+        .form-input:focus { border-color: var(--primary, #8b1a1a) !important; box-shadow: 0 0 0 3px var(--maroon-soft) !important; }
+        html[data-admin-theme="dark"] #otpGroup { background: rgba(220, 38, 38, 0.14) !important; border-color: rgba(248, 113, 113, 0.35) !important; }
+        html[data-admin-theme="dark"] #otpHintText { color: #fca5a5 !important; }
 
         /* top accent bar */
         .card-accent {
@@ -438,6 +480,45 @@
 
     <!-- Toast Container -->
     <div id="toastContainer"></div>
+    <button type="button" class="login-theme-btn" id="loginThemeBtn" onclick="toggleLoginTheme()">🌙 Dark</button>
+
+    <!-- Left Hero Panel (Desktop) -->
+    <aside class="login-hero">
+        <div class="login-hero-glow-1"></div>
+        <div class="login-hero-glow-2"></div>
+        <div style="position:relative;display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--primary,#8b1a1a),var(--primary-light,#b03535));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 8px 24px rgba(0,0,0,0.35);">🛍️</div>
+            <span style="font-size:17px;font-weight:800;letter-spacing:-0.02em;">Admin Control Center</span>
+        </div>
+        <div style="position:relative;max-width:440px;">
+            <h1 style="font-size:36px;line-height:1.18;font-weight:800;letter-spacing:-0.03em;">Run your entire store<br>from one secure panel.</h1>
+            <p style="margin-top:16px;font-size:14.5px;line-height:1.65;color:#94a3b8;">Multi-brand orders, stock, customers, insights, staff permissions &amp; real-time Telegram 2FA — protected by AlwaysData private storage.</p>
+            <div style="margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                <div style="border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);border-radius:16px;padding:14px;">
+                    <div style="font-size:18px;font-weight:800;">🔐 2FA</div>
+                    <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">Telegram OTP</div>
+                </div>
+                <div style="border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);border-radius:16px;padding:14px;">
+                    <div style="font-size:18px;font-weight:800;">👥 RBAC</div>
+                    <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">Granular Staff</div>
+                </div>
+                <div style="border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);border-radius:16px;padding:14px;">
+                    <div style="font-size:18px;font-weight:800;">⚡ Fast</div>
+                    <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">Zero CF Quota</div>
+                </div>
+            </div>
+        </div>
+        <div style="position:relative;font-size:12px;color:#64748b;">PBKDF2-SHA256 • Browser UA-Bound Sessions • 12h TTL</div>
+    </aside>
+
+    <!-- Right Auth Pane -->
+    <div class="login-right-pane">
+    <div style="width:100%;max-width:440px;">
+        <div class="auth-stepper">
+            <span class="auth-step-dot active" id="stepDot1">1. Account</span>
+            <span class="auth-step-dot" id="stepDot2">2. PIN</span>
+            <span class="auth-step-dot" id="stepDot3">3. Telegram OTP</span>
+        </div>
 
     <!-- Login Card -->
     <div class="login-card">
@@ -576,9 +657,27 @@
 
         <!-- Footer -->
         <div class="login-footer">
-            Freelancing By Rifat &copy; 2025 &mdash; Admin Panel
+            Freelancing By Rifat &copy; 2026 &mdash; Secure Admin Panel
         </div>
     </div>
+    </div>
+    </div>
+
+    <script>
+        (function(){
+            var b = document.getElementById('loginThemeBtn');
+            if (b) b.textContent = document.documentElement.getAttribute('data-admin-theme') === 'dark' ? '☀️ Light' : '🌙 Dark';
+        })();
+        function setLoginStepUI(stepNum) {
+            [1, 2, 3].forEach(function(n) {
+                var el = document.getElementById('stepDot' + n);
+                if (!el) return;
+                el.classList.remove('active', 'done');
+                if (n < stepNum) el.classList.add('done');
+                else if (n === stepNum) el.classList.add('active');
+            });
+        }
+    </script>
 
     <script>
         // Use global `CONFIG` and `sb` from ../assets/js/ config files
@@ -717,6 +816,7 @@
             if (ei) ei.readOnly = false;
             if (pi) pi.readOnly = false;
             if (btn) btn.innerHTML = '<span>Sign In with Email</span>';
+            if (typeof setLoginStepUI === 'function') setLoginStepUI(1);
         }
 
         // ══ Email / Password Login (with Browser Rate Limiting & Telegram 2FA OTP) ────
@@ -779,6 +879,7 @@
                         document.getElementById('emailInput').readOnly = true;
                         document.getElementById('passInput').readOnly = true;
                         if (oi) { oi.value = ''; oi.focus(); }
+                        if (typeof setLoginStepUI === 'function') setLoginStepUI(3);
                         showToast(data.message || '📲 Telegram-এ OTP পাঠানো হয়েছে!', 'success');
                         btn.disabled = false;
                         btn.innerHTML = '<span>✅ Verify OTP & Sign In</span>';
@@ -789,6 +890,7 @@
                             if (pg) { pg.style.display = 'block'; }
                             var pi = document.getElementById('pinInput');
                             if (pi) pi.focus();
+                            if (typeof setLoginStepUI === 'function') setLoginStepUI(2);
                         } else if (response.status !== 429) {
                             if (pendingOtpChallengeId && String(data.error || '').includes('মেয়াদোত্তীর্ণ')) {
                                 resetOtpStep();

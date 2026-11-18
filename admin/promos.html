@@ -4,14 +4,14 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Promo Codes — Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/admin.css?v=10">
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
     <script src="../assets/js/config.js?v=1794570029121"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
     <script src="../assets/js/appwrite-init.js"></script>
-    <script src="assets/js/admin-common.js?v=5"></script>
+    <script src="assets/js/admin-common.js?v=10"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
         .advanced-group {
@@ -51,7 +51,7 @@
         .chip-select-wrap {
             border: 1.5px solid var(--border);
             border-radius: var(--radius-sm);
-            background: #fff;
+            background: var(--bg-card);
             overflow: hidden;
         }
         .chip-select-wrap:focus-within {
@@ -99,7 +99,7 @@
             padding: 6px 10px;
             border-top: 1px solid var(--border-light);
             border-bottom: 1px solid var(--border-light);
-            background: #fafafa;
+            background: var(--bg-card-subtle);
         }
         .chip-search-icon { font-size: 13px; color: #aaa; flex-shrink: 0; }
         .chip-search {

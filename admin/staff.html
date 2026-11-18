@@ -2,50 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Security & Staff — Admin Panel</title>
+    <title>Staff & Security — Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/admin.css">
+    <link rel="stylesheet" href="assets/css/admin.css?v=10">
     <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
     <script src="../assets/js/config.js?v=1794570029121"></script>
-    <script src="assets/js/admin-common.js?v=9"></script>
+    <script src="assets/js/admin-common.js?v=10"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
-        .sec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 20px; margin-bottom: 24px; width: 100%; }
-        .sec-grid > .card, .admin-content .card { max-width: 100%; min-width: 0; }
-        .card-header { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-light); }
-        .card-header .card-title { margin-bottom: 0; }
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th, .data-table td { padding: 11px 14px; text-align: left; }
-        .data-table tbody td { white-space: normal; overflow-wrap: anywhere; word-break: break-word; vertical-align: middle; }
-        .data-table tbody td.nowrap-col { white-space: nowrap; word-break: normal; overflow-wrap: normal; }
-        .data-table tbody td.wrap-col { min-width: 200px; max-width: 340px; white-space: normal; overflow-wrap: anywhere; word-break: break-word; line-height: 1.45; font-size: 12px; }
-        .perm-matrix-wrap { border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; max-width: 100%; margin-top: 8px; background: #fff; -webkit-overflow-scrolling: touch; }
+        .staff-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr)); gap: 16px; }
+        .master-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 20px; align-items: start; }
+        .preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 6px; }
+        .preset-btn { text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card-subtle); color: var(--text-primary); cursor: pointer; transition: var(--transition); }
+        .preset-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+        .preset-btn strong { display: block; font-size: 12.5px; }
+        .preset-btn span { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        .perm-matrix-wrap { border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; max-width: 100%; margin-top: 8px; background: var(--bg-card); }
         .perm-matrix { width: 100%; min-width: 0 !important; border-collapse: collapse; font-size: 12.5px; }
-        .perm-matrix th { background: #f8fafc; padding: 8px 6px; text-align: center; font-weight: 700; color: #334155; border-bottom: 1px solid var(--border); white-space: nowrap; }
-        .perm-matrix th:first-child { text-align: left; padding-left: 10px; }
-        .perm-matrix td { padding: 7px 6px; border-bottom: 1px solid #f1f5f9; text-align: center; }
-        .perm-matrix td:first-child { text-align: left; padding-left: 10px; font-weight: 600; color: #1e293b; text-transform: capitalize; white-space: nowrap; }
+        .perm-matrix th { background: var(--bg-card-subtle); padding: 9px 8px; text-align: center; font-weight: 700; color: var(--text-secondary); border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .perm-matrix th:first-child { text-align: left; padding-left: 12px; }
+        .perm-matrix td { padding: 8px; border-bottom: 1px solid var(--border-light); text-align: center; }
+        .perm-matrix td:first-child { text-align: left; padding-left: 12px; font-weight: 600; color: var(--text-primary); text-transform: capitalize; white-space: nowrap; }
         .perm-matrix tr:last-child td { border-bottom: none; }
-        .perm-matrix input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: #800000; }
-        .perm-badge { display: inline-flex; align-items: center; gap: 4px; background: #f1f5f9; color: #334155; font-size: 11px; padding: 3px 8px; border-radius: 6px; margin: 2px; font-weight: 600; }
-        .perm-badge.has-del { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .perm-matrix input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary, #8b1a1a); }
+
+        .perm-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-card-subtle); color: var(--text-secondary); border: 1px solid var(--border); font-size: 11px; padding: 2px 8px; border-radius: 6px; margin: 2px; font-weight: 600; }
+        .perm-badge.has-del { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+
         .log-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        .log-badge.master { background: #fee2e2; color: #b91c1c; }
-        .log-badge.staff { background: #dbeafe; color: #1d4ed8; }
-        .log-badge.anon { background: #fef3c7; color: #b45309; }
-        .status-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
-        .status-pill.ok { background: #dcfce7; color: #15803d; }
-        .status-pill.warn { background: #fef3c7; color: #b45309; }
+        .log-badge.master { background: var(--danger-bg); color: var(--danger); }
+        .log-badge.staff  { background: var(--blue-bg); color: var(--blue); }
+        .log-badge.anon   { background: var(--warning-bg); color: var(--warning); }
+
         .pin-row { display: flex; gap: 8px; align-items: center; }
         .pin-row .form-input { flex: 1; min-width: 0; }
-        @media (max-width: 768px) {
-            .admin-header { height: auto; min-height: var(--header-h); padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
-            .admin-content { padding: 16px; }
-            .header-right { width: 100%; flex-wrap: wrap; }
-            .sec-grid { grid-template-columns: 1fr; gap: 16px; }
-            .card { padding: 16px; }
-            #logSearch { width: 100% !important; min-width: 0; }
-        }
+        .staff-tab-pane { display: none; }
+        .staff-tab-pane.active { display: block; }
+        .kv-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; padding: 5px 0; border-bottom: 1px dashed var(--border-light); }
+        .kv-row:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -54,140 +49,128 @@
         <div class="header-left">
             <button type="button" class="hamburger-btn" onclick="openSidebar()">☰</button>
             <div>
-                <div class="page-title">🛡️ Master Security & Staff</div>
-                <div class="page-subtitle">AlwaysData Private Storage & Telegram 2FA</div>
+                <div class="page-title">🔐 Staff & Security</div>
+                <div class="page-subtitle">Team access, Telegram 2FA, Sessions & AlwaysData Logs</div>
             </div>
         </div>
         <div class="header-right">
-            <span class="status-pill ok" id="masterStorageBadge">💾 AlwaysData Private Storage</span>
-            <button type="button" class="btn btn-danger btn-sm" onclick="revokeAllSessions()">🚪 Force Logout All</button>
+            <span class="status-pill ok" id="masterStorageBadge">💾 AlwaysData Private</span>
+            <button type="button" class="btn btn-primary btn-sm" id="addStaffTopBtn" onclick="openStaffModal()">+ Add Staff</button>
         </div>
     </header>
 
     <div class="admin-content">
-            <div id="staffDeniedMsg" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:18px;border-radius:12px;font-weight:600;margin-bottom:20px;">
-                ⚠️ শুধুমাত্র <b>Master Admin</b> এই সেকশনটি অ্যাক্সেস করতে পারবেন।
+        <div id="staffDeniedMsg" style="display:none;background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger);padding:18px;border-radius:14px;font-weight:600;margin-bottom:20px;">
+            ⚠️ শুধুমাত্র <b>Master Admin</b> এই সেকশনটি অ্যাক্সেস করতে পারবেন।
+        </div>
+
+        <div id="masterContentWrap">
+            <!-- 4-Tab Bar (Matching Redesign Staff UI) -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+                <div class="ui-tabs" role="tablist">
+                    <button type="button" class="ui-tab active" data-tab="team" onclick="switchStaffTab('team')">👥 Team <span class="tab-count" id="cntStaff">0</span></button>
+                    <button type="button" class="ui-tab" data-tab="master" onclick="switchStaffTab('master')">🔐 Master Security</button>
+                    <button type="button" class="ui-tab" data-tab="sessions" onclick="switchStaffTab('sessions')">🔑 Active Sessions <span class="tab-count" id="cntSessions">0</span></button>
+                    <button type="button" class="ui-tab" data-tab="logs" onclick="switchStaffTab('logs')">📜 Activity Logs <span class="tab-count" id="cntLogs">0</span></button>
+                </div>
             </div>
 
-            <div id="masterContentWrap">
-                <div class="sec-grid">
-                    <!-- Card 1: Master Admin Credentials & 2FA PIN -->
+            <!-- TAB 1: TEAM CARDS -->
+            <section id="tabPane-team" class="staff-tab-pane active">
+                <div class="card" style="margin-bottom:18px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                    <div>
+                        <div style="font-weight:700;font-size:14px;">AlwaysData Staff Accounts</div>
+                        <div style="font-size:12.5px;color:var(--text-muted);">নতুন স্টাফের ডিফল্ট অ্যাক্সেস শুধু <b>Orders (View + Edit)</b>, ডিলিট নয়। প্রতি লগইনে স্টাফের Telegram-এ OTP যাবে।</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="loadStaffList()">🔄 Refresh</button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openStaffModal()">+ Add Staff Account</button>
+                    </div>
+                </div>
+                <div id="staffCardsWrap" class="staff-cards-grid">
+                    <div class="card"><div class="empty-state" style="padding:28px;">Loading staff accounts...</div></div>
+                </div>
+            </section>
+
+            <!-- TAB 2: MASTER SECURITY -->
+            <section id="tabPane-master" class="staff-tab-pane">
+                <div class="master-grid">
                     <div class="card">
-                        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-                            <div class="card-title">🔐 Master Admin Login Security</div>
-                            <div style="display:flex;gap:6px;align-items:center;">
+                        <div class="card-header">
+                            <div class="card-title">🔐 Master Admin Credentials</div>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
                                 <span id="tgStatusBadge" class="status-pill warn">TG 2FA: Checking...</span>
                                 <span id="pinStatusBadge" class="status-pill warn">PIN: Off</span>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <p style="font-size:12.5px;color:var(--text-muted);margin-top:0;">
-                                পাসওয়ার্ড এবং ২FA Security PIN AlwaysData প্রাইভেট স্টোরেজে (<code>PBKDF2-SHA256</code>) হ্যাশ করে সংরক্ষিত থাকে। পাসওয়ার্ড বদলালে বা <b>Logout All Devices</b> চাপলে সব চুরি যাওয়া টোকেন সাথে সাথে বাতিল হয়। একটি সাইটে একবারই Master ID তৈরি হয় — ডিলিট না করা পর্যন্ত নতুন করে খোলা যায় না।
-                            </p>
-                            <div class="form-group">
-                                <label class="form-label">Master Username / Email</label>
-                                <input class="form-input" id="mUsername" placeholder="admin">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Current Password (যেকোনো সিকিউরিটি পরিবর্তনের জন্য বাধ্যতামূলক)</label>
-                                <input class="form-input" type="password" id="mCurPass" placeholder="••••••••">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">New Password (পরিবর্তন না করলে খালি রাখুন, কমপক্ষে ৮ অক্ষর)</label>
-                                <input class="form-input" type="password" id="mNewPass" placeholder="Min 8 characters">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">2FA Master Security PIN (৪-৮ ডিজিট, খালি রাখলে আগেরটা থাকবে)</label>
-                                <div class="pin-row">
-                                    <input class="form-input" type="password" inputmode="numeric" maxlength="8" id="mNewPin" placeholder="e.g. 482910">
-                                    <button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0;" onclick="clearMasterPin()">Clear PIN</button>
-                                </div>
-                            </div>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-                                <button type="button" class="btn btn-primary" onclick="saveMasterSecurity()">💾 Update Master Security</button>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="deleteMasterAdminFlow()">🗑️ Delete Master ID</button>
-                            </div>
-                            <div style="border-top:1px solid var(--border);padding-top:12px;">
-                                <div style="font-weight:700;font-size:12.5px;margin-bottom:6px;">📲 Master Telegram 2FA Settings <span id="tgSourceInfo" style="font-weight:500;color:var(--text-muted);font-size:11.5px;"></span></div>
-                                <div class="form-group" style="margin-bottom:8px;">
-                                    <input class="form-input" type="password" id="mTgBotToken" placeholder="Telegram Bot Token (পরিবর্তন না করলে খালি রাখুন)">
-                                </div>
-                                <div class="form-group" style="margin-bottom:8px;">
-                                    <input class="form-input" id="mTgChatId" placeholder="Master Telegram Chat ID (যেমন: 123456789)">
-                                </div>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="saveTelegram2Fa()">📲 Save & Test Telegram OTP</button>
+                        <div style="background:var(--success-bg);border:1px solid var(--success-border);color:var(--success);border-radius:12px;padding:12px 14px;font-size:12.5px;margin-bottom:16px;">
+                            পাসওয়ার্ড ও ২FA PIN AlwaysData প্রাইভেট স্টোরেজে <b>PBKDF2-SHA256</b> হ্যাশ হিসেবে থাকে। একটি সাইটে ১ বারই Master ID তৈরি হয় — ডিলিট না করা পর্যন্ত দ্বিতীয় Master খোলা যায় না।
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Master Username / Email</label>
+                            <input class="form-input" id="mUsername" placeholder="admin">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Password (যেকোনো পরিবর্তনে বাধ্যতামূলক)</label>
+                            <input class="form-input" type="password" id="mCurPass" placeholder="••••••••">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">New Password (পরিবর্তন না করলে খালি রাখুন, কমপক্ষে ৮ অক্ষর)</label>
+                            <input class="form-input" type="password" id="mNewPass" placeholder="Min 8 characters">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">2FA Master Security PIN (৪-৮ ডিজিট)</label>
+                            <div class="pin-row">
+                                <input class="form-input" type="password" inputmode="numeric" maxlength="8" id="mNewPin" placeholder="e.g. 482910">
+                                <button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0;" onclick="clearMasterPin()">Clear PIN</button>
                             </div>
                         </div>
+                        <button type="button" class="btn btn-primary" onclick="saveMasterSecurity()">💾 Update Master Security</button>
                     </div>
 
-                    <!-- Card 2: Add / Edit Staff Member -->
-                    <div class="card">
-                        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-                            <div class="card-title" id="staffFormTitle">➕ Add Staff Account</div>
-                            <button type="button" class="btn btn-secondary btn-sm" id="staffResetBtn" onclick="resetStaffForm()" style="display:none;">Cancel Edit</button>
+                    <div style="display:flex;flex-direction:column;gap:20px;">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">📲 Telegram 2FA Bot Config</div>
+                                <span id="tgSourceInfo" style="font-size:11.5px;color:var(--text-muted);font-weight:600;"></span>
+                            </div>
+                            <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;">Master তৈরি, Master লগইন ও Staff লগইনের সব ৬-ডিজিট OTP এই বট থেকে AlwaysData ব্যাকএন্ড পাঠাবে। (বদলানোর আগে বাম পাশে Current Password দিন)</p>
+                            <div class="form-group">
+                                <label class="form-label">Telegram Bot Token (পরিবর্তন না করলে খালি রাখুন)</label>
+                                <input class="form-input" type="password" id="mTgBotToken" placeholder="123456:ABC-DEF...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Master Telegram Chat ID</label>
+                                <input class="form-input" id="mTgChatId" placeholder="e.g. 5513474694">
+                            </div>
+                            <button type="button" class="btn btn-secondary" onclick="saveTelegram2Fa()">📲 Save & Send Test OTP</button>
                         </div>
-                        <div class="card-body">
-                            <input type="hidden" id="sEditId">
-                            <div class="form-group">
-                                <label class="form-label">Staff Full Name</label>
-                                <input class="form-input" id="sName" placeholder="e.g. Rahim Manager">
+
+                        <div class="card" style="border-color:var(--danger-border);">
+                            <div class="card-header">
+                                <div class="card-title" style="color:var(--danger);">🚨 Emergency Controls</div>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Staff Login Email / Username</label>
-                                <input class="form-input" id="sEmail" placeholder="e.g. rahim@ranonex.shop">
+                            <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;">অন্য কেউ অ্যাক্সেস পেয়েছে মনে হলে এক ক্লিকে সব ডিভাইসের সেশন ও Signing Key বাতিল করুন।</p>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                                <button type="button" class="btn btn-danger" onclick="revokeAllSessions()">🚪 Force Logout All Devices</button>
+                                <button type="button" class="btn btn-secondary" style="color:var(--danger);border-color:var(--danger-border);" onclick="deleteMasterAdminFlow()">🗑️ Delete Master ID (OTP)</button>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Staff Telegram Chat ID <span style="color:#b91c1c;">*</span> <span style="font-weight:400;color:var(--text-muted);font-size:11.5px;">(স্টাফ লগইন করলে এই ID-তে OTP যাবে)</span></label>
-                                <input class="form-input" id="sTelegramChatId" placeholder="e.g. 5829104721">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Password (নতুন হলে বাধ্যতামূলক, এডিটে পরিবর্তন না করলে খালি রাখুন)</label>
-                                <input class="form-input" type="password" id="sPassword" placeholder="Min 6 characters">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Granular Module Permissions <span style="font-weight:400;color:var(--text-muted);font-size:11.5px;">(ডিফল্ট: শুধু Orders View + Edit, Delete নয়)</span></label>
-                                <div class="perm-matrix-wrap" id="sPermGrid"></div>
-                            </div>
-                            <button type="button" class="btn btn-primary" onclick="saveStaffMember()">✅ Save Staff Account</button>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <!-- Card 3: Staff List -->
-                <div class="card" style="margin-bottom:24px;">
-                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                        <div class="card-title">👥 Active Staff Accounts (AlwaysData Storage)</div>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="loadStaffList()">🔄 Refresh</button>
-                    </div>
-                    <div class="card-body table-wrap">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email / Username</th>
-                                    <th>Telegram Chat ID</th>
-                                    <th>Permissions</th>
-                                    <th>Last Login</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="staffTableBody">
-                                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">Loading staff...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Card 3B: Active Admin-Only Server Sessions -->
-                <div class="card" style="margin-bottom:24px;">
-                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-                        <div class="card-title">🔑 Active Admin-Only Sessions (AlwaysData <code>admin_sessions.json</code>)</div>
+            <!-- TAB 3: ACTIVE SESSIONS -->
+            <section id="tabPane-sessions" class="staff-tab-pane">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">🔑 Active Admin-Only Sessions</div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">সাধারণ ভিজিটরদের জন্য কোনো সেশন তৈরি হয় না — শুধুমাত্র যাচাইকৃত Admin লগইন করলেই ব্রাউজার-বাউন্ড (<code>UA-Hash</code>) সেশন তৈরি হয়।</div>
+                        </div>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="loadActiveSessions()">🔄 Refresh</button>
                     </div>
-                    <div class="card-body">
-                        <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px 0;">সাধারণ ভিজিটরদের জন্য কোনো সেশন তৈরি হয় না — শুধুমাত্র যাচাইকৃত Admin লগইন করলেই ব্রাউজার-বাউন্ড (<code>UA-Hash</code>) সেশন তৈরি হয়।</p>
-                        <div class="table-wrap">
+                    <div class="table-wrap">
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -200,24 +183,25 @@
                                 </tr>
                             </thead>
                             <tbody id="sessionsTableBody">
-                                <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">Loading sessions...</td></tr>
+                                <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">Loading sessions...</td></tr>
                             </tbody>
                         </table>
-                        </div>
                     </div>
                 </div>
+            </section>
 
-                <!-- Card 4: Staff & Admin Activity Logs -->
+            <!-- TAB 4: ACTIVITY LOGS -->
+            <section id="tabPane-logs" class="staff-tab-pane">
                 <div class="card">
-                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                    <div class="card-header">
                         <div class="card-title">📜 Change & Activity Logs (AlwaysData Storage)</div>
-                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;max-width:440px;">
-                            <input class="form-input" id="logSearch" placeholder="Search actor / action..." style="flex:1;min-width:160px;padding:6px 10px;font-size:12.5px;" oninput="renderLogsTable()">
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;max-width:460px;">
+                            <input class="form-input" id="logSearch" placeholder="Search actor / action / target..." style="flex:1;min-width:160px;padding:7px 11px;font-size:12.5px;" oninput="renderLogsTable()">
                             <button type="button" class="btn btn-secondary btn-sm" onclick="loadLogs()">🔄 Refresh</button>
                             <button type="button" class="btn btn-danger btn-sm" onclick="clearLogs()">🗑️ Clear Logs</button>
                         </div>
                     </div>
-                    <div class="card-body table-wrap">
+                    <div class="table-wrap">
                         <table class="data-table">
                             <thead>
                                 <tr>
@@ -235,9 +219,76 @@
                         </table>
                     </div>
                 </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- ADD / EDIT STAFF MODAL -->
+<div class="modal-overlay" id="staffModal" onclick="if(event.target===this) closeStaffModal()">
+    <div class="modal-box modal-box-lg">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" id="staffFormTitle">➕ Add Staff Account</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">যতটুকু প্রয়োজন ঠিক ততটুকুই অ্যাক্সেস দিন।</div>
+            </div>
+            <button type="button" class="modal-close" onclick="closeStaffModal()">✕</button>
+        </div>
+        <input type="hidden" id="sEditId">
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Staff Full Name *</label>
+                <input class="form-input" id="sName" placeholder="e.g. Rahim Manager">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Login Email / Username *</label>
+                <input class="form-input" id="sEmail" placeholder="e.g. rahim@ranonex.shop">
             </div>
         </div>
-    </main>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Staff Telegram Chat ID * <span style="font-weight:400;text-transform:none;">(2FA OTP যাবে)</span></label>
+                <input class="form-input" id="sTelegramChatId" placeholder="e.g. 5829104721">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password <span style="font-weight:400;text-transform:none;">(এডিটে খালি রাখলে আগেরটা থাকবে)</span></label>
+                <input class="form-input" type="password" id="sPassword" placeholder="Min 6 characters">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Quick Role Presets</label>
+            <div class="preset-grid">
+                <button type="button" class="preset-btn" onclick="applyRolePreset('order_default')">
+                    <strong>📦 Order Handler (Default)</strong>
+                    <span>শুধু Orders View + Edit (No Delete)</span>
+                </button>
+                <button type="button" class="preset-btn" onclick="applyRolePreset('catalog')">
+                    <strong>🛍️ Catalog Editor</strong>
+                    <span>Products, Categories, Banners, Sections</span>
+                </button>
+                <button type="button" class="preset-btn" onclick="applyRolePreset('support')">
+                    <strong>⭐ Support & Orders</strong>
+                    <span>Orders + Reviews (View/Edit, No Delete)</span>
+                </button>
+                <button type="button" class="preset-btn" onclick="applyRolePreset('clear')">
+                    <strong>🚫 Clear All</strong>
+                    <span>সব আনচেক করে ম্যানুয়ালি সিলেক্ট করুন</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Granular Module Permissions <span style="font-weight:400;text-transform:none;color:var(--text-muted);">(View / Create / Edit / Delete)</span></label>
+            <div class="perm-matrix-wrap" id="sPermGrid"></div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+            <button type="button" class="btn btn-secondary" onclick="closeStaffModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveStaffMember()">✅ Save Staff Account</button>
+        </div>
+    </div>
+</div>
 
 <script>
 var PERM_SCHEMA = {
@@ -258,14 +309,20 @@ var ACTION_COLS  = ['view', 'create', 'edit', 'delete'];
 var staffRows = [];
 var allLogs = [];
 
-function getDefaultStaffPerms() {
-    var def = {};
+function getEmptyPerms() {
+    var out = {};
     PERM_MODULES.forEach(function(mod) {
-        def[mod] = {};
-        PERM_SCHEMA[mod].forEach(function(act) {
-            def[mod][act] = (mod === 'orders' && (act === 'view' || act === 'edit'));
-        });
+        out[mod] = {};
+        PERM_SCHEMA[mod].forEach(function(act) { out[mod][act] = false; });
     });
+    return out;
+}
+
+function getDefaultStaffPerms() {
+    var def = getEmptyPerms();
+    def.orders.view = true;
+    def.orders.edit = true;
+    def.orders.delete = false;
     return def;
 }
 
@@ -286,9 +343,7 @@ function normalizeClientPerms(raw) {
     PERM_MODULES.forEach(function(mod) {
         out[mod] = {};
         var m = (raw && typeof raw[mod] === 'object') ? raw[mod] : {};
-        PERM_SCHEMA[mod].forEach(function(act) {
-            out[mod][act] = !!m[act];
-        });
+        PERM_SCHEMA[mod].forEach(function(act) { out[mod][act] = !!m[act]; });
     });
     return out;
 }
@@ -304,14 +359,63 @@ function getProxyEp(path) {
     return (base || '') + path;
 }
 
+function switchStaffTab(tabId) {
+    document.querySelectorAll('.ui-tab[data-tab]').forEach(function(btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+    });
+    document.querySelectorAll('.staff-tab-pane').forEach(function(pane) {
+        pane.classList.toggle('active', pane.id === ('tabPane-' + tabId));
+    });
+}
+
+function openStaffModal(staffObj) {
+    if (staffObj) {
+        document.getElementById('sEditId').value = staffObj.id || '';
+        document.getElementById('sName').value = staffObj.name || '';
+        document.getElementById('sEmail').value = staffObj.email || '';
+        document.getElementById('sTelegramChatId').value = staffObj.telegram_chat_id || '';
+        document.getElementById('sPassword').value = '';
+        document.getElementById('staffFormTitle').textContent = '✏️ Edit Staff: ' + (staffObj.name || '');
+        renderPermCheckboxes(staffObj.permissions || getDefaultStaffPerms());
+    } else {
+        document.getElementById('sEditId').value = '';
+        document.getElementById('sName').value = '';
+        document.getElementById('sEmail').value = '';
+        document.getElementById('sTelegramChatId').value = '';
+        document.getElementById('sPassword').value = '';
+        document.getElementById('staffFormTitle').textContent = '➕ Add Staff Account';
+        renderPermCheckboxes(getDefaultStaffPerms());
+    }
+    document.getElementById('staffModal').classList.add('show');
+}
+
+function closeStaffModal() {
+    document.getElementById('staffModal').classList.remove('show');
+}
+
+function applyRolePreset(preset) {
+    var p = getEmptyPerms();
+    if (preset === 'order_default') {
+        p = getDefaultStaffPerms();
+    } else if (preset === 'catalog') {
+        ['products', 'categories', 'banners', 'sections'].forEach(function(m) {
+            p[m].view = true;
+            if ('create' in p[m]) p[m].create = true;
+            p[m].edit = true;
+        });
+    } else if (preset === 'support') {
+        p.orders.view = true; p.orders.edit = true;
+        p.reviews.view = true; p.reviews.edit = true;
+    }
+    renderPermCheckboxes(p);
+}
+
 function onPermCellChange(cb) {
     var mod = cb.getAttribute('data-mod');
     var act = cb.getAttribute('data-act');
     if (!mod || !act) return;
     if (act === 'view' && !cb.checked) {
-        document.querySelectorAll('input[name="sPermCell"][data-mod="' + mod + '"]').forEach(function(el) {
-            el.checked = false;
-        });
+        document.querySelectorAll('input[name="sPermCell"][data-mod="' + mod + '"]').forEach(function(el) { el.checked = false; });
     } else if (act !== 'view' && cb.checked) {
         var viewCb = document.querySelector('input[name="sPermCell"][data-mod="' + mod + '"][data-act="view"]');
         if (viewCb) viewCb.checked = true;
@@ -323,7 +427,7 @@ function renderPermCheckboxes(selected) {
     var rowsHtml = PERM_MODULES.map(function(mod) {
         var allowed = PERM_SCHEMA[mod];
         var cells = ACTION_COLS.map(function(act) {
-            if (allowed.indexOf(act) === -1) return '<td style="color:#cbd5e1;">—</td>';
+            if (allowed.indexOf(act) === -1) return '<td style="color:var(--text-muted);opacity:0.45;">—</td>';
             var checked = perms[mod] && perms[mod][act] ? 'checked' : '';
             return '<td><input type="checkbox" name="sPermCell" data-mod="' + mod + '" data-act="' + act + '" ' + checked + ' onchange="onPermCellChange(this)"></td>';
         }).join('');
@@ -343,6 +447,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (role === 'staff') {
             document.getElementById('staffDeniedMsg').style.display = 'block';
             document.getElementById('masterContentWrap').style.display = 'none';
+            var addBtn = document.getElementById('addStaffTopBtn');
+            if (addBtn) addBtn.style.display = 'none';
             return;
         }
         loadMasterStatus();
@@ -362,7 +468,7 @@ function loadMasterStatus() {
         document.getElementById('mUsername').value = d.data.username || 'admin';
         var pinBadge = document.getElementById('pinStatusBadge');
         if (d.data.has_pin) {
-            pinBadge.textContent = 'PIN: Enabled (2FA)';
+            pinBadge.textContent = 'PIN: Enabled';
             pinBadge.className = 'status-pill ok';
         } else {
             pinBadge.textContent = 'PIN: Off';
@@ -372,34 +478,24 @@ function loadMasterStatus() {
         var tgInfo = document.getElementById('tgSourceInfo');
         var tg = d.data.telegram || {};
         if (tgBadge) {
-            if (tg.configured) {
-                tgBadge.textContent = 'TG 2FA: Active';
-                tgBadge.className = 'status-pill ok';
-            } else {
-                tgBadge.textContent = 'TG 2FA: Missing';
-                tgBadge.className = 'status-pill warn';
-            }
+            tgBadge.textContent = tg.configured ? 'TG 2FA: Active' : 'TG 2FA: Missing';
+            tgBadge.className = tg.configured ? 'status-pill ok' : 'status-pill warn';
         }
         if (tgInfo) {
-            tgInfo.textContent = tg.configured ? ('(Chat: ' + (tg.master_chat_masked || 'Set') + ', Source: ' + (tg.source || 'env') + ')') : '(AlwaysData Env বা এখান থেকে সেট করুন)';
+            tgInfo.textContent = tg.configured ? ('Chat: ' + (tg.master_chat_masked || 'Set') + ' (' + (tg.source || 'env') + ')') : 'Not configured';
         }
     }).catch(function() {});
 }
 
 function saveTelegram2Fa() {
     var curPass = document.getElementById('mCurPass').value;
-    if (!curPass) { showToast('উপরে Current Password দিন', 'error'); return; }
+    if (!curPass) { showToast('বাম পাশে Current Password দিন', 'error'); return; }
     var botTok = document.getElementById('mTgBotToken').value.trim();
     var chatId = document.getElementById('mTgChatId').value.trim();
     fetch(getProxyEp('/master-security'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            action: 'save_telegram',
-            current_password: curPass,
-            bot_token: botTok,
-            master_chat_id: chatId
-        })
+        body: JSON.stringify({ action: 'save_telegram', current_password: curPass, bot_token: botTok, master_chat_id: chatId })
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (!d.success) { showToast(d.error || 'Failed', 'error'); return; }
         document.getElementById('mTgBotToken').value = '';
@@ -411,7 +507,7 @@ function saveTelegram2Fa() {
 
 function deleteMasterAdminFlow() {
     var curPass = document.getElementById('mCurPass').value;
-    if (!curPass) { showToast('Master ID ডিলিট করতে উপরে Current Password দিন', 'error'); return; }
+    if (!curPass) { showToast('Master ID ডিলিট করতে Current Password দিন', 'error'); return; }
     if (!confirm('সতর্কতা! Master Admin ID ডিলিট করলে আপনি বর্তমান সেশন থেকে লগআউট হবেন এবং সাইটে পুনরায় ১ বার নতুন Master Admin সেট করা যাবে। এগোবেন?')) return;
     fetch(getProxyEp('/master-security'), {
         method: 'POST',
@@ -424,12 +520,7 @@ function deleteMasterAdminFlow() {
         fetch(getProxyEp('/master-security'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'delete_master',
-                current_password: curPass,
-                challenge_id: d.challenge_id,
-                otp_code: otp.trim()
-            })
+            body: JSON.stringify({ action: 'delete_master', current_password: curPass, challenge_id: d.challenge_id, otp_code: otp.trim() })
         }).then(function(r2) { return r2.json(); }).then(function(d2) {
             if (!d2.success) { showToast(d2.error || 'Delete failed', 'error'); return; }
             localStorage.removeItem('admin_token');
@@ -447,10 +538,12 @@ function loadActiveSessions() {
         body: JSON.stringify({ action: 'list_sessions' })
     }).then(function(r) { return r.json(); }).then(function(d) {
         var rows = (d && d.success && Array.isArray(d.sessions)) ? d.sessions : [];
+        var cntEl = document.getElementById('cntSessions');
+        if (cntEl) cntEl.textContent = rows.length;
         var tb = document.getElementById('sessionsTableBody');
         if (!tb) return;
         if (!rows.length) {
-            tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">No active sessions recorded.</td></tr>';
+            tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No active sessions recorded.</td></tr>';
             return;
         }
         tb.innerHTML = rows.map(function(s) {
@@ -459,7 +552,7 @@ function loadActiveSessions() {
             return '<tr>' +
                 '<td class="nowrap-col"><b>' + escHtml(s.sub) + '</b>' + curBadge + '</td>' +
                 '<td class="nowrap-col"><span class="log-badge ' + roleCls + '">' + escHtml(s.role) + '</span></td>' +
-                '<td class="nowrap-col">' + escHtml(s.ip || '—') + '</td>' +
+                '<td class="nowrap-col" style="font-family:monospace;font-size:12px;">' + escHtml(s.ip || '—') + '</td>' +
                 '<td class="wrap-col">' + escHtml(s.ua_label || '—') + '</td>' +
                 '<td class="nowrap-col" style="font-size:12px;">' + (s.expires_at ? escHtml(new Date(s.expires_at).toLocaleString()) : '—') + '</td>' +
                 '<td class="nowrap-col"><button type="button" class="btn btn-danger btn-sm" onclick="revokeOneSession(\'' + escHtml(s.jti) + '\')">Revoke</button></td>' +
@@ -488,20 +581,13 @@ function saveMasterSecurity() {
     var newUser = document.getElementById('mUsername').value.trim();
     var newPass = document.getElementById('mNewPass').value;
     var newPin  = document.getElementById('mNewPin').value.trim();
-    if (!curPass) { showToast('বর্তমান পাসওয়ার্ড দিন।', 'error'); return; }
-
+    if (!curPass) { showToast('Current Password দিন', 'error'); return; }
     fetch(getProxyEp('/master-security'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            action: 'update_credentials',
-            current_password: curPass,
-            new_username: newUser,
-            new_password: newPass,
-            new_pin: newPin
-        })
+        body: JSON.stringify({ action: 'update_credentials', current_password: curPass, new_username: newUser, new_password: newPass, new_pin: newPin })
     }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.success) { showToast(d.error || 'Failed', 'error'); return; }
+        if (!d.success) { showToast(d.error || 'Failed to update', 'error'); return; }
         if (d.token) {
             localStorage.setItem('admin_token', d.token);
             if (d.expires_at) localStorage.setItem('admin_token_exp', String(d.expires_at));
@@ -510,26 +596,26 @@ function saveMasterSecurity() {
         document.getElementById('mCurPass').value = '';
         document.getElementById('mNewPass').value = '';
         document.getElementById('mNewPin').value = '';
-        showToast(d.message || 'Security updated!', 'success');
+        showToast(d.message || 'Updated!', 'success');
         loadMasterStatus();
+        loadActiveSessions();
         loadLogs();
-    }).catch(function(e) { showToast(e.message, 'error'); });
+    });
 }
 
 function clearMasterPin() {
     var curPass = document.getElementById('mCurPass').value;
-    if (!curPass) { showToast('PIN মুছতে আগে Current Password লিখুন।', 'error'); return; }
+    if (!curPass) { showToast('PIN মুছতে Current Password দিন', 'error'); return; }
+    if (!confirm('Master Security PIN বন্ধ করবেন?')) return;
     fetch(getProxyEp('/master-security'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update_credentials', current_password: curPass, clear_pin: true })
     }).then(function(r) { return r.json(); }).then(function(d) {
-        if (!d.success) { showToast(d.error || 'Failed', 'error'); return; }
+        if (!d.success) { showToast(d.error || 'Error', 'error'); return; }
         if (d.token) localStorage.setItem('admin_token', d.token);
-        document.getElementById('mCurPass').value = '';
-        showToast('Security PIN সরানো হয়েছে।', 'success');
+        showToast('Security PIN removed', 'success');
         loadMasterStatus();
-        loadLogs();
     });
 }
 
@@ -555,59 +641,48 @@ function loadStaffList() {
         body: JSON.stringify({ action: 'list' })
     }).then(function(r) { return r.json(); }).then(function(d) {
         staffRows = (d && d.success && Array.isArray(d.staff)) ? d.staff : [];
-        var tb = document.getElementById('staffTableBody');
+        var cntEl = document.getElementById('cntStaff');
+        if (cntEl) cntEl.textContent = staffRows.length;
+        var wrap = document.getElementById('staffCardsWrap');
+        if (!wrap) return;
         if (!staffRows.length) {
-            tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">কোনো স্টাফ যোগ করা হয়নি (এখন শুধুমাত্র Master Admin সক্রিয়)।</td></tr>';
+            wrap.innerHTML = '<div class="card" style="grid-column:1/-1;"><div class="empty-state"><div class="empty-state-icon">👥</div><h3>কোনো স্টাফ অ্যাকাউন্ট নেই</h3><p>এখন শুধুমাত্র Master Admin সক্রিয়। নতুন স্টাফ যোগ করতে "+ Add Staff" বাটনে ক্লিক করুন।</p></div></div>';
             return;
         }
-        tb.innerHTML = staffRows.map(function(s) {
+        wrap.innerHTML = staffRows.map(function(s) {
             var normP = normalizeClientPerms(s.permissions);
-            var perms = PERM_MODULES.map(function(mod) {
+            var permsHtml = PERM_MODULES.map(function(mod) {
                 var acts = normP[mod] || {};
                 var on = ACTION_COLS.filter(function(a) { return !!acts[a]; });
                 if (!on.length) return '';
-                var hasDel = !!acts.delete;
-                return '<span class="perm-badge ' + (hasDel ? 'has-del' : '') + '">' + escHtml(mod) + ': ' + escHtml(on.join('/')) + '</span>';
+                return '<span class="perm-badge ' + (acts.delete ? 'has-del' : '') + '">' + escHtml(mod) + ': ' + escHtml(on.join('/')) + '</span>';
             }).filter(Boolean).join('');
-            return '<tr>' +
-                '<td><b>' + escHtml(s.name) + '</b></td>' +
-                '<td>' + escHtml(s.email) + '</td>' +
-                '<td style="font-family:monospace;font-size:12px;">' + (s.telegram_chat_id ? escHtml(s.telegram_chat_id) : '<span style="color:#dc2626;font-weight:700;">Not Set</span>') + '</td>' +
-                '<td>' + (perms || '<span style="color:#94a3b8;font-size:12px;">None</span>') + '</td>' +
-                '<td style="font-size:12px;">' + (s.last_login ? escHtml(new Date(s.last_login).toLocaleString()) : '—') + '</td>' +
-                '<td>' + (s.is_active ? '<span class="badge badge-delivered">Active</span>' : '<span class="badge badge-cancelled">Disabled</span>') + '</td>' +
-                '<td style="display:flex;gap:6px;">' +
-                    '<button type="button" class="btn btn-secondary btn-sm" onclick="editStaff(\'' + escHtml(s.id) + '\')">Edit</button>' +
-                    '<button type="button" class="btn btn-secondary btn-sm" onclick="toggleStaff(\'' + escHtml(s.id) + '\')">' + (s.is_active ? 'Disable' : 'Enable') + '</button>' +
-                    '<button type="button" class="btn btn-danger btn-sm" onclick="deleteStaff(\'' + escHtml(s.id) + '\')">Delete</button>' +
-                '</td>' +
-            '</tr>';
+            var initial = (s.name || s.email || 'S').charAt(0).toUpperCase();
+            return '<div class="card" style="padding:18px;' + (s.is_active ? '' : 'opacity:0.65;') + '">' +
+                '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+                    '<div class="avatar-circle" style="width:42px;height:42px;font-size:15px;">' + escHtml(initial) + '</div>' +
+                    '<div style="min-width:0;flex:1;">' +
+                        '<div style="font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escHtml(s.name) + '</div>' +
+                        '<div style="font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escHtml(s.email) + '</div>' +
+                    '</div>' +
+                    '<button type="button" class="toggle-switch ' + (s.is_active ? 'on' : '') + '" title="Enable / Disable" onclick="toggleStaff(\'' + escHtml(s.id) + '\')"></button>' +
+                '</div>' +
+                '<div class="kv-row"><span style="color:var(--text-muted);">Telegram 2FA ID</span><span style="font-family:monospace;font-weight:700;">' + (s.telegram_chat_id ? escHtml(s.telegram_chat_id) : '<span style="color:var(--danger);">Not Set</span>') + '</span></div>' +
+                '<div class="kv-row"><span style="color:var(--text-muted);">Last Login</span><span>' + (s.last_login ? escHtml(new Date(s.last_login).toLocaleString()) : 'Never') + '</span></div>' +
+                '<div class="kv-row"><span style="color:var(--text-muted);">Status</span>' + (s.is_active ? '<span class="badge badge-delivered">Active</span>' : '<span class="badge badge-cancelled">Disabled</span>') + '</div>' +
+                '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:2px;">' + (permsHtml || '<span style="color:var(--text-muted);font-size:12px;">No module access</span>') + '</div>' +
+                '<div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-light);">' +
+                    '<button type="button" class="btn btn-secondary btn-sm" style="flex:1;" onclick="editStaff(\'' + escHtml(s.id) + '\')">✏️ Edit Access</button>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="deleteStaff(\'' + escHtml(s.id) + '\')">🗑️</button>' +
+                '</div>' +
+            '</div>';
         }).join('');
     }).catch(function() {});
 }
 
-function resetStaffForm() {
-    document.getElementById('sEditId').value = '';
-    document.getElementById('sName').value = '';
-    document.getElementById('sEmail').value = '';
-    document.getElementById('sTelegramChatId').value = '';
-    document.getElementById('sPassword').value = '';
-    document.getElementById('staffFormTitle').textContent = '➕ Add Staff Account';
-    document.getElementById('staffResetBtn').style.display = 'none';
-    renderPermCheckboxes(getDefaultStaffPerms());
-}
-
 function editStaff(id) {
     var st = staffRows.find(function(x) { return x.id === id; });
-    if (!st) return;
-    document.getElementById('sEditId').value = st.id;
-    document.getElementById('sName').value = st.name || '';
-    document.getElementById('sEmail').value = st.email || '';
-    document.getElementById('sTelegramChatId').value = st.telegram_chat_id || '';
-    document.getElementById('sPassword').value = '';
-    document.getElementById('staffFormTitle').textContent = '✏️ Edit Staff: ' + st.name;
-    document.getElementById('staffResetBtn').style.display = 'inline-flex';
-    renderPermCheckboxes(st.permissions || getDefaultStaffPerms());
+    if (st) openStaffModal(st);
 }
 
 function saveStaffMember() {
@@ -635,7 +710,7 @@ function saveStaffMember() {
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (!d.success) { showToast(d.error || 'Failed to save staff', 'error'); return; }
         showToast('Staff saved to AlwaysData storage!', 'success');
-        resetStaffForm();
+        closeStaffModal();
         loadStaffList();
         loadLogs();
     });
@@ -669,12 +744,14 @@ function deleteStaff(id) {
 }
 
 function loadLogs() {
-    fetch(getProxyEp('/staff-logs?limit=250'), {
-        method: 'GET'
-    }).then(function(r) { return r.json(); }).then(function(d) {
-        allLogs = (d && d.success && Array.isArray(d.logs)) ? d.logs : [];
-        renderLogsTable();
-    }).catch(function() {});
+    fetch(getProxyEp('/staff-logs?limit=250'), { method: 'GET' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            allLogs = (d && d.success && Array.isArray(d.logs)) ? d.logs : [];
+            var cntEl = document.getElementById('cntLogs');
+            if (cntEl) cntEl.textContent = allLogs.length;
+            renderLogsTable();
+        }).catch(function() {});
 }
 
 function renderLogsTable() {
@@ -695,8 +772,8 @@ function renderLogsTable() {
             '<td class="nowrap-col"><b>' + escHtml(l.actor || '—') + '</b></td>' +
             '<td class="nowrap-col"><span class="log-badge ' + roleCls + '">' + escHtml(l.role || '') + '</span></td>' +
             '<td class="nowrap-col"><code style="font-size:11.5px;">' + escHtml(l.action || '') + '</code></td>' +
-            '<td class="wrap-col">' + escHtml(l.target || '') + (l.details ? ' <span style="color:#64748b;">(' + escHtml(l.details) + ')</span>' : '') + '</td>' +
-            '<td class="nowrap-col" style="font-size:11.5px;color:#64748b;">' + escHtml(l.ip || '') + '</td>' +
+            '<td class="wrap-col">' + escHtml(l.target || '') + (l.details ? ' <span style="color:var(--text-muted);">(' + escHtml(l.details) + ')</span>' : '') + '</td>' +
+            '<td class="nowrap-col" style="font-family:monospace;font-size:11.5px;color:var(--text-muted);">' + escHtml(l.ip || '') + '</td>' +
         '</tr>';
     }).join('');
 }

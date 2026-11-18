@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Insights — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css?v=10">
+    <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="../assets/js/config.js?v=1794570029121"></script>
+    <script src="assets/js/admin-common.js?v=10"></script>
+    <style>
+        .ins-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 18px; margin-bottom: 18px; }
+        .bar-row { margin-bottom: 12px; }
+        .bar-row:last-child { margin-bottom: 0; }
+        .bar-meta { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; gap: 8px; }
+        .bar-label { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .bar-val { font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+        .chart-svg { width: 100%; height: 210px; display: block; }
+        .ins-tab-pane { display: none; }
+        .ins-tab-pane.active { display: block; }
+    </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+
+<main class="admin-main" id="adminMain" style="display:none;">
+    <header class="admin-header">
+        <div class="header-left">
+            <button type="button" class="hamburger-btn" onclick="openSidebar()">☰</button>
+            <div>
+                <div class="page-title">📈 Live Business Insights</div>
+                <div class="page-subtitle">Real-time store analytics from Cloudflare D1 (Zero demo data)</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <select class="form-select" id="insRange" style="width:140px;padding:7px 28px 7px 10px;font-size:12.5px;" onchange="computeInsights()">
+                <option value="7">Last 7 Days</option>
+                <option value="30" selected>Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="all">All Time</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="admin-content">
+        <!-- Top KPI Row -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Net Revenue</div>
+                    <div class="stat-value" id="insRev">৳0</div>
+                    <div class="stat-sub" id="insRevSub">0 active orders</div>
+                </div>
+                <div class="stat-icon-box green">💵</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Avg Order Value</div>
+                    <div class="stat-value" id="insAov">৳0</div>
+                    <div class="stat-sub" id="insDeliveryRate">0% delivered</div>
+                </div>
+                <div class="stat-icon-box blue">🧾</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Cancellation Rate</div>
+                    <div class="stat-value" id="insCanRate">0%</div>
+                    <div class="stat-sub" id="insCanCnt">0 cancelled orders</div>
+                </div>
+                <div class="stat-icon-box red">📉</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Low Stock Alerts</div>
+                    <div class="stat-value" id="insLowStock">0</div>
+                    <div class="stat-sub" id="insReviewAvg">Avg Rating: —</div>
+                </div>
+                <div class="stat-icon-box orange">⚠️</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="margin-bottom:18px;">
+            <div class="ui-tabs">
+                <button type="button" class="ui-tab active" data-it="overview" onclick="switchInsTab('overview')">📊 Overview</button>
+                <button type="button" class="ui-tab" data-it="products" onclick="switchInsTab('products')">🛍️ Products &amp; Stock</button>
+                <button type="button" class="ui-tab" data-it="geo" onclick="switchInsTab('geo')">📍 Districts &amp; Payments</button>
+                <button type="button" class="ui-tab" data-it="promos" onclick="switchInsTab('promos')">🎟️ Coupons &amp; Reviews</button>
+            </div>
+        </div>
+
+        <!-- TAB 1: OVERVIEW -->
+        <section id="insPane-overview" class="ins-tab-pane active">
+            <div class="card" style="margin-bottom:18px;">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">📈 Daily Revenue Trend</div>
+                        <div style="font-size:12px;color:var(--text-muted);" id="trendSubtitle">Non-cancelled order revenue by day</div>
+                    </div>
+                </div>
+                <div id="revChartWrap" style="width:100%;overflow-x:auto;"></div>
+            </div>
+            <div class="ins-grid-2">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">📦 Order Status Breakdown</div></div>
+                    <div id="statusBars"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">🏪 Revenue by Brand / Storefront</div></div>
+                    <div id="brandBars"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PRODUCTS & STOCK -->
+        <section id="insPane-products" class="ins-tab-pane">
+            <div class="ins-grid-2">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">🏆 Top Selling Products</div></div>
+                    <div id="topProductsBars"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">⚠️ Low Stock &amp; Out-of-Stock Variants</div>
+                        <a href="products.html" class="btn btn-secondary btn-sm">Manage Products →</a>
+                    </div>
+                    <div id="lowStockList"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: DISTRICTS & PAYMENTS -->
+        <section id="insPane-geo" class="ins-tab-pane">
+            <div class="ins-grid-2">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">📍 Top Delivery Districts</div></div>
+                    <div id="districtBars"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">💳 Payment Methods &amp; Status</div></div>
+                    <div id="paymentBars"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: PROMOS & REVIEWS -->
+        <section id="insPane-promos" class="ins-tab-pane">
+            <div class="ins-grid-2">
+                <div class="card">
+                    <div class="card-header"><div class="card-title">🎟️ Top Used Promo Codes</div></div>
+                    <div id="promoBars"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><div class="card-title">⭐ Customer Rating Distribution</div></div>
+                    <div id="ratingBars"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+var rawOrders = [], rawProducts = [], rawReviews = [], rawBrands = [];
+
+function escHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function switchInsTab(t) {
+    document.querySelectorAll('.ui-tab[data-it]').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-it') === t); });
+    document.querySelectorAll('.ins-tab-pane').forEach(function(p) { p.classList.toggle('active', p.id === ('insPane-' + t)); });
+}
+
+function renderBarList(elId, rows, fmtFn) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    if (!rows.length) {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px 0;text-align:center;">No data available for this period.</div>';
+        return;
+    }
+    var maxV = Math.max.apply(null, rows.map(function(r) { return r.value; }).concat([1]));
+    el.innerHTML = rows.map(function(r) {
+        var pct = Math.max(2, Math.round((r.value / maxV) * 100));
+        return '<div class="bar-row">' +
+            '<div class="bar-meta"><span class="bar-label">' + escHtml(r.label) + '</span><span class="bar-val">' + escHtml(fmtFn ? fmtFn(r.value, r) : String(r.value)) + '</span></div>' +
+            '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%;' + (r.color ? 'background:' + r.color + ';' : '') + '"></div></div>' +
+        '</div>';
+    }).join('');
+}
+
+function renderRevenueSvg(dayPoints) {
+    var wrap = document.getElementById('revChartWrap');
+    if (!dayPoints.length) {
+        wrap.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:28px;text-align:center;">No orders recorded in this range.</div>';
+        return;
+    }
+    var w = Math.max(540, dayPoints.length * 46);
+    var h = 210, padL = 56, padR = 16, padT = 18, padB = 34;
+    var maxVal = Math.max.apply(null, dayPoints.map(function(d) { return d.rev; }).concat([100]));
+    var barW = Math.min(34, Math.max(12, Math.floor((w - padL - padR) / dayPoints.length) - 8));
+    var step = (w - padL - padR) / dayPoints.length;
+
+    var bars = dayPoints.map(function(d, i) {
+        var bh = Math.max(3, Math.round((d.rev / maxVal) * (h - padT - padB)));
+        var x = Math.round(padL + i * step + (step - barW) / 2);
+        var y = h - padB - bh;
+        return '<g>' +
+            '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + bh + '" rx="6" fill="var(--primary, #8b1a1a)" opacity="0.88"><title>' + escHtml(d.day + ': ' + formatMoney(d.rev) + ' (' + d.cnt + ' orders)') + '</title></rect>' +
+            '<text x="' + (x + barW / 2) + '" y="' + (h - 10) + '" text-anchor="middle" font-size="10" fill="var(--text-muted)">' + escHtml(d.shortDay) + '</text>' +
+        '</g>';
+    }).join('');
+
+    var gridLines = [0, 0.5, 1].map(function(f) {
+        var y = Math.round(padT + (1 - f) * (h - padT - padB));
+        var lbl = formatMoney(Math.round(maxVal * f));
+        return '<line x1="' + padL + '" y1="' + y + '" x2="' + (w - padR) + '" y2="' + y + '" stroke="var(--border)" stroke-dasharray="3,3" />' +
+               '<text x="' + (padL - 8) + '" y="' + (y + 3) + '" text-anchor="end" font-size="10" fill="var(--text-muted)">' + escHtml(lbl) + '</text>';
+    }).join('');
+
+    wrap.innerHTML = '<svg class="chart-svg" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' + gridLines + bars + '</svg>';
+}
+
+function computeInsights() {
+    var range = document.getElementById('insRange').value;
+    var cutoff = 0;
+    if (range !== 'all') cutoff = Date.now() - (Number(range) * 86400000);
+
+    var filtered = rawOrders.filter(function(o) {
+        if (!cutoff) return true;
+        return new Date(o.created_at || 0).getTime() >= cutoff;
+    });
+
+    var valid = filtered.filter(function(o) { return String(o.status || '').toLowerCase() !== 'cancelled'; });
+    var cancelled = filtered.filter(function(o) { return String(o.status || '').toLowerCase() === 'cancelled'; });
+    var delivered = filtered.filter(function(o) { return String(o.status || '').toLowerCase() === 'delivered'; });
+
+    var netRev = valid.reduce(function(s, o) { return s + Number(o.grand_total || o.final_total || 0); }, 0);
+    var aov = valid.length ? Math.round(netRev / valid.length) : 0;
+    var delPct = filtered.length ? Math.round((delivered.length / filtered.length) * 100) : 0;
+    var canPct = filtered.length ? Math.round((cancelled.length / filtered.length) * 100) : 0;
+
+    document.getElementById('insRev').textContent = formatMoney(netRev);
+    document.getElementById('insRevSub').textContent = valid.length + ' active orders (' + filtered.length + ' total)';
+    document.getElementById('insAov').textContent = formatMoney(aov);
+    document.getElementById('insDeliveryRate').textContent = delPct + '% delivered (' + delivered.length + ')';
+    document.getElementById('insCanRate').textContent = canPct + '%';
+    document.getElementById('insCanCnt').textContent = cancelled.length + ' cancelled orders';
+
+    // Daily trend
+    var dayMap = {};
+    valid.forEach(function(o) {
+        var day = String(o.created_at || '').slice(0, 10) || 'Unknown';
+        if (!dayMap[day]) dayMap[day] = { day: day, shortDay: day.slice(5), rev: 0, cnt: 0 };
+        dayMap[day].rev += Number(o.grand_total || o.final_total || 0);
+        dayMap[day].cnt += 1;
+    });
+    var dayArr = Object.keys(dayMap).sort().slice(-14).map(function(k) { return dayMap[k]; });
+    renderRevenueSvg(dayArr);
+
+    // Status bars
+    var stMap = {};
+    filtered.forEach(function(o) { var k = o.status || 'Pending'; stMap[k] = (stMap[k] || 0) + 1; });
+    var stColors = { Pending: '#f59e0b', Confirmed: '#3b82f6', Processing: '#6366f1', Shipped: '#a855f7', Delivered: '#10b981', Cancelled: '#ef4444' };
+    renderBarList('statusBars', Object.keys(stMap).map(function(k) { return { label: k, value: stMap[k], color: stColors[k] || '' }; }).sort(function(a, b) { return b.value - a.value; }), function(v) { return v + ' orders'; });
+
+    // Brand bars
+    var brandNames = { '__main__': 'Main Store' };
+    rawBrands.forEach(function(b) { if (b && b.id) brandNames[b.id] = b.name || b.slug || b.id; });
+    var bMap = {};
+    valid.forEach(function(o) {
+        var bid = o.brand_id || '__main__';
+        bMap[bid] = (bMap[bid] || 0) + Number(o.grand_total || o.final_total || 0);
+    });
+    renderBarList('brandBars', Object.keys(bMap).map(function(k) { return { label: brandNames[k] || k, value: bMap[k] }; }).sort(function(a, b) { return b.value - a.value; }), function(v) { return formatMoney(v); });
+
+    // Top products
+    var prodMap = {};
+    valid.forEach(function(o) {
+        var items = Array.isArray(o.items) ? o.items : safeJson(o.items, []);
+        items.forEach(function(it) {
+            var nm = it.name || it.product_name || it.product_id || 'Product';
+            var qty = Number(it.qty || it.quantity || 1);
+            var rev = Number(it.price || 0) * qty;
+            if (!prodMap[nm]) prodMap[nm] = { label: nm, value: 0, qty: 0 };
+            prodMap[nm].value += rev;
+            prodMap[nm].qty += qty;
+        });
+    });
+    renderBarList('topProductsBars', Object.keys(prodMap).map(function(k) { return prodMap[k]; }).sort(function(a, b) { return b.value - a.value; }).slice(0, 10), function(v, r) { return r.qty + ' sold • ' + formatMoney(v); });
+
+    // Low stock products (<= 5 units in any variant size)
+    var lowItems = [];
+    rawProducts.forEach(function(p) {
+        if (!p.is_active) return;
+        var vars = Array.isArray(p.variants) ? p.variants : safeJson(p.variants, []);
+        var totalStk = 0, minStk = 999999;
+        vars.forEach(function(v) {
+            if (v && Array.isArray(v.sizes)) {
+                v.sizes.forEach(function(sz) {
+                    var q = Number(sz.stock || 0);
+                    totalStk += q;
+                    if (q < minStk) minStk = q;
+                });
+            } else if (v && v.stock !== undefined) {
+                var q2 = Number(v.stock || 0);
+                totalStk += q2;
+                if (q2 < minStk) minStk = q2;
+            }
+        });
+        if (vars.length && minStk <= 5) {
+            lowItems.push({ name: p.name, sku: p.sku || p.id, totalStk: totalStk, minStk: minStk });
+        }
+    });
+    document.getElementById('insLowStock').textContent = lowItems.length;
+    var lowEl = document.getElementById('lowStockList');
+    if (!lowItems.length) {
+        lowEl.innerHTML = '<div style="color:var(--success);font-size:13px;padding:16px 0;text-align:center;">✅ All active variants have healthy stock (&gt;5 units).</div>';
+    } else {
+        lowEl.innerHTML = lowItems.slice(0, 12).map(function(x) {
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:13px;">' +
+                '<div style="min-width:0;padding-right:10px;"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escHtml(x.name) + '</div><div style="font-size:11px;color:var(--text-muted);">' + escHtml(x.sku) + '</div></div>' +
+                '<span class="badge ' + (x.minStk === 0 ? 'badge-cancelled' : 'badge-pending') + '">' + (x.minStk === 0 ? 'Out of stock' : 'Low: ' + x.minStk) + '</span>' +
+            '</div>';
+        }).join('');
+    }
+
+    // Districts
+    var distMap = {};
+    valid.forEach(function(o) {
+        var d = (o.district || 'Unknown').trim();
+        distMap[d] = (distMap[d] || 0) + 1;
+    });
+    renderBarList('districtBars', Object.keys(distMap).map(function(k) { return { label: k, value: distMap[k] }; }).sort(function(a, b) { return b.value - a.value; }).slice(0, 10), function(v) { return v + ' orders'; });
+
+    // Payments
+    var payMap = {};
+    valid.forEach(function(o) {
+        var m = (o.payment_method || 'COD').trim();
+        payMap[m] = (payMap[m] || 0) + Number(o.grand_total || o.final_total || 0);
+    });
+    renderBarList('paymentBars', Object.keys(payMap).map(function(k) { return { label: k, value: payMap[k] }; }).sort(function(a, b) { return b.value - a.value; }), function(v) { return formatMoney(v); });
+
+    // Promos
+    var prMap = {};
+    valid.forEach(function(o) {
+        var code = (o.promo_code || '').trim();
+        if (!code) return;
+        if (!prMap[code]) prMap[code] = { label: code, value: 0, disc: 0 };
+        prMap[code].value += 1;
+        prMap[code].disc += Number(o.promo_discount || o.discount || 0);
+    });
+    renderBarList('promoBars', Object.keys(prMap).map(function(k) { return prMap[k]; }).sort(function(a, b) { return b.value - a.value; }).slice(0, 8), function(v, r) { return v + ' uses • ' + formatMoney(r.disc) + ' off'; });
+
+    // Ratings
+    var rCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    var rSum = 0;
+    rawReviews.forEach(function(r) {
+        var n = Math.min(5, Math.max(1, Math.round(Number(r.rating || 5))));
+        rCounts[n]++;
+        rSum += n;
+    });
+    var avgR = rawReviews.length ? (rSum / rawReviews.length).toFixed(2) : '—';
+    document.getElementById('insReviewAvg').textContent = 'Avg Rating: ' + avgR + ' ★ (' + rawReviews.length + ' reviews)';
+    renderBarList('ratingBars', [5, 4, 3, 2, 1].map(function(n) { return { label: n + ' ★ Stars', value: rCounts[n], color: '#f59e0b' }; }), function(v) { return v + ' reviews'; });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    adminInit('insights', function() {
+        if (CONFIG.DB_PROVIDER === 'cf_db') {
+            cfDbBatchQuery([
+                { sql: "SELECT id, order_group_id, brand_id, district, grand_total, final_total, promo_code, promo_discount, discount, payment_method, status, items, created_at FROM orders ORDER BY created_at DESC" },
+                { sql: "SELECT id, name, sku, variants, is_active FROM products" },
+                { sql: "SELECT id, rating, is_approved FROM reviews" },
+                { sql: "SELECT id, name, slug FROM brands" }
+            ], true).then(function(results) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                var rowsOf = function(r) { return (r && r.result && r.result[0] && Array.isArray(r.result[0].results)) ? r.result[0].results : []; };
+                rawOrders   = rowsOf(results[0]);
+                rawProducts = rowsOf(results[1]);
+                rawReviews  = rowsOf(results[2]);
+                rawBrands   = rowsOf(results[3]);
+                computeInsights();
+            }).catch(function(err) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                showToast('Failed to load insights: ' + err.message, 'error');
+            });
+        } else {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+        }
+    });
+});
+</script>
+</body>
+</html>

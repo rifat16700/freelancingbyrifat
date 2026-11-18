@@ -14,6 +14,46 @@
     meta.content = 'noindex, nofollow, noarchive, nosnippet';
 })();
 
+// ── Admin Light/Dark Theme + Dynamic BRAND_COLORS Engine (Before Paint) ──
+(function() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    window.getAdminTheme = function() {
+        var saved = '';
+        try { saved = localStorage.getItem('fbr_admin_theme') || ''; } catch(e) {}
+        if (saved === 'dark' || saved === 'light') return saved;
+        return 'light';
+    };
+    window.applyAdminTheme = function(mode) {
+        var m = (mode === 'dark') ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-admin-theme', m);
+        try { localStorage.setItem('fbr_admin_theme', m); } catch(e) {}
+        var btns = document.querySelectorAll('.js-admin-theme-btn');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].innerHTML = (m === 'dark') ? '☀️' : '🌙';
+            btns[i].title = (m === 'dark') ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        }
+    };
+    window.toggleAdminTheme = function() {
+        window.applyAdminTheme(window.getAdminTheme() === 'dark' ? 'light' : 'dark');
+    };
+    window.applyAdminTheme(window.getAdminTheme());
+
+    // Apply BRAND_COLORS from Cloudflare Env (CONFIG.BRAND_COLORS) dynamically on :root
+    if (typeof CONFIG !== 'undefined' && CONFIG.BRAND_COLORS) {
+        try {
+            var rawBc = CONFIG.BRAND_COLORS;
+            var bc = (typeof rawBc === 'object') ? rawBc : JSON.parse(String(rawBc).trim());
+            if (bc && typeof bc === 'object') {
+                var r = document.documentElement.style;
+                if (bc.primary)       r.setProperty('--primary', bc.primary);
+                if (bc.primary_light) r.setProperty('--primary-light', bc.primary_light);
+                if (bc.primary_dark)  r.setProperty('--primary-dark', bc.primary_dark);
+                else if (bc.primaryDark) r.setProperty('--primary-dark', bc.primaryDark);
+            }
+        } catch(e) {}
+    }
+})();
+
 // ── Global Admin Fetch Wrapper: Proxy Routing + Auth Header + Browser Rate Limit ──
 (function() {
     if (typeof window === 'undefined' || !window.fetch || window.__fbrAdminFetchPatched) return;
@@ -139,21 +179,27 @@ var SIDEBAR_HTML = `
     </div>
 
     <nav class="sidebar-nav">
-        <div class="nav-section-label">Main</div>
+        <div class="nav-section-label">Overview</div>
         <a href="dashboard.html" class="nav-item" data-page="dashboard">
             <span class="nav-icon">📊</span>
             <span>Dashboard</span>
         </a>
+        <a href="insights.html" class="nav-item" data-page="insights">
+            <span class="nav-icon">📈</span>
+            <span>Insights</span>
+            <span class="nav-badge new-tag">New</span>
+        </a>
+
+        <div class="nav-section-label">Sell</div>
         <a href="orders.html" class="nav-item" data-page="orders">
             <span class="nav-icon">📦</span>
             <span>Orders</span>
             <span class="nav-badge" id="pendingBadge" style="display:none;">0</span>
         </a>
-
-        <div class="nav-section-label">Catalog</div>
-        <a href="brands.html" class="nav-item" data-page="brands">
-            <span class="nav-icon">🏪</span>
-            <span>Brands</span>
+        <a href="customers.html" class="nav-item" data-page="customers">
+            <span class="nav-icon">👥</span>
+            <span>Customers</span>
+            <span class="nav-badge new-tag">New</span>
         </a>
         <a href="products.html" class="nav-item" data-page="products">
             <span class="nav-icon">🛍️</span>
@@ -163,6 +209,12 @@ var SIDEBAR_HTML = `
             <span class="nav-icon">🏷️</span>
             <span>Categories</span>
         </a>
+        <a href="brands.html" class="nav-item" data-page="brands">
+            <span class="nav-icon">🏪</span>
+            <span>Brands</span>
+        </a>
+
+        <div class="nav-section-label">Marketing</div>
         <a href="banners.html" class="nav-item" data-page="banners">
             <span class="nav-icon">🖼️</span>
             <span>Banners</span>
@@ -171,25 +223,39 @@ var SIDEBAR_HTML = `
             <span class="nav-icon">🏠</span>
             <span>Homepage Sections</span>
         </a>
-
-        <div class="nav-section-label">Manage</div>
-        <a href="delivery.html" class="nav-item" data-page="delivery">
-            <span class="nav-icon">🚚</span>
-            <span>Delivery Zones</span>
-        </a>
         <a href="promos.html" class="nav-item" data-page="promos">
             <span class="nav-icon">🎟️</span>
             <span>Promo Codes</span>
-        </a>
-        <a href="addons.html" class="nav-item" data-page="addons">
-            <span class="nav-icon">✨</span>
-            <span>Add-ons</span>
         </a>
         <a href="reviews.html" class="nav-item" data-page="reviews">
             <span class="nav-icon">⭐</span>
             <span>Reviews</span>
             <span class="nav-badge green" id="reviewBadge" style="display:none;">0</span>
         </a>
+        <a href="tracking.html" class="nav-item" data-page="tracking">
+            <span class="nav-icon">📡</span>
+            <span>Tracking</span>
+        </a>
+
+        <div class="nav-section-label">Store Setup</div>
+        <a href="delivery.html" class="nav-item" data-page="delivery">
+            <span class="nav-icon">🚚</span>
+            <span>Delivery Zones</span>
+        </a>
+        <a href="addons.html" class="nav-item" data-page="addons">
+            <span class="nav-icon">✨</span>
+            <span>Add-ons</span>
+        </a>
+        <a href="theme.html" class="nav-item" data-page="theme">
+            <span class="nav-icon">🎨</span>
+            <span>Theme Customizer</span>
+        </a>
+        <a href="settings.html" class="nav-item" data-page="settings">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+        </a>
+
+        <div class="nav-section-label">Tools</div>
         <a href="salary-slip.html" class="nav-item" data-page="salary-slip">
             <span class="nav-icon">🧾</span>
             <span>Salary Slip</span>
@@ -203,37 +269,29 @@ var SIDEBAR_HTML = `
             <span>Fraud Checker</span>
         </a>
 
-        <div class="nav-section-label">Config</div>
+        <div class="nav-section-label">System</div>
         <a href="staff.html" class="nav-item" data-page="staff" id="navStaffSecurity">
-            <span class="nav-icon">🛡️</span>
-            <span>Master Security & Staff</span>
+            <span class="nav-icon">🔐</span>
+            <span>Staff & Security</span>
+        </a>
+        <a href="devtools.html" class="nav-item" data-page="devtools">
+            <span class="nav-icon">🧰</span>
+            <span>Developer Tools</span>
         </a>
         <a href="env-setup.html" class="nav-item" data-page="env-setup">
-            <span class="nav-icon">🔐</span>
+            <span class="nav-icon">📋</span>
             <span>ENV Setup</span>
         </a>
         <a href="../worker.html" class="nav-item" data-page="worker" target="_blank">
             <span class="nav-icon">⚡</span>
             <span>Worker Auth</span>
         </a>
-        <a href="settings.html" class="nav-item" data-page="settings">
-            <span class="nav-icon">⚙️</span>
-            <span>Settings</span>
-        </a>
-        <a href="theme.html" class="nav-item" data-page="theme">
-            <span class="nav-icon">🎨</span>
-            <span>Theme Customizer</span>
-        </a>
-        <a href="tracking.html" class="nav-item" data-page="tracking">
-            <span class="nav-icon">📈</span>
-            <span>Tracking</span>
-        </a>
     </nav>
 
     <div class="sidebar-footer">
         <div class="admin-user-box">
             <div class="user-avatar" id="userAvatar">A</div>
-            <div>
+            <div style="min-width:0;flex:1;">
                 <div class="user-email" id="adminUserEmail">Loading...</div>
                 <div class="user-role" id="adminUserRole">Master Admin</div>
             </div>
@@ -242,14 +300,93 @@ var SIDEBAR_HTML = `
     </div>
 </aside>`;
 
-// ── Toast Container ──────────────────────────────────────────
+// ── Toast & Command Palette HTML ─────────────────────────────
 var TOAST_HTML = '<div class="toast-container" id="toastContainer"></div>';
+
+var CMD_PALETTE_HTML = `
+<div class="ui-cmd-overlay" id="adminCmdOverlay" onclick="if(event.target===this) closeAdminCmd()">
+    <div class="ui-cmd-box">
+        <div class="ui-cmd-input-row">
+            <span>🔍</span>
+            <input type="text" id="adminCmdInput" placeholder="Jump to any page (Orders, Products, Customers, Insights, Staff)..." oninput="renderAdminCmdItems(this.value)">
+            <button type="button" class="modal-close" style="width:26px;height:26px;font-size:13px;" onclick="closeAdminCmd()">✕</button>
+        </div>
+        <div class="ui-cmd-list" id="adminCmdList"></div>
+    </div>
+</div>`;
+
+window.openAdminCmd = function() {
+    var ov = document.getElementById('adminCmdOverlay');
+    if (!ov) return;
+    ov.classList.add('show');
+    var inp = document.getElementById('adminCmdInput');
+    if (inp) { inp.value = ''; inp.focus(); }
+    window.renderAdminCmdItems('');
+};
+window.closeAdminCmd = function() {
+    var ov = document.getElementById('adminCmdOverlay');
+    if (ov) ov.classList.remove('show');
+};
+window.renderAdminCmdItems = function(q) {
+    var listEl = document.getElementById('adminCmdList');
+    if (!listEl) return;
+    var query = (q || '').toLowerCase().trim();
+    var links = Array.from(document.querySelectorAll('.sidebar-nav .nav-item')).filter(function(el) {
+        if (el.style.display === 'none') return false;
+        var txt = (el.textContent || '').toLowerCase();
+        var pg  = (el.getAttribute('data-page') || '').toLowerCase();
+        return !query || txt.indexOf(query) !== -1 || pg.indexOf(query) !== -1;
+    });
+    var html = links.map(function(el) {
+        var href = el.getAttribute('href') || '#';
+        var icon = (el.querySelector('.nav-icon') && el.querySelector('.nav-icon').textContent) || '📄';
+        var label = (el.querySelector('span:nth-child(2)') && el.querySelector('span:nth-child(2)').textContent) || el.textContent.trim();
+        var targetAttr = el.getAttribute('target') ? ' target="_blank"' : '';
+        return '<a class="ui-cmd-item" href="' + href + '"' + targetAttr + '><span>' + icon + '</span><span>' + label + '</span><small>' + href + '</small></a>';
+    }).join('');
+    html += '<button type="button" class="ui-cmd-item" onclick="toggleAdminTheme();closeAdminCmd();"><span>🌓</span><span>Toggle Light / Dark Mode</span><small>Theme</small></button>';
+    listEl.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">No matching page found</div>';
+};
+
+function injectAdminHeaderQuickTools() {
+    var header = document.querySelector('.admin-header');
+    if (!header || header.querySelector('.adm-quick-tools')) return;
+    var right = header.querySelector('.header-right');
+    if (!right) {
+        right = document.createElement('div');
+        right.className = 'header-right';
+        header.appendChild(right);
+    }
+    var tools = document.createElement('div');
+    tools.className = 'adm-quick-tools';
+    var isDark = window.getAdminTheme() === 'dark';
+    tools.innerHTML =
+        '<button type="button" class="adm-cmd-trigger" onclick="openAdminCmd()" title="Quick Jump (Ctrl+K)">🔍 <span>Quick search…</span> <kbd>Ctrl K</kbd></button>' +
+        '<button type="button" class="adm-icon-btn js-admin-theme-btn" onclick="toggleAdminTheme()" title="' + (isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode') + '">' + (isDark ? '☀️' : '🌙') + '</button>' +
+        '<a href="../index.html" target="_blank" class="adm-icon-btn" title="View Live Store">↗️</a>';
+    right.appendChild(tools);
+}
 
 // ── Init: Inject sidebar + check auth ────────────────────────
 function adminInit(activePage, onReady) {
-    // Inject sidebar + overlay + toast container into page
+    // Inject sidebar + overlay + toast + command palette into page
     document.body.insertAdjacentHTML('afterbegin', SIDEBAR_HTML);
-    document.body.insertAdjacentHTML('beforeend', TOAST_HTML);
+    document.body.insertAdjacentHTML('beforeend', TOAST_HTML + CMD_PALETTE_HTML);
+    injectAdminHeaderQuickTools();
+
+    if (!window.__fbrCmdKeyBound) {
+        window.__fbrCmdKeyBound = true;
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && String(e.key || '').toLowerCase() === 'k') {
+                e.preventDefault();
+                var ov = document.getElementById('adminCmdOverlay');
+                if (ov && ov.classList.contains('show')) closeAdminCmd();
+                else openAdminCmd();
+            } else if (e.key === 'Escape') {
+                closeAdminCmd();
+            }
+        });
+    }
 
     // ── Web3 / Appwrite localStorage session check ──
     var awWallet = localStorage.getItem('aw_admin_wallet');
@@ -362,8 +499,12 @@ function adminInit(activePage, onReady) {
 
         if (role === 'staff') {
             var permModules = ['orders', 'products', 'reviews', 'categories', 'promos', 'banners', 'sections', 'delivery', 'addons', 'brands', 'settings'];
-            var pageToMod = function(p) { return (p === 'theme') ? 'settings' : p; };
-            var masterOnlyPages = ['staff', 'env-setup', 'worker'];
+            var pageToMod = function(p) {
+                if (p === 'theme' || p === 'tracking') return 'settings';
+                if (p === 'customers' || p === 'insights') return 'orders';
+                return p;
+            };
+            var masterOnlyPages = ['staff', 'env-setup', 'worker', 'devtools'];
 
             document.querySelectorAll('.sidebar-nav .nav-item[data-page]').forEach(function(link) {
                 var p = link.getAttribute('data-page');
@@ -611,6 +752,28 @@ function adminLoadBadges() {
             var count = res.total || 0;
             var el = document.getElementById('reviewBadge');
             if (el && count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+        }).catch(function() {});
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var badgeQueries = [];
+        var hasOrd = (typeof window.hasAdminPerm !== 'function' || window.hasAdminPerm('orders', 'view'));
+        if (hasOrd) badgeQueries.push({ sql: "SELECT COUNT(*) AS cnt FROM orders WHERE status = 'Pending'" });
+        badgeQueries.push({ sql: "SELECT COUNT(*) AS cnt FROM reviews WHERE is_approved = 0" });
+        fetch('/api/d1-query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ queries: badgeQueries })
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            if (!d || !d.success || !Array.isArray(d.result)) return;
+            var idx = 0;
+            if (hasOrd) {
+                var pCnt = (d.result[idx] && d.result[idx].results && d.result[idx].results[0] && Number(d.result[idx].results[0].cnt)) || 0;
+                var pel = document.getElementById('pendingBadge');
+                if (pel && pCnt > 0) { pel.textContent = pCnt; pel.style.display = 'inline-flex'; }
+                idx++;
+            }
+            var rCnt = (d.result[idx] && d.result[idx].results && d.result[idx].results[0] && Number(d.result[idx].results[0].cnt)) || 0;
+            var rel = document.getElementById('reviewBadge');
+            if (rel && rCnt > 0) { rel.textContent = rCnt; rel.style.display = 'inline-flex'; }
         }).catch(function() {});
     }
 }

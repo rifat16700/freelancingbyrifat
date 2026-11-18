@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css?v=10">
+    <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="../assets/js/config.js?v=1794570029121"></script>
+    <script src="assets/js/admin-common.js?v=10"></script>
+    <style>
+        .cust-order-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px;
+            margin-bottom: 8px; background: var(--bg-card-subtle); text-decoration: none;
+            color: var(--text-primary); transition: var(--transition);
+        }
+        .cust-order-item:hover { border-color: var(--accent); background: var(--bg-card); }
+    </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+
+<main class="admin-main" id="adminMain" style="display:none;">
+    <header class="admin-header">
+        <div class="header-left">
+            <button type="button" class="hamburger-btn" onclick="openSidebar()">☰</button>
+            <div>
+                <div class="page-title">👥 Customers</div>
+                <div class="page-subtitle">Live customer directory computed from real store orders</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="exportCustomersCsv()">⬇️ Export CSV</button>
+        </div>
+    </header>
+
+    <div class="admin-content">
+        <!-- KPI Summary -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Total Customers</div>
+                    <div class="stat-value" id="cStatTotal">0</div>
+                    <div class="stat-sub">Unique phone numbers</div>
+                </div>
+                <div class="stat-icon-box blue">👥</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Repeat Buyers</div>
+                    <div class="stat-value" id="cStatRepeat">0</div>
+                    <div class="stat-sub" id="cStatRepeatPct">0% of customers</div>
+                </div>
+                <div class="stat-icon-box green">🔁</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">VIP Customers (৳5k+)</div>
+                    <div class="stat-value" id="cStatVip">0</div>
+                    <div class="stat-sub">Delivered &amp; active spend</div>
+                </div>
+                <div class="stat-icon-box purple">👑</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Avg Lifetime Spend</div>
+                    <div class="stat-value" id="cStatAvg">৳0</div>
+                    <div class="stat-sub">Non-cancelled orders</div>
+                </div>
+                <div class="stat-icon-box orange">💰</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom:18px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div class="ui-tabs" id="custSegTabs">
+                    <button type="button" class="ui-tab active" data-seg="all" onclick="setCustSeg('all')">All <span class="tab-count" id="segCntAll">0</span></button>
+                    <button type="button" class="ui-tab" data-seg="repeat" onclick="setCustSeg('repeat')">Repeat (2+) <span class="tab-count" id="segCntRepeat">0</span></button>
+                    <button type="button" class="ui-tab" data-seg="vip" onclick="setCustSeg('vip')">VIP (৳5k+) <span class="tab-count" id="segCntVip">0</span></button>
+                    <button type="button" class="ui-tab" data-seg="cancelled" onclick="setCustSeg('cancelled')">Has Cancellations <span class="tab-count" id="segCntCan">0</span></button>
+                </div>
+                <div style="display:flex;gap:8px;flex:1;min-width:220px;max-width:460px;">
+                    <div class="search-box" style="min-width:140px;">
+                        <span>🔍</span>
+                        <input type="text" id="custSearch" placeholder="Search name, phone, district..." oninput="renderCustomers()">
+                    </div>
+                    <select class="form-select" id="custSort" style="width:165px;flex-shrink:0;" onchange="renderCustomers()">
+                        <option value="spent">Highest Spend</option>
+                        <option value="orders">Most Orders</option>
+                        <option value="recent">Most Recent</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers Table -->
+        <div class="card" style="padding:0;overflow:hidden;">
+            <div class="table-wrap" style="border:none;border-radius:0;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Phone</th>
+                            <th>Location</th>
+                            <th>Orders</th>
+                            <th>Delivered / Cancelled</th>
+                            <th>Total Spent</th>
+                            <th>Last Order</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="custTableBody">
+                        <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">Loading real customer data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Customer Slide-Over Detail Drawer -->
+<div class="ui-drawer-overlay" id="custDrawerOverlay" onclick="if(event.target===this) closeCustDrawer()">
+    <div class="ui-drawer">
+        <div class="ui-drawer-head">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                <div class="avatar-circle" id="cdAvatar" style="width:42px;height:42px;font-size:16px;">C</div>
+                <div style="min-width:0;">
+                    <div style="font-weight:800;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="cdName">Customer</div>
+                    <div style="font-size:12px;color:var(--text-muted);" id="cdPhone">—</div>
+                </div>
+            </div>
+            <button type="button" class="modal-close" onclick="closeCustDrawer()">✕</button>
+        </div>
+        <div class="ui-drawer-body" id="cdBody"></div>
+        <div class="ui-drawer-foot" id="cdFoot"></div>
+    </div>
+</div>
+
+<script>
+var allOrders = [];
+var customers = [];
+var activeSeg = 'all';
+
+function escHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function normPhone(p) {
+    var d = String(p || '').replace(/\D/g, '');
+    if (d.startsWith('880') && d.length >= 13) d = '0' + d.slice(3);
+    return d || 'unknown';
+}
+
+function buildCustomers(orders) {
+    var map = {};
+    // Deduplicate multi-brand sub-orders into logical orders per order_group_id
+    var grouped = {};
+    (orders || []).forEach(function(o) {
+        var key = o.order_group_id || o.id;
+        if (!grouped[key]) {
+            grouped[key] = Object.assign({}, o, { _sumGrand: Number(o.grand_total || o.final_total || 0) });
+        } else {
+            grouped[key]._sumGrand += Number(o.grand_total || o.final_total || 0);
+        }
+    });
+
+    Object.keys(grouped).forEach(function(k) {
+        var o = grouped[k];
+        var ph = normPhone(o.customer_phone);
+        if (!map[ph]) {
+            map[ph] = {
+                phone: o.customer_phone || ph,
+                phoneKey: ph,
+                name: o.customer_name || 'Guest Customer',
+                email: o.customer_email || '',
+                district: o.district || '',
+                upazila: o.upazila || '',
+                address: o.address || '',
+                orders: [],
+                validOrders: 0,
+                delivered: 0,
+                cancelled: 0,
+                totalSpent: 0,
+                lastDate: o.created_at || ''
+            };
+        }
+        var c = map[ph];
+        c.orders.push(o);
+        if (!c.name || c.name === 'Guest Customer') c.name = o.customer_name || c.name;
+        if (!c.district && o.district) c.district = o.district;
+        if (!c.upazila && o.upazila) c.upazila = o.upazila;
+        if (!c.address && o.address) c.address = o.address;
+        if (o.created_at && (!c.lastDate || new Date(o.created_at) > new Date(c.lastDate))) {
+            c.lastDate = o.created_at;
+        }
+        var st = String(o.status || '').toLowerCase();
+        if (st === 'cancelled') {
+            c.cancelled++;
+        } else {
+            c.validOrders++;
+            c.totalSpent += Number(o._sumGrand || 0);
+            if (st === 'delivered') c.delivered++;
+        }
+    });
+
+    customers = Object.keys(map).map(function(k) { return map[k]; });
+    updateCustomerStats();
+    renderCustomers();
+}
+
+function updateCustomerStats() {
+    var total = customers.length;
+    var repeat = customers.filter(function(c) { return c.validOrders >= 2; }).length;
+    var vip = customers.filter(function(c) { return c.totalSpent >= 5000; }).length;
+    var can = customers.filter(function(c) { return c.cancelled > 0; }).length;
+    var sumSpent = customers.reduce(function(s, c) { return s + c.totalSpent; }, 0);
+
+    document.getElementById('cStatTotal').textContent = total.toLocaleString();
+    document.getElementById('cStatRepeat').textContent = repeat.toLocaleString();
+    document.getElementById('cStatRepeatPct').textContent = (total ? Math.round((repeat / total) * 100) : 0) + '% repeat rate';
+    document.getElementById('cStatVip').textContent = vip.toLocaleString();
+    document.getElementById('cStatAvg').textContent = formatMoney(total ? Math.round(sumSpent / total) : 0);
+
+    document.getElementById('segCntAll').textContent = total;
+    document.getElementById('segCntRepeat').textContent = repeat;
+    document.getElementById('segCntVip').textContent = vip;
+    document.getElementById('segCntCan').textContent = can;
+}
+
+function setCustSeg(seg) {
+    activeSeg = seg;
+    document.querySelectorAll('#custSegTabs .ui-tab').forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-seg') === seg);
+    });
+    renderCustomers();
+}
+
+function getFilteredCustomers() {
+    var q = (document.getElementById('custSearch').value || '').toLowerCase().trim();
+    var sort = document.getElementById('custSort').value;
+    var list = customers.filter(function(c) {
+        if (activeSeg === 'repeat' && c.validOrders < 2) return false;
+        if (activeSeg === 'vip' && c.totalSpent < 5000) return false;
+        if (activeSeg === 'cancelled' && c.cancelled === 0) return false;
+        if (q) {
+            var hay = (c.name + ' ' + c.phone + ' ' + c.district + ' ' + c.upazila + ' ' + c.address).toLowerCase();
+            if (hay.indexOf(q) === -1) return false;
+        }
+        return true;
+    });
+    list.sort(function(a, b) {
+        if (sort === 'orders') return b.orders.length - a.orders.length;
+        if (sort === 'recent') return new Date(b.lastDate || 0) - new Date(a.lastDate || 0);
+        return b.totalSpent - a.totalSpent;
+    });
+    return list;
+}
+
+function renderCustomers() {
+    var list = getFilteredCustomers();
+    var tb = document.getElementById('custTableBody');
+    if (!list.length) {
+        tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:34px;">No customers match your filter.</td></tr>';
+        return;
+    }
+    tb.innerHTML = list.map(function(c) {
+        var init = (c.name || 'C').charAt(0).toUpperCase();
+        var tags = '';
+        if (c.totalSpent >= 5000) tags += ' <span class="badge badge-shipped">VIP</span>';
+        else if (c.validOrders >= 2) tags += ' <span class="badge badge-delivered">Repeat</span>';
+        var loc = [c.upazila, c.district].filter(Boolean).join(', ') || '—';
+        return '<tr style="cursor:pointer;" onclick="openCustDrawer(\'' + escHtml(c.phoneKey) + '\')">' +
+            '<td class="nowrap-col"><div style="display:flex;align-items:center;gap:10px;"><div class="avatar-circle">' + escHtml(init) + '</div><div><b>' + escHtml(c.name) + '</b>' + tags + '</div></div></td>' +
+            '<td class="nowrap-col" style="font-family:monospace;font-weight:600;">' + escHtml(c.phone) + '</td>' +
+            '<td class="wrap-col" style="max-width:210px;">' + escHtml(loc) + '</td>' +
+            '<td class="nowrap-col"><b>' + c.orders.length + '</b></td>' +
+            '<td class="nowrap-col"><span class="badge badge-delivered">' + c.delivered + ' Del</span>' + (c.cancelled ? ' <span class="badge badge-cancelled">' + c.cancelled + ' Can</span>' : '') + '</td>' +
+            '<td class="nowrap-col"><b>' + formatMoney(c.totalSpent) + '</b></td>' +
+            '<td class="nowrap-col" style="font-size:12px;color:var(--text-muted);">' + formatDateShort(c.lastDate) + '</td>' +
+            '<td class="nowrap-col"><button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openCustDrawer(\'' + escHtml(c.phoneKey) + '\')">View</button></td>' +
+        '</tr>';
+    }).join('');
+}
+
+function openCustDrawer(phoneKey) {
+    var c = customers.find(function(x) { return x.phoneKey === phoneKey; });
+    if (!c) return;
+    document.getElementById('cdAvatar').textContent = (c.name || 'C').charAt(0).toUpperCase();
+    document.getElementById('cdName').textContent = c.name || 'Guest Customer';
+    document.getElementById('cdPhone').textContent = c.phone + (c.district ? ' • ' + c.district : '');
+
+    var cleanWa = String(c.phone || '').replace(/\D/g, '');
+    if (cleanWa.startsWith('0')) cleanWa = '88' + cleanWa;
+
+    var ordersHtml = c.orders.sort(function(a, b) {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    }).map(function(o) {
+        return '<a class="cust-order-item" href="orders.html?id=' + encodeURIComponent(o.id) + '">' +
+            '<div><div style="font-weight:700;font-size:13.5px;">#' + escHtml(o.id) + '</div><div style="font-size:11.5px;color:var(--text-muted);">' + formatDate(o.created_at) + ' • ' + escHtml(o.payment_method || 'COD') + '</div></div>' +
+            '<div style="text-align:right;"><div style="font-weight:800;">' + formatMoney(o._sumGrand || o.grand_total) + '</div><div>' + statusBadge(o.status) + '</div></div>' +
+        '</a>';
+    }).join('');
+
+    document.getElementById('cdBody').innerHTML =
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;">' +
+            '<div class="card card-sm" style="text-align:center;"><div style="font-size:11px;color:var(--text-muted);font-weight:700;">ORDERS</div><div style="font-size:20px;font-weight:800;">' + c.orders.length + '</div></div>' +
+            '<div class="card card-sm" style="text-align:center;"><div style="font-size:11px;color:var(--text-muted);font-weight:700;">DELIVERED</div><div style="font-size:20px;font-weight:800;color:var(--success);">' + c.delivered + '</div></div>' +
+            '<div class="card card-sm" style="text-align:center;"><div style="font-size:11px;color:var(--text-muted);font-weight:700;">SPENT</div><div style="font-size:18px;font-weight:800;color:var(--accent);">' + formatMoney(c.totalSpent) + '</div></div>' +
+        '</div>' +
+        '<div class="card card-sm" style="margin-bottom:18px;">' +
+            '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Latest Address</div>' +
+            '<div style="font-size:13px;">' + escHtml([c.address, c.upazila, c.district].filter(Boolean).join(', ') || 'No address saved') + '</div>' +
+        '</div>' +
+        '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;">Order History (' + c.orders.length + ')</div>' +
+        (ordersHtml || '<div style="color:var(--text-muted);font-size:13px;">No orders found</div>');
+
+    document.getElementById('cdFoot').innerHTML =
+        '<a href="tel:' + escHtml(c.phone) + '" class="btn btn-secondary btn-sm" style="flex:1;">📞 Call</a>' +
+        '<a href="https://wa.me/' + escHtml(cleanWa) + '" target="_blank" class="btn btn-primary btn-sm" style="flex:1;">💬 WhatsApp</a>';
+
+    document.getElementById('custDrawerOverlay').classList.add('show');
+}
+
+function closeCustDrawer() {
+    document.getElementById('custDrawerOverlay').classList.remove('show');
+}
+
+function exportCustomersCsv() {
+    var list = getFilteredCustomers();
+    if (!list.length) { showToast('No customers to export', 'warning'); return; }
+    var rows = [['Name', 'Phone', 'District', 'Upazila', 'Orders', 'Delivered', 'Cancelled', 'Total Spent', 'Last Order']];
+    list.forEach(function(c) {
+        rows.push([c.name, c.phone, c.district, c.upazila, c.orders.length, c.delivered, c.cancelled, c.totalSpent, c.lastDate]);
+    });
+    var csv = rows.map(function(r) {
+        return r.map(function(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = 'customers-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    adminInit('customers', function() {
+        if (CONFIG.DB_PROVIDER === 'cf_db') {
+            cfDbBatchQuery([
+                { sql: "SELECT id, order_group_id, customer_name, customer_phone, customer_email, district, upazila, address, grand_total, final_total, payment_method, status, created_at FROM orders ORDER BY created_at DESC" }
+            ], false).then(function(res) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                allOrders = (res && res.result && res.result[0] && res.result[0].results) ? res.result[0].results : [];
+                buildCustomers(allOrders);
+            }).catch(function(err) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                showToast('Failed to load customers: ' + err.message, 'error');
+            });
+        } else {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+        }
+    });
+});
+</script>
+</body>
+</html>
