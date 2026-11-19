@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
-  Addon, AuthUser, Banner, Brand, BrandColors, Category, Customer,
-  LogEntry, Order, OrderItem, PayStatus, Perm, Product, Promo, Review,
+  Addon, AuthUser, Banner, Brand, BrandColors, Category, CryptoCoin, Customer,
+  LogEntry, MessagingApp, Order, OrderItem, PayStatus, Perm, Product, Promo, Review,
   Section, Session, Settings, Staff, Status, Variant, Zone,
 } from "./types";
 import { isValid } from "./lib/format";
@@ -80,7 +80,7 @@ const INITIAL_SETTINGS: Settings = {
   bkashNumber: "",
   nagadNumber: "",
   binanceManualUid: "",
-  gateway: "Auto",
+  gateway: "cloudflare",
   gatewayVersion: "v1",
   gatewayKey: "",
   gatewayKeyV2: "",
@@ -90,7 +90,8 @@ const INITIAL_SETTINGS: Settings = {
   binanceApiSecret: "",
   usdRate: 120,
   crypto: false,
-  cryptoCoins: ["USDT", "BTC", "BNB"],
+  cryptoCoins: [],
+  messagingApps: [],
   pickup: false,
   pickupAddress: "",
   pickupMap: "",
@@ -112,8 +113,8 @@ const INITIAL_SETTINGS: Settings = {
   hfApiUrl: "",
   aiAdminKey: "",
   aiUserKey: "",
-  aiModel: "Flash",
-  aiAudioModel: "gemini-2.5-flash-native-audio-preview",
+  aiModel: "gemini-3.5-flash",
+  aiAudioModel: "gemini-3.8-live",
   aiChat: true,
   aiVoice: true,
   aiCompare: true,
@@ -416,7 +417,7 @@ function useStoreValue() {
         bkashNumber: sr.bkash_number || "",
         nagadNumber: sr.nagad_number || "",
         binanceManualUid: sr.binance_manual_uid || "",
-        gateway: sr.verify_mode || "Auto",
+        gateway: sr.verify_mode || "cloudflare",
         gatewayVersion: sr.gateway_version || "v1",
         gatewayKey: sr.gateway_api_key || "",
         gatewayKeyV2: sr.gateway_api_key_v2 || "",
@@ -425,8 +426,24 @@ function useStoreValue() {
         binanceApiKey: sr.binance_api_key || "",
         binanceApiSecret: sr.binance_api_secret || "",
         usdRate: Number(sr.usd_to_bdt_rate || 120),
-        crypto: Boolean(sr.binance_pay_uid || sr.binance_manual_uid || sr.binance_api_key),
-        cryptoCoins: safeJson<string[]>(sr.crypto_coins, ["USDT", "BTC", "BNB"]),
+        crypto: Boolean(sr.binance_pay_uid || sr.binance_manual_uid || sr.binance_api_key || (safeJson<any[]>(sr.crypto_coins, []).length > 0)),
+        cryptoCoins: (safeJson<any[]>(sr.crypto_coins, []) || []).map((c: any): CryptoCoin =>
+          typeof c === "string"
+            ? { symbol: c, name: c, networks: [] }
+            : {
+                symbol: String(c?.symbol || ""),
+                name: String(c?.name || ""),
+                networks: Array.isArray(c?.networks)
+                  ? c.networks.map((n: any) => ({ name: String(n?.name || ""), address: String(n?.address || ""), qr_url: String(n?.qr_url || "") }))
+                  : [],
+              }
+        ),
+        messagingApps: (safeJson<any[]>(sr.messaging_apps, []) || []).map((a: any): MessagingApp => ({
+          key: String(a?.key || ""),
+          name: String(a?.name || a?.key || ""),
+          enabled: Boolean(a?.enabled),
+          contact: String(a?.contact || ""),
+        })),
         pickup: Boolean(Number(sr.allow_pickup ?? 0)),
         pickupAddress: sr.store_address || "",
         pickupMap: sr.store_map_link || "",
@@ -1423,7 +1440,7 @@ function useStoreValue() {
         youtube_url: next.youtube,
         bkash_number: next.bkashNumber,
         nagad_number: next.nagadNumber,
-        binance_manual_uid: next.binanceManualUid || next.binanceUid,
+        binance_manual_uid: next.binanceManualUid,
         gateway_api_key: next.gatewayKey,
         gateway_api_key_v2: next.gatewayKeyV2,
         gateway_version: next.gatewayVersion,
@@ -1437,7 +1454,7 @@ function useStoreValue() {
         telegram_main_chats: JSON.stringify(mainChatsArr),
         telegram_draft_bot: next.tgDraftToken,
         telegram_draft_chat: next.tgDraftChat,
-        messaging_apps: "[]",
+        messaging_apps: JSON.stringify(next.messagingApps || []),
         allow_pickup: next.pickup ? 1 : 0,
         store_address: next.pickupAddress,
         store_map_link: next.pickupMap,
@@ -1451,7 +1468,7 @@ function useStoreValue() {
         verify_mode: next.gateway,
         supabase_edge_url: next.supabaseEdgeUrl,
         hf_api_url: next.hfApiUrl,
-        crypto_coins: JSON.stringify(next.cryptoCoins || ["USDT"]),
+        crypto_coins: JSON.stringify(next.cryptoCoins || []),
         review_imgbb_key: next.reviewImgbbKey || next.imgbbApiKey,
         seo_title: next.seoTitle,
         seo_description: next.seoDesc,

@@ -276,6 +276,25 @@ export interface BrandColors {
   text_muted: string;
 }
 
+export interface MessagingApp {
+  key: string;
+  name: string;
+  enabled: boolean;
+  contact: string;
+}
+
+export interface CryptoNetwork {
+  name: string;
+  address: string;
+  qr_url?: string;
+}
+
+export interface CryptoCoin {
+  symbol: string;
+  name: string;
+  networks: CryptoNetwork[];
+}
+
 export interface Settings {
   storeName: string;
   logo: string;
@@ -310,7 +329,8 @@ export interface Settings {
   binanceApiSecret: string;
   usdRate: number;
   crypto: boolean;
-  cryptoCoins: string[];
+  cryptoCoins: CryptoCoin[];
+  messagingApps: MessagingApp[];
   pickup: boolean;
   pickupAddress: string;
   pickupMap: string;

@@ -10,7 +10,7 @@ import type { Status } from "../types";
 
 const DAY = 86400000;
 export function Dashboard() {
-  const { orders, products, reviews, promos, customers, settings, t, toast, log } = useStore();
+  const { orders, products, reviews, promos, customers, settings, authUser, hasPerm, t, toast, log } = useStore();
   const [range, setRange] = useState<"7" | "14" | "30">("7");
   const [report, setReport] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -89,7 +89,12 @@ export function Dashboard() {
     }, 900);
   };
 
-  const confirm = (id: string) => { orders.update(id, { status: "Confirmed" }); toast(t("Order confirmed", "অর্ডার কনফার্ম হয়েছে")); log("Order status → Confirmed", id); };
+  const confirm = (id: string) => {
+    if (!hasPerm("orders", "edit")) return toast("Missing edit permission", "err");
+    orders.update(id, { status: "Confirmed" });
+    toast(t("Order confirmed", "অর্ডার কনফার্ম হয়েছে"));
+    log("Order status → Confirmed", id);
+  };
   const recent = orders.items.slice(0, 7);
   const statuses: Status[] = ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"];
   const total30 = Object.values(d.statusCount).reduce((a, b) => a + b, 0) || 1;
@@ -101,7 +106,7 @@ export function Dashboard() {
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-indigo-200">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight">{greet}, Rifat 👋</h1>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight">{greet}, {authUser?.email ? authUser.email.split("@")[0] : "Admin"} 👋</h1>
             <p className="mt-2 max-w-lg text-indigo-100">
               {d.tOrders.length > 0 ? t(`You have ${d.tOrders.length} new orders worth ${money(d.tRev)} today.`, `আজ ${d.tOrders.length}টি অর্ডার এসেছে, মোট ${money(d.tRev)}।`) : t("No orders yet today — a good time to post on Facebook!", "আজ এখনো অর্ডার আসেনি — ফেসবুকে পোস্ট দেওয়ার ভালো সময়!")}
               {actions.length > 0 && " " + t(`${actions.length} things need your attention.`, `${actions.length}টি বিষয়ে আপনার নজর দরকার।`)}
@@ -146,7 +151,7 @@ export function Dashboard() {
             {busy && <div className="mb-4 flex items-center gap-2 text-sm text-slate-300"><span className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Analysing your data…</div>}
             {report && <ul className="mb-4 max-h-64 space-y-2 overflow-y-auto pr-1 text-[13px] leading-relaxed text-slate-200">{report.map((l, i) => <li key={i} className="rounded-xl bg-white/5 px-3 py-2">{l}</li>)}</ul>}
             <Button variant="primary" className="w-full bg-white text-slate-900 hover:bg-slate-100" icon={<Sparkles size={15} />} onClick={genReport} disabled={busy}>{report ? t("Refresh report", "রিপোর্ট রিফ্রেশ") : t("Get smart report", "স্মার্ট রিপোর্ট নিন")}</Button>
-            <p className="mt-2 text-center text-[11px] text-slate-500">Demo uses rule-based analysis. Connect your Gemini key in Settings → Integrations.</p>
+            <p className="mt-2 text-center text-[11px] text-slate-400">Live store metrics summary • Configure Gemini AI key in Settings → AI & Integrations.</p>
           </div>
         </Card>
       </div>

@@ -143,6 +143,25 @@ export function Banners() {
               <Field label="Link when clicked">
                 <Input value={edit.link} onChange={(e) => setEdit({ ...edit, link: e.target.value })} placeholder="/shop?cat=electronics" />
               </Field>
+              <details className="rounded-xl border border-slate-200 p-3">
+                <summary className="cursor-pointer text-xs font-semibold text-slate-600">🎯 Advanced: Link Type & Custom Clickable Area</summary>
+                <div className="mt-3 space-y-2.5">
+                  <Field label="Link Type">
+                    <Select value={edit.linkType || "url"} onChange={(e) => setEdit({ ...edit, linkType: e.target.value })}>
+                      <option value="url">Custom URL</option>
+                      <option value="category">Category Page</option>
+                      <option value="product">Product Page</option>
+                      <option value="section">Homepage Section</option>
+                    </Select>
+                  </Field>
+                  <div className="grid grid-cols-4 gap-2">
+                    <Field label="X %"><Input type="number" min={0} max={100} value={edit.areaX ?? ""} onChange={(e) => setEdit({ ...edit, areaX: e.target.value === "" ? undefined : Number(e.target.value) })} placeholder="0" /></Field>
+                    <Field label="Y %"><Input type="number" min={0} max={100} value={edit.areaY ?? ""} onChange={(e) => setEdit({ ...edit, areaY: e.target.value === "" ? undefined : Number(e.target.value) })} placeholder="0" /></Field>
+                    <Field label="W %"><Input type="number" min={0} max={100} value={edit.areaW ?? ""} onChange={(e) => setEdit({ ...edit, areaW: e.target.value === "" ? undefined : Number(e.target.value) })} placeholder="100" /></Field>
+                    <Field label="H %"><Input type="number" min={0} max={100} value={edit.areaH ?? ""} onChange={(e) => setEdit({ ...edit, areaH: e.target.value === "" ? undefined : Number(e.target.value) })} placeholder="100" /></Field>
+                  </div>
+                </div>
+              </details>
               {!edit.imageUrl && (
                 <Field label="Fallback colour mood">
                   <input type="range" min={0} max={360} value={edit.hue} onChange={(e) => setEdit({ ...edit, hue: Number(e.target.value) })} className="w-full" />
