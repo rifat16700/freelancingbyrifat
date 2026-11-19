@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+    <title>Admin Control Center</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <script>document.write('<link rel="stylesheet" href="../assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <script src="../assets/js/config.js?v=1794570029121"></script>
+    <script>
+      (function () {
+        var mode = "light";
+        try { mode = localStorage.getItem("fbr_admin_theme") === "dark" ? "dark" : "light"; } catch (e) {}
+        document.documentElement.setAttribute("data-admin-theme", mode);
+        if (mode === "dark") document.documentElement.classList.add("dark");
+        if (typeof CONFIG !== "undefined" && CONFIG.BRAND_COLORS) {
+          try {
+            var bc = typeof CONFIG.BRAND_COLORS === "object" ? CONFIG.BRAND_COLORS : JSON.parse(String(CONFIG.BRAND_COLORS).trim());
+            if (bc && typeof bc === "object") {
+              var s = document.documentElement.style;
+              if (bc.primary) s.setProperty("--primary", bc.primary);
+              if (bc.primary_light) s.setProperty("--primary-light", bc.primary_light);
+              if (bc.primary_dark || bc.primaryDark) s.setProperty("--primary-dark", bc.primary_dark || bc.primaryDark);
+            }
+          } catch (e) {}
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
