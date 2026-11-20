@@ -8,20 +8,21 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon-192x192.png">
+    <link rel="preconnect" href="https://ranonex1.alwaysdata.net" crossorigin>
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
-    <script>document.write('<link rel="stylesheet" href="/assets/css/theme.css?v=' + Date.now() + '">');</script>
+    <link rel="stylesheet" href="/assets/css/theme.css">
     <script src="/assets/js/config.js?v=1794570029121"></script>
     <script src="/assets/js/brand-context.js"></script>
-    <script src="/assets/js/seo-helper.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/assets/js/supabase-init.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/appwrite@16"></script>
-    <script src="/assets/js/appwrite-init.js"></script>
-    <link rel="stylesheet" href="/assets/css/ai-components.css?v=3.9.2">
-    <script src="/assets/js/ai-config.js?v=3.9.2"></script>
-    <script src="/assets/js/ai-product-chat.js?v=3.9.2"></script>
-    <script src="/assets/js/ai-compare.js?v=3.9.2"></script>
+    <script src="/assets/js/seo-helper.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="/assets/js/supabase-init.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16" defer></script>
+    <script src="/assets/js/appwrite-init.js" defer></script>
+    <link rel="stylesheet" href="/assets/css/ai-components.css?v=3.9.2" media="print" onload="this.media='all'">
+    <script src="/assets/js/ai-config.js?v=3.9.2" defer></script>
+    <script src="/assets/js/ai-product-chat.js?v=3.9.2" defer></script>
+    <script src="/assets/js/ai-compare.js?v=3.9.2" defer></script>
     <style>
         .shop-layout { display: grid; grid-template-columns: 240px 1fr; gap: 20px; padding: 20px 0; }
         .sidebar { background: #fff; border-radius: 14px; padding: 20px; border: 1px solid #eee; height: fit-content; position: sticky; top: 76px; }
@@ -112,12 +113,11 @@
         }
     </style>
     <link rel="stylesheet" href="/assets/css/premium-icons.css">
-    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body style="display:flex;flex-direction:column;min-height:100vh;">
-<div class="page-loader" id="pageLoader">
-    <dotlottie-wc src="https://lottie.host/a9162a6d-bee0-4ebd-adda-d4a43f0bea2b/Nq6NiivYlE.lottie" autoplay loop></dotlottie-wc>
-    <div style="font-size:14px;color:#8B1A1A;font-weight:600;margin-top:-30px;" id="storeName">Loading...</div>
+<div class="page-loader" id="pageLoader" style="display:none;">
+    <div class="spinner"></div>
+    <div style="font-size:14px;color:var(--primary,#8B1A1A);font-weight:600;" id="storeName">Loading...</div>
 </div>
 
 <nav class="navbar">
@@ -825,7 +825,7 @@ function resetFilters() {
 </script>
 
     <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if(typeof lucide !== 'undefined') lucide.createIcons();

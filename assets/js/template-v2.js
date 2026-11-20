@@ -124,7 +124,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
         if (fullUrl && !fullUrl.startsWith('http') && !fullUrl.startsWith('/') && !fullUrl.startsWith('.')) fullUrl = 'https://' + fullUrl;
         
         var loadAttr = (i === 0) ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
-        var inner = '<div class="w-full h-[25vh] md:h-[35vh] lg:h-[40vh] relative bg-[#f5f5f5] overflow-hidden"><img src="' + b.image_url + '" alt="' + (b.title||'') + '" ' + loadAttr + ' decoding="async" style="width: 100% !important; height: 100% !important; object-fit: contain !important; pointer-events: none;" class="w-full h-full pointer-events-none"></div>';
+        var inner = '<div class="w-full h-[25vh] md:h-[35vh] lg:h-[40vh] relative overflow-hidden v2-img-box"><img src="' + b.image_url + '" alt="' + (b.title||'') + '" ' + loadAttr + ' decoding="async" style="width: 100% !important; height: 100% !important; object-fit: contain !important; pointer-events: none;" class="w-full h-full pointer-events-none"></div>';
         if (fullUrl) {
             inner += '<a href="' + fullUrl + '" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;"></a>';
         }
@@ -161,7 +161,7 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
 
         return `
         <a href="/product?id=${p.id}" class="product-card-hover group shadow-md hover:shadow-lg rounded-lg transition-all duration-300 relative block bg-white overflow-hidden flex flex-col h-full border border-gray-100">
-            <div class="relative h-[160px] md:h-[250px] w-full overflow-hidden shrink-0">
+            <div class="relative h-[160px] md:h-[250px] w-full overflow-hidden shrink-0 v2-img-box">
                 <img src="${img}" alt="${p.name}" loading="lazy" decoding="async" width="300" height="300" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                 
                 <!-- Top Right Favorite -->
@@ -349,22 +349,22 @@ function renderFullV2Page(container, paramBanners, cats, homeSects) {
                 <h2 class="text-xl md:text-4xl font-bold font-josefin text-center mb-6 md:mb-12 text-secondary">What ${storeName} Offers!</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-8">
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
-                        <img src="https://cdn-icons-png.flaticon.com/512/411/411776.png" alt="Delivery" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
+                        <img src="https://cdn-icons-png.flaticon.com/512/411/411776.png" alt="Delivery" loading="lazy" decoding="async" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
                         <h3 class="text-[12px] md:text-xl font-josefin font-bold text-secondary mb-1 md:mb-4">24/7 Support</h3>
                         <p class="text-gray-500 text-[9px] md:text-sm leading-relaxed font-lato">We are here for you 24/7. Quality support guaranteed.</p>
                     </div>
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
-                        <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Cashback" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
+                        <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" alt="Cashback" loading="lazy" decoding="async" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
                         <h3 class="text-[12px] md:text-xl font-josefin font-bold text-secondary mb-1 md:mb-4">Cashback</h3>
                         <p class="text-gray-500 text-[9px] md:text-sm leading-relaxed font-lato">Get exclusive cashbacks on your purchases.</p>
                     </div>
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
-                        <img src="https://cdn-icons-png.flaticon.com/512/1067/1067566.png" alt="Quality" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
+                        <img src="https://cdn-icons-png.flaticon.com/512/1067/1067566.png" alt="Quality" loading="lazy" decoding="async" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
                         <h3 class="text-[12px] md:text-xl font-josefin font-bold text-secondary mb-1 md:mb-4">Premium Quality</h3>
                         <p class="text-gray-500 text-[9px] md:text-sm leading-relaxed font-lato">We ensure the best quality products for our customers.</p>
                     </div>
                     <div class="bg-white p-4 md:p-8 text-center shadow-[0_4px_25px_rgba(0,0,0,0.08)] rounded hover:scale-105 transition-transform">
-                        <img src="https://cdn-icons-png.flaticon.com/512/3358/3358864.png" alt="Hours" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3358/3358864.png" alt="Hours" loading="lazy" decoding="async" width="64" height="64" class="w-8 h-8 md:w-16 md:h-16 mx-auto mb-2 md:mb-5 opacity-70">
                         <h3 class="text-[12px] md:text-xl font-josefin font-bold text-secondary mb-1 md:mb-4">Fast Delivery</h3>
                         <p class="text-gray-500 text-[9px] md:text-sm leading-relaxed font-lato">Super fast delivery inside and outside Dhaka.</p>
                     </div>
