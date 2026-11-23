@@ -10,6 +10,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/images/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon-192x192.png">
     <link rel="preconnect" href="https://ranonex1.alwaysdata.net" crossorigin>
+    <link rel="preconnect" href="https://pub-52af6f115609460e9697b539dcb3d8f7.r2.dev" crossorigin>
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/tailwind.css?v=1791100000005">
     <link rel="stylesheet" href="/assets/css/theme.css">
@@ -357,6 +358,16 @@ function loadSiteData() {
         });
 
         siteSettings = settings;
+
+        // ══ LCP FIX: inject <link rel="preload"> for first banner image ASAP ══
+        if (banners && banners.length && banners[0] && banners[0].image_url) {
+            var lcpPreload = document.createElement('link');
+            lcpPreload.rel = 'preload';
+            lcpPreload.as = 'image';
+            lcpPreload.href = banners[0].image_url;
+            lcpPreload.setAttribute('fetchpriority', 'high');
+            document.head.appendChild(lcpPreload);
+        }
 
         // ═ MAINTENANCE MODE CHECK — Cloudflare Env Var থেকে (build-time) ═
         if (CONFIG.MAINTENANCE_MODE === true) {

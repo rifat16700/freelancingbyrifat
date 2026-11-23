@@ -958,12 +958,14 @@ function renderProduct(p) {
 
     if (variants.length) {
         variants.forEach(function(v) {
-            if (v.imageUrl) {
-                if (!allImages.includes(v.imageUrl)) {
-                    allImages.push(v.imageUrl);
+            // Support both legacy (imageUrl) and new admin SPA (image) field names
+            var vImg = v.imageUrl || v.image || '';
+            if (vImg) {
+                if (!allImages.includes(vImg)) {
+                    allImages.push(vImg);
                 }
                 if (v.variantCode) {
-                    imgToCodeMap[v.imageUrl] = v.variantCode;
+                    imgToCodeMap[vImg] = v.variantCode;
                 }
             }
         });
@@ -1132,8 +1134,8 @@ function renderProduct(p) {
     // Colors
     if (variants.length) {
         var colorHtml = variants.map(function(v, i) {
-            return '<div class="color-swatch' + (i===0?' selected':'') + '" style="background:' + (v.colorHex||'#888') + ';" title="' + v.colorName + '" onclick="selectColor(' + i + ')" data-vi="' + i + '">' +
-                '<span class="color-swatch-label">' + v.colorName + '</span></div>';
+            return '<div class="color-swatch' + (i===0?' selected':'') + '" style="background:' + (v.colorHex||v.hex||'#888') + ';" title="' + (v.colorName||v.color||'Color') + '" onclick="selectColor(' + i + ')" data-vi="' + i + '">' +
+                '<span class="color-swatch-label">' + (v.colorName||v.color||'Color') + '</span></div>';
         }).join('');
         document.getElementById('colorSwatches').innerHTML = colorHtml;
         selectColor(0);
@@ -1190,13 +1192,22 @@ function selectColor(vi) {
     selectedColorIndex = vi;
     selectedSize  = null;
 
-    document.getElementById('selectedColorLabel').textContent = selectedColor.colorName;
+    document.getElementById('selectedColorLabel').textContent = selectedColor.colorName || selectedColor.color || '';
     document.querySelectorAll('.color-swatch').forEach(function(el, i) { el.classList.toggle('selected', i === vi); });
 
-    // Update main image with color image
-    if (selectedColor.imageUrl && window.productMedia) {
-        var idx = window.productMedia.findIndex(function(m) { return m.src === selectedColor.imageUrl; });
+    // Update main image with color-specific image (supports both legacy imageUrl and new admin SPA 'image' field)
+    var colorImg = selectedColor.imageUrl || selectedColor.image || '';
+    if (colorImg && window.productMedia) {
+        var idx = window.productMedia.findIndex(function(m) { return m.src === colorImg; });
         if (idx !== -1) setMedia(idx);
+        // If color image not in media yet (edge case: data loaded without it), show it directly
+        else {
+            var container = document.getElementById('mediaContainer');
+            if (container) {
+                var storeName2 = (settings && settings.store_name) || '';
+                container.innerHTML = '<img id="mainImg" src="' + colorImg + '" alt="' + escHtmlP(selectedColor.colorName) + ' — ' + escHtmlP(storeName2) + '" loading="eager" style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;">';
+            }
+        }
     }
 
     // Render sizes
@@ -1208,17 +1219,40 @@ function selectColor(vi) {
 }
 
 function renderSizes(sizes) {
-    var html = sizes.map(function(s, i) {
+    // Normalize sizes: supports both Array [{size, stock, extraPrice}] and Object {M:10, L:20}
+    var normalized = [];
+    if (Array.isArray(sizes)) {
+        normalized = sizes;
+    } else if (sizes && typeof sizes === 'object') {
+        // Convert object format from new admin SPA to array format
+        // selectedColor.extraPrices (if exists) has per-size extra price
+        var extraPricesMap = (selectedColor && selectedColor.extraPrices) ? selectedColor.extraPrices : {};
+        normalized = Object.keys(sizes).map(function(sz) {
+            return { size: sz, stock: Number(sizes[sz] || 0), extraPrice: Number(extraPricesMap[sz] || 0) };
+        });
+    }
+    // Store back for selectSize
+    if (selectedColor) selectedColor._normalizedSizes = normalized;
+
+    var html = normalized.map(function(s, i) {
         var outOfStock = s.stock <= 0;
         return '<button class="size-btn' + (outOfStock?' disabled':'') + '" onclick="selectSize(' + i + ')" data-si="' + i + '"' + (outOfStock?' disabled':'') + '>' +
             s.size + (outOfStock ? ' <span style="font-size:10px;"><i data-lucide="x-circle" class="lucide-icon icon-danger"></i></span>' : '') + '</button>';
     }).join('');
     document.getElementById('sizeBtns').innerHTML = html;
-    if (sizes.length > 0 && sizes[0].stock > 0) selectSize(0);
+    if (normalized.length > 0 && normalized[0].stock > 0) selectSize(0);
 }
 
 function selectSize(si) {
-    var sizes = selectedColor ? selectedColor.sizes || [] : [];
+    // Use normalized sizes if available (supports both old array and new object format)
+    var sizes = selectedColor ? (selectedColor._normalizedSizes || selectedColor.sizes || []) : [];
+    if (!Array.isArray(sizes)) {
+        // Convert object format
+        var extraPricesMap = (selectedColor && selectedColor.extraPrices) ? selectedColor.extraPrices : {};
+        sizes = Object.keys(sizes).map(function(sz) {
+            return { size: sz, stock: Number(sizes[sz] || 0), extraPrice: Number(extraPricesMap[sz] || 0) };
+        });
+    }
     if (si >= sizes.length) return;
     selectedSize = sizes[si];
 
@@ -1758,15 +1792,15 @@ function addToCart() {
     var finalPrice = base - flashDiscount + extra;
 
     var allImgs = product.gallery_images || [];
-    var img = (selectedColor && selectedColor.imageUrl) ? selectedColor.imageUrl : (allImgs.length ? allImgs[0] : '');
-    var color = selectedColor ? (selectedColor.colorName || ("Color " + (selectedColorIndex + 1))) : '';
+    var img = selectedColor ? (selectedColor.imageUrl || selectedColor.image || (allImgs.length ? allImgs[0] : '')) : (allImgs.length ? allImgs[0] : '');
+    var color = selectedColor ? (selectedColor.colorName || selectedColor.color || ("Color " + (selectedColorIndex + 1))) : '';
     var size  = selectedSize ? selectedSize.size : '';
     var key   = product.id + '-' + color + '-' + size;
 
     var cart = getCart();
     var ex = cart.find(function(i) { return i.key === key; });
     if (ex) ex.quantity += currentQty;
-    else cart.push({ key: key, productId: product.id, productName: product.name, sku: product.sku || '', variantCode: (selectedColor && selectedColor.code) ? selectedColor.code : '', price: finalPrice, color: color, size: size, quantity: currentQty, image: img, brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id)) });
+    else cart.push({ key: key, productId: product.id, productName: product.name, sku: product.sku || '', variantCode: (selectedColor && (selectedColor.variantCode || selectedColor.code)) || '', price: finalPrice, color: color, size: size, quantity: currentQty, image: img, brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id)) });
 
     saveCart(cart);
     updateCartBadge();
@@ -1794,8 +1828,8 @@ function directOrder() {
     var finalPrice = base - flashDiscount + extra;
 
     var allImgs = product.gallery_images || [];
-    var img = (selectedColor && selectedColor.imageUrl) ? selectedColor.imageUrl : (allImgs.length ? allImgs[0] : '');
-    var color = selectedColor ? (selectedColor.colorName || ("Color " + (selectedColorIndex + 1))) : '';
+    var img = selectedColor ? (selectedColor.imageUrl || selectedColor.image || (allImgs.length ? allImgs[0] : '')) : (allImgs.length ? allImgs[0] : '');
+    var color = selectedColor ? (selectedColor.colorName || selectedColor.color || ("Color " + (selectedColorIndex + 1))) : '';
     var size  = selectedSize ? selectedSize.size : '';
     var key   = product.id + '-' + color + '-' + size;
 
@@ -1808,7 +1842,7 @@ function directOrder() {
         color: color, 
         size: size, 
         quantity: currentQty, 
-        image: img, sku: product.sku || '', variantCode: (selectedColor && selectedColor.code) ? selectedColor.code : '', brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id))
+        image: img, sku: product.sku || '', variantCode: (selectedColor && (selectedColor.variantCode || selectedColor.code)) || '', brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id))
     }];
 
     // Main cart untouched — direct order goes to its own temp key
@@ -1837,7 +1871,7 @@ function orderWhatsApp() {
 }
 
 function buildOrderMsg(customerName, customerPhone, customerAddress) {
-    var color = selectedColor ? (selectedColor.colorName || ("Color " + (selectedColorIndex + 1))) : '';
+    var color = selectedColor ? (selectedColor.colorName || selectedColor.color || ("Color " + (selectedColorIndex + 1))) : '';
     var size  = selectedSize ? selectedSize.size : '';
     var base = product.base_price;
     var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
@@ -1909,7 +1943,7 @@ function openMsgSheet() {
     addToCart();
 
     // Order summary preview
-    var color = selectedColor ? (selectedColor.colorName || ("Color " + (selectedColorIndex + 1))) : '';
+    var color = selectedColor ? (selectedColor.colorName || selectedColor.color || ("Color " + (selectedColorIndex + 1))) : '';
     var size  = selectedSize  ? selectedSize.size : '';
     var base = product.base_price;
     var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
@@ -1977,13 +2011,13 @@ function pickupOrder() {
     var flashDiscount = product.flash_sale_price || 0;
     var finalPrice = base - flashDiscount + extra;
     var allImgs = product.gallery_images || [];
-    var img = (selectedColor && selectedColor.imageUrl) ? selectedColor.imageUrl : (allImgs.length ? allImgs[0] : '');
-    var color = selectedColor ? selectedColor.colorName : '';
+    var img = selectedColor ? (selectedColor.imageUrl || selectedColor.image || (allImgs.length ? allImgs[0] : '')) : (allImgs.length ? allImgs[0] : '');
+    var color = selectedColor ? (selectedColor.colorName || selectedColor.color) : '';
     var size  = selectedSize ? selectedSize.size : '';
     var key   = product.id + '-' + color + '-' + size;
 
     // Main cart touch করে না — direct key তে রাখো
-    var directItem = [{ key: key, productId: product.id, productName: product.name, sku: product.sku || '', variantCode: (selectedColor && selectedColor.code) ? selectedColor.code : '', price: finalPrice, color: color, size: size, quantity: currentQty, image: img, brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id)) }];
+    var directItem = [{ key: key, productId: product.id, productName: product.name, sku: product.sku || '', variantCode: (selectedColor && (selectedColor.variantCode || selectedColor.code)) || '', price: finalPrice, color: color, size: size, quantity: currentQty, image: img, brand_id: product.brand_id || (window.BRAND && BRAND.id) || null, brand_slug: product.brand_slug || (window.BRAND && BRAND.slug) || '', brand_name: product.brand_name || (window.BRAND && BRAND.name) || '', product_url: (window.BRAND && BRAND.productUrl) ? BRAND.productUrl(product) : ('/product?id=' + encodeURIComponent(product.id)) }];
     var dKey = (typeof CONFIG !== 'undefined' && CONFIG.DIRECT_ORDER_KEY) ? CONFIG.DIRECT_ORDER_KEY : 'fbr_direct_order';
     localStorage.setItem(dKey, JSON.stringify(directItem));
     window.location.href = (window.BRAND ? BRAND.url('/checkout') : '/checkout') + '?pickup=1&direct=1';
