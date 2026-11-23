@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Code2, Copy, Database, Download, Play, Power, ShieldAlert, Terminal } from "lucide-react";
+import { CheckCircle2, Code2, Copy, Database, Download, Play, Power, ShieldAlert, Terminal } from "lucide-react";
 import { useStore } from "../store";
 import { Badge, Button, Card, CardHead, Empty, Field, PageHeader, Select, Tabs, Td, Textarea, Th, Toggle } from "../components/ui";
 import { d1AdminQuery, getProxyBase } from "../lib/api";

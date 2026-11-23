@@ -153,25 +153,32 @@ function hashHue(str: string): number {
 function parseVariantsFromD1(raw: unknown): Variant[] {
   const arr = safeJson<any[]>(raw, []);
   if (!Array.isArray(arr) || !arr.length) {
-    return [{ color: "Default", hex: "#111827", sizes: { Std: 10 } }];
+    return [{ color: "Default", hex: "#111827", variantCode: "", sizes: { Std: 10 }, extraPrices: { Std: 0 } }];
   }
   return arr.map((v) => {
     const color = String(v?.color || v?.colorName || "Default");
     const hex = String(v?.hex || v?.colorHex || "#111827");
     const image = String(v?.image || v?.imageUrl || "");
+    const variantCode = String(v?.variantCode || v?.code || "");
     const sizes: Record<string, number> = {};
+    const extraPrices: Record<string, number> = {};
     if (Array.isArray(v?.sizes)) {
       v.sizes.forEach((s: any) => {
         const k = String(s?.size || "Std");
         sizes[k] = Number(s?.stock ?? 0);
+        extraPrices[k] = Number(s?.extraPrice ?? 0);
       });
     } else if (v?.sizes && typeof v.sizes === "object") {
       Object.entries(v.sizes).forEach(([k, val]) => {
         sizes[k] = Number(val ?? 0);
+        extraPrices[k] = 0;
       });
     }
-    if (!Object.keys(sizes).length) sizes.Std = 10;
-    return { color, hex, image: image || undefined, sizes };
+    if (!Object.keys(sizes).length) {
+      sizes.Std = 10;
+      extraPrices.Std = 0;
+    }
+    return { color, hex, image: image || undefined, variantCode: variantCode || undefined, sizes, extraPrices };
   });
 }
 
@@ -183,10 +190,11 @@ function serializeVariantsForD1(variants: Variant[]) {
     color: v.color,
     hex: v.hex,
     image: v.image || "",
+    variantCode: v.variantCode || "",
     sizes: Object.entries(v.sizes || {}).map(([size, stock]) => ({
       size,
       stock: Number(stock || 0),
-      extraPrice: 0,
+      extraPrice: Number(v.extraPrices?.[size] ?? 0),
     })),
   }));
 }

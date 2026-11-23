@@ -42,7 +42,9 @@ export interface Variant {
   color: string;
   hex: string;
   image?: string;
+  variantCode?: string;
   sizes: Record<string, number>;
+  extraPrices?: Record<string, number>;
 }
 
 export interface Product {

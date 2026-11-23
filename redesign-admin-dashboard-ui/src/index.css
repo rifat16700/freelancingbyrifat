@@ -28,6 +28,11 @@
   --primary: #8b1a1a;
   --primary-light: #b03535;
   --primary-dark: #680000;
+  --chart-grid: rgba(226, 232, 240, 0.9);
+  --chart-track: #f1f5f9;
+  --chart-zero: #f8fafc;
+  --chart-tooltip-bg: rgba(15, 23, 42, 0.96);
+  --chart-tooltip-text: #ffffff;
 }
 
 html { -webkit-font-smoothing: antialiased; }
@@ -40,11 +45,29 @@ html[data-admin-theme="dark"] {
   --color-indigo-100: color-mix(in srgb, var(--primary-light, #b03535) 28%, #0f172a);
   --color-indigo-700: color-mix(in srgb, var(--primary-light, #b03535) 85%, #ffffff);
   --color-indigo-900: #f8fafc;
+  --chart-grid: rgba(255, 255, 255, 0.08);
+  --chart-track: rgba(255, 255, 255, 0.06);
+  --chart-zero: rgba(255, 255, 255, 0.03);
+  --chart-tooltip-bg: rgba(2, 6, 23, 0.96);
+  --chart-tooltip-text: #f8fafc;
 }
 html[data-admin-theme="dark"] body {
   background: #090d16;
   color: #f1f5f9;
 }
+html[data-admin-theme="dark"] .via-white { --tw-gradient-via: #0f172a !important; }
+html[data-admin-theme="dark"] .from-indigo-50 { --tw-gradient-from: color-mix(in srgb, var(--primary-light, #b03535) 16%, #0f172a) !important; }
+html[data-admin-theme="dark"] .to-violet-50 { --tw-gradient-to: color-mix(in srgb, var(--primary, #8b1a1a) 16%, #0f172a) !important; }
+html[data-admin-theme="dark"] .bg-pink-50 { background-color: rgba(236, 72, 153, 0.15) !important; }
+html[data-admin-theme="dark"] .text-pink-700 { color: #f472b6 !important; }
+html[data-admin-theme="dark"] .bg-teal-50 { background-color: rgba(20, 184, 166, 0.15) !important; }
+html[data-admin-theme="dark"] .text-teal-700 { color: #5eead4 !important; }
+html[data-admin-theme="dark"] .bg-orange-50 { background-color: rgba(249, 115, 22, 0.15) !important; }
+html[data-admin-theme="dark"] .text-orange-700 { color: #fdba74 !important; }
+html[data-admin-theme="dark"] .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.15) !important; }
+html[data-admin-theme="dark"] .text-yellow-700 { color: #fde047 !important; }
+html[data-admin-theme="dark"] .bg-cyan-50 { background-color: rgba(6, 182, 212, 0.15) !important; }
+html[data-admin-theme="dark"] .text-cyan-700 { color: #67e8f9 !important; }
 html[data-admin-theme="dark"] .bg-slate-50 { background-color: #090d16 !important; }
 html[data-admin-theme="dark"] .bg-slate-50\/60,
 html[data-admin-theme="dark"] .bg-slate-50\/70,

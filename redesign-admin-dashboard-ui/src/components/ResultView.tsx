@@ -41,10 +41,15 @@ export function ResultView({ r, big }: { r: Result; big?: boolean }) {
             <thead><tr>{r.cols.map((c, i) => <th key={i} className={`pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 ${i === 0 ? "text-left" : "text-right"}`}>{c}</th>)}</tr></thead>
             <tbody className="divide-y divide-slate-100">
               {r.rows.slice(0, big ? 50 : 8).map((row, ri) => (
-                <tr key={ri}>{row.map((c, i) => <td key={i} className={`py-2 ${i === 0 ? "max-w-[190px] truncate pr-2 font-medium text-slate-700" : "text-right tabular-nums text-slate-600"}`}>{c}</td>)}</tr>
+                <tr key={ri} className="hover:bg-slate-50/60 transition">{row.map((c, i) => <td key={i} className={`py-2 ${i === 0 ? "max-w-[190px] truncate pr-2 font-medium text-slate-800" : "text-right tabular-nums text-slate-600"}`}>{c}</td>)}</tr>
               ))}
             </tbody>
           </table>
+          {!big && r.rows.length > 8 && (
+            <div className="mt-2 text-center text-[11px] font-semibold text-indigo-600">
+              +{r.rows.length - 8} more rows (click card to view all)
+            </div>
+          )}
         </div>
       );
   }

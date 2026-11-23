@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowDown, ArrowUp, Image as ImageIcon, LayoutGrid, MousePointerClick, Pencil, Plus, Trash2 } from "lucide-react";
 import { useStore } from "../store";
-import { Badge, Button, Card, Check2, ConfirmButton, Empty, Field, HelpBox, IconView, Input, MediaPicker, Modal, PageHeader, SearchBox, Select, Thumb, Toggle } from "../components/ui";
+import { Badge, Button, Card, Check2, ConfirmButton, Empty, Field, HelpBox, Input, MediaPicker, Modal, PageHeader, SearchBox, Select, Thumb, Toggle } from "../components/ui";
 import { num, pct } from "../lib/format";
 import { cn } from "../utils/cn";
 import type { Banner, Section } from "../types";

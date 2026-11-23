@@ -11,14 +11,38 @@ export function primaryHex(): string {
 export const PALETTE = ["var(--primary, #8b1a1a)", "#10b981", "#f59e0b", "#ec4899", "#0ea5e9", "#8b5cf6", "#f97316", "#14b8a6", "#ef4444", "#84cc16"];
 export type Fmt = (n: number) => string;
 
+// Build smooth cubic bezier SVG path from points
+function smoothLinePath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
+  let d = `M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
 export function Sparkline({ data, color, h = 36 }: { data: number[]; color?: string; h?: number }) {
   const c = color || primaryHex();
   if (data.length < 2) return null;
   const max = Math.max(...data), min = Math.min(...data);
-  const pts = data.map((v, i) => `${(i / (data.length - 1)) * 100},${h - 3 - ((v - min) / (max - min || 1)) * (h - 6)}`).join(" ");
+  const pts = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * 100,
+    y: h - 3 - ((v - min) / (max - min || 1)) * (h - 6),
+  }));
+  const path = smoothLinePath(pts);
   return (
     <svg viewBox={`0 0 100 ${h}`} preserveAspectRatio="none" className="w-full" style={{ height: h }}>
-      <polyline points={pts} fill="none" stroke={c} strokeWidth="1.8" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      <path d={path} fill="none" stroke={c} strokeWidth="1.8" vectorEffect="non-scaling-stroke" strokeLinecap="round" />
     </svg>
   );
 }
@@ -27,39 +51,74 @@ export function LineChart({ points, fmt, color, height = 200, area = true }: { p
   const c = color || primaryHex();
   const [hover, setHover] = useState<number | null>(null);
   if (!points.length) return <div className="py-10 text-center text-sm text-slate-400">No data</div>;
-  const W = 600, H = height, pl = 8, pr = 8, pt = 14, pb = 22;
+  const W = 600, H = height, pl = 10, pr = 10, pt = 14, pb = 22;
   const max = Math.max(...points.map((p) => p.y), 1);
   const xs = (i: number) => pl + (points.length === 1 ? (W - pl - pr) / 2 : (i / (points.length - 1)) * (W - pl - pr));
   const ys = (v: number) => pt + (1 - v / max) * (H - pt - pb);
-  const line = points.map((p, i) => `${i ? "L" : "M"}${xs(i).toFixed(1)},${ys(p.y).toFixed(1)}`).join(" ");
+
+  const rawPts = points.map((p, i) => ({ x: xs(i), y: ys(p.y) }));
+  const line = smoothLinePath(rawPts);
   const areaPath = `${line} L${xs(points.length - 1)},${H - pb} L${xs(0)},${H - pb} Z`;
   const gid = "g" + c.replace(/[^a-zA-Z0-9]/g, "");
   const ticks = [0, 0.5, 1];
   const labelIdx = [0, Math.floor((points.length - 1) / 2), points.length - 1];
+
+  const tooltipLeftPct = hover !== null ? Math.max(14, Math.min(86, (xs(hover) / W) * 100)) : 50;
+
   return (
     <div className="relative">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }} onMouseLeave={() => setHover(null)}
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full"
+        style={{ height }}
+        onMouseLeave={() => setHover(null)}
         onMouseMove={(e) => {
           const r = e.currentTarget.getBoundingClientRect();
           const x = ((e.clientX - r.left) / r.width) * W;
           setHover(Math.max(0, Math.min(points.length - 1, Math.round(((x - pl) / (W - pl - pr)) * (points.length - 1)))));
-        }}>
-        <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={c} stopOpacity=".25" /><stop offset="100%" stopColor={c} stopOpacity="0" /></linearGradient></defs>
-        {ticks.map((t) => <line key={t} x1={pl} x2={W - pr} y1={ys(max * t)} y2={ys(max * t)} stroke="#e2e8f0" strokeDasharray="3 4" />)}
+        }}
+      >
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={c} stopOpacity=".28" />
+            <stop offset="100%" stopColor={c} stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
+
+        {/* Dynamic Gridlines */}
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={pl} x2={W - pr} y1={ys(max * t)} y2={ys(max * t)} stroke="var(--chart-grid, #e2e8f0)" strokeDasharray="3 4" strokeWidth="1" />
+            <text x={W - pr} y={ys(max * t) - 3} fontSize="9" fill="#94a3b8" textAnchor="end" className="select-none font-mono">
+              {fmt(max * t)}
+            </text>
+          </g>
+        ))}
+
         {area && <path d={areaPath} fill={`url(#${gid})`} />}
-        <path d={line} fill="none" stroke={c} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
-        {labelIdx.map((i, k) => <text key={k} x={xs(i)} y={H - 6} fontSize="10" fill="#94a3b8" textAnchor={k === 0 ? "start" : k === 2 ? "end" : "middle"}>{points[i].x}</text>)}
+        <path d={line} fill="none" stroke={c} strokeWidth="2.4" strokeLinecap="round" />
+
+        {labelIdx.map((i, k) => (
+          <text key={k} x={xs(i)} y={H - 6} fontSize="10" fill="#94a3b8" textAnchor={k === 0 ? "start" : k === 2 ? "end" : "middle"} className="select-none">
+            {points[i].x}
+          </text>
+        ))}
+
         {hover !== null && (
           <g>
-            <line x1={xs(hover)} x2={xs(hover)} y1={pt} y2={H - pb} stroke="#cbd5e1" />
-            <circle cx={xs(hover)} cy={ys(points[hover].y)} r="4.5" fill="#fff" stroke={c} strokeWidth="2.5" />
+            <line x1={xs(hover)} x2={xs(hover)} y1={pt} y2={H - pb} stroke="rgba(148, 163, 184, 0.5)" strokeDasharray="2 3" strokeWidth="1.5" />
+            <circle cx={xs(hover)} cy={ys(points[hover].y)} r="5" fill="#ffffff" stroke={c} strokeWidth="2.5" />
           </g>
         )}
       </svg>
+
       {hover !== null && (
-        <div className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs text-white shadow-lg" style={{ left: `${(xs(hover) / W) * 100}%` }}>
-          <div className="text-slate-300">{points[hover].x}</div>
-          <div className="font-semibold">{fmt(points[hover].y)}</div>
+        <div
+          className="pointer-events-none absolute top-1 -translate-x-1/2 rounded-xl border border-slate-700/60 bg-slate-900/95 px-3 py-1.5 text-xs text-white shadow-xl backdrop-blur transition-all duration-75"
+          style={{ left: `${tooltipLeftPct}%` }}
+        >
+          <div className="text-[11px] font-medium text-slate-300">{points[hover].x}</div>
+          <div className="font-bold text-sm text-emerald-400">{fmt(points[hover].y)}</div>
         </div>
       )}
     </div>
@@ -115,7 +174,7 @@ export function Donut({ rows, fmt, colors, size = 140 }: { rows: { label: string
     <div className="flex items-center gap-5">
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg viewBox="0 0 36 36" className="-rotate-90">
-          <circle cx="18" cy="18" r={R} fill="none" stroke="#f1f5f9" strokeWidth="4.5" />
+          <circle cx="18" cy="18" r={R} fill="none" stroke="var(--chart-track, #f1f5f9)" strokeWidth="4.5" />
           {rows.map((r, i) => {
             const frac = (r.value / total) * 100;
             const el = (
@@ -135,9 +194,9 @@ export function Donut({ rows, fmt, colors, size = 140 }: { rows: { label: string
       </div>
       <ul className="min-w-0 flex-1 space-y-1.5">
         {rows.slice(0, 7).map((r, i) => (
-          <li key={i} className="flex items-center justify-between gap-2 text-xs" onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)}>
-            <span className="flex min-w-0 items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: col(i, r.label) }} /><span className="truncate text-slate-700">{r.label}</span></span>
-            <span className="shrink-0 tabular-nums text-slate-500">{fmt(r.value)} <span className="text-slate-400">· {((r.value / total) * 100).toFixed(0)}%</span></span>
+          <li key={i} className="flex items-center justify-between gap-2 text-xs cursor-pointer rounded-lg px-1.5 py-0.5 hover:bg-slate-50 transition" onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)}>
+            <span className="flex min-w-0 items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: col(i, r.label) }} /><span className="truncate font-medium text-slate-700">{r.label}</span></span>
+            <span className="shrink-0 tabular-nums text-slate-500">{fmt(r.value)} <span className="text-slate-400 font-semibold">· {((r.value / total) * 100).toFixed(0)}%</span></span>
           </li>
         ))}
       </ul>
@@ -147,23 +206,46 @@ export function Donut({ rows, fmt, colors, size = 140 }: { rows: { label: string
 
 export function Heatmap({ matrix, rowLabels, colLabels }: { matrix: number[][]; rowLabels: string[]; colLabels: string[] }) {
   const max = Math.max(...matrix.flat(), 1);
+  const [hoverCell, setHoverCell] = useState<{ r: number; c: number; v: number } | null>(null);
+
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[520px]">
+        {hoverCell && (
+          <div className="mb-2 text-xs font-semibold text-indigo-600 bg-indigo-50/70 border border-indigo-200/60 rounded-xl px-3 py-1 flex items-center justify-between">
+            <span>📅 {rowLabels[hoverCell.r]} at {colLabels[hoverCell.c]}</span>
+            <span>🔥 {hoverCell.v} orders</span>
+          </div>
+        )}
         <div className="ml-10 grid" style={{ gridTemplateColumns: `repeat(${colLabels.length}, 1fr)` }}>
           {colLabels.map((c, i) => <div key={i} className="text-center text-[9px] text-slate-400">{i % 3 === 0 ? c : ""}</div>)}
         </div>
         {matrix.map((row, ri) => (
           <div key={ri} className="mt-0.5 flex items-center">
-            <div className="w-10 text-[11px] text-slate-500">{rowLabels[ri]}</div>
+            <div className="w-10 text-[11px] text-slate-500 font-medium">{rowLabels[ri]}</div>
             <div className="grid flex-1 gap-0.5" style={{ gridTemplateColumns: `repeat(${row.length}, 1fr)` }}>
               {row.map((v, ci) => (
-                <div key={ci} title={`${rowLabels[ri]} ${colLabels[ci]} — ${v} orders`} className="aspect-[1.4] rounded-[4px]" style={{ background: v === 0 ? "#f1f5f9" : `color-mix(in srgb, var(--primary, #8b1a1a) ${Math.round((0.15 + (v / max) * 0.85) * 100)}%, transparent)` }} />
+                <div
+                  key={ci}
+                  onMouseEnter={() => setHoverCell({ r: ri, c: ci, v })}
+                  onMouseLeave={() => setHoverCell(null)}
+                  className="aspect-[1.4] rounded-[4px] cursor-pointer transition hover:scale-110 hover:shadow-md"
+                  style={{
+                    background: v === 0 ? "var(--chart-zero, #f8fafc)" : `color-mix(in srgb, var(--primary, #8b1a1a) ${Math.round((0.18 + (v / max) * 0.82) * 100)}%, transparent)`,
+                    border: v === 0 ? "1px solid var(--chart-grid, #f1f5f9)" : "none",
+                  }}
+                />
               ))}
             </div>
           </div>
         ))}
-        <div className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-slate-400">Less {[15, 35, 55, 78, 100].map((a) => <span key={a} className="h-2.5 w-4 rounded-sm" style={{ background: `color-mix(in srgb, var(--primary, #8b1a1a) ${a}%, transparent)` }} />)} More</div>
+        <div className="mt-2.5 flex items-center justify-end gap-1.5 text-[10px] text-slate-400">
+          <span>Low</span>
+          {[15, 35, 55, 78, 100].map((a) => (
+            <span key={a} className="h-2.5 w-4 rounded-sm" style={{ background: `color-mix(in srgb, var(--primary, #8b1a1a) ${a}%, transparent)` }} />
+          ))}
+          <span>Peak</span>
+        </div>
       </div>
     </div>
   );

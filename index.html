@@ -248,23 +248,17 @@ function loadSiteData() {
             }).catch(function() { return { data: [] }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         const fetchPublicData = async () => {
-            // Local caching disabled as requested: always fetch fresh from API (caching is controlled by Cloudflare Domain Cache Rules)
-            const cacheKey = '__fbr_pub_data_v4_' + (window.location.hostname || 'main');
-            try {
-                if (typeof window.localStorage !== 'undefined') {
-                    localStorage.removeItem(cacheKey);
-                    localStorage.removeItem('__fbr_public_data');
-                }
-            } catch(e) {}
             const brandKey = (window.BRAND && window.BRAND.slug) ? window.BRAND.slug : 'main';
             const sessionJsonKey = '__fbr_master_json_5m_' + brandKey;
             const saveMasterJson5m = (dataObj) => {
                 try {
-                    sessionStorage.setItem(sessionJsonKey, JSON.stringify({ ts: Date.now(), data: dataObj }));
+                    const payload = JSON.stringify({ ts: Date.now(), data: dataObj });
+                    sessionStorage.setItem(sessionJsonKey, payload);
+                    localStorage.setItem(sessionJsonKey, payload);
                 } catch(e) {}
             };
             try {
-                const rawCached = sessionStorage.getItem(sessionJsonKey);
+                const rawCached = sessionStorage.getItem(sessionJsonKey) || localStorage.getItem(sessionJsonKey);
                 if (rawCached) {
                     const parsed = JSON.parse(rawCached);
                     if (parsed && parsed.ts && (Date.now() - parsed.ts < 300000) && parsed.data) {
@@ -442,9 +436,25 @@ function loadSiteData() {
 
                             if (freshToAdd.length > 0) {
                                 allProducts = allProducts.concat(freshToAdd);
+                                window.allProducts = allProducts;
                                 if (window.BRAND && typeof window.BRAND.indexProducts === 'function') {
                                     window.BRAND.indexProducts(freshToAdd);
                                 }
+                                // Sync newly streamed products into local & session master cache
+                                try {
+                                    var bKey = (window.BRAND && window.BRAND.slug) ? window.BRAND.slug : 'main';
+                                    var mKey = '__fbr_master_json_5m_' + bKey;
+                                    var curRaw = sessionStorage.getItem(mKey) || localStorage.getItem(mKey);
+                                    if (curRaw) {
+                                        var curParsed = JSON.parse(curRaw);
+                                        if (curParsed && curParsed.data) {
+                                            curParsed.data.products = allProducts;
+                                            var updatedStr = JSON.stringify(curParsed);
+                                            sessionStorage.setItem(mKey, updatedStr);
+                                            localStorage.setItem(mKey, updatedStr);
+                                        }
+                                    }
+                                } catch(e) {}
                                 if (isV2) {
                                     initV2Theme(banners, cats, homeSects);
                                 } else {

@@ -460,6 +460,33 @@
         };
     } catch (e) {}
 
+    // ── Universal Instant Product Click Handoff (0ms Latency across site) ──
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a');
+        if (!a || !a.href) return;
+        var href = a.getAttribute('href') || '';
+        if (href.indexOf('/product?') !== -1 || href.indexOf('product.html?') !== -1 || href.indexOf('/product') !== -1) {
+            try {
+                var url = new URL(a.href, window.location.origin);
+                var pid = url.searchParams.get('id') || url.searchParams.get('sku') || url.searchParams.get('slug');
+                if (!pid) return;
+                var pool = (window.allProducts && Array.isArray(window.allProducts)) ? window.allProducts : [];
+                var pidLower = String(pid).toLowerCase();
+                var found = pool.find(function (p) {
+                    return String(p.id) === String(pid) ||
+                        (p.sku && String(p.sku).toLowerCase() === pidLower) ||
+                        (p.slug && String(p.slug).toLowerCase() === pidLower);
+                });
+                if (found) {
+                    var serialized = JSON.stringify(found);
+                    sessionStorage.setItem('__fbr_instant_product_' + pid, serialized);
+                    sessionStorage.setItem('__fbr_instant_product_' + pidLower, serialized);
+                    sessionStorage.setItem('__fbr_instant_product_' + found.id, serialized);
+                }
+            } catch (err) {}
+        }
+    }, true);
+
     // ── DOM Ready & MutationObserver to keep dynamic links inside brand context ──
     document.addEventListener('DOMContentLoaded', function () {
         BRAND.rewriteDomLinks(document.body);

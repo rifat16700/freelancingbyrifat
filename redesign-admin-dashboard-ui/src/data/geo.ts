@@ -169,6 +169,7 @@ export const defaultSettings: Settings = {
   usdRate: 120,
   crypto: false,
   cryptoCoins: [],
+  messagingApps: [],
   pickup: false,
   pickupAddress: "",
   pickupMap: "",
