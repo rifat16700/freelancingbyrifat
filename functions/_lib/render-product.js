@@ -262,7 +262,7 @@ export async function renderProductPage(context, brand = null) {
                 try { rVariants = typeof rp.variants === 'string' ? JSON.parse(rp.variants) : (rp.variants || []); } catch (e) {}
                 let rGallery = [];
                 try { rGallery = typeof rp.gallery_images === 'string' ? JSON.parse(rp.gallery_images) : (rp.gallery_images || []); } catch (e) {}
-                let rImg = (rVariants.length && rVariants[0]?.imageUrl) ? rVariants[0].imageUrl : (rGallery[0] || '');
+                let rImg = (rVariants.length && (rVariants[0]?.imageUrl || rVariants[0]?.image)) ? (rVariants[0].imageUrl || rVariants[0].image) : (rGallery[0] || '');
                 let rPrice = rp.flash_sale_price > 0 ? (rp.base_price - rp.flash_sale_price) : rp.base_price;
                 return `<a href="${prefix}/product?id=${encodeURIComponent(rp.id)}" class="product-card">
                     <div class="product-img-wrap">

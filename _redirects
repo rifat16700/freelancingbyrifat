@@ -16,3 +16,4 @@
 /forgot-password.html /forgot-password 301
 /stup-site.html /stup-site 301
 /setup-site /stup-site 200
+/404 /404.html 200

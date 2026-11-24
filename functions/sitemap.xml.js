@@ -134,8 +134,9 @@ export async function onRequestGet(context) {
             const variants = typeof prod.variants === 'string' ? JSON.parse(prod.variants) : (prod.variants || []);
             if (Array.isArray(variants)) {
                 variants.forEach(v => {
-                    if (v && v.imageUrl) {
-                        const vu = v.imageUrl.startsWith('http') ? v.imageUrl : siteUrl + (v.imageUrl.startsWith('/') ? '' : '/') + v.imageUrl;
+                    const vImg = v?.imageUrl || v?.image;
+                    if (vImg) {
+                        const vu = vImg.startsWith('http') ? vImg : siteUrl + (vImg.startsWith('/') ? '' : '/') + vImg;
                         if (!images.includes(vu)) images.push(vu);
                     }
                 });
