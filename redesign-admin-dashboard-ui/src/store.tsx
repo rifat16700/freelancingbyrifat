@@ -1438,8 +1438,8 @@ function useStoreValue() {
         ? next.tgMainChats
         : (next.tgMainChat || "").split(",").map((x) => x.trim()).filter(Boolean);
 
-      // Save main settings table via /update-settings
-      proxyFetch("/update-settings", {
+      // Save main settings table to BOTH Cloudflare (/api/update-settings) and proxy
+      const settingsPayload = {
         store_name: next.storeName,
         logo_url: next.logo,
         favicon_url: next.favicon,
@@ -1503,12 +1503,24 @@ function useStoreValue() {
           notifyReview: next.notifyReview,
           notifyLowStock: next.notifyLowStock,
         }),
-      }).catch((e) => toast(e.message, "err"));
+      };
 
-      // Persist web3_wallet_address directly in D1 (even if external PHP proxy is not re-deployed)
-      d1Query("ALTER TABLE settings ADD COLUMN web3_wallet_address TEXT DEFAULT ''").catch(() => {}).finally(() => {
-        d1Query("UPDATE settings SET web3_wallet_address = ? WHERE id = 1", [(next.web3WalletAddress || "").trim()]).catch(() => {});
-      });
+      // 1. Save directly to Cloudflare Pages Function (/api/update-settings -> D1 + auto-migration)
+      const admTok = typeof localStorage !== "undefined" ? localStorage.getItem("admin_token") || "" : "";
+      fetch("/api/update-settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(admTok ? { Authorization: "Bearer " + admTok } : {}),
+        },
+        body: JSON.stringify(settingsPayload),
+      }).catch(() => {});
+
+      // 2. Also save via configured proxy
+      proxyFetch("/update-settings", settingsPayload).catch((e) => toast(e.message, "err"));
+
+      // 3. Belt-and-suspenders: update web3_wallet_address via /admin-query (allows UPDATE)
+      d1AdminQuery("UPDATE settings SET web3_wallet_address = ? WHERE id = 1", [(next.web3WalletAddress || "").trim()]).catch(() => {});
 
       // Save maintenance mode if changed
       if (patch.maintenance !== undefined || patch.maintenanceMsg !== undefined) {
