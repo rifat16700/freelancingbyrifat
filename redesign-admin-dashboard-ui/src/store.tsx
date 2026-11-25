@@ -1505,6 +1505,11 @@ function useStoreValue() {
         }),
       }).catch((e) => toast(e.message, "err"));
 
+      // Persist web3_wallet_address directly in D1 (even if external PHP proxy is not re-deployed)
+      d1Query("ALTER TABLE settings ADD COLUMN web3_wallet_address TEXT DEFAULT ''").catch(() => {}).finally(() => {
+        d1Query("UPDATE settings SET web3_wallet_address = ? WHERE id = 1", [(next.web3WalletAddress || "").trim()]).catch(() => {});
+      });
+
       // Save maintenance mode if changed
       if (patch.maintenance !== undefined || patch.maintenanceMsg !== undefined) {
         d1AdminBatch([

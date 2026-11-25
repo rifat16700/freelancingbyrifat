@@ -2053,7 +2053,7 @@ if (strpos($endpoint, 'update-settings') !== false && $method === 'POST') {
         allow_pickup=?, store_address=?, store_map_link=?, pickup_bot_token=?, pickup_chat_id=?, binance_pay_uid=?,
         binance_proxy_url=?, binance_api_key=?, binance_api_secret=?, usd_to_bdt_rate=?, verify_mode=?, supabase_edge_url=?,
         hf_api_url=?, crypto_coins=?, review_imgbb_key=?,
-        seo_title=?, seo_description=?, seo_keywords=?, seo_og_image=?, google_site_verification=?, site_url=?, ai_config=?
+        seo_title=?, seo_description=?, seo_keywords=?, seo_og_image=?, google_site_verification=?, site_url=?, ai_config=?, web3_wallet_address=?
         WHERE id=1";
 
     $siteUrlRaw = trim((string)($p['site_url'] ?? ''));
@@ -2081,7 +2081,8 @@ if (strpos($endpoint, 'update-settings') !== false && $method === 'POST') {
         $p['review_imgbb_key'] ?? '',
         $p['seo_title'] ?? '', $p['seo_description'] ?? '', $p['seo_keywords'] ?? '',
         $p['seo_og_image'] ?? '', $p['google_site_verification'] ?? '', $siteUrlRaw,
-        is_string($p['ai_config'] ?? null) ? $p['ai_config'] : json_encode($p['ai_config'] ?? new stdClass())
+        is_string($p['ai_config'] ?? null) ? $p['ai_config'] : json_encode($p['ai_config'] ?? new stdClass()),
+        trim((string)($p['web3_wallet_address'] ?? ''))
     ];
 
     $res = d1Exec($sql, $params);

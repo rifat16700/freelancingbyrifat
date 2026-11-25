@@ -523,8 +523,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
             }).catch(function() { return { data: [] }; });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            // 1. Primary: call /checkout-data directly on our domain (Triggers Cloudflare 5-min Edge Cache!)
-            var primaryCheckoutUrl = window.BRAND ? window.BRAND.api("/checkout-data") : "/checkout-data";
+            // 1. Primary: call /api/checkout-data on Cloudflare Pages (includes D1 settings + web3_config)
+            var primaryCheckoutUrl = window.BRAND ? window.BRAND.api("/api/checkout-data") : "/api/checkout-data";
             var masterPromise = fetch(primaryCheckoutUrl)
                 .then(function(r){ return r.json(); })
                 .then(function(res){
@@ -532,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error('Not found');
                 })
                 .catch(function(){
-                    // 2. Direct proxy fallback if Cloudflare cache miss or domain error
+                    // 2. Direct proxy fallback if Cloudflare function is unavailable
                     var apiBase = (CONFIG.PROXY_API_URL || "").replace(/\/+$/, "");
                     if (apiBase) {
                         var pUrl = window.BRAND ? window.BRAND.api(apiBase + "/checkout-data") : (apiBase + "/checkout-data");
@@ -544,8 +544,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error('No proxy base');
                 })
                 .catch(function(){
-                    // 3. Legacy /api/ fallback
-                    var fbUrl = window.BRAND ? window.BRAND.api("/api/checkout-data") : "/api/checkout-data";
+                    // 3. Legacy /checkout-data fallback
+                    var fbUrl = window.BRAND ? window.BRAND.api("/checkout-data") : "/checkout-data";
                     return fetch(fbUrl).then(function(r2){ return r2.json(); }).catch(function(){ return {success:false, data:{}}; });
                 });
             p1 = masterPromise.then(function(r) {
