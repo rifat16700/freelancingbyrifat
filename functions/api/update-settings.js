@@ -35,7 +35,8 @@ export async function onRequestPost(context) {
             'seo_og_image TEXT DEFAULT ""',
             'google_site_verification TEXT DEFAULT ""',
             'site_url TEXT DEFAULT ""',
-            'ai_config TEXT DEFAULT ""'
+            'ai_config TEXT DEFAULT ""',
+            'web3_wallet_address TEXT DEFAULT ""'
         ];
         for (const col of seoCols) {
             try { await env.DB.prepare(`ALTER TABLE settings ADD COLUMN ${col}`).run(); } catch(e) {}
@@ -51,7 +52,7 @@ export async function onRequestPost(context) {
                 binance_proxy_url=?, binance_api_key=?, binance_api_secret=?, usd_to_bdt_rate=?, verify_mode=?, supabase_edge_url=?, 
                 hf_api_url=?, crypto_coins=?, review_imgbb_key=?,
                 seo_title=?, seo_description=?, seo_keywords=?, seo_og_image=?, google_site_verification=?, site_url=?,
-                ai_config=?
+                ai_config=?, web3_wallet_address=?
             WHERE id=1
         `;
         const params = [
@@ -73,7 +74,8 @@ export async function onRequestPost(context) {
             p.seo_og_image || '',
             p.google_site_verification || '',
             (p.site_url && p.site_url.trim()) ? (p.site_url.trim().startsWith('http') ? p.site_url.trim().replace(/\/+$/, '') : 'https://' + p.site_url.trim().replace(/\/+$/, '')) : '',
-            typeof p.ai_config === 'string' ? p.ai_config : JSON.stringify(p.ai_config || {})
+            typeof p.ai_config === 'string' ? p.ai_config : JSON.stringify(p.ai_config || {}),
+            (p.web3_wallet_address || '').trim()
         ];
         
         const stmt = env.DB.prepare(sql);

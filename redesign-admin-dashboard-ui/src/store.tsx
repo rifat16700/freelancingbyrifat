@@ -88,6 +88,7 @@ const INITIAL_SETTINGS: Settings = {
   binanceProxyUrl: "",
   binanceApiKey: "",
   binanceApiSecret: "",
+  web3WalletAddress: "",
   usdRate: 120,
   crypto: false,
   cryptoCoins: [],
@@ -433,8 +434,9 @@ function useStoreValue() {
         binanceProxyUrl: sr.binance_proxy_url || "",
         binanceApiKey: sr.binance_api_key || "",
         binanceApiSecret: sr.binance_api_secret || "",
+        web3WalletAddress: sr.web3_wallet_address || "",
         usdRate: Number(sr.usd_to_bdt_rate || 120),
-        crypto: Boolean(sr.binance_pay_uid || sr.binance_manual_uid || sr.binance_api_key || (safeJson<any[]>(sr.crypto_coins, []).length > 0)),
+        crypto: Boolean(sr.binance_pay_uid || sr.binance_manual_uid || sr.binance_api_key || sr.web3_wallet_address || (safeJson<any[]>(sr.crypto_coins, []).length > 0)),
         cryptoCoins: (safeJson<any[]>(sr.crypto_coins, []) || []).map((c: any): CryptoCoin =>
           typeof c === "string"
             ? { symbol: c, name: c, networks: [] }
@@ -1472,6 +1474,7 @@ function useStoreValue() {
         binance_proxy_url: next.binanceProxyUrl,
         binance_api_key: next.binanceApiKey,
         binance_api_secret: next.binanceApiSecret,
+        web3_wallet_address: next.web3WalletAddress,
         usd_to_bdt_rate: next.usdRate,
         verify_mode: next.gateway,
         supabase_edge_url: next.supabaseEdgeUrl,

@@ -350,6 +350,7 @@ export function Settings() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Auto Binance Pay UID"><Input value={draft.binanceUid} onChange={(e) => d({ binanceUid: e.target.value })} placeholder="e.g. 123456789" /></Field>
                   <Field label="1 USD = ? BDT" hint="Conversion rate for USDT / Crypto checkout"><Input type="number" step="0.01" value={draft.usdRate} onChange={(e) => d({ usdRate: Number(e.target.value) })} /></Field>
+                  <Field label="Web3 Merchant Wallet Address (BSC BEP-20 USDT)" hint="Direct WalletConnect / MetaMask / Trust Wallet / Binance Web3 receiving address (0x...)" className="sm:col-span-2"><Input value={draft.web3WalletAddress} onChange={(e) => d({ web3WalletAddress: e.target.value.trim() })} placeholder="0xYourBscUsdtReceivingWalletAddress" className="font-mono text-xs" /></Field>
                   <Field label="Binance API Key"><Secret value={draft.binanceApiKey} onChange={(v) => d({ binanceApiKey: v })} placeholder="Your Binance API Key" /></Field>
                   <Field label="Binance API Secret"><Secret value={draft.binanceApiSecret} onChange={(v) => d({ binanceApiSecret: v })} placeholder="Your Binance API Secret" /></Field>
                   <Field label="Verification System (verify_mode)" className="sm:col-span-2">

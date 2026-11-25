@@ -23,5 +23,6 @@ node_modules/
 # Local secrets / environment files
 .env
 .env.*
+.dev.vars
 !.env.example
 

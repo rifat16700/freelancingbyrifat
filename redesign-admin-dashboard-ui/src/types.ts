@@ -329,6 +329,7 @@ export interface Settings {
   binanceProxyUrl: string;
   binanceApiKey: string;
   binanceApiSecret: string;
+  web3WalletAddress: string;
   usdRate: number;
   crypto: boolean;
   cryptoCoins: CryptoCoin[];

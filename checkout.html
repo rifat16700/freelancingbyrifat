@@ -18,6 +18,16 @@
     <script src="/assets/js/supabase-init.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14" defer></script>
     <script src="/assets/js/appwrite-init.js" defer></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "ethers": "https://esm.sh/ethers@6",
+          "@reown/appkit": "https://esm.sh/@reown/appkit@latest",
+          "@reown/appkit/networks": "https://esm.sh/@reown/appkit@latest/networks",
+          "@reown/appkit-adapter-ethers": "https://esm.sh/@reown/appkit-adapter-ethers@latest"
+        }
+      }
+    </script>
     <style>
         .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; padding: 20px 0 40px; }
         .section-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 16px; }
@@ -328,6 +338,9 @@
                     <!-- Wallet Address Display (shown after network picked) -->
                     <div id="cryptoWalletBox" style="display:none;"></div>
 
+                    <!-- Web3 Direct Wallet Pay (Reown AppKit + Ethers v6) -->
+                    <div id="web3PayBox" style="display:none;"></div>
+
                     <!-- TxID Input -->
                     <div class="txid-input-wrap" id="cryptoTxidWrap" style="display:none;">
                         <label class="form-label" style="font-weight:700;font-size:13px;">📋 Transaction ID / TxHash *</label>
@@ -536,6 +549,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     return fetch(fbUrl).then(function(r2){ return r2.json(); }).catch(function(){ return {success:false, data:{}}; });
                 });
             p1 = masterPromise.then(function(r) {
+                if (r.success && r.data && r.data.web3_config) {
+                    window.web3Config = r.data.web3_config;
+                }
                 var doc = (r.success && r.data && r.data.settings) ? r.data.settings : {};
                 if (typeof doc.messaging_apps === 'string') try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e){}
                 if (typeof doc.crypto_coins === 'string') try { doc.crypto_coins = JSON.parse(doc.crypto_coins); } catch(e){}
@@ -2175,6 +2191,19 @@ function buildInternationalOptions() {
 
     var html = '';
     var hasProxy = !!(settings.binance_proxy_url || CONFIG.BINANCE_PROXY_URL);
+    var web3Wallet = (settings.web3_wallet_address || (window.web3Config && window.web3Config.merchant_wallet) || '').trim();
+
+    // Web3 Direct Wallet Pay (USDT BSC BEP-20)
+    if (web3Wallet) {
+        html += '<div class="crypto-opt" id="copt_web3_usdt" onclick="selectIntlMethod(\'web3_usdt\')">' +
+            '<span style="font-size:26px;">🦊</span>' +
+            '<div style="flex:1;">' +
+                '<div style="font-weight:800;font-size:14px;">Web3 Wallet Pay (USDT • BSC BEP-20) <span class="auto-badge" style="background:#10b981;color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;margin-left:4px;">Instant</span></div>' +
+                '<div style="font-size:12px;color:#888;">Connect MetaMask, Trust Wallet, or Binance Web3 Wallet</div>' +
+            '</div>' +
+            '<input type="radio" name="intlMethod" value="web3_usdt" style="width:18px;height:18px;accent-color:#F0B90B;">' +
+            '</div>';
+    }
 
     // Binance Pay option
     if (settings.binance_pay_uid) {
@@ -2213,6 +2242,7 @@ function buildInternationalOptions() {
     document.getElementById('cryptoCoinSelectBox').style.display = 'none';
     document.getElementById('cryptoNetworkDetails').style.display = 'none';
     document.getElementById('cryptoWalletBox').style.display = 'none';
+    if (document.getElementById('web3PayBox')) document.getElementById('web3PayBox').style.display = 'none';
     document.getElementById('cryptoTxidWrap').style.display = 'none';
     document.getElementById('verifyCryptoBtn').style.display = 'none';
     setVerifyStatus('', '');
@@ -2234,6 +2264,49 @@ function selectIntlMethod(method) {
         el.classList.add('binance-selected');
         var radio = el.querySelector('input[type="radio"]');
         if (radio) radio.checked = true;
+    }
+
+    if (method === 'web3_usdt') {
+        selectedPayMethod = 'crypto_web3_usdt';
+        document.getElementById('cryptoCoinSelectBox').style.display = 'none';
+        document.getElementById('cryptoNetworkDetails').style.display = 'none';
+        document.getElementById('cryptoWalletBox').style.display = 'none';
+        document.getElementById('cryptoTxidWrap').style.display = 'none';
+        document.getElementById('verifyCryptoBtn').style.display = 'none';
+        setVerifyStatus('', '');
+
+        var w3Wallet = (settings.web3_wallet_address || (window.web3Config && window.web3Config.merchant_wallet) || '').trim();
+        var w3Total = updateSummaryTotals();
+        var w3Rate  = parseFloat(settings.usd_to_bdt_rate || 110);
+        var w3Usdt  = (w3Total / w3Rate).toFixed(2);
+        var w3InvId = window._pendingWeb3OrderId || (window._pendingWeb3OrderId = genOrderId());
+        var w3Box   = document.getElementById('web3PayBox');
+
+        w3Box.style.display = 'block';
+        w3Box.innerHTML =
+            '<div class="wallet-addr-box" style="border-color:#F0B90B;background:rgba(240,185,11,0.05);">' +
+                '<div style="font-size:12px;font-weight:700;color:#B8860B;margin-bottom:8px;">🦊 Web3 Direct Payment (BNB Smart Chain • BEP-20 USDT)</div>' +
+                '<div style="font-size:12px;color:#555;display:grid;gap:6px;margin-bottom:12px;">' +
+                    '<div>Invoice ID: <strong style="font-family:monospace;color:#111;">' + w3InvId + '</strong></div>' +
+                    '<div>Amount Due: <strong style="color:#111;font-size:15px;">' + w3Usdt + ' USDT</strong> <span style="color:#888;">(≈ ৳' + Math.round(w3Total) + ')</span></div>' +
+                    '<div>Merchant Wallet: <span style="font-family:monospace;font-size:11px;word-break:break-all;color:#333;">' + w3Wallet + '</span></div>' +
+                    '<div>Connected Wallet: <strong id="web3ConnectedAddr" style="font-family:monospace;font-size:12px;color:#111;">Not connected</strong></div>' +
+                '</div>' +
+                '<div style="display:grid;gap:8px;">' +
+                    '<button type="button" id="web3ConnectBtn" class="btn btn-outline" style="width:100%;padding:11px;border-radius:10px;font-weight:700;" onclick="window.Web3Checkout && window.Web3Checkout.openModal()">🔗 Connect Wallet (MetaMask / Trust / Binance)</button>' +
+                    '<button type="button" id="web3PayBtn" class="verify-btn" style="display:block;width:100%;margin-top:0;" disabled onclick="triggerWeb3UsdtPay(\'' + w3InvId + '\', \'' + w3Usdt + '\', \'' + w3Wallet + '\')">💸 Pay ' + w3Usdt + ' USDT Now</button>' +
+                '</div>' +
+                '<div class="verify-status" id="web3StatusBox" style="margin-top:10px;"></div>' +
+            '</div>';
+
+        if (window.Web3Checkout) {
+            window.Web3Checkout.init((window.web3Config && window.web3Config.reown_project_id) || '');
+        }
+        return;
+    }
+
+    if (document.getElementById('web3PayBox')) {
+        document.getElementById('web3PayBox').style.display = 'none';
     }
 
     if (method === 'binance_pay') {
@@ -2338,6 +2411,7 @@ function selectIntlCoin(symbol) {
     document.getElementById('cryptoNetworkDetails').innerHTML =
         '<div class="intl-step"><div class="intl-step-num">2</div><span class="intl-step-label">Select Network</span></div>' + netsHtml;
     document.getElementById('cryptoWalletBox').style.display = 'none';
+    if (document.getElementById('web3PayBox')) document.getElementById('web3PayBox').style.display = 'none';
     document.getElementById('cryptoTxidWrap').style.display = 'none';
     document.getElementById('verifyCryptoBtn').style.display = 'none';
     setVerifyStatus('', '');
@@ -2770,7 +2844,31 @@ function runSupabaseEdgeBackup(txid, usdt, btn) {
     });
 }
 
-function placeCryptoOrder(txid, usdt, isBackup) {
+function triggerWeb3UsdtPay(invoiceId, usdtAmt, merchantWallet) {
+    var policyCheck = document.getElementById('policyAgreeCheck');
+    if (policyCheck && !policyCheck.checked) {
+        alert("Please agree to our Policies to continue.");
+        return;
+    }
+    if (!window.Web3Checkout) {
+        alert("Web3 module is still loading. Please try again in a moment.");
+        return;
+    }
+    var cfg = window.web3Config || {};
+    window.Web3Checkout.payInvoice({
+        invoiceId: invoiceId,
+        amountUsdt: usdtAmt,
+        merchantWallet: merchantWallet,
+        tokenContract: cfg.usdt_contract,
+        tokenDecimals: cfg.usdt_decimals,
+        onVerified: function(txHash, paidUsdt, verifiedOrderId) {
+            intlVerified = true;
+            placeCryptoOrder(txHash, paidUsdt, false, verifiedOrderId);
+        }
+    });
+}
+
+function placeCryptoOrder(txid, usdt, isBackup, customOrderId) {
     var name  = document.getElementById('custName').value.trim();
     var phone = document.getElementById('custPhone').value.trim();
     var email = document.getElementById('custEmail').value.trim();
@@ -2780,15 +2878,17 @@ function placeCryptoOrder(txid, usdt, isBackup) {
     var addr  = isPickup ? (settings.store_address || 'Store Pickup') : document.getElementById('custAddress').value.trim();
     var total = updateSummaryTotals();
 
-    var methodLabel = intlPayMode === 'binance_pay'
-        ? 'Binance Pay (USDT)'
-        : 'Crypto ' + intlCoinSymbol + ' [' + intlNetworkName + ']';
+    var methodLabel = intlPayMode === 'web3_usdt'
+        ? 'Web3 USDT (BSC BEP-20)'
+        : (intlPayMode === 'binance_pay'
+            ? 'Binance Pay (USDT)'
+            : 'Crypto ' + intlCoinSymbol + ' [' + intlNetworkName + ']');
 
     var payStatus = isBackup ? 'Manual Review' : 'Paid';
     var ordStatus = isBackup ? 'Pending' : 'Confirmed';
 
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
-    var orderId  = genOrderId();
+    var orderId  = customOrderId || genOrderId();
 
     var orderData = {
         id:              orderId,
@@ -2904,6 +3004,7 @@ function copyElementText(elId) {
 
     <script src="/assets/js/offline-handler.js"></script>
     <script src="/assets/js/tracking.js"></script>
+    <script type="module" src="/assets/js/web3-checkout.js"></script>
 
     <!-- Autofill logged in user data -->
     <script>

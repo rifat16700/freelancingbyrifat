@@ -56,7 +56,14 @@ export async function onRequestGet(context) {
             zones: zones.results || [],
             addons: addons.results || [],
             promos: promos.results || [],
-            add_once: add_once.results || []
+            add_once: add_once.results || [],
+            web3_config: {
+                reown_project_id: env.REOWN_PROJECT_ID || "",
+                merchant_wallet: mergedSettings.web3_wallet_address || env.MERCHANT_WALLET || "",
+                usdt_contract: env.USDT_CONTRACT || "0x55d398326f99059fF775485246999027B3197955",
+                usdt_decimals: Number(env.USDT_DECIMALS || 18),
+                chain_id: 56
+            }
         };
 
         return new Response(JSON.stringify({ success: true, data }), {
