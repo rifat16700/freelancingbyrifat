@@ -4,6 +4,7 @@ import { bsc } from "@reown/appkit/networks";
 import { ethers } from "ethers";
 
 const BSC_CHAIN_ID = 56;
+const BSC_CHAIN_HEX = "0x38";
 const DEFAULT_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
 const DEFAULT_DECIMALS = 18;
 const ERC20_TRANSFER_ABI = [
@@ -12,6 +13,7 @@ const ERC20_TRANSFER_ABI = [
 
 let appKit = null;
 let initializedProjectId = "";
+let fallbackAccount = "";
 let isProcessing = false;
 
 function shortAddr(addr) {
@@ -25,18 +27,26 @@ function setWeb3Status(type, html) {
   box.innerHTML = html;
 }
 
+function isWalletConnected() {
+  return Boolean(appKit?.getIsConnected?.() || fallbackAccount);
+}
+
+function getConnectedAddress() {
+  return appKit?.getAddress?.() || fallbackAccount || "";
+}
+
 function updateWeb3UI() {
   const connectBtn = document.getElementById("web3ConnectBtn");
   const payBtn = document.getElementById("web3PayBtn");
   const walletLabel = document.getElementById("web3ConnectedAddr");
-  const connected = Boolean(appKit?.getIsConnected?.());
-  const address = appKit?.getAddress?.() || "";
+  const connected = isWalletConnected();
+  const address = getConnectedAddress();
 
   if (walletLabel) {
     walletLabel.textContent = connected ? shortAddr(address) : "Not connected";
   }
   if (connectBtn) {
-    connectBtn.disabled = isProcessing || !appKit;
+    connectBtn.disabled = isProcessing;
     connectBtn.textContent = connected
       ? `✅ ${shortAddr(address)} (Switch / Disconnect)`
       : "🔗 Connect Wallet (MetaMask / Trust / Binance)";
@@ -48,7 +58,8 @@ function updateWeb3UI() {
 
 function init(projectId) {
   if (!projectId) {
-    setWeb3Status("error", "❌ REOWN_PROJECT_ID is not configured on Cloudflare.");
+    // Allow injected wallet (MetaMask / Trust Wallet / Binance extension) even before REOWN_PROJECT_ID is set
+    updateWeb3UI();
     return false;
   }
   if (appKit && initializedProjectId === projectId) {
@@ -80,25 +91,83 @@ function init(projectId) {
 async function openModal() {
   if (!appKit) {
     const projectId = window.web3Config?.reown_project_id || "";
-    if (!init(projectId)) return;
+    init(projectId);
   }
-  await appKit.open();
+  if (appKit) {
+    await appKit.open();
+    return;
+  }
+
+  // Fallback to injected EIP-1193 provider (MetaMask, Trust Wallet, Binance Web3 extension)
+  if (window.ethereum) {
+    try {
+      setWeb3Status("loading", "🔗 Connecting browser wallet...");
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      fallbackAccount = accounts?.[0] || "";
+      await ensureBscNetwork();
+      setWeb3Status("", "");
+      updateWeb3UI();
+    } catch (err) {
+      setWeb3Status("error", `❌ ${err?.message || "Wallet connection cancelled."}`);
+    }
+    return;
+  }
+
+  setWeb3Status(
+    "error",
+    "❌ No browser wallet detected and REOWN_PROJECT_ID is not set in Cloudflare for WalletConnect QR."
+  );
 }
 
 async function ensureBscNetwork() {
-  if (!appKit?.getIsConnected?.()) return false;
-  const currentChainId = Number(appKit.getChainId());
-  if (currentChainId === BSC_CHAIN_ID) return true;
+  if (!isWalletConnected()) return false;
 
-  setWeb3Status("loading", "🔄 Switching wallet network to BNB Smart Chain (BSC Mainnet)...");
-  await appKit.switchNetwork(bsc);
+  if (appKit) {
+    const currentChainId = Number(appKit.getChainId());
+    if (currentChainId === BSC_CHAIN_ID) return true;
 
-  const updatedChainId = Number(appKit.getChainId());
-  if (updatedChainId !== BSC_CHAIN_ID) {
-    throw new Error("Please switch your wallet network to BNB Smart Chain (Chain ID 56).");
+    setWeb3Status("loading", "🔄 Switching wallet network to BNB Smart Chain (BSC Mainnet)...");
+    await appKit.switchNetwork(bsc);
+
+    const updatedChainId = Number(appKit.getChainId());
+    if (updatedChainId !== BSC_CHAIN_ID) {
+      throw new Error("Please switch your wallet network to BNB Smart Chain (Chain ID 56).");
+    }
+    setWeb3Status("", "");
+    return true;
   }
-  setWeb3Status("", "");
-  return true;
+
+  if (window.ethereum) {
+    const chainHex = await window.ethereum.request({ method: "eth_chainId" });
+    if (parseInt(chainHex, 16) === BSC_CHAIN_ID) return true;
+
+    setWeb3Status("loading", "🔄 Switching wallet network to BNB Smart Chain (BSC Mainnet)...");
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: BSC_CHAIN_HEX }]
+      });
+    } catch (switchErr) {
+      if (switchErr?.code === 4902) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: BSC_CHAIN_HEX,
+            chainName: "BNB Smart Chain Mainnet",
+            nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+            rpcUrls: ["https://bsc-dataseed.binance.org/"],
+            blockExplorerUrls: ["https://bscscan.com"]
+          }]
+        });
+      } else {
+        throw switchErr;
+      }
+    }
+    setWeb3Status("", "");
+    return true;
+  }
+
+  return false;
 }
 
 async function verifyTxWithRetry(invoiceId, txHash, expectedAmountUsdt, maxAttempts = 20) {
@@ -124,7 +193,7 @@ async function verifyTxWithRetry(invoiceId, txHash, expectedAmountUsdt, maxAttem
 }
 
 async function payInvoice({ invoiceId, amountUsdt, merchantWallet, tokenContract, tokenDecimals, onVerified }) {
-  if (!appKit?.getIsConnected?.()) {
+  if (!isWalletConnected()) {
     await openModal();
     return;
   }
@@ -135,7 +204,7 @@ async function payInvoice({ invoiceId, amountUsdt, merchantWallet, tokenContract
   try {
     await ensureBscNetwork();
 
-    const walletProvider = appKit.getWalletProvider();
+    const walletProvider = appKit?.getWalletProvider?.() || window.ethereum;
     if (!walletProvider) {
       throw new Error("Wallet provider unavailable. Please reconnect your wallet.");
     }
