@@ -11,10 +11,39 @@ const ERC20_TRANSFER_ABI = [
   "function transfer(address to, uint256 value) returns (bool)"
 ];
 
+// Reown Explorer Wallet IDs: MetaMask, Trust Wallet, Binance Web3 Wallet
+const FEATURED_WALLET_IDS = [
+  "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96", // MetaMask
+  "4622a2b2d6af1c9844944291e5e7351a6aa24cd7b23099efac1b2fd875da31a0", // Trust Wallet
+  "8a0ee50d1f22f6651afcae7eb4253e52a3310b90af5daef78a8c4929a9bb99d4"  // Binance Web3 Wallet
+];
+
+const POPULAR_WALLETS = [
+  { name: "MetaMask", match: "metamask", icon: "🦊", url: "https://metamask.io/download/" },
+  { name: "Trust Wallet", match: "trust", icon: "🛡️", url: "https://trustwallet.com/download" },
+  { name: "Binance Web3 Wallet", match: "binance", icon: "🟡", url: "https://www.binance.com/en/web3wallet" },
+  { name: "Coinbase Wallet", match: "coinbase", icon: "🔵", url: "https://www.coinbase.com/wallet" },
+  { name: "OKX Wallet", match: "okx", icon: "⚫", url: "https://www.okx.com/web3" }
+];
+
 let appKit = null;
 let initializedProjectId = "";
-let fallbackAccount = "";
+let selectedProvider = null;
+let selectedAccount = "";
+let selectedWalletName = "";
 let isProcessing = false;
+
+// Discover all installed EIP-6963 browser wallets (prevents MetaMask from hijacking window.ethereum)
+const discoveredProviders = new Map();
+if (typeof window !== "undefined") {
+  window.addEventListener("eip6963:announceProvider", (event) => {
+    const detail = event?.detail;
+    if (detail?.info?.uuid && detail?.provider) {
+      discoveredProviders.set(detail.info.uuid, detail);
+    }
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+}
 
 function shortAddr(addr) {
   return addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : "Not connected";
@@ -28,11 +57,11 @@ function setWeb3Status(type, html) {
 }
 
 function isWalletConnected() {
-  return Boolean(appKit?.getIsConnected?.() || fallbackAccount);
+  return Boolean(appKit?.getIsConnected?.() || (selectedProvider && selectedAccount));
 }
 
 function getConnectedAddress() {
-  return appKit?.getAddress?.() || fallbackAccount || "";
+  return appKit?.getAddress?.() || selectedAccount || "";
 }
 
 function updateWeb3UI() {
@@ -43,13 +72,15 @@ function updateWeb3UI() {
   const address = getConnectedAddress();
 
   if (walletLabel) {
-    walletLabel.textContent = connected ? shortAddr(address) : "Not connected";
+    walletLabel.textContent = connected
+      ? `${shortAddr(address)}${selectedWalletName ? ` (${selectedWalletName})` : ""}`
+      : "Not connected";
   }
   if (connectBtn) {
     connectBtn.disabled = isProcessing;
     connectBtn.textContent = connected
-      ? `✅ ${shortAddr(address)} (Switch / Disconnect)`
-      : "🔗 Connect Wallet (MetaMask / Trust / Binance)";
+      ? `✅ ${shortAddr(address)} (Switch / Change Wallet)`
+      : "🔗 Connect Wallet (Select Wallet)";
   }
   if (payBtn) {
     payBtn.disabled = isProcessing || !connected;
@@ -57,8 +88,9 @@ function updateWeb3UI() {
 }
 
 function init(projectId) {
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+
   if (!projectId) {
-    // Allow injected wallet (MetaMask / Trust Wallet / Binance extension) even before REOWN_PROJECT_ID is set
     updateWeb3UI();
     return false;
   }
@@ -73,6 +105,8 @@ function init(projectId) {
     networks: [bsc],
     defaultNetwork: bsc,
     projectId,
+    allWallets: "SHOW",
+    featuredWalletIds: FEATURED_WALLET_IDS,
     metadata: {
       name: document.title || "Crypto Checkout",
       description: "One-Time BSC BEP-20 USDT Payment",
@@ -88,6 +122,135 @@ function init(projectId) {
   return true;
 }
 
+function closeWalletPicker() {
+  const existing = document.getElementById("w3WalletPickerOverlay");
+  if (existing) existing.remove();
+}
+
+async function connectSpecificProvider(provider, label) {
+  closeWalletPicker();
+  try {
+    setWeb3Status("loading", `🔗 Connecting ${label}...`);
+    const accounts = await provider.request({ method: "eth_requestAccounts" });
+    selectedProvider = provider;
+    selectedAccount = accounts?.[0] || "";
+    selectedWalletName = label;
+    await ensureBscNetwork();
+    setWeb3Status("", "");
+    updateWeb3UI();
+  } catch (err) {
+    setWeb3Status("error", `❌ ${err?.message || "Wallet connection cancelled."}`);
+  }
+}
+
+function openFallbackWalletPicker() {
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+  closeWalletPicker();
+
+  const announced = Array.from(discoveredProviders.values());
+  const overlay = document.createElement("div");
+  overlay.id = "w3WalletPickerOverlay";
+  overlay.style.cssText =
+    "position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;";
+
+  const card = document.createElement("div");
+  card.style.cssText =
+    "width:100%;max-width:400px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,0.3);font-family:inherit;max-height:85vh;overflow-y:auto;";
+
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:#111827;">Connect Wallet</div>
+        <div style="font-size:12px;color:#6b7280;">Choose your Web3 wallet (BNB Smart Chain)</div>
+      </div>
+      <button type="button" id="w3ClosePicker" style="border:none;background:#f3f4f6;width:30px;height:30px;border-radius:999px;cursor:pointer;font-weight:700;color:#374151;">✕</button>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Popular Wallets</div>
+    <div id="w3PopularList" style="display:grid;gap:8px;margin-bottom:14px;"></div>
+    <div id="w3OtherWrap" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;">Other Detected Wallets</div>
+      <div id="w3OtherList" style="display:grid;gap:8px;"></div>
+    </div>
+    <div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;font-size:11px;color:#92400e;">
+      💡 For mobile QR &amp; 300+ WalletConnect wallets, add <strong>REOWN_PROJECT_ID</strong> in Cloudflare Environment Variables.
+    </div>
+  `;
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeWalletPicker(); });
+  card.querySelector("#w3ClosePicker").addEventListener("click", closeWalletPicker);
+
+  const popularList = card.querySelector("#w3PopularList");
+  const usedUuids = new Set();
+
+  POPULAR_WALLETS.forEach((pw) => {
+    const found = announced.find((d) =>
+      String(d.info?.name || "").toLowerCase().includes(pw.match) ||
+      String(d.info?.rdns || "").toLowerCase().includes(pw.match)
+    );
+    if (found) usedUuids.add(found.info.uuid);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.style.cssText =
+      "display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border:1.5px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer;text-align:left;transition:border-color .15s;";
+    btn.innerHTML = `
+      ${found?.info?.icon
+        ? `<img src="${found.info.icon}" alt="${pw.name}" style="width:28px;height:28px;border-radius:8px;object-fit:contain;">`
+        : `<span style="font-size:22px;width:28px;text-align:center;">${pw.icon}</span>`}
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:#111827;">${found?.info?.name || pw.name}</div>
+        <div style="font-size:11px;color:${found ? "#059669" : "#9ca3af"};">${found ? "Installed • Click to connect" : "Not installed • Click to get"}</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:${found ? "#ecfdf5" : "#f3f4f6"};color:${found ? "#047857" : "#6b7280"};">${found ? "Connect" : "Install"}</span>
+    `;
+    btn.addEventListener("click", () => {
+      if (found) {
+        connectSpecificProvider(found.provider, found.info.name || pw.name);
+      } else {
+        window.open(pw.url, "_blank", "noopener,noreferrer");
+      }
+    });
+    popularList.appendChild(btn);
+  });
+
+  // Any other EIP-6963 wallets (Rabby, Brave, Bitget, Phantom, etc.)
+  const others = announced.filter((d) => !usedUuids.has(d.info.uuid));
+  if (others.length > 0) {
+    card.querySelector("#w3OtherWrap").style.display = "block";
+    const otherList = card.querySelector("#w3OtherList");
+    others.forEach((d) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.style.cssText =
+        "display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer;text-align:left;";
+      btn.innerHTML = `
+        <img src="${d.info.icon || ""}" alt="" style="width:26px;height:26px;border-radius:8px;object-fit:contain;">
+        <div style="flex:1;font-size:13px;font-weight:700;color:#111827;">${d.info.name}</div>
+        <span style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:#ecfdf5;color:#047857;">Connect</span>
+      `;
+      btn.addEventListener("click", () => connectSpecificProvider(d.provider, d.info.name));
+      otherList.appendChild(btn);
+    });
+  } else if (announced.length === 0 && window.ethereum) {
+    // Legacy injected provider if browser wallet doesn't support EIP-6963
+    card.querySelector("#w3OtherWrap").style.display = "block";
+    const otherList = card.querySelector("#w3OtherList");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.style.cssText =
+      "display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:12px;background:#fff;cursor:pointer;text-align:left;";
+    btn.innerHTML = `
+      <span style="font-size:22px;width:26px;text-align:center;">🔌</span>
+      <div style="flex:1;font-size:13px;font-weight:700;color:#111827;">Browser Default Wallet</div>
+      <span style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:#ecfdf5;color:#047857;">Connect</span>
+    `;
+    btn.addEventListener("click", () => connectSpecificProvider(window.ethereum, "Browser Wallet"));
+    otherList.appendChild(btn);
+  }
+}
+
 async function openModal() {
   if (!appKit) {
     const projectId = window.web3Config?.reown_project_id || "";
@@ -97,26 +260,7 @@ async function openModal() {
     await appKit.open();
     return;
   }
-
-  // Fallback to injected EIP-1193 provider (MetaMask, Trust Wallet, Binance Web3 extension)
-  if (window.ethereum) {
-    try {
-      setWeb3Status("loading", "🔗 Connecting browser wallet...");
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-      fallbackAccount = accounts?.[0] || "";
-      await ensureBscNetwork();
-      setWeb3Status("", "");
-      updateWeb3UI();
-    } catch (err) {
-      setWeb3Status("error", `❌ ${err?.message || "Wallet connection cancelled."}`);
-    }
-    return;
-  }
-
-  setWeb3Status(
-    "error",
-    "❌ No browser wallet detected and REOWN_PROJECT_ID is not set in Cloudflare for WalletConnect QR."
-  );
+  openFallbackWalletPicker();
 }
 
 async function ensureBscNetwork() {
@@ -137,19 +281,20 @@ async function ensureBscNetwork() {
     return true;
   }
 
-  if (window.ethereum) {
-    const chainHex = await window.ethereum.request({ method: "eth_chainId" });
+  const provider = selectedProvider || window.ethereum;
+  if (provider) {
+    const chainHex = await provider.request({ method: "eth_chainId" });
     if (parseInt(chainHex, 16) === BSC_CHAIN_ID) return true;
 
     setWeb3Status("loading", "🔄 Switching wallet network to BNB Smart Chain (BSC Mainnet)...");
     try {
-      await window.ethereum.request({
+      await provider.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: BSC_CHAIN_HEX }]
       });
     } catch (switchErr) {
       if (switchErr?.code === 4902) {
-        await window.ethereum.request({
+        await provider.request({
           method: "wallet_addEthereumChain",
           params: [{
             chainId: BSC_CHAIN_HEX,
@@ -204,7 +349,7 @@ async function payInvoice({ invoiceId, amountUsdt, merchantWallet, tokenContract
   try {
     await ensureBscNetwork();
 
-    const walletProvider = appKit?.getWalletProvider?.() || window.ethereum;
+    const walletProvider = appKit?.getWalletProvider?.() || selectedProvider || window.ethereum;
     if (!walletProvider) {
       throw new Error("Wallet provider unavailable. Please reconnect your wallet.");
     }
