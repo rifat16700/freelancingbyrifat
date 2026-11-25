@@ -619,13 +619,13 @@ export async function serveNotFoundPage(context, validBrand = null) {
     const targetShopUrl = (validBrand && validBrand.slug) ? `/${validBrand.slug}/shop` : '/shop';
     const targetLabel = (validBrand && validBrand.name) ? `Continue Shopping (${validBrand.name})` : 'Continue Shopping';
     try {
-        let nfRes = await env.ASSETS.fetch(new Request(new URL('/404', request.url), { method: 'GET' }));
+        let nfRes = await env.ASSETS.fetch(new Request(new URL('/404.html', request.url), { method: 'GET' }));
         if (!nfRes || nfRes.status === 301 || nfRes.status === 302 || nfRes.status === 307 || nfRes.status === 308 || !nfRes.body) {
             const loc = nfRes?.headers?.get('Location');
             if (loc) {
                 nfRes = await env.ASSETS.fetch(new Request(new URL(loc, request.url), { method: 'GET' }));
             } else {
-                nfRes = await env.ASSETS.fetch(new Request(new URL('/404.html', request.url), { method: 'GET' }));
+                nfRes = await env.ASSETS.fetch(new Request(new URL('/404', request.url), { method: 'GET' }));
             }
         }
         if (nfRes && nfRes.body) {

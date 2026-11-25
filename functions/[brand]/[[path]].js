@@ -10,6 +10,8 @@ import {
 import { renderHomePage } from '../_lib/render-home.js';
 import { renderShopPage } from '../_lib/render-shop.js';
 import { renderProductPage } from '../_lib/render-product.js';
+import { onRequestGet as handleSitemap } from '../sitemap.xml.js';
+import { onRequestGet as handleRobots } from '../robots.txt.js';
 
 const ALLOWED_BRAND_SUBPAGES = new Map([
     ['cart', { assetPath: '/cart', titlePrefix: 'Shopping Cart' }],
@@ -53,6 +55,14 @@ export async function onRequest(context) {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
+    }
+
+    if (rawSlug.toLowerCase() === 'sitemap.xml' && pathParts.length === 0) {
+        return handleSitemap(context);
+    }
+
+    if (rawSlug.toLowerCase() === 'robots.txt' && pathParts.length === 0) {
+        return handleRobots(context);
     }
 
     if (isReservedSlug(rawSlug)) {
