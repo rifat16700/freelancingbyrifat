@@ -8,8 +8,10 @@ const BSC_CHAIN_HEX = "0x38";
 const DEFAULT_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955";
 const DEFAULT_DECIMALS = 18;
 const ERC20_TRANSFER_ABI = [
-  "function transfer(address to, uint256 value) returns (bool)"
+  "function transfer(address to, uint256 value) returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)"
 ];
+const STORAGE_KEY = "w3_connected_wallet";
 
 // Reown Explorer Wallet IDs: MetaMask, Trust Wallet, Binance Web3 Wallet
 const FEATURED_WALLET_IDS = [
@@ -87,10 +89,43 @@ function updateWeb3UI() {
   }
 }
 
+async function tryAutoReconnect() {
+  if (appKit || isWalletConnected()) return;
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+  } catch {}
+  if (!saved) return;
+
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+  // Wait briefly for extensions to announce via EIP-6963
+  await new Promise((r) => setTimeout(r, 150));
+
+  const announced = Array.from(discoveredProviders.values());
+  let match = announced.find(
+    (d) =>
+      (saved.rdns && d.info?.rdns === saved.rdns) ||
+      (saved.name && d.info?.name === saved.name)
+  );
+  const provider = match?.provider || (saved.isLegacy ? window.ethereum : null);
+  if (!provider) return;
+
+  try {
+    const accounts = await provider.request({ method: "eth_accounts" });
+    if (accounts && accounts.length > 0) {
+      selectedProvider = provider;
+      selectedAccount = accounts[0];
+      selectedWalletName = match?.info?.name || saved.name || "Wallet";
+      updateWeb3UI();
+    }
+  } catch {}
+}
+
 function init(projectId) {
   window.dispatchEvent(new Event("eip6963:requestProvider"));
 
   if (!projectId) {
+    tryAutoReconnect();
     updateWeb3UI();
     return false;
   }
@@ -127,7 +162,7 @@ function closeWalletPicker() {
   if (existing) existing.remove();
 }
 
-async function connectSpecificProvider(provider, label) {
+async function connectSpecificProvider(provider, label, info = null) {
   closeWalletPicker();
   try {
     setWeb3Status("loading", `🔗 Connecting ${label}...`);
@@ -135,6 +170,16 @@ async function connectSpecificProvider(provider, label) {
     selectedProvider = provider;
     selectedAccount = accounts?.[0] || "";
     selectedWalletName = label;
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          name: label,
+          rdns: info?.rdns || "",
+          isLegacy: !info
+        })
+      );
+    } catch {}
     await ensureBscNetwork();
     setWeb3Status("", "");
     updateWeb3UI();
@@ -207,7 +252,7 @@ function openFallbackWalletPicker() {
     `;
     btn.addEventListener("click", () => {
       if (found) {
-        connectSpecificProvider(found.provider, found.info.name || pw.name);
+        connectSpecificProvider(found.provider, found.info.name || pw.name, found.info);
       } else {
         window.open(pw.url, "_blank", "noopener,noreferrer");
       }
@@ -230,7 +275,7 @@ function openFallbackWalletPicker() {
         <div style="flex:1;font-size:13px;font-weight:700;color:#111827;">${d.info.name}</div>
         <span style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:#ecfdf5;color:#047857;">Connect</span>
       `;
-      btn.addEventListener("click", () => connectSpecificProvider(d.provider, d.info.name));
+      btn.addEventListener("click", () => connectSpecificProvider(d.provider, d.info.name, d.info));
       otherList.appendChild(btn);
     });
   } else if (announced.length === 0 && window.ethereum) {
@@ -367,6 +412,22 @@ async function payInvoice({ invoiceId, amountUsdt, merchantWallet, tokenContract
     const usdt = new ethers.Contract(contractAddr, ERC20_TRANSFER_ABI, signer);
     const amountInWei = ethers.parseUnits(String(amountUsdt), decimals);
 
+    // Pre-check USDT balance so user gets a clear message instead of "missing revert data"
+    try {
+      const userAddr = await signer.getAddress();
+      const balWei = await usdt.balanceOf(userAddr);
+      if (balWei < amountInWei) {
+        const formattedBal = Number(ethers.formatUnits(balWei, decimals)).toFixed(2);
+        throw new Error(
+          `Insufficient USDT balance on BSC (BEP-20). You have ${formattedBal} USDT, need ${amountUsdt} USDT.`
+        );
+      }
+    } catch (balErr) {
+      if (String(balErr?.message || "").includes("Insufficient USDT balance")) {
+        throw balErr;
+      }
+    }
+
     setWeb3Status("loading", "🦊 Please confirm the USDT transfer in your wallet...");
     const tx = await usdt.transfer(merchantWallet, amountInWei);
 
@@ -382,7 +443,10 @@ async function payInvoice({ invoiceId, amountUsdt, merchantWallet, tokenContract
       onVerified(verified.txHash, amountUsdt, invoiceId);
     }
   } catch (err) {
-    const msg = err?.shortMessage || err?.reason || err?.message || "Payment failed.";
+    let msg = err?.shortMessage || err?.reason || err?.message || "Payment failed.";
+    if (String(msg).toLowerCase().includes("missing revert data")) {
+      msg = "Transaction would fail on-chain (likely insufficient USDT or BNB gas on BSC Mainnet).";
+    }
     setWeb3Status("error", `❌ ${msg}`);
   } finally {
     isProcessing = false;
