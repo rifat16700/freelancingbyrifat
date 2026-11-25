@@ -70,8 +70,14 @@ async function fetchTransactionReceipt(rpcUrl, txHash) {
 async function resolveMerchantWallet(env) {
   if (env.DB) {
     try {
-      const row = await env.DB.prepare("SELECT web3_wallet_address FROM settings WHERE id=1").first();
-      const dbWallet = (row?.web3_wallet_address || "").trim().toLowerCase();
+      const row = await env.DB.prepare("SELECT web3_wallet_address, ai_config FROM settings WHERE id=1").first();
+      let dbWallet = (row?.web3_wallet_address || "").trim().toLowerCase();
+      if (!ADDRESS_REGEX.test(dbWallet) && row?.ai_config) {
+        try {
+          const aiCfg = typeof row.ai_config === "string" ? JSON.parse(row.ai_config) : row.ai_config;
+          dbWallet = (aiCfg?.web3WalletAddress || "").trim().toLowerCase();
+        } catch {}
+      }
       if (ADDRESS_REGEX.test(dbWallet)) return dbWallet;
     } catch {
       // Column may not exist yet before first settings save; fall back to env.MERCHANT_WALLET

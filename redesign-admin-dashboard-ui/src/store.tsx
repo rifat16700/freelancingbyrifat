@@ -434,7 +434,7 @@ function useStoreValue() {
         binanceProxyUrl: sr.binance_proxy_url || "",
         binanceApiKey: sr.binance_api_key || "",
         binanceApiSecret: sr.binance_api_secret || "",
-        web3WalletAddress: sr.web3_wallet_address || "",
+        web3WalletAddress: sr.web3_wallet_address || aiCfg.web3WalletAddress || "",
         usdRate: Number(sr.usd_to_bdt_rate || 120),
         crypto: Boolean(sr.binance_pay_uid || sr.binance_manual_uid || sr.binance_api_key || sr.web3_wallet_address || (safeJson<any[]>(sr.crypto_coins, []).length > 0)),
         cryptoCoins: (safeJson<any[]>(sr.crypto_coins, []) || []).map((c: any): CryptoCoin =>
@@ -1502,6 +1502,7 @@ function useStoreValue() {
           notifyCancel: next.notifyCancel,
           notifyReview: next.notifyReview,
           notifyLowStock: next.notifyLowStock,
+          web3WalletAddress: (next.web3WalletAddress || "").trim(),
         }),
       };
 

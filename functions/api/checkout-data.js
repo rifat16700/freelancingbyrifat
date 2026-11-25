@@ -14,6 +14,7 @@ export async function onRequestGet(context) {
 
     try {
         await ensureBrandSchema(env);
+        try { await env.DB.prepare("ALTER TABLE settings ADD COLUMN web3_wallet_address TEXT DEFAULT ''").run(); } catch (e) {}
 
         const url = new URL(request.url);
         const brandParam = (url.searchParams.get("brand") || url.searchParams.get("brand_id") || "").trim();
@@ -47,6 +48,12 @@ export async function onRequestGet(context) {
         ]);
 
         const rawSettings = (rawSettingsRes.results && rawSettingsRes.results.length) ? rawSettingsRes.results[0] : {};
+        if (!rawSettings.web3_wallet_address && rawSettings.ai_config) {
+            try {
+                const aiCfg = typeof rawSettings.ai_config === 'string' ? JSON.parse(rawSettings.ai_config) : rawSettings.ai_config;
+                if (aiCfg && aiCfg.web3WalletAddress) rawSettings.web3_wallet_address = aiCfg.web3WalletAddress;
+            } catch (e) {}
+        }
         const mergedSettings = mergeSettingsWithBrand(rawSettings, activeBrand);
 
         const data = {
